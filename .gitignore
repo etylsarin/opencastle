@@ -1,0 +1,13 @@
+# dependencies
+node_modules
+
+.cache/
+public/
+.env
+.env.*
+*.log
+.DS_Store
+
+# IDE
+.idea/
+.vscode/

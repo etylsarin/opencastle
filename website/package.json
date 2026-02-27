@@ -1,0 +1,31 @@
+{
+  "name": "opencastle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Open-source multi-agent orchestration framework for AI coding assistants",
+  "scripts": {
+    "develop": "gatsby develop",
+    "build": "gatsby build --prefix-paths",
+    "serve": "gatsby serve --prefix-paths",
+    "clean": "gatsby clean"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/etylsarin/opencastle.git"
+  },
+  "author": "Filip Mares",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/etylsarin/opencastle/issues"
+  },
+  "homepage": "https://etylsarin.github.io/opencastle/",
+  "dependencies": {
+    "gatsby": "^5.16.1",
+    "gatsby-plugin-image": "^3.16.0",
+    "gatsby-plugin-sharp": "^5.16.0",
+    "gatsby-source-filesystem": "^5.16.0",
+    "gatsby-transformer-sharp": "^5.16.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  }
+}

@@ -1,0 +1,153 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#111118"/>
+      <stop offset="100%" stop-color="#0a0a0f"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#a78bfa"/>
+      <stop offset="50%" stop-color="#6366f1"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#34d399" stop-opacity="0.4"/>
+    </linearGradient>
+    <linearGradient id="purple" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.4"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="700" fill="url(#bg)" rx="12"/>
+
+  <!-- Top bar -->
+  <rect x="0" y="0" width="1200" height="48" fill="#1a1a24" rx="12"/>
+  <rect x="0" y="24" width="1200" height="24" fill="#1a1a24"/>
+  <circle cx="24" cy="24" r="6" fill="#ef4444"/>
+  <circle cx="44" cy="24" r="6" fill="#fbbf24"/>
+  <circle cx="64" cy="24" r="6" fill="#22c55e"/>
+  <text x="600" y="29" text-anchor="middle" fill="#8a8a9a" font-family="-apple-system, sans-serif" font-size="13" font-weight="600">OpenCastle Agent Dashboard</text>
+
+  <!-- Sidebar -->
+  <rect x="0" y="48" width="220" height="652" fill="#111118"/>
+  <line x1="220" y1="48" x2="220" y2="700" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+  <!-- Sidebar items -->
+  <rect x="12" y="68" width="196" height="34" fill="rgba(167,139,250,0.1)" rx="6"/>
+  <text x="40" y="90" fill="#a78bfa" font-family="-apple-system, sans-serif" font-size="13" font-weight="600">Overview</text>
+  <text x="40" y="128" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="13">Sessions</text>
+  <text x="40" y="160" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="13">Delegations</text>
+  <text x="40" y="192" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="13">Panel Reviews</text>
+  <text x="40" y="224" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="13">Lessons Learned</text>
+  <text x="40" y="256" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="13">Agent Failures</text>
+
+  <!-- KPI Cards -->
+  <!-- Card 1 -->
+  <rect x="244" y="68" width="220" height="100" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" rx="10"/>
+  <text x="268" y="96" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="11" font-weight="600" text-transform="uppercase" letter-spacing="1">TOTAL SESSIONS</text>
+  <text x="268" y="136" fill="#f0f0f5" font-family="-apple-system, sans-serif" font-size="32" font-weight="800">127</text>
+  <text x="380" y="136" fill="#34d399" font-family="-apple-system, sans-serif" font-size="12" font-weight="600">+18%</text>
+
+  <!-- Card 2 -->
+  <rect x="488" y="68" width="220" height="100" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" rx="10"/>
+  <text x="512" y="96" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="11" font-weight="600">SUCCESS RATE</text>
+  <text x="512" y="136" fill="#f0f0f5" font-family="-apple-system, sans-serif" font-size="32" font-weight="800">94.2%</text>
+  <text x="640" y="136" fill="#34d399" font-family="-apple-system, sans-serif" font-size="12" font-weight="600">+3.1%</text>
+
+  <!-- Card 3 -->
+  <rect x="732" y="68" width="220" height="100" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" rx="10"/>
+  <text x="756" y="96" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="11" font-weight="600">DELEGATIONS</text>
+  <text x="756" y="136" fill="#f0f0f5" font-family="-apple-system, sans-serif" font-size="32" font-weight="800">583</text>
+  <text x="860" y="136" fill="#34d399" font-family="-apple-system, sans-serif" font-size="12" font-weight="600">+24%</text>
+
+  <!-- Card 4 -->
+  <rect x="976" y="68" width="200" height="100" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" rx="10"/>
+  <text x="1000" y="96" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="11" font-weight="600">PANEL PASS RATE</text>
+  <text x="1000" y="136" fill="#f0f0f5" font-family="-apple-system, sans-serif" font-size="32" font-weight="800">89%</text>
+  <text x="1090" y="136" fill="#fbbf24" font-family="-apple-system, sans-serif" font-size="12" font-weight="600">+1.5%</text>
+
+  <!-- Sessions Timeline Chart -->
+  <rect x="244" y="192" width="464" height="240" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" rx="10"/>
+  <text x="268" y="222" fill="#f0f0f5" font-family="-apple-system, sans-serif" font-size="14" font-weight="650">Sessions Over Time</text>
+  <!-- Chart area lines -->
+  <line x1="280" y1="250" x2="280" y2="400" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <line x1="280" y1="400" x2="680" y2="400" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+  <line x1="280" y1="350" x2="680" y2="350" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="4"/>
+  <line x1="280" y1="300" x2="680" y2="300" stroke="rgba(255,255,255,0.03)" stroke-width="1" stroke-dasharray="4"/>
+  <!-- Chart bars -->
+  <rect x="300" y="340" width="24" height="60" fill="url(#accent)" rx="3" opacity="0.7"/>
+  <rect x="340" y="310" width="24" height="90" fill="url(#accent)" rx="3" opacity="0.8"/>
+  <rect x="380" y="330" width="24" height="70" fill="url(#accent)" rx="3" opacity="0.7"/>
+  <rect x="420" y="290" width="24" height="110" fill="url(#accent)" rx="3" opacity="0.9"/>
+  <rect x="460" y="300" width="24" height="100" fill="url(#accent)" rx="3" opacity="0.85"/>
+  <rect x="500" y="270" width="24" height="130" fill="url(#accent)" rx="3" opacity="0.95"/>
+  <rect x="540" y="280" width="24" height="120" fill="url(#accent)" rx="3" opacity="0.9"/>
+  <rect x="580" y="260" width="24" height="140" fill="url(#accent)" rx="3"/>
+  <rect x="620" y="275" width="24" height="125" fill="url(#accent)" rx="3" opacity="0.92"/>
+  <rect x="660" y="255" width="24" height="145" fill="url(#accent)" rx="3"/>
+  <!-- X-axis labels -->
+  <text x="312" y="418" text-anchor="middle" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="10">W1</text>
+  <text x="432" y="418" text-anchor="middle" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="10">W5</text>
+  <text x="552" y="418" text-anchor="middle" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="10">W9</text>
+  <text x="672" y="418" text-anchor="middle" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="10">W13</text>
+
+  <!-- Model Tier Distribution -->
+  <rect x="732" y="192" width="444" height="240" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" rx="10"/>
+  <text x="756" y="222" fill="#f0f0f5" font-family="-apple-system, sans-serif" font-size="14" font-weight="650">Model Tier Distribution</text>
+  <!-- Donut chart approximation -->
+  <circle cx="880" cy="330" r="60" fill="none" stroke="#a78bfa" stroke-width="16" stroke-dasharray="94 283" stroke-dashoffset="0" opacity="0.9"/>
+  <circle cx="880" cy="330" r="60" fill="none" stroke="#34d399" stroke-width="16" stroke-dasharray="113 283" stroke-dashoffset="-94" opacity="0.9"/>
+  <circle cx="880" cy="330" r="60" fill="none" stroke="#fbbf24" stroke-width="16" stroke-dasharray="57 283" stroke-dashoffset="-207" opacity="0.9"/>
+  <circle cx="880" cy="330" r="60" fill="none" stroke="#60a5fa" stroke-width="16" stroke-dasharray="19 283" stroke-dashoffset="-264" opacity="0.9"/>
+  <!-- Legend -->
+  <circle cx="990" cy="280" r="5" fill="#a78bfa"/>
+  <text x="1002" y="284" fill="#8a8a9a" font-family="-apple-system, sans-serif" font-size="11">Premium (25%)</text>
+  <circle cx="990" cy="308" r="5" fill="#34d399"/>
+  <text x="1002" y="312" fill="#8a8a9a" font-family="-apple-system, sans-serif" font-size="11">Standard (40%)</text>
+  <circle cx="990" cy="336" r="5" fill="#fbbf24"/>
+  <text x="1002" y="340" fill="#8a8a9a" font-family="-apple-system, sans-serif" font-size="11">Fast (28%)</text>
+  <circle cx="990" cy="364" r="5" fill="#60a5fa"/>
+  <text x="1002" y="368" fill="#8a8a9a" font-family="-apple-system, sans-serif" font-size="11">Economy (7%)</text>
+
+  <!-- Recent Sessions Table -->
+  <rect x="244" y="456" width="932" height="224" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.06)" rx="10"/>
+  <text x="268" y="486" fill="#f0f0f5" font-family="-apple-system, sans-serif" font-size="14" font-weight="650">Recent Sessions</text>
+  <!-- Table header -->
+  <rect x="244" y="500" width="932" height="32" fill="rgba(255,255,255,0.03)"/>
+  <text x="268" y="521" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="11" font-weight="600">AGENT</text>
+  <text x="468" y="521" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="11" font-weight="600">TASK</text>
+  <text x="808" y="521" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="11" font-weight="600">STATUS</text>
+  <text x="938" y="521" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="11" font-weight="600">DURATION</text>
+  <text x="1068" y="521" fill="#5a5a6e" font-family="-apple-system, sans-serif" font-size="11" font-weight="600">TIER</text>
+  <!-- Row 1 -->
+  <line x1="268" y1="550" x2="1152" y2="550" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="268" y="571" fill="#f0f0f5" font-family="-apple-system, sans-serif" font-size="12">Developer</text>
+  <text x="468" y="571" fill="#8a8a9a" font-family="-apple-system, sans-serif" font-size="12">TAS-47: Implement filter component</text>
+  <rect x="808" y="558" width="68" height="20" fill="rgba(52,211,153,0.15)" rx="4"/>
+  <text x="822" y="573" fill="#34d399" font-family="-apple-system, sans-serif" font-size="11" font-weight="600">Success</text>
+  <text x="938" y="571" fill="#8a8a9a" font-family="-apple-system, sans-serif" font-size="12">12m 34s</text>
+  <rect x="1068" y="558" width="55" height="20" fill="rgba(52,211,153,0.12)" rx="4"/>
+  <text x="1078" y="573" fill="#34d399" font-family="-apple-system, sans-serif" font-size="10" font-weight="600">Standard</text>
+  <!-- Row 2 -->
+  <line x1="268" y1="588" x2="1152" y2="588" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="268" y="609" fill="#f0f0f5" font-family="-apple-system, sans-serif" font-size="12">Security Expert</text>
+  <text x="468" y="609" fill="#8a8a9a" font-family="-apple-system, sans-serif" font-size="12">TAS-48: Audit RLS policies</text>
+  <rect x="808" y="596" width="68" height="20" fill="rgba(52,211,153,0.15)" rx="4"/>
+  <text x="822" y="611" fill="#34d399" font-family="-apple-system, sans-serif" font-size="11" font-weight="600">Success</text>
+  <text x="938" y="609" fill="#8a8a9a" font-family="-apple-system, sans-serif" font-size="12">18m 22s</text>
+  <rect x="1068" y="596" width="55" height="20" fill="rgba(167,139,250,0.15)" rx="4"/>
+  <text x="1078" y="611" fill="#a78bfa" font-family="-apple-system, sans-serif" font-size="10" font-weight="600">Premium</text>
+  <!-- Row 3 -->
+  <line x1="268" y1="626" x2="1152" y2="626" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <text x="268" y="647" fill="#f0f0f5" font-family="-apple-system, sans-serif" font-size="12">Testing Expert</text>
+  <text x="468" y="647" fill="#8a8a9a" font-family="-apple-system, sans-serif" font-size="12">TAS-49: E2E browser validation</text>
+  <rect x="808" y="634" width="68" height="20" fill="rgba(52,211,153,0.15)" rx="4"/>
+  <text x="822" y="649" fill="#34d399" font-family="-apple-system, sans-serif" font-size="11" font-weight="600">Success</text>
+  <text x="938" y="647" fill="#8a8a9a" font-family="-apple-system, sans-serif" font-size="12">8m 15s</text>
+  <rect x="1068" y="634" width="55" height="20" fill="rgba(251,191,36,0.15)" rx="4"/>
+  <text x="1088" y="649" fill="#fbbf24" font-family="-apple-system, sans-serif" font-size="10" font-weight="600">Fast</text>
+  <!-- Row 4 -->
+  <line x1="268" y1="664" x2="1152" y2="664" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+</svg>

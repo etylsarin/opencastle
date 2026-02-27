@@ -1,0 +1,38 @@
+{
+  "name": "opencastle",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Multi-agent orchestration framework for AI coding assistants",
+  "bin": {
+    "opencastle": "bin/cli.mjs"
+  },
+  "files": [
+    "bin/",
+    "src/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "ai",
+    "agents",
+    "copilot",
+    "cursor",
+    "claude",
+    "orchestration",
+    "multi-agent",
+    "coding-assistant"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/etylsarin/opencastle.git"
+  },
+  "bugs": {
+    "url": "https://github.com/etylsarin/opencastle/issues"
+  },
+  "homepage": "https://etylsarin.github.io/opencastle/",
+  "license": "MIT",
+  "author": "Filip Mares",
+  "engines": {
+    "node": ">=18"
+  }
+}

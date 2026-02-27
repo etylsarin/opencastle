@@ -1,0 +1,29 @@
+{
+  "servers": {
+    "Sanity": {
+      "url": "https://mcp.sanity.io",
+      "type": "http"
+    },
+    "Vercel": {
+      "url": "https://mcp.vercel.com",
+      "type": "http"
+    },
+    "Supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"],
+      "type": "stdio"
+    },
+    "Linear": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@mseep/linear-mcp"],
+      "env": {
+        "LINEAR_API_KEY": "${env:LINEAR_API_KEY}"
+      }
+    }
+  }
+}
