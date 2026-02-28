@@ -3,7 +3,8 @@ import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
-import type { CopyResults, ManagedPaths } from '../types.js'
+import { getExcludedSkills, getExcludedAgents } from '../stack-config.js'
+import type { CopyResults, ManagedPaths, StackConfig } from '../types.js'
 
 /**
  * Cursor adapter.
@@ -120,10 +121,14 @@ async function writeConverted(
 
 export async function install(
   pkgRoot: string,
-  projectRoot: string
+  projectRoot: string,
+  stack?: StackConfig
 ): Promise<CopyResults> {
   const srcRoot = getOrchestratorRoot(pkgRoot)
   const results: CopyResults = { copied: [], skipped: [], created: [] }
+
+  const excludedSkills = stack ? getExcludedSkills(stack) : new Set<string>()
+  const excludedAgents = stack ? getExcludedAgents(stack) : new Set<string>()
 
   // 1. .cursorrules  ← copilot-instructions.md (body only)
   const cursorrules = resolve(projectRoot, '.cursorrules')
@@ -149,10 +154,11 @@ export async function install(
   await convertDir(srcRoot, 'agents', resolve(rulesRoot, 'agents'), results, {
     descriptionPrefix: 'Agent: ',
     removeExt: '.agent.md',
+    excludeFiles: excludedAgents,
   })
 
   // 4. Skills → .cursor/rules/skills/*.mdc
-  await convertSkills(srcRoot, resolve(rulesRoot, 'skills'), results)
+  await convertSkills(srcRoot, resolve(rulesRoot, 'skills'), results, false, excludedSkills)
 
   // 5. Agent Workflows → .cursor/rules/agent-workflows/*.mdc
   await convertDir(
@@ -182,7 +188,8 @@ export async function install(
   const mcpResult = await scaffoldMcpConfig(
     pkgRoot,
     projectRoot,
-    '.cursor/mcp.json'
+    '.cursor/mcp.json',
+    stack
   )
   results[mcpResult.action].push(mcpResult.path)
 
@@ -193,10 +200,14 @@ export async function install(
 
 export async function update(
   pkgRoot: string,
-  projectRoot: string
+  projectRoot: string,
+  stack?: StackConfig
 ): Promise<CopyResults> {
   const srcRoot = getOrchestratorRoot(pkgRoot)
   const results: CopyResults = { copied: [], skipped: [], created: [] }
+
+  const excludedSkills = stack ? getExcludedSkills(stack) : new Set<string>()
+  const excludedAgents = stack ? getExcludedAgents(stack) : new Set<string>()
 
   // Overwrite .cursorrules
   const { body } = stripFrontmatter(
@@ -223,9 +234,9 @@ export async function update(
     'agents',
     resolve(rulesRoot, 'agents'),
     results,
-    { descriptionPrefix: 'Agent: ', removeExt: '.agent.md', overwrite: true }
+    { descriptionPrefix: 'Agent: ', removeExt: '.agent.md', overwrite: true, excludeFiles: excludedAgents }
   )
-  await convertSkills(srcRoot, resolve(rulesRoot, 'skills'), results, true)
+  await convertSkills(srcRoot, resolve(rulesRoot, 'skills'), results, true, excludedSkills)
   await convertDir(
     srcRoot,
     'agent-workflows',
@@ -277,6 +288,7 @@ interface ConvertDirOptions {
   descriptionPrefix?: string
   removeExt?: string
   overwrite?: boolean
+  excludeFiles?: Set<string>
 }
 
 async function convertDir(
@@ -289,6 +301,7 @@ async function convertDir(
     descriptionPrefix,
     removeExt,
     overwrite,
+    excludeFiles,
   }: ConvertDirOptions = {}
 ): Promise<void> {
   const srcDir = resolve(srcRoot, dirName)
@@ -298,6 +311,7 @@ async function convertDir(
 
   for (const file of await readdir(srcDir)) {
     if (!file.endsWith('.md')) continue
+    if (excludeFiles?.has(file)) continue
     const fallback = descriptionPrefix
       ? `${descriptionPrefix}${basename(file, removeExt ?? '.md')}`
       : ''
@@ -316,7 +330,8 @@ async function convertSkills(
   srcRoot: string,
   destDir: string,
   results: CopyResults,
-  overwrite = false
+  overwrite = false,
+  excludedSkills?: Set<string>
 ): Promise<void> {
   const skillsDir = resolve(srcRoot, 'skills')
   if (!existsSync(skillsDir)) return
@@ -326,6 +341,7 @@ async function convertSkills(
   const subdirs = await readdir(skillsDir, { withFileTypes: true })
   for (const entry of subdirs) {
     if (!entry.isDirectory()) continue
+    if (excludedSkills?.has(entry.name)) continue
     const skillFile = resolve(skillsDir, entry.name, 'SKILL.md')
     if (!existsSync(skillFile)) continue
 

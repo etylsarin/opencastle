@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { select, confirm, closePrompts } from './prompt.js'
 import { readManifest, writeManifest, createManifest } from './manifest.js'
-import type { CliContext, IdeAdapter } from './types.js'
+import type { CliContext, IdeAdapter, CmsChoice, DbChoice, StackConfig } from './types.js'
 
 const ADAPTERS: Record<string, () => Promise<IdeAdapter>> = {
   vscode: () => import('./adapters/vscode.js') as Promise<IdeAdapter>,
@@ -55,15 +55,34 @@ export default async function init({ pkgRoot }: CliContext): Promise<void> {
     },
   ])
 
-  console.log(`\n  Installing for ${ide}...\n`)
+  // ── CMS selection ───────────────────────────────────────────────
+  const cms = await select('Which CMS are you using?', [
+    { label: 'Sanity', hint: 'GROQ queries, real-time collaboration', value: 'sanity' },
+    { label: 'Contentful', hint: 'GraphQL / REST API, structured content', value: 'contentful' },
+    { label: 'Strapi', hint: 'Open-source headless CMS', value: 'strapi' },
+    { label: 'None', hint: 'No CMS — skip CMS skills and agents', value: 'none' },
+  ])
+
+  // ── Database selection ──────────────────────────────────────────
+  const db = await select('Which database are you using?', [
+    { label: 'Supabase', hint: 'Postgres + Auth + RLS + Edge Functions', value: 'supabase' },
+    { label: 'Convex', hint: 'Reactive backend with real-time sync', value: 'convex' },
+    { label: 'None', hint: 'No database — skip DB skills and agents', value: 'none' },
+  ])
+
+  const stack: StackConfig = { cms: cms as CmsChoice, db: db as DbChoice }
+
+  console.log(`\n  Installing for ${ide}...`)
+  console.log(`  Stack: CMS=${stack.cms}, DB=${stack.db}\n`)
 
   // ── Run adapter ─────────────────────────────────────────────────
   const adapter = await ADAPTERS[ide]()
-  const results = await adapter.install(pkgRoot, projectRoot)
+  const results = await adapter.install(pkgRoot, projectRoot, stack)
 
   // ── Write manifest ──────────────────────────────────────────────
   const manifest = createManifest(pkg.version, ide)
   manifest.managedPaths = adapter.getManagedPaths()
+  manifest.stack = stack
   await writeManifest(projectRoot, manifest)
 
   // ── Summary ─────────────────────────────────────────────────────

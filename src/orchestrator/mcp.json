@@ -4,6 +4,15 @@
       "url": "https://mcp.sanity.io",
       "type": "http"
     },
+    "Contentful": {
+      "url": "https://mcp.contentful.com/sse",
+      "type": "http"
+    },
+    "Strapi": {
+      "command": "npx",
+      "args": ["-y", "@strapi/mcp-server"],
+      "type": "stdio"
+    },
     "Vercel": {
       "url": "https://mcp.vercel.com",
       "type": "http"
@@ -11,6 +20,11 @@
     "Supabase": {
       "type": "http",
       "url": "https://mcp.supabase.com/mcp"
+    },
+    "Convex": {
+      "command": "npx",
+      "args": ["-y", "@anthropic-ai/convex-mcp-server"],
+      "type": "stdio"
     },
     "chrome-devtools": {
       "command": "npx",
