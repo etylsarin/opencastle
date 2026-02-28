@@ -9,9 +9,18 @@
 </p>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/opencastle"><img src="https://img.shields.io/npm/v/opencastle.svg" alt="npm version" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/npm/l/opencastle.svg" alt="license" /></a>
+  <a href="https://www.npmjs.com/package/opencastle"><img src="https://img.shields.io/npm/dm/opencastle.svg" alt="downloads" /></a>
+  <a href="https://github.com/etylsarin/opencastle"><img src="https://img.shields.io/github/stars/etylsarin/opencastle.svg?style=social" alt="GitHub stars" /></a>
+  <img src="https://img.shields.io/node/v/opencastle.svg" alt="node version" />
+</p>
+
+<p align="center">
   <a href="https://www.opencastle.dev/">Website</a> &middot;
   <a href="#quick-start">Quick Start</a> &middot;
-  <a href="#architecture">Architecture</a> &middot;
+  <a href="ARCHITECTURE.md">Architecture</a> &middot;
+  <a href="#contributing">Contributing</a> &middot;
   <a href="LICENSE">MIT License</a>
 </p>
 
@@ -20,6 +29,10 @@
 OpenCastle turns **GitHub Copilot**, **Cursor**, and **Claude Code** into coordinated multi-agent teams. Instead of one AI doing everything, it decomposes complex tasks across specialized agents that work in parallel — each with its own domain expertise, tools, and file partition.
 
 One command. Any repo. Any IDE.
+
+<p align="center">
+  <a href="https://ko-fi.com/A0A61V4992" target="_blank"><img height="36" style="border:0px;height:36px;" src="https://storage.ko-fi.com/cdn/kofi4.png?v=6" border="0" alt="Buy Me a Coffee at ko-fi.com" /></a>
+</p>
 
 ## Quick Start
 
@@ -120,6 +133,10 @@ Track your agent team's performance with a built-in observability dashboard:
 npx opencastle dashboard
 ```
 
+<p align="center">
+  <img src="dashboard-screenshot.png" alt="OpenCastle Dashboard" width="800" />
+</p>
+
 Opens a local dashboard at `http://localhost:4300` that visualizes your project's real agent data:
 
 - **KPIs** — Total sessions, success rate, delegations, avg duration
@@ -141,71 +158,7 @@ The dashboard reads NDJSON logs from `.github/customizations/logs/` — the same
 
 ## Architecture
 
-```mermaid
-graph TB
-    TL["🏰 Team Lead<br/><sub>Claude Opus 4.6</sub><br/><sub>Analyze → Decompose → Delegate → Verify</sub>"]
-
-    subgraph Standard["Standard Tier"]
-        DEV[Developer]
-        UI[UI/UX Expert]
-        CE[Content Engineer]
-        DB[Database Engineer]
-        PERF[Perf Expert]
-        API[API Designer]
-    end
-
-    subgraph Premium["Premium Tier"]
-        SEC[Security Expert]
-        ARCH[Architect]
-    end
-
-    subgraph Utility["Utility Tier"]
-        TEST[Testing Expert]
-        DATA[Data Expert]
-        DEVOPS[DevOps Expert]
-        RM[Release Manager]
-    end
-
-    subgraph Economy["Economy Tier"]
-        DOCS[Docs Writer]
-        RES[Researcher]
-        REV[Reviewer]
-        COPY[Copywriter]
-        SEO[SEO Specialist]
-    end
-
-    TL --> Standard
-    TL --> Premium
-    TL --> Utility
-    TL --> Economy
-
-    KB["📚 Instructions · Skills · Workflows · Prompts"]
-    TL -.-> KB
-```
-
-### Model tiers
-
-| Tier | Model | Use case |
-|------|-------|----------|
-| Premium | Claude Opus 4.6 | Architecture, security, orchestration |
-| Standard | Gemini 3.1 Pro | Features, schemas, UI |
-| Utility | GPT-5.3-Codex | Testing, data, deployment |
-| Economy | GPT-5 mini | Documentation |
-
----
-
-## Workflow Templates
-
-| Template | Flow |
-|----------|------|
-| `feature-implementation` | DB → Query → UI → Tests |
-| `bug-fix` | Triage → RCA → Fix → Verify |
-| `data-pipeline` | Scrape → Convert → Enrich → Import |
-| `security-audit` | Scope → Automate → Review → Remediate |
-| `performance-optimization` | Measure → Analyze → Optimize → Verify |
-| `schema-changes` | CMS model modifications and queries |
-| `database-migration` | Migrations, access policies, rollback |
-| `refactoring` | Safe refactoring with behavior preservation |
+OpenCastle orchestrates 18 specialist agents across 4 model tiers, coordinated by a Team Lead. See the full architecture diagram, model tiers, workflow templates, and quality gates in **[ARCHITECTURE.md](ARCHITECTURE.md)**.
 
 ---
 
@@ -310,16 +263,38 @@ After each run, a JSON report is written to `.opencastle/runs/` with statuses, d
 
 ---
 
-## Quality Gates
+## Contributing
 
-| Gate | Method |
-|------|--------|
-| **Deterministic** | Lint, type-check, unit tests, build verification |
-| **Fast review** | Mandatory single-reviewer sub-agent after every delegation, with automatic retry and escalation |
-| **Panel review** | 3 isolated reviewer sub-agents, 2/3 majority wins (high-stakes or escalation) |
-| **Structured disputes** | Formal dispute records when automated resolution is exhausted — packages both perspectives and resolution options for human decision |
-| **Browser testing** | Chrome DevTools MCP at 3 responsive breakpoints |
-| **Self-review** | Every agent asked *"What edge cases am I missing?"* |
+Contributions are welcome! Whether it's bug reports, feature requests, new skills, agent definitions, or workflow templates — we'd love your help.
+
+1. **Fork** the repository
+2. **Create a branch** — `feat/your-feature` or `fix/your-fix`
+3. **Make your changes** — follow existing code style and conventions
+4. **Test** — ensure `npm run build:cli` passes
+5. **Open a PR** — describe what you changed and why
+
+Please open an [issue](https://github.com/etylsarin/opencastle/issues) first for large changes so we can discuss the approach.
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) for technical details on how the framework is structured.
+
+---
+
+## Sponsors
+
+OpenCastle is free and open-source, maintained in spare time. If you or your company find it useful, consider supporting development:
+
+<p align="center">
+  <a href="https://ko-fi.com/A0A61V4992" target="_blank"><img height="36" style="border:0px;height:36px;" src="https://storage.ko-fi.com/cdn/kofi4.png?v=6" border="0" alt="Buy Me a Coffee at ko-fi.com" /></a>
+</p>
+
+**Why sponsor?**
+
+- Sustain active development and new features
+- Priority issue responses
+- Influence the roadmap
+- Support the open-source AI tooling ecosystem
+
+For corporate sponsorship inquiries, open a [GitHub Discussion](https://github.com/etylsarin/opencastle/discussions).
 
 ---
 
