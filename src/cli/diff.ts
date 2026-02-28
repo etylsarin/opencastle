@@ -1,9 +1,9 @@
-/* global console, process */
 import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
-import { readManifest } from './manifest.mjs'
+import { readManifest } from './manifest.js'
+import type { CliContext } from './types.js'
 
-export default async function diff({ pkgRoot }) {
+export default async function diff({ pkgRoot }: CliContext): Promise<void> {
   const projectRoot = process.cwd()
 
   const manifest = await readManifest(projectRoot)
@@ -16,7 +16,7 @@ export default async function diff({ pkgRoot }) {
 
   const pkg = JSON.parse(
     await readFile(resolve(pkgRoot, 'package.json'), 'utf8')
-  )
+  ) as { version: string }
 
   if (manifest.version === pkg.version) {
     console.log(
@@ -30,13 +30,13 @@ export default async function diff({ pkgRoot }) {
   )
   console.log('  Framework files that would be updated:\n')
 
-  for (const path of manifest.managedPaths?.framework || []) {
+  for (const path of manifest.managedPaths?.framework ?? []) {
     console.log(`    ↻ ${path}`)
   }
 
   console.log('\n  Customization files that would be preserved:\n')
 
-  for (const path of manifest.managedPaths?.customizable || []) {
+  for (const path of manifest.managedPaths?.customizable ?? []) {
     console.log(`    ✓ ${path}`)
   }
 

@@ -9,6 +9,7 @@
   "files": [
     "bin/",
     "src/",
+    "dist/",
     "README.md",
     "LICENSE"
   ],
@@ -33,10 +34,15 @@
   "license": "MIT",
   "author": "Filip Mares",
   "scripts": {
+    "build:cli": "tsc",
     "build:dashboard": "cd src/dashboard && npm run build",
-    "prepublishOnly": "npm run build:dashboard"
+    "prepublishOnly": "npm run build:cli && npm run build:dashboard"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
   }
 }

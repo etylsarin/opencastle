@@ -44,12 +44,12 @@ if (command === '--version' || command === '-v') {
 }
 
 const commands = {
-  init: () => import('../src/cli/init.mjs'),
-  update: () => import('../src/cli/update.mjs'),
-  diff: () => import('../src/cli/diff.mjs'),
-  eject: () => import('../src/cli/eject.mjs'),
-  run: () => import('../src/cli/run.mjs'),
-  dashboard: () => import('../src/cli/dashboard.mjs'),
+  init: () => import('../dist/cli/init.js'),
+  update: () => import('../dist/cli/update.js'),
+  diff: () => import('../dist/cli/diff.js'),
+  eject: () => import('../dist/cli/eject.js'),
+  run: () => import('../dist/cli/run.js'),
+  dashboard: () => import('../dist/cli/dashboard.js'),
 }
 
 if (!commands[command]) {

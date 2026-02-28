@@ -1,8 +1,9 @@
 import { resolve } from 'node:path'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.mjs'
-import { scaffoldMcpConfig } from '../mcp.mjs'
+import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.js'
+import { scaffoldMcpConfig } from '../mcp.js'
+import type { CopyResults, ManagedPaths } from '../types.js'
 
 /**
  * VS Code / GitHub Copilot adapter.
@@ -33,13 +34,16 @@ const FRAMEWORK_DIRS = [
 /** Directories scaffolded once and never overwritten. */
 const CUSTOMIZABLE_DIRS = ['customizations']
 
-export async function install(pkgRoot, projectRoot) {
+export async function install(
+  pkgRoot: string,
+  projectRoot: string
+): Promise<CopyResults> {
   const srcRoot = getOrchestratorRoot(pkgRoot)
   const destRoot = resolve(projectRoot, '.github')
 
   await mkdir(destRoot, { recursive: true })
 
-  const results = { copied: [], skipped: [], created: [] }
+  const results: CopyResults = { copied: [], skipped: [], created: [] }
 
   // copilot-instructions.md
   const copilotSrc = resolve(srcRoot, 'copilot-instructions.md')
@@ -74,17 +78,24 @@ export async function install(pkgRoot, projectRoot) {
   }
 
   // MCP server config → .vscode/mcp.json (scaffold once)
-  const mcpResult = await scaffoldMcpConfig(pkgRoot, projectRoot, '.vscode/mcp.json')
+  const mcpResult = await scaffoldMcpConfig(
+    pkgRoot,
+    projectRoot,
+    '.vscode/mcp.json'
+  )
   results[mcpResult.action].push(mcpResult.path)
 
   return results
 }
 
-export async function update(pkgRoot, projectRoot) {
+export async function update(
+  pkgRoot: string,
+  projectRoot: string
+): Promise<CopyResults> {
   const srcRoot = getOrchestratorRoot(pkgRoot)
   const destRoot = resolve(projectRoot, '.github')
 
-  const results = { copied: [], skipped: [], created: [] }
+  const results: CopyResults = { copied: [], skipped: [], created: [] }
 
   // Overwrite copilot-instructions.md
   const copilotDest = resolve(destRoot, 'copilot-instructions.md')
@@ -115,7 +126,7 @@ export async function update(pkgRoot, projectRoot) {
   return results
 }
 
-export function getManagedPaths() {
+export function getManagedPaths(): ManagedPaths {
   return {
     framework: [
       '.github/copilot-instructions.md',
