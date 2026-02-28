@@ -56,11 +56,11 @@ Run these commands before starting the dev server for browser testing.
 2. **Navigate to affected pages** — Verify the new feature renders correctly
 3. **Verify SPECIFIC features** — Check every feature listed in the acceptance criteria. If the criteria say "icons, groups, and AND/OR toggle", you must see all three in the browser
 4. **Test interactions** — Click buttons, fill forms, toggle filters, submit data
-5. **Test responsive** — Resize to mobile (375px), tablet (768px), desktop (1440px)
+5. **Test responsive** — Resize to each breakpoint defined in your project's testing config
 6. **Test edge cases** — Empty states, error states, loading states, long content
 7. **Screenshot evidence (REQUIRED)** — Take screenshots of key states. These are mandatory proof
 
-> **Anti-pattern:** Testing only at desktop width and assuming Tailwind classes work. They can be wrong — always verify at all three breakpoints.
+> **Anti-pattern:** Testing only at desktop width and assuming responsive classes work. They can be wrong — always verify at all defined breakpoints.
 
 Load the **browser-testing** skill for Chrome MCP commands, breakpoint details, and reporting format.
 

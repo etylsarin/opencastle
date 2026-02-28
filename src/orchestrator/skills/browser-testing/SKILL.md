@@ -123,48 +123,34 @@ mcp_chrome-devtoo_list_console_messages()
 
 ### 6. Responsive Breakpoint Testing (MANDATORY)
 
-**Every UI change MUST be tested at all three breakpoints.** Do not test at desktop only — most layout bugs surface at mobile or tablet widths. See [testing-config.md](../../customizations/stack/testing-config.md) for project-specific breakpoint values.
+**Every UI change MUST be tested at all responsive breakpoints.** Do not test at desktop only — most layout bugs surface at smaller viewports. Define your breakpoints in your project's testing config (e.g., `testing-config.md`).
 
 #### How to Resize
 
 ```javascript
-// Mobile (iPhone-like)
-mcp_chrome-devtoo_resize_page({ width: 375, height: 812 })
-
-// Tablet (iPad-like)
-mcp_chrome-devtoo_resize_page({ width: 768, height: 1024 })
-
-// Desktop (standard)
-mcp_chrome-devtoo_resize_page({ width: 1440, height: 900 })
+// Example breakpoints — adjust to your project's testing config
+mcp_chrome-devtoo_resize_page({ width: 375, height: 812 })   // Mobile
+mcp_chrome-devtoo_resize_page({ width: 768, height: 1024 })  // Tablet
+mcp_chrome-devtoo_resize_page({ width: 1440, height: 900 })  // Desktop
 ```
 
 #### Per-Breakpoint Verification
 
-At **each** viewport size, verify:
+#### Per-Breakpoint Verification
 
-**Mobile (375 x 812):**
-- [ ] Sidebar/filter panel hidden — accessible via drawer/hamburger
-- [ ] Cards stack vertically, no horizontal overflow
-- [ ] Text truncates or wraps cleanly — no overflow or overlap
-- [ ] Touch targets >= 44px
-- [ ] Badges, tags, and pills wrap without horizontal scroll
-- [ ] Map/list toggle works
+At **each** breakpoint, check:
 
-**Tablet (768 x 1024):**
-- [ ] Layout adapts — may show 2-column grid or collapsed sidebar
-- [ ] Interactive elements have adequate spacing
+- [ ] Layout adapts correctly — no horizontal overflow
+- [ ] Text truncates or wraps cleanly — no overlap
+- [ ] Interactive elements have adequate spacing and touch targets
+- [ ] Navigation and panels collapse/expand as expected
 - [ ] Images and cards resize proportionally
-
-**Desktop (1440 x 900):**
-- [ ] Full layout visible — sidebar + content columns
-- [ ] Filter sidebar, content area, and any panels properly aligned
-- [ ] No excessive whitespace or stretched elements
 
 #### Responsive Testing Anti-Patterns
 
 | Anti-Pattern | Correct Approach |
 |---|---|
-| Testing only at desktop width | Test at all 3 breakpoints (Mobile -> Tablet -> Desktop) |
+| Testing only at desktop width | Test at all project-defined breakpoints |
 | Skipping resize because "it uses Tailwind" | Tailwind classes can be wrong — always verify visually |
 | Only checking layout, not interactions | Test filter drawers, dropdowns, and modals at each size |
 | Taking 3 screenshots (one per breakpoint) | Use `evaluate_script()` to check layout; save screenshots for failures |

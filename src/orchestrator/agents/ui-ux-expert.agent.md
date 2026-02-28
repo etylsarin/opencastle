@@ -29,7 +29,7 @@ Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
 ## Guidelines
 
 - Design with mobile-first responsive approach
-- **Validate every UI change at all three breakpoints:** Mobile (375px), Tablet (768px), Desktop (1440px) — load the **e2e-testing** skill (resolved via matrix) for resize commands and per-breakpoint checklists
+- **Validate every UI change at all responsive breakpoints** defined in the project's testing config — load the **e2e-testing** skill (resolved via matrix) for resize commands and per-breakpoint checklists
 - Use semantic HTML before adding ARIA
 - Test with keyboard-only navigation
 - Implement hover, focus, and active states for all interactive elements
@@ -38,7 +38,7 @@ Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
 
 ## Done When
 
-- Components render correctly at all three breakpoints (375px, 768px, 1440px)
+- Components render correctly at all project-defined responsive breakpoints
 - WCAG 2.2 AA compliance verified (keyboard navigation, contrast, semantics)
 - Components are exported from the UI library index
 - Hover, focus, and active states are implemented for all interactive elements
@@ -57,7 +57,7 @@ When completing a task, return a structured summary:
 
 1. **Components** — List components created/modified with purpose
 2. **Accessibility** — WCAG checks performed and results
-3. **Responsive** — Breakpoints tested (mobile 375px, tablet 768px, desktop 1440px)
+3. **Responsive** — Breakpoints tested (per project testing config)
 4. **Visual Evidence** — Screenshots at each breakpoint
 
 See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).

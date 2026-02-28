@@ -49,7 +49,7 @@ Every test suite must cover:
 - Verify server-side behavior — confirm filter changes trigger new server requests
 - Start the dev server before browser testing
 - Reload between major test flows to prevent stale state
-- **MANDATORY: Test every UI change at all three responsive breakpoints (Mobile 375px, Tablet 768px, Desktop 1440px) — never test at desktop only. Use `mcp_chrome-devtoo_resize_page()` to switch viewports. See the browser-testing skill for exact commands and per-breakpoint checklists.**
+- **MANDATORY: Test every UI change at all responsive breakpoints defined in the project's testing config — never test at desktop only. Use `mcp_chrome-devtoo_resize_page()` to switch viewports. See the browser-testing skill for exact commands and per-breakpoint checklists.**
 
 ## Critical Rules
 

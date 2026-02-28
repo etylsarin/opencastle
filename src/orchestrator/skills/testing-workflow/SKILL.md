@@ -60,7 +60,7 @@ Before implementing any feature, create a plan covering:
 
 ### 6. Responsive Breakpoint Tests (MANDATORY for UI changes)
 
-**Every UI feature must be tested at all three breakpoints** (Mobile 375px, Tablet 768px, Desktop 1440px). Most layout bugs only surface at mobile or tablet widths.
+**Every UI feature must be tested at all responsive breakpoints** defined in your project's testing config. Most layout bugs only surface at smaller viewports.
 
 > **Detailed breakpoint definitions, resize commands, and per-breakpoint checklists:** See the **browser-testing** skill. The **validation-gates** skill (Gate 3) defines the mandatory testing protocol.
 
@@ -119,7 +119,7 @@ After completing any feature:
 - [ ] Verified data changes match expectations
 - [ ] Checked edge cases
 - [ ] Confirmed empty states display correctly
-- [ ] **Tested at Mobile (375px), Tablet (768px), and Desktop (1440px) breakpoints**
+- [ ] **Tested at all project-defined responsive breakpoints**
 - [ ] **No horizontal overflow or layout breakage at any breakpoint**
 - [ ] Taken screenshots of key scenarios
 - [ ] Verified URL parameters are correct

@@ -23,7 +23,7 @@
 
 ---
 
-Works with **GitHub Copilot**, **Cursor**, and **Claude Code**.
+Works with **[GitHub Copilot](https://github.com/features/copilot)**, **[Cursor](https://www.cursor.com/)**, and **[Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview)**.
 
 One command sets up specialized agents that decompose tasks, work in parallel, and verify each other's output.
 
