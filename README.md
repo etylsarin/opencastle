@@ -62,7 +62,7 @@ All targets include a pre-configured **MCP server config** for Sanity, Vercel, S
 ├── instructions/        # Always-loaded project context
 ├── skills/              # 27 on-demand knowledge modules
 ├── agent-workflows/     # 8 reproducible execution templates
-├── prompts/             # 8 reusable prompt templates
+├── prompts/             # 9 reusable prompt templates
 └── customizations/      # Your project config (never overwritten)
 .vscode/
 └── mcp.json             # MCP server config
@@ -158,6 +158,10 @@ graph TB
 ## Task Queue
 
 Queue tasks in a YAML spec file and let agents run overnight — no supervision required. Tasks form a DAG; dependencies resolve automatically.
+
+### Generating the spec
+
+Use the **"Generate Task Spec"** prompt to create a valid `opencastle.tasks.yml` from a high-level description of what you want to accomplish. The prompt guides the Team Lead through goal analysis, task decomposition, dependency graphing, and writing self-contained agent instructions — so you don't have to author the YAML by hand.
 
 ```bash
 npx opencastle run                         # Uses opencastle.tasks.yml
