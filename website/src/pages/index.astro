@@ -145,6 +145,9 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
               <a href="#workflows">Workflows</a>
             </li>
             <li>
+              <a href="#autonomous">Autonomous</a>
+            </li>
+            <li>
               <a href="#dashboard">Observability</a>
             </li>
             <li>
@@ -307,7 +310,8 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
 <span class="code-comment"># Other commands</span>
 <span class="code-folder">$ npx opencastle update  </span><span class="code-comment"># Update framework, preserve customizations</span>
 <span class="code-folder">$ npx opencastle diff    </span><span class="code-comment"># Preview what update would change</span>
-<span class="code-folder">$ npx opencastle eject   </span><span class="code-comment"># Remove dependency, keep files</span></pre>
+<span class="code-folder">$ npx opencastle eject   </span><span class="code-comment"># Remove dependency, keep files</span>
+<span class="code-folder">$ npx opencastle run     </span><span class="code-comment"># Process task queue autonomously</span></pre>
           </div>
         </div>
       </div>
@@ -341,6 +345,90 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
             ))}
           </tbody>
         </table>
+      </div>
+    </section>
+
+    <!-- ==================== Autonomous Mode ==================== -->
+    <section class="section section--border-top" id="autonomous">
+      <div class="container">
+        <span class="section__label">Autonomous Mode</span>
+        <h2 class="section__title">
+          Queue tasks. Run overnight. Wake up to working code.
+        </h2>
+        <p class="section__subtitle">
+          Define tasks in a YAML spec file with dependencies, agent assignments,
+          and timeouts. The DAG executor resolves the dependency graph and runs
+          tasks in parallel phases — no supervision required.
+        </p>
+        <div class="autonomous-grid">
+          <div class="code-block">
+            <div class="code-block__header">
+              <span class="code-block__dot" />
+              <span class="code-block__dot" />
+              <span class="code-block__dot" />
+              <span class="code-block__filename">opencastle.tasks.yml</span>
+            </div>
+            <div class="code-block__body">
+              <pre><span class="code-key">name:</span> <span class="code-string">"Overnight feature batch"</span>
+<span class="code-key">concurrency:</span> 2
+<span class="code-key">adapter:</span> claude-code
+
+<span class="code-key">tasks:</span>
+  - <span class="code-key">id:</span> migrate-db
+    <span class="code-key">agent:</span> database-engineer
+    <span class="code-key">prompt:</span> <span class="code-string">|
+      Create a new migration for a reviews table.</span>
+    <span class="code-key">timeout:</span> 10m
+
+  - <span class="code-key">id:</span> build-component
+    <span class="code-key">agent:</span> ui-ux-expert
+    <span class="code-key">prompt:</span> <span class="code-string">|
+      Build a ReviewCard component.</span>
+    <span class="code-key">timeout:</span> 15m
+
+  - <span class="code-key">id:</span> wire-page
+    <span class="code-key">agent:</span> developer
+    <span class="code-key">depends_on:</span> [migrate-db, build-component]
+    <span class="code-key">prompt:</span> <span class="code-string">|
+      Add reviews to the place detail page.</span></pre>
+            </div>
+          </div>
+          <div class="autonomous-details">
+            <div class="autonomous-feature">
+              <h3 class="autonomous-feature__title">DAG Execution</h3>
+              <p class="autonomous-feature__desc">
+                Tasks form a directed acyclic graph. The executor topologically
+                sorts them into parallel phases, respecting dependencies and
+                concurrency limits.
+              </p>
+            </div>
+            <div class="autonomous-feature">
+              <h3 class="autonomous-feature__title">Adapter Support</h3>
+              <p class="autonomous-feature__desc">
+                Ships with adapters for <strong>Claude Code</strong>,
+                <strong>Copilot CLI</strong>, and <strong>Cursor CLI</strong>.
+                Each adapter spawns the agent runtime in non-interactive
+                mode with autonomous flags.
+              </p>
+            </div>
+            <div class="autonomous-feature">
+              <h3 class="autonomous-feature__title">Built-in Safety</h3>
+              <p class="autonomous-feature__desc">
+                Cycle detection prevents infinite loops. Configurable timeouts
+                kill stuck tasks. Failure policies control whether to
+                continue or halt the entire run.
+              </p>
+            </div>
+            <div class="autonomous-feature">
+              <h3 class="autonomous-feature__title">Run Reports</h3>
+              <p class="autonomous-feature__desc">
+                After each run, a JSON report is written with task statuses,
+                durations, and output summaries. Use <code>--dry-run</code> to
+                preview the execution plan first.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 

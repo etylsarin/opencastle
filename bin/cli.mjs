@@ -22,6 +22,7 @@ const HELP = `
     update   Update framework files (preserves customizations)
     diff     Preview what an update would change
     eject    Remove dependency, keep all files standalone
+    run      Process a task queue from a spec file autonomously
 
   Options:
     --help, -h       Show this help message
@@ -46,6 +47,7 @@ const commands = {
   update: () => import('../src/cli/update.mjs'),
   diff: () => import('../src/cli/diff.mjs'),
   eject: () => import('../src/cli/eject.mjs'),
+  run: () => import('../src/cli/run.mjs'),
 }
 
 if (!commands[command]) {
