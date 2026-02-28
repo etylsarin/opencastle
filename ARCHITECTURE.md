@@ -78,5 +78,5 @@ graph TB
 | **Fast review** | Mandatory single-reviewer sub-agent after every delegation, with automatic retry and escalation |
 | **Panel review** | 3 isolated reviewer sub-agents, 2/3 majority wins (high-stakes or escalation) |
 | **Structured disputes** | Formal dispute records when automated resolution is exhausted — packages both perspectives and resolution options for human decision |
-| **Browser testing** | Chrome DevTools MCP at 3 responsive breakpoints |
+| **Browser testing** | Chrome DevTools MCP at project-defined responsive breakpoints |
 | **Self-review** | Every agent asked *"What edge cases am I missing?"* |
