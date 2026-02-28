@@ -32,6 +32,10 @@
   "homepage": "https://www.opencastle.dev/",
   "license": "MIT",
   "author": "Filip Mares",
+  "scripts": {
+    "build:dashboard": "cd src/dashboard && npm run build",
+    "prepublishOnly": "npm run build:dashboard"
+  },
   "engines": {
     "node": ">=18"
   }

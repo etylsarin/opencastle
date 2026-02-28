@@ -1,6 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import '../styles/dashboard.css';
+
+const base = import.meta.env.BASE_URL;
 ---
 
 <Layout title="Observability Dashboard — OpenCastle">
@@ -8,7 +10,7 @@ import '../styles/dashboard.css';
   <header class="dash-header">
     <div class="dash-header__inner">
       <div class="dash-header__brand">
-        <img class="dash-header__icon" src="/dashboard/icon-192.png" alt="OpenCastle" width="32" height="32" />
+        <img class="dash-header__icon" src={`${base}icon-192.png`} alt="OpenCastle" width="32" height="32" />
         <h1 class="dash-header__title">Observability Dashboard</h1>
       </div>
     </div>
@@ -146,7 +148,7 @@ import '../styles/dashboard.css';
   </div>
 </Layout>
 
-<script is:inline>
+<script define:vars={{ base }}>
   // ── Data Loading ──────────────────────────────────────────
 
   async function loadNdjson(path) {
@@ -798,9 +800,9 @@ import '../styles/dashboard.css';
 
   async function main() {
     const [sessions, delegations, panels] = await Promise.all([
-      loadNdjson('/dashboard/data/sessions.ndjson'),
-      loadNdjson('/dashboard/data/delegations.ndjson'),
-      loadNdjson('/dashboard/data/panels.ndjson'),
+      loadNdjson(base + 'data/sessions.ndjson'),
+      loadNdjson(base + 'data/delegations.ndjson'),
+      loadNdjson(base + 'data/panels.ndjson'),
     ]);
 
     renderKpis(sessions, delegations);

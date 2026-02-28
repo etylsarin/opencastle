@@ -18,11 +18,12 @@ const HELP = `
     npx opencastle <command>
 
   Commands:
-    init     Set up OpenCastle in your project
-    update   Update framework files (preserves customizations)
-    diff     Preview what an update would change
-    eject    Remove dependency, keep all files standalone
-    run      Process a task queue from a spec file autonomously
+    init        Set up OpenCastle in your project
+    update      Update framework files (preserves customizations)
+    diff        Preview what an update would change
+    eject       Remove dependency, keep all files standalone
+    run         Process a task queue from a spec file autonomously
+    dashboard   View agent observability dashboard in your browser
 
   Options:
     --help, -h       Show this help message
@@ -48,6 +49,7 @@ const commands = {
   diff: () => import('../src/cli/diff.mjs'),
   eject: () => import('../src/cli/eject.mjs'),
   run: () => import('../src/cli/run.mjs'),
+  dashboard: () => import('../src/cli/dashboard.mjs'),
 }
 
 if (!commands[command]) {

@@ -4,6 +4,7 @@ interface Props {
 }
 
 const { title } = Astro.props;
+const base = import.meta.env.BASE_URL;
 ---
 
 <html lang="en">
@@ -16,7 +17,7 @@ const { title } = Astro.props;
       content="Real-time observability for OpenCastle multi-agent orchestration — sessions, delegations, model tiers, and quality gates."
     />
     <meta name="theme-color" content="#0a0a0f" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/dashboard/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href={`${base}icon-192.png`} />
   </head>
   <body>
     <slot />

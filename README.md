@@ -53,6 +53,7 @@ All targets include a pre-configured **MCP server config** for Sanity, Vercel, S
 | `npx opencastle diff` | Preview what an update would change |
 | `npx opencastle eject` | Remove dependency, keep all files standalone |
 | `npx opencastle run` | Process a task queue autonomously ([details](#task-queue)) |
+| `npx opencastle dashboard` | View agent observability dashboard |
 
 ### Project structure (VS Code)
 
@@ -83,6 +84,33 @@ All targets include a pre-configured **MCP server config** for Sanity, Vercel, S
 | **Quality gates** | Panel majority vote, lint/test/build checks, browser testing |
 | **Cost-aware routing** | Auto-selects model tier (Premium → Economy) by complexity |
 | **Self-improvement** | Agents capture lessons and graduate them into instructions |
+
+---
+
+## Dashboard
+
+Track your agent team's performance with a built-in observability dashboard:
+
+```bash
+npx opencastle dashboard
+```
+
+Opens a local dashboard at `http://localhost:4300` that visualizes your project's real agent data:
+
+- **KPIs** — Total sessions, success rate, delegations, avg duration
+- **Pipeline** — Task flow across execution phases
+- **Charts** — Sessions by agent, tier distribution, timeline, model usage
+- **Execution log** — Recent agent activity step by step
+- **Panel reviews** — Quality gate verdicts and fix items
+- **Sessions table** — Sortable session history
+
+The dashboard reads NDJSON logs from `.github/customizations/logs/` — the same files your agents write to during normal operation. No configuration needed.
+
+| Flag | Description |
+|------|-------------|
+| `--port <n>` | Custom port (default: 4300) |
+| `--no-open` | Don't auto-open browser |
+| `--seed` | Show demo data instead of project logs |
 
 ---
 
