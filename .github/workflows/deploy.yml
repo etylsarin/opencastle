@@ -45,12 +45,12 @@ jobs:
         working-directory: src/dashboard
 
       - name: Merge dashboard into website output
-        run: mkdir -p website/public/dashboard && cp -r src/dashboard/dist/* website/public/dashboard/
+        run: mkdir -p website/dist/dashboard && cp -r src/dashboard/dist/* website/dist/dashboard/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: website/public
+          path: website/dist
 
   deploy:
     needs: build
