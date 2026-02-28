@@ -1,9 +1,13 @@
 import { resolve } from 'node:path'
 import { unlink } from 'node:fs/promises'
-import { readManifest } from './manifest.mjs'
-import { confirm, closePrompts } from './prompt.mjs'
+import { readManifest } from './manifest.js'
+import { confirm, closePrompts } from './prompt.js'
+import type { CliContext } from './types.js'
 
-export default async function eject({ pkgRoot: _pkgRoot, args: _args }) {
+export default async function eject({
+  pkgRoot: _pkgRoot,
+  args: _args,
+}: CliContext): Promise<void> {
   const projectRoot = process.cwd()
 
   const manifest = await readManifest(projectRoot)

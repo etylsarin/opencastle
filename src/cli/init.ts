@@ -1,16 +1,17 @@
-/* global console, process */
 import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
-import { select, confirm, closePrompts } from './prompt.mjs'
-import { readManifest, writeManifest, createManifest } from './manifest.mjs'
+import { select, confirm, closePrompts } from './prompt.js'
+import { readManifest, writeManifest, createManifest } from './manifest.js'
+import type { CliContext, IdeAdapter } from './types.js'
 
-const ADAPTERS = {
-  vscode: () => import('./adapters/vscode.mjs'),
-  cursor: () => import('./adapters/cursor.mjs'),
-  'claude-code': () => import('./adapters/claude-code.mjs'),
+const ADAPTERS: Record<string, () => Promise<IdeAdapter>> = {
+  vscode: () => import('./adapters/vscode.js') as Promise<IdeAdapter>,
+  cursor: () => import('./adapters/cursor.js') as Promise<IdeAdapter>,
+  'claude-code': () =>
+    import('./adapters/claude-code.js') as Promise<IdeAdapter>,
 }
 
-export default async function init({ pkgRoot }) {
+export default async function init({ pkgRoot }: CliContext): Promise<void> {
   const projectRoot = process.cwd()
 
   // Check for existing installation
@@ -28,10 +29,12 @@ export default async function init({ pkgRoot }) {
 
   const pkg = JSON.parse(
     await readFile(resolve(pkgRoot, 'package.json'), 'utf8')
-  )
+  ) as { version: string }
 
   console.log(`\n  🏰 OpenCastle v${pkg.version}`)
-  console.log('  Multi-agent orchestration framework for AI coding assistants\n')
+  console.log(
+    '  Multi-agent orchestration framework for AI coding assistants\n'
+  )
 
   // ── IDE selection ───────────────────────────────────────────────
   const ide = await select('Which IDE are you using?', [

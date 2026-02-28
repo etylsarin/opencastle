@@ -1,18 +1,22 @@
-/* global console, process */
 import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
-import { readManifest, writeManifest } from './manifest.mjs'
-import { confirm, closePrompts } from './prompt.mjs'
+import { readManifest, writeManifest } from './manifest.js'
+import { confirm, closePrompts } from './prompt.js'
+import type { CliContext, IdeAdapter } from './types.js'
 
-const ADAPTERS = {
-  vscode: () => import('./adapters/vscode.mjs'),
-  cursor: () => import('./adapters/cursor.mjs'),
-  'claude-code': () => import('./adapters/claude-code.mjs'),
+const ADAPTERS: Record<string, () => Promise<IdeAdapter>> = {
+  vscode: () => import('./adapters/vscode.js') as Promise<IdeAdapter>,
+  cursor: () => import('./adapters/cursor.js') as Promise<IdeAdapter>,
+  'claude-code': () =>
+    import('./adapters/claude-code.js') as Promise<IdeAdapter>,
 }
 
 const VALID_IDES = Object.keys(ADAPTERS)
 
-export default async function update({ pkgRoot, args }) {
+export default async function update({
+  pkgRoot,
+  args,
+}: CliContext): Promise<void> {
   const projectRoot = process.cwd()
 
   const manifest = await readManifest(projectRoot)
@@ -32,7 +36,7 @@ export default async function update({ pkgRoot, args }) {
 
   const pkg = JSON.parse(
     await readFile(resolve(pkgRoot, 'package.json'), 'utf8')
-  )
+  ) as { version: string }
 
   if (manifest.version === pkg.version && !args.includes('--force')) {
     console.log(`  Already up to date (v${pkg.version}).`)

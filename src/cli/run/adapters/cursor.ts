@@ -1,28 +1,24 @@
-/* global process, setTimeout */
 import { spawn } from 'node:child_process'
+import type { Task, ExecuteOptions, ExecuteResult } from '../../types.js'
 
 /** Adapter name */
-export const name = 'claude-code'
+export const name = 'cursor'
 
 /**
- * Check if the `claude` CLI is available on the system PATH.
- * @returns {Promise<boolean>}
+ * Check if the Cursor CLI (`agent`) is available on the system PATH.
  */
-export async function isAvailable() {
+export async function isAvailable(): Promise<boolean> {
   return new Promise((resolve) => {
-    const proc = spawn('which', ['claude'], { stdio: 'pipe' })
+    const proc = spawn('which', ['agent'], { stdio: 'pipe' })
     proc.on('close', (code) => resolve(code === 0))
     proc.on('error', () => resolve(false))
   })
 }
 
 /**
- * Execute a task by invoking the Claude Code CLI in print mode.
- * @param {object} task - Task object with id, agent, prompt, files, timeout
- * @param {object} options - { verbose }
- * @returns {Promise<{ success: boolean, output: string, exitCode: number }>}
+ * Execute a task by invoking the Cursor CLI in non-interactive print mode.
  */
-export async function execute(task, options = {}) {
+export async function execute(task: Task, options: ExecuteOptions = {}): Promise<ExecuteResult> {
   let prompt = `You are a ${task.agent}. ${task.prompt}`
 
   if (task.files && task.files.length > 0) {
@@ -32,14 +28,13 @@ export async function execute(task, options = {}) {
   const args = [
     '-p',
     prompt,
+    '--force',
     '--output-format',
     'json',
-    '--max-turns',
-    '50',
   ]
 
   return new Promise((resolve) => {
-    const proc = spawn('claude', args, {
+    const proc = spawn('agent', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env },
       cwd: process.cwd(),
@@ -48,14 +43,14 @@ export async function execute(task, options = {}) {
     let stdout = ''
     let stderr = ''
 
-    proc.stdout.on('data', (chunk) => {
+    proc.stdout.on('data', (chunk: Buffer) => {
       stdout += chunk.toString()
       if (options.verbose) {
         process.stdout.write(chunk)
       }
     })
 
-    proc.stderr.on('data', (chunk) => {
+    proc.stderr.on('data', (chunk: Buffer) => {
       stderr += chunk.toString()
       if (options.verbose) {
         process.stderr.write(chunk)
@@ -67,14 +62,14 @@ export async function execute(task, options = {}) {
       resolve({
         success: code === 0,
         output: output.slice(0, 10000), // Cap output size
-        exitCode: code,
+        exitCode: code ?? -1,
       })
     })
 
     proc.on('error', (err) => {
       resolve({
         success: false,
-        output: `Failed to spawn claude: ${err.message}`,
+        output: `Failed to spawn cursor agent CLI: ${err.message}`,
         exitCode: -1,
       })
     })
@@ -86,9 +81,8 @@ export async function execute(task, options = {}) {
 
 /**
  * Kill the process associated with a task (used by timeout enforcement).
- * @param {object} task
  */
-export function kill(task) {
+export function kill(task: Task): void {
   if (task._process && !task._process.killed) {
     task._process.kill('SIGTERM')
     setTimeout(() => {

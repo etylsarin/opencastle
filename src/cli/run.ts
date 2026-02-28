@@ -1,9 +1,9 @@
-/* global console, process */
 import { resolve } from 'node:path'
-import { parseTaskSpec } from './run/schema.mjs'
-import { createExecutor, buildPhases } from './run/executor.mjs'
-import { getAdapter } from './run/adapters/index.mjs'
-import { createReporter, printExecutionPlan } from './run/reporter.mjs'
+import { parseTaskSpec } from './run/schema.js'
+import { createExecutor, buildPhases } from './run/executor.js'
+import { getAdapter } from './run/adapters/index.js'
+import { createReporter, printExecutionPlan } from './run/reporter.js'
+import type { CliContext, RunOptions } from './types.js'
 
 const HELP = `
   opencastle run [options]
@@ -22,11 +22,9 @@ const HELP = `
 
 /**
  * Parse CLI arguments for the run command.
- * @param {string[]} args
- * @returns {object} Parsed options
  */
-function parseArgs(args) {
-  const opts = {
+function parseArgs(args: string[]): RunOptions {
+  const opts: RunOptions = {
     file: 'opencastle.tasks.yml',
     dryRun: false,
     concurrency: null,
@@ -82,9 +80,8 @@ function parseArgs(args) {
 
 /**
  * CLI entry point for the `run` command.
- * @param {{ pkgRoot: string, args: string[] }} ctx
  */
-export default async function run({ args }) {
+export default async function run({ args }: CliContext): Promise<void> {
   const opts = parseArgs(args)
 
   if (opts.help) {

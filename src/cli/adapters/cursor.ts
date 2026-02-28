@@ -1,8 +1,9 @@
 import { resolve, basename } from 'node:path'
 import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.mjs'
-import { scaffoldMcpConfig } from '../mcp.mjs'
+import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.js'
+import { scaffoldMcpConfig } from '../mcp.js'
+import type { CopyResults, ManagedPaths } from '../types.js'
 
 /**
  * Cursor adapter.
@@ -23,13 +24,20 @@ export const IDE_LABEL = 'Cursor'
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
-function stripFrontmatter(content) {
-  const m = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
-  return m ? { frontmatter: m[1], body: m[2] } : { frontmatter: '', body: content }
+interface FrontmatterResult {
+  frontmatter: string
+  body: string
 }
 
-function parseFrontmatter(fm) {
-  const result = {}
+function stripFrontmatter(content: string): FrontmatterResult {
+  const m = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
+  return m
+    ? { frontmatter: m[1], body: m[2] }
+    : { frontmatter: '', body: content }
+}
+
+function parseFrontmatter(fm: string): Record<string, string> {
+  const result: Record<string, string> = {}
   for (const line of fm.split('\n')) {
     const m = line.match(/^(\w[\w-]*):\s*['"]?(.+?)['"]?\s*$/)
     if (m) result[m[1]] = m[2]
@@ -37,7 +45,14 @@ function parseFrontmatter(fm) {
   return result
 }
 
-function toMdc({ description, globs, alwaysApply, body }) {
+interface MdcOptions {
+  description?: string
+  globs?: string[]
+  alwaysApply: boolean
+  body: string
+}
+
+function toMdc({ description, globs, alwaysApply, body }: MdcOptions): string {
   const lines = ['---']
   if (description) lines.push(`description: "${description}"`)
   if (globs) lines.push(`globs: ${JSON.stringify(globs)}`)
@@ -47,7 +62,7 @@ function toMdc({ description, globs, alwaysApply, body }) {
 }
 
 /** Convert a source filename to .mdc, stripping intermediate extensions. */
-function mdcName(name) {
+function mdcName(name: string): string {
   // Handle compound extensions like .agent.md, .instructions.md, .prompt.md
   const compound = name.replace(/\.(agent|instructions|prompt)\.md$/, '.mdc')
   if (compound !== name) return compound
@@ -55,31 +70,42 @@ function mdcName(name) {
   return name.replace(/\.md$/, '.mdc')
 }
 
+interface ConvertFileOptions {
+  alwaysApply?: boolean
+  descriptionFallback?: string
+}
+
 /** Read a source .md and produce an .mdc string. */
 async function convertFile(
-  srcPath,
-  { alwaysApply = false, descriptionFallback = '' } = {}
-) {
+  srcPath: string,
+  { alwaysApply = false, descriptionFallback = '' }: ConvertFileOptions = {}
+): Promise<string> {
   const content = await readFile(srcPath, 'utf8')
   const { frontmatter, body } = stripFrontmatter(content)
   const meta = parseFrontmatter(frontmatter)
 
   // Description: frontmatter > fallback > first heading
-  let description = meta.description || descriptionFallback
+  let description = meta['description'] ?? descriptionFallback
   if (!description) {
     const heading = body.match(/^#\s+(.+)/m)
     if (heading) description = heading[1]
   }
 
   // If applyTo is '**' the rule should always apply
-  const globs = meta.applyTo ? [meta.applyTo] : undefined
-  const apply = meta.applyTo === '**' ? true : alwaysApply
+  const globs = meta['applyTo'] ? [meta['applyTo']] : undefined
+  const apply = meta['applyTo'] === '**' ? true : alwaysApply
 
   return toMdc({ description, globs, alwaysApply: apply, body: body.trim() })
 }
 
 /** Write a converted file; skip if it already exists (unless overwrite). */
-async function writeConverted(srcPath, destPath, opts, results, overwrite = false) {
+async function writeConverted(
+  srcPath: string,
+  destPath: string,
+  opts: ConvertFileOptions,
+  results: CopyResults,
+  overwrite = false
+): Promise<void> {
   if (!overwrite && existsSync(destPath)) {
     results.skipped.push(destPath)
     return
@@ -92,9 +118,12 @@ async function writeConverted(srcPath, destPath, opts, results, overwrite = fals
 
 // ─── Install ──────────────────────────────────────────────────────
 
-export async function install(pkgRoot, projectRoot) {
+export async function install(
+  pkgRoot: string,
+  projectRoot: string
+): Promise<CopyResults> {
   const srcRoot = getOrchestratorRoot(pkgRoot)
-  const results = { copied: [], skipped: [], created: [] }
+  const results: CopyResults = { copied: [], skipped: [], created: [] }
 
   // 1. .cursorrules  ← copilot-instructions.md (body only)
   const cursorrules = resolve(projectRoot, '.cursorrules')
@@ -150,7 +179,11 @@ export async function install(pkgRoot, projectRoot) {
   }
 
   // 8. MCP server config → .cursor/mcp.json (scaffold once)
-  const mcpResult = await scaffoldMcpConfig(pkgRoot, projectRoot, '.cursor/mcp.json')
+  const mcpResult = await scaffoldMcpConfig(
+    pkgRoot,
+    projectRoot,
+    '.cursor/mcp.json'
+  )
   results[mcpResult.action].push(mcpResult.path)
 
   return results
@@ -158,9 +191,12 @@ export async function install(pkgRoot, projectRoot) {
 
 // ─── Update ───────────────────────────────────────────────────────
 
-export async function update(pkgRoot, projectRoot) {
+export async function update(
+  pkgRoot: string,
+  projectRoot: string
+): Promise<CopyResults> {
   const srcRoot = getOrchestratorRoot(pkgRoot)
-  const results = { copied: [], skipped: [], created: [] }
+  const results: CopyResults = { copied: [], skipped: [], created: [] }
 
   // Overwrite .cursorrules
   const { body } = stripFrontmatter(
@@ -216,7 +252,7 @@ export async function update(pkgRoot, projectRoot) {
 
 // ─── Managed paths ────────────────────────────────────────────────
 
-export function getManagedPaths() {
+export function getManagedPaths(): ManagedPaths {
   return {
     framework: [
       '.cursorrules',
@@ -236,13 +272,25 @@ export function getManagedPaths() {
 
 // ─── Internal helpers ─────────────────────────────────────────────
 
+interface ConvertDirOptions {
+  alwaysApply?: boolean
+  descriptionPrefix?: string
+  removeExt?: string
+  overwrite?: boolean
+}
+
 async function convertDir(
-  srcRoot,
-  dirName,
-  destDir,
-  results,
-  { alwaysApply, descriptionPrefix, removeExt, overwrite } = {}
-) {
+  srcRoot: string,
+  dirName: string,
+  destDir: string,
+  results: CopyResults,
+  {
+    alwaysApply,
+    descriptionPrefix,
+    removeExt,
+    overwrite,
+  }: ConvertDirOptions = {}
+): Promise<void> {
   const srcDir = resolve(srcRoot, dirName)
   if (!existsSync(srcDir)) return
 
@@ -251,20 +299,25 @@ async function convertDir(
   for (const file of await readdir(srcDir)) {
     if (!file.endsWith('.md')) continue
     const fallback = descriptionPrefix
-      ? `${descriptionPrefix}${basename(file, removeExt || '.md')}`
+      ? `${descriptionPrefix}${basename(file, removeExt ?? '.md')}`
       : ''
     const destPath = resolve(destDir, mdcName(file))
     await writeConverted(
       resolve(srcDir, file),
       destPath,
-      { alwaysApply: alwaysApply || false, descriptionFallback: fallback },
+      { alwaysApply: alwaysApply ?? false, descriptionFallback: fallback },
       results,
       overwrite
     )
   }
 }
 
-async function convertSkills(srcRoot, destDir, results, overwrite = false) {
+async function convertSkills(
+  srcRoot: string,
+  destDir: string,
+  results: CopyResults,
+  overwrite = false
+): Promise<void> {
   const skillsDir = resolve(srcRoot, 'skills')
   if (!existsSync(skillsDir)) return
 

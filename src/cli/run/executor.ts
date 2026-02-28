@@ -1,23 +1,28 @@
-/* global setTimeout */
-import { parseTimeout } from './schema.mjs'
-
-/**
- * Task statuses.
- * @typedef {'pending'|'running'|'done'|'failed'|'skipped'|'timed-out'} TaskStatus
- */
+import { parseTimeout } from './schema.js'
+import type {
+  Task,
+  TaskSpec,
+  TaskStatus,
+  TaskResult,
+  RunReport,
+  RunSummary,
+  AgentAdapter,
+  ExecuteResult,
+  Reporter,
+  Executor,
+  TimeoutHandle,
+} from '../types.js'
 
 /**
  * Topological sort of tasks based on `depends_on` edges.
  * Returns groups (phases) of tasks that can run in parallel.
- * @param {Array} tasks
- * @returns {Array<Array<object>>} Phases — each phase is a list of tasks
  */
-export function buildPhases(tasks) {
-  const taskMap = new Map()
+export function buildPhases(tasks: Task[]): Task[][] {
+  const taskMap = new Map<string, Task>()
   for (const t of tasks) taskMap.set(t.id, t)
 
-  const inDegree = new Map()
-  const dependents = new Map()
+  const inDegree = new Map<string, number>()
+  const dependents = new Map<string, string[]>()
 
   for (const t of tasks) {
     inDegree.set(t.id, (t.depends_on || []).length)
@@ -26,18 +31,18 @@ export function buildPhases(tasks) {
 
   for (const t of tasks) {
     for (const dep of t.depends_on || []) {
-      dependents.get(dep).push(t.id)
+      dependents.get(dep)!.push(t.id)
     }
   }
 
-  const phases = []
+  const phases: Task[][] = []
   const remaining = new Set(tasks.map((t) => t.id))
 
   while (remaining.size > 0) {
-    const phase = []
+    const phase: Task[] = []
     for (const id of remaining) {
       if (inDegree.get(id) === 0) {
-        phase.push(taskMap.get(id))
+        phase.push(taskMap.get(id)!)
       }
     }
 
@@ -50,8 +55,8 @@ export function buildPhases(tasks) {
 
     for (const t of phase) {
       remaining.delete(t.id)
-      for (const depId of dependents.get(t.id)) {
-        inDegree.set(depId, inDegree.get(depId) - 1)
+      for (const depId of dependents.get(t.id)!) {
+        inDegree.set(depId, inDegree.get(depId)! - 1)
       }
     }
   }
@@ -61,16 +66,16 @@ export function buildPhases(tasks) {
 
 /**
  * Create a task executor.
- * @param {object} spec - Validated task spec (with defaults applied)
- * @param {object} adapter - Agent adapter ({ execute, name })
- * @param {object} reporter - Reporter object
- * @returns {{ run: () => Promise<object>, getPhases: () => Array }}
  */
-export function createExecutor(spec, adapter, reporter) {
+export function createExecutor(
+  spec: TaskSpec,
+  adapter: AgentAdapter,
+  reporter: Reporter
+): Executor {
   const phases = buildPhases(spec.tasks)
-  const statuses = new Map()
-  const results = new Map()
-  const startTimes = new Map()
+  const statuses = new Map<string, TaskStatus>()
+  const results = new Map<string, TaskResult | null>()
+  const startTimes = new Map<string, number>()
 
   for (const t of spec.tasks) {
     statuses.set(t.id, 'pending')
@@ -79,10 +84,8 @@ export function createExecutor(spec, adapter, reporter) {
 
   /**
    * Execute a single task with timeout enforcement.
-   * @param {object} task
-   * @returns {Promise<object>} result
    */
-  async function executeTask(task) {
+  async function executeTask(task: Task): Promise<TaskResult> {
     const timeoutMs = parseTimeout(task.timeout)
     statuses.set(task.id, 'running')
     startTimes.set(task.id, Date.now())
@@ -95,7 +98,7 @@ export function createExecutor(spec, adapter, reporter) {
         timeout.promise,
       ])
 
-      const duration = Date.now() - startTimes.get(task.id)
+      const duration = Date.now() - startTimes.get(task.id)!
 
       if (result._timedOut) {
         // Kill the orphaned child process
@@ -103,7 +106,7 @@ export function createExecutor(spec, adapter, reporter) {
           adapter.kill(task)
         }
         statuses.set(task.id, 'timed-out')
-        const taskResult = {
+        const taskResult: TaskResult = {
           id: task.id,
           status: 'timed-out',
           duration,
@@ -117,9 +120,9 @@ export function createExecutor(spec, adapter, reporter) {
 
       // Task completed normally — cancel the timeout timer
       timeout.clear()
-      const status = result.success ? 'done' : 'failed'
+      const status: TaskStatus = result.success ? 'done' : 'failed'
       statuses.set(task.id, status)
-      const taskResult = {
+      const taskResult: TaskResult = {
         id: task.id,
         status,
         duration,
@@ -129,14 +132,14 @@ export function createExecutor(spec, adapter, reporter) {
       results.set(task.id, taskResult)
       reporter.onTaskDone(task, taskResult)
       return taskResult
-    } catch (err) {
-      const duration = Date.now() - startTimes.get(task.id)
+    } catch (err: unknown) {
+      const duration = Date.now() - startTimes.get(task.id)!
       statuses.set(task.id, 'failed')
-      const taskResult = {
+      const taskResult: TaskResult = {
         id: task.id,
         status: 'failed',
         duration,
-        output: err.message,
+        output: (err as Error).message,
         exitCode: -1,
       }
       results.set(task.id, taskResult)
@@ -147,13 +150,11 @@ export function createExecutor(spec, adapter, reporter) {
 
   /**
    * Skip a task and all its transitive dependents.
-   * @param {string} taskId
-   * @param {string} reason
    */
-  function skipTask(taskId, reason) {
+  function skipTask(taskId: string, reason: string): void {
     if (statuses.get(taskId) !== 'pending') return
     statuses.set(taskId, 'skipped')
-    const task = spec.tasks.find((t) => t.id === taskId)
+    const task = spec.tasks.find((t) => t.id === taskId)!
     results.set(taskId, {
       id: taskId,
       status: 'skipped',
@@ -173,9 +174,8 @@ export function createExecutor(spec, adapter, reporter) {
 
   /**
    * Run all tasks respecting phases and concurrency.
-   * @returns {Promise<object>} Final run results
    */
-  async function run() {
+  async function run(): Promise<RunReport> {
     const startedAt = new Date()
     let halted = false
 
@@ -220,24 +220,35 @@ export function createExecutor(spec, adapter, reporter) {
     }
 
     const completedAt = new Date()
-    const allResults = spec.tasks.map((t) => results.get(t.id) || {
-      id: t.id,
-      status: statuses.get(t.id),
-      duration: 0,
-      output: '',
-      exitCode: -1,
-    })
+    const allResults: TaskResult[] = spec.tasks.map(
+      (t) =>
+        results.get(t.id) || {
+          id: t.id,
+          status: statuses.get(t.id) as TaskStatus,
+          duration: 0,
+          output: '',
+          exitCode: -1,
+        }
+    )
 
-    const summary = { total: spec.tasks.length, done: 0, failed: 0, skipped: 0, 'timed-out': 0 }
+    const summary: RunSummary = {
+      total: spec.tasks.length,
+      done: 0,
+      failed: 0,
+      skipped: 0,
+      'timed-out': 0,
+    }
     for (const r of allResults) {
-      if (summary[r.status] !== undefined) summary[r.status]++
+      if (r.status in summary) {
+        (summary as unknown as Record<string, number>)[r.status]++
+      }
     }
 
-    const finalReport = {
+    const finalReport: RunReport = {
       name: spec.name,
       startedAt: startedAt.toISOString(),
       completedAt: completedAt.toISOString(),
-      duration: formatDuration(completedAt - startedAt),
+      duration: formatDuration(completedAt.getTime() - startedAt.getTime()),
       summary,
       tasks: allResults,
     }
@@ -256,24 +267,19 @@ export function createExecutor(spec, adapter, reporter) {
 /**
  * Create a timeout promise that resolves with a sentinel.
  * Returns { promise, clear } so the timer can be cancelled after normal completion.
- * @param {number} ms
- * @param {string} taskId
- * @returns {{ promise: Promise<{_timedOut: true}>, clear: () => void }}
  */
-function timeoutPromise(ms, taskId) {
-  let timerId
-  const promise = new Promise((resolve) => {
-    timerId = setTimeout(() => resolve({ _timedOut: true, taskId }), ms)
+function timeoutPromise(ms: number, taskId: string): TimeoutHandle {
+  let timerId: ReturnType<typeof setTimeout>
+  const promise = new Promise<ExecuteResult>((resolve) => {
+    timerId = setTimeout(() => resolve({ _timedOut: true, taskId, success: false, output: '', exitCode: -1 }), ms)
   })
   return { promise, clear: () => clearTimeout(timerId) }
 }
 
 /**
  * Format a duration in ms to a human-readable string.
- * @param {number} ms
- * @returns {string}
  */
-export function formatDuration(ms) {
+export function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`
   const seconds = Math.floor(ms / 1000)
   if (seconds < 60) return `${seconds}s`

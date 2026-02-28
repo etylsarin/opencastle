@@ -1,8 +1,9 @@
 import { resolve, basename } from 'node:path'
-import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
+import { mkdir, writeFile, readdir, readFile, unlink, rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { copyDir, getOrchestratorRoot } from '../copy.mjs'
-import { scaffoldMcpConfig } from '../mcp.mjs'
+import { copyDir, getOrchestratorRoot } from '../copy.js'
+import { scaffoldMcpConfig } from '../mcp.js'
+import type { CopyResults, ManagedPaths } from '../types.js'
 
 /**
  * Claude Code adapter.
@@ -25,15 +26,15 @@ export const IDE_LABEL = 'Claude Code'
 
 // ─── Helpers ──────────────────────────────────────────────────────
 
-function stripFrontmatter(content) {
+function stripFrontmatter(content: string): string {
   const m = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
   return m ? m[2].trim() : content.trim()
 }
 
-function parseFrontmatterMeta(content) {
+function parseFrontmatterMeta(content: string): Record<string, string> {
   const m = content.match(/^---\n([\s\S]*?)\n---/)
   if (!m) return {}
-  const meta = {}
+  const meta: Record<string, string> = {}
   for (const line of m[1].split('\n')) {
     const kv = line.match(/^(\w[\w-]*):\s*['"]?(.+?)['"]?\s*$/)
     if (kv) meta[kv[1]] = kv[2]
@@ -43,14 +44,17 @@ function parseFrontmatterMeta(content) {
 
 // ─── Install ──────────────────────────────────────────────────────
 
-export async function install(pkgRoot, projectRoot) {
+export async function install(
+  pkgRoot: string,
+  projectRoot: string
+): Promise<CopyResults> {
   const srcRoot = getOrchestratorRoot(pkgRoot)
-  const results = { copied: [], skipped: [], created: [] }
+  const results: CopyResults = { copied: [], skipped: [], created: [] }
 
   // 1. Build CLAUDE.md ← copilot-instructions + instructions/* + agent index + skill index
   const claudeMd = resolve(projectRoot, 'CLAUDE.md')
   if (!existsSync(claudeMd)) {
-    const sections = []
+    const sections: string[] = []
 
     // Main instructions
     const main = await readFile(
@@ -74,7 +78,7 @@ export async function install(pkgRoot, projectRoot) {
     // Agent reference (so Claude can adopt personas)
     const agentsDir = resolve(srcRoot, 'agents')
     if (existsSync(agentsDir)) {
-      const agentLines = ['\n---\n\n## Agent Definitions\n']
+      const agentLines: string[] = ['\n---\n\n## Agent Definitions\n']
       agentLines.push(
         'The following agent personas are available. Adopt the appropriate persona when asked.\n'
       )
@@ -83,8 +87,8 @@ export async function install(pkgRoot, projectRoot) {
         const meta = parseFrontmatterMeta(
           await readFile(resolve(agentsDir, file), 'utf8')
         )
-        const name = meta.name || basename(file, '.agent.md')
-        const desc = meta.description || ''
+        const name = meta['name'] ?? basename(file, '.agent.md')
+        const desc = meta['description'] ?? ''
         agentLines.push(`- **${name}**: ${desc}`)
       }
       agentLines.push(
@@ -96,7 +100,7 @@ export async function install(pkgRoot, projectRoot) {
     // Skill index
     const skillsDir = resolve(srcRoot, 'skills')
     if (existsSync(skillsDir)) {
-      const skillLines = ['\n---\n\n## Available Skills\n']
+      const skillLines: string[] = ['\n---\n\n## Available Skills\n']
       skillLines.push(
         'Skills are on-demand knowledge files. Read the file when the task matches.\n'
       )
@@ -108,11 +112,11 @@ export async function install(pkgRoot, projectRoot) {
       )) {
         const skillFile = resolve(skillsDir, entry.name, 'SKILL.md')
         if (!existsSync(skillFile)) continue
-        const meta = parseFrontmatterMeta(
-          await readFile(skillFile, 'utf8')
+        const meta = parseFrontmatterMeta(await readFile(skillFile, 'utf8'))
+        const desc = meta['description'] ?? ''
+        skillLines.push(
+          `- **${entry.name}** (\`.claude/skills/${entry.name}.md\`): ${desc}`
         )
-        const desc = meta.description || ''
-        skillLines.push(`- **${entry.name}** (\`.claude/skills/${entry.name}.md\`): ${desc}`)
       }
       sections.push(skillLines.join('\n'))
     }
@@ -213,7 +217,11 @@ export async function install(pkgRoot, projectRoot) {
   }
 
   // 7. MCP server config → .claude/mcp.json (scaffold once)
-  const mcpResult = await scaffoldMcpConfig(pkgRoot, projectRoot, '.claude/mcp.json')
+  const mcpResult = await scaffoldMcpConfig(
+    pkgRoot,
+    projectRoot,
+    '.claude/mcp.json'
+  )
   results[mcpResult.action].push(mcpResult.path)
 
   return results
@@ -221,14 +229,16 @@ export async function install(pkgRoot, projectRoot) {
 
 // ─── Update ───────────────────────────────────────────────────────
 
-export async function update(pkgRoot, projectRoot) {
-  const results = { copied: [], skipped: [], created: [] }
+export async function update(
+  pkgRoot: string,
+  projectRoot: string
+): Promise<CopyResults> {
+  const results: CopyResults = { copied: [], skipped: [], created: [] }
   const claudeDir = resolve(projectRoot, '.claude')
 
   // 1. Regenerate CLAUDE.md (overwrite)
   const claudeMd = resolve(projectRoot, 'CLAUDE.md')
   if (existsSync(claudeMd)) {
-    const { unlink } = await import('node:fs/promises')
     await unlink(claudeMd)
   }
 
@@ -237,7 +247,6 @@ export async function update(pkgRoot, projectRoot) {
   for (const dir of frameworkDirs) {
     const dirPath = resolve(claudeDir, dir)
     if (existsSync(dirPath)) {
-      const { rm } = await import('node:fs/promises')
       await rm(dirPath, { recursive: true })
     }
   }
@@ -253,7 +262,7 @@ export async function update(pkgRoot, projectRoot) {
 
 // ─── Managed paths ────────────────────────────────────────────────
 
-export function getManagedPaths() {
+export function getManagedPaths(): ManagedPaths {
   return {
     framework: [
       'CLAUDE.md',
@@ -261,9 +270,6 @@ export function getManagedPaths() {
       '.claude/skills/',
       '.claude/commands/',
     ],
-    customizable: [
-      '.claude/customizations/',
-      '.claude/mcp.json',
-    ],
+    customizable: ['.claude/customizations/', '.claude/mcp.json'],
   }
 }

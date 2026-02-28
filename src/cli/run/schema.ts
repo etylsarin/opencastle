@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import type { TaskSpec, ParseResult, ValidationResult } from '../types.js'
 
 /**
  * Minimal YAML parser for task spec files.
@@ -8,21 +9,17 @@ import { readFile } from 'node:fs/promises'
 
 /**
  * Parse a YAML string into a JS object.
- * @param {string} text - YAML text
- * @returns {object}
  */
-export function parseYaml(text) {
+export function parseYaml(text: string): Record<string, unknown> {
   const lines = text.split('\n')
-  return parseBlock(lines, 0, -1).value
+  return parseBlock(lines, 0, -1).value as Record<string, unknown>
 }
 
 /**
  * Remove inline comments and trim trailing whitespace.
  * Respects quoted strings — won't strip # inside quotes.
- * @param {string} line
- * @returns {string}
  */
-function stripInlineComment(line) {
+function stripInlineComment(line: string): string {
   let inSingle = false
   let inDouble = false
   for (let i = 0; i < line.length; i++) {
@@ -41,20 +38,16 @@ function stripInlineComment(line) {
 
 /**
  * Measure indent level (number of leading spaces).
- * @param {string} line
- * @returns {number}
  */
-function indentOf(line) {
+function indentOf(line: string): number {
   const m = line.match(/^( *)/)
   return m ? m[1].length : 0
 }
 
 /**
  * Unquote a string value (strip surrounding quotes).
- * @param {string} val
- * @returns {string}
  */
-function unquote(val) {
+function unquote(val: string): string {
   if (
     (val.startsWith('"') && val.endsWith('"')) ||
     (val.startsWith("'") && val.endsWith("'"))
@@ -66,10 +59,8 @@ function unquote(val) {
 
 /**
  * Cast a scalar value to its JS type.
- * @param {string} raw
- * @returns {string|number|boolean|null}
  */
-function castScalar(raw) {
+function castScalar(raw: string): string | number | boolean | null {
   const val = raw.trim()
   if (val === '' || val === '~' || val === 'null') return null
   if (val === 'true') return true
@@ -83,7 +74,7 @@ function castScalar(raw) {
  * Parse a block of YAML lines starting at `startIdx` with minimum indent `parentIndent`.
  * Returns { value, nextIndex }.
  */
-function parseBlock(lines, startIdx, parentIndent) {
+function parseBlock(lines: string[], startIdx: number, parentIndent: number): ParseResult {
   let i = startIdx
 
   // Skip blank / comment-only lines
@@ -113,8 +104,8 @@ function parseBlock(lines, startIdx, parentIndent) {
 /**
  * Parse a YAML list block.
  */
-function parseList(lines, startIdx, blockIndent) {
-  const result = []
+function parseList(lines: string[], startIdx: number, blockIndent: number): ParseResult {
+  const result: unknown[] = []
   let i = startIdx
 
   while (i < lines.length) {
@@ -143,7 +134,7 @@ function parseList(lines, startIdx, blockIndent) {
       // List item is a nested mapping or empty
       // Check if the next non-empty lines at deeper indent form an object
       // If after ends with ':', it's the first key in a mapping
-      const obj = {}
+      const obj: Record<string, unknown> = {}
       if (after.endsWith(':')) {
         const key = after.slice(0, -1).trim()
         // Value on next lines or empty
@@ -153,7 +144,7 @@ function parseList(lines, startIdx, blockIndent) {
       }
       // Collect remaining keys at the deeper indent
       const sub = parseItemBody(lines, i, blockIndent + 2)
-      Object.assign(obj, sub.value || {})
+      Object.assign(obj, (sub.value as Record<string, unknown>) || {})
       i = sub.nextIndex
       result.push(Object.keys(obj).length > 0 ? obj : null)
     } else if (after.includes(': ') || after.endsWith(':')) {
@@ -161,7 +152,7 @@ function parseList(lines, startIdx, blockIndent) {
       const colonIdx = after.indexOf(':')
       const key = after.slice(0, colonIdx).trim()
       const rest = after.slice(colonIdx + 1).trim()
-      const obj = {}
+      const obj: Record<string, unknown> = {}
 
       if (rest === '' || rest === '|') {
         const nested = parseValueAfterColon(rest, lines, i, blockIndent + 2)
@@ -173,7 +164,7 @@ function parseList(lines, startIdx, blockIndent) {
 
       // Collect remaining keys at deeper indent
       const sub = parseItemBody(lines, i, blockIndent + 2)
-      Object.assign(obj, sub.value || {})
+      Object.assign(obj, (sub.value as Record<string, unknown>) || {})
       i = sub.nextIndex
       result.push(obj)
     } else if (after.startsWith('[') && after.endsWith(']')) {
@@ -191,9 +182,9 @@ function parseList(lines, startIdx, blockIndent) {
 /**
  * Parse the body (remaining keys) of a list item at a given indent.
  */
-function parseItemBody(lines, startIdx, minIndent) {
+function parseItemBody(lines: string[], startIdx: number, minIndent: number): ParseResult {
   let i = startIdx
-  const obj = {}
+  const obj: Record<string, unknown> = {}
 
   while (i < lines.length) {
     const raw = lines[i]
@@ -233,8 +224,8 @@ function parseItemBody(lines, startIdx, minIndent) {
 /**
  * Parse a YAML mapping block.
  */
-function parseMapping(lines, startIdx, blockIndent) {
-  const result = {}
+function parseMapping(lines: string[], startIdx: number, blockIndent: number): ParseResult {
+  const result: Record<string, unknown> = {}
   let i = startIdx
 
   while (i < lines.length) {
@@ -277,7 +268,12 @@ function parseMapping(lines, startIdx, blockIndent) {
  * Parse the value after a colon — could be inline scalar, block scalar (|),
  * nested mapping, or nested list.
  */
-function parseValueAfterColon(rest, lines, nextIdx, parentIndent) {
+function parseValueAfterColon(
+  rest: string,
+  lines: string[],
+  nextIdx: number,
+  parentIndent: number
+): ParseResult {
   // Block scalar
   if (rest === '|') {
     return parseBlockScalar(lines, nextIdx, parentIndent)
@@ -306,9 +302,9 @@ function parseValueAfterColon(rest, lines, nextIdx, parentIndent) {
  * Parse a block scalar (| indicator).
  * Collects all lines with indent greater than the parent.
  */
-function parseBlockScalar(lines, startIdx, parentIndent) {
+function parseBlockScalar(lines: string[], startIdx: number, parentIndent: number): ParseResult {
   let i = startIdx
-  const collected = []
+  const collected: string[] = []
   let blockIndent = -1
 
   while (i < lines.length) {
@@ -344,10 +340,8 @@ function parseBlockScalar(lines, startIdx, parentIndent) {
 
 /**
  * Parse a flow sequence: [item1, item2, item3]
- * @param {string} text
- * @returns {Array}
  */
-function parseFlowSequence(text) {
+function parseFlowSequence(text: string): Array<string | number | boolean | null> {
   const inner = text.slice(1, -1).trim()
   if (inner === '') return []
   return inner.split(',').map((s) => castScalar(s.trim()))
@@ -360,10 +354,8 @@ const TIMEOUT_RE = /^(\d+)(s|m|h)$/
 
 /**
  * Parse a timeout string into milliseconds.
- * @param {string} timeout - e.g. "10m", "1h", "30s"
- * @returns {number} milliseconds
  */
-export function parseTimeout(timeout) {
+export function parseTimeout(timeout: string): number {
   const m = String(timeout).match(TIMEOUT_RE)
   if (!m) return NaN
   const num = parseInt(m[1], 10)
@@ -374,34 +366,52 @@ export function parseTimeout(timeout) {
   return NaN
 }
 
+interface RawSpec {
+  name?: unknown
+  concurrency?: unknown
+  on_failure?: unknown
+  adapter?: unknown
+  tasks?: unknown
+}
+
+interface RawTask {
+  id?: unknown
+  prompt?: unknown
+  agent?: unknown
+  timeout?: unknown
+  depends_on?: unknown
+  files?: unknown
+  description?: unknown
+}
+
 /**
  * Validate a parsed spec object.
- * @param {object} spec
- * @returns {{ valid: boolean, errors: string[] }}
  */
-export function validateSpec(spec) {
-  const errors = []
+export function validateSpec(spec: unknown): ValidationResult {
+  const errors: string[] = []
 
   if (!spec || typeof spec !== 'object') {
     return { valid: false, errors: ['Spec must be a YAML object'] }
   }
 
+  const s = spec as RawSpec
+
   // Name
-  if (!spec.name || typeof spec.name !== 'string') {
+  if (!s.name || typeof s.name !== 'string') {
     errors.push('`name` is required and must be a string')
   }
 
   // Concurrency
-  if (spec.concurrency !== undefined) {
-    const c = Number(spec.concurrency)
+  if (s.concurrency !== undefined) {
+    const c = Number(s.concurrency)
     if (!Number.isInteger(c) || c < 1) {
       errors.push('`concurrency` must be an integer >= 1')
     }
   }
 
   // on_failure
-  if (spec.on_failure !== undefined) {
-    if (!VALID_ON_FAILURE.includes(spec.on_failure)) {
+  if (s.on_failure !== undefined) {
+    if (!VALID_ON_FAILURE.includes(s.on_failure as string)) {
       errors.push(
         `\`on_failure\` must be one of: ${VALID_ON_FAILURE.join(', ')}`
       )
@@ -409,21 +419,21 @@ export function validateSpec(spec) {
   }
 
   // adapter
-  if (spec.adapter !== undefined && typeof spec.adapter !== 'string') {
+  if (s.adapter !== undefined && typeof s.adapter !== 'string') {
     errors.push('`adapter` must be a string')
   }
 
   // Tasks
-  if (!spec.tasks || !Array.isArray(spec.tasks) || spec.tasks.length === 0) {
+  if (!s.tasks || !Array.isArray(s.tasks) || s.tasks.length === 0) {
     errors.push('`tasks` is required and must be a non-empty array')
     return { valid: false, errors }
   }
 
-  const taskIds = new Set()
-  const taskIdList = []
+  const taskIds = new Set<string>()
+  const tasks = s.tasks as RawTask[]
 
-  for (let i = 0; i < spec.tasks.length; i++) {
-    const task = spec.tasks[i]
+  for (let i = 0; i < tasks.length; i++) {
+    const task = tasks[i]
     const prefix = `tasks[${i}]`
 
     if (!task || typeof task !== 'object') {
@@ -438,7 +448,6 @@ export function validateSpec(spec) {
       errors.push(`${prefix}: duplicate task id "${task.id}"`)
     } else {
       taskIds.add(task.id)
-      taskIdList.push(task.id)
     }
 
     // prompt
@@ -448,7 +457,7 @@ export function validateSpec(spec) {
 
     // timeout
     if (task.timeout !== undefined) {
-      if (isNaN(parseTimeout(task.timeout))) {
+      if (isNaN(parseTimeout(task.timeout as string))) {
         errors.push(
           `${prefix}: \`timeout\` must be in format: <number><s|m|h> (e.g. "10m")`
         )
@@ -460,8 +469,8 @@ export function validateSpec(spec) {
       if (!Array.isArray(task.depends_on)) {
         errors.push(`${prefix}: \`depends_on\` must be an array`)
       } else {
-        for (const dep of task.depends_on) {
-          if (!taskIds.has(dep) && !spec.tasks.some((t) => t && t.id === dep)) {
+        for (const dep of task.depends_on as string[]) {
+          if (!taskIds.has(dep) && !tasks.some((t) => t && t.id === dep)) {
             errors.push(
               `${prefix}: \`depends_on\` references unknown task "${dep}"`
             )
@@ -478,7 +487,7 @@ export function validateSpec(spec) {
 
   // DAG cycle detection
   if (errors.length === 0) {
-    const cycleErr = detectCycles(spec.tasks)
+    const cycleErr = detectCycles(tasks as Array<{ id: string; depends_on?: string[] }>)
     if (cycleErr) errors.push(cycleErr)
   }
 
@@ -487,20 +496,18 @@ export function validateSpec(spec) {
 
 /**
  * Detect cycles in the task dependency graph using DFS.
- * @param {Array} tasks
- * @returns {string|null} Error message or null
  */
-function detectCycles(tasks) {
-  const adj = new Map()
+function detectCycles(tasks: Array<{ id: string; depends_on?: string[] }>): string | null {
+  const adj = new Map<string, string[]>()
   for (const t of tasks) {
     adj.set(t.id, t.depends_on || [])
   }
 
   const WHITE = 0, GRAY = 1, BLACK = 2
-  const color = new Map()
+  const color = new Map<string, number>()
   for (const id of adj.keys()) color.set(id, WHITE)
 
-  function dfs(node, path) {
+  function dfs(node: string, path: string[]): string[] | null {
     color.set(node, GRAY)
     path.push(node)
 
@@ -533,51 +540,50 @@ function detectCycles(tasks) {
 
 /**
  * Apply default values to a parsed spec.
- * @param {object} spec
- * @returns {object} spec with defaults applied
  */
-export function applyDefaults(spec) {
-  spec.concurrency = spec.concurrency !== undefined ? Number(spec.concurrency) : 1
-  spec.on_failure = spec.on_failure || 'continue'
-  spec.adapter = spec.adapter || 'claude-code'
+export function applyDefaults(spec: Record<string, unknown>): TaskSpec {
+  const s = spec as Record<string, unknown>
+  s.concurrency = s.concurrency !== undefined ? Number(s.concurrency) : 1
+  s.on_failure = (s.on_failure as string) || 'continue'
+  s.adapter = (s.adapter as string) || 'claude-code'
 
-  for (const task of spec.tasks) {
-    task.agent = task.agent || 'developer'
-    task.timeout = task.timeout || '30m'
-    task.depends_on = task.depends_on || []
-    task.files = task.files || []
-    task.description = task.description || task.id
+  const tasks = s.tasks as Array<Record<string, unknown>>
+  for (const task of tasks) {
+    task.agent = (task.agent as string) || 'developer'
+    task.timeout = (task.timeout as string) || '30m'
+    task.depends_on = (task.depends_on as string[]) || []
+    task.files = (task.files as string[]) || []
+    task.description = (task.description as string) || (task.id as string)
   }
 
-  return spec
+  return s as unknown as TaskSpec
 }
 
 /**
  * Read, parse, validate, and return a typed task spec from a YAML file.
- * @param {string} filePath - Absolute path to the YAML file
- * @returns {Promise<object>} The validated and defaults-applied spec
- * @throws {Error} If file cannot be read, parsed, or spec is invalid
+ * @throws If file cannot be read, parsed, or spec is invalid
  */
-export async function parseTaskSpec(filePath) {
-  let text
+export async function parseTaskSpec(filePath: string): Promise<TaskSpec> {
+  let text: string
   try {
     text = await readFile(filePath, 'utf8')
-  } catch (err) {
-    if (err.code === 'ENOENT') {
+  } catch (err: unknown) {
+    const e = err as Error & { code?: string }
+    if (e.code === 'ENOENT') {
       throw new Error(`Task spec file not found: ${filePath}`)
     }
-    throw new Error(`Cannot read task spec file: ${err.message}`)
+    throw new Error(`Cannot read task spec file: ${e.message}`)
   }
 
   if (!text.trim()) {
     throw new Error('Task spec file is empty')
   }
 
-  let spec
+  let spec: Record<string, unknown>
   try {
     spec = parseYaml(text)
-  } catch (err) {
-    throw new Error(`YAML parse error: ${err.message}`)
+  } catch (err: unknown) {
+    throw new Error(`YAML parse error: ${(err as Error).message}`)
   }
 
   const { valid, errors } = validateSpec(spec)

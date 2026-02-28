@@ -1,12 +1,19 @@
-/* global process */
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { formatDuration } from './executor.mjs'
+import { formatDuration } from './executor.js'
+import type {
+  TaskSpec,
+  Task,
+  TaskResult,
+  RunReport,
+  Reporter,
+  ReporterOptions,
+} from '../types.js'
 
 /**
  * Status icons for terminal output.
  */
-const ICONS = {
+const ICONS: Record<string, string> = {
   start: '▶',
   done: '✓',
   failed: '✗',
@@ -16,29 +23,17 @@ const ICONS = {
 
 /**
  * Create a reporter that prints progress to the terminal and writes a JSON report.
- * @param {object} spec - Validated task spec
- * @param {object} options - { reportDir, verbose }
- * @returns {object} Reporter methods
  */
-export function createReporter(spec, options = {}) {
+export function createReporter(spec: TaskSpec, options: ReporterOptions = {}): Reporter {
   const reportDir = options.reportDir || resolve(process.cwd(), '.opencastle', 'runs')
   const verbose = options.verbose || false
 
   return {
-    /**
-     * Called when a task starts execution.
-     * @param {object} task
-     */
-    onTaskStart(task) {
+    onTaskStart(task: Task): void {
       console.log(`  ${ICONS.start} [${task.id}] ${task.description}`)
     },
 
-    /**
-     * Called when a task completes (success or failure).
-     * @param {object} task
-     * @param {object} result - { status, duration, output }
-     */
-    onTaskDone(task, result) {
+    onTaskDone(task: Task, result: TaskResult): void {
       const dur = formatDuration(result.duration)
       if (result.status === 'done') {
         console.log(`  ${ICONS.done} [${task.id}] completed (${dur})`)
@@ -62,37 +57,23 @@ export function createReporter(spec, options = {}) {
       }
     },
 
-    /**
-     * Called when a task is skipped.
-     * @param {object} task
-     * @param {string} reason
-     */
-    onTaskSkipped(task, reason) {
+    onTaskSkipped(task: Task, reason: string): void {
       console.log(`  ${ICONS.skipped} [${task.id}] skipped — ${reason}`)
     },
 
-    /**
-     * Called when a new execution phase starts.
-     * @param {number} phase - Phase number (1-indexed)
-     * @param {Array} tasks - Tasks in this phase
-     */
-    onPhaseStart(phase, tasks) {
+    onPhaseStart(phase: number, tasks: Task[]): void {
       const ids = tasks.map((t) => t.id).join(', ')
       console.log(`\n  Phase ${phase}: ${ids}`)
     },
 
-    /**
-     * Called when execution is complete. Prints summary and writes JSON report.
-     * @param {object} report - Final report object
-     */
-    async onComplete(report) {
+    async onComplete(report: RunReport): Promise<void> {
       console.log(`\n  ──────────────────────────────────`)
       console.log(`  Run complete: ${report.name}`)
       console.log(`  Duration: ${report.duration}`)
       console.log()
 
       const s = report.summary
-      const parts = []
+      const parts: string[] = []
       if (s.done > 0) parts.push(`${s.done} done`)
       if (s.failed > 0) parts.push(`${s.failed} failed`)
       if (s.skipped > 0) parts.push(`${s.skipped} skipped`)
@@ -109,8 +90,8 @@ export function createReporter(spec, options = {}) {
         const reportPath = resolve(reportDir, `${timestamp}.json`)
         await writeFile(reportPath, JSON.stringify(report, null, 2), 'utf8')
         console.log(`  Report: ${reportPath}`)
-      } catch (err) {
-        console.log(`  ${ICONS.failed} Could not write report: ${err.message}`)
+      } catch (err: unknown) {
+        console.log(`  ${ICONS.failed} Could not write report: ${(err as Error).message}`)
       }
 
       console.log()
@@ -120,10 +101,8 @@ export function createReporter(spec, options = {}) {
 
 /**
  * Print the execution plan (dry-run mode).
- * @param {object} spec - Validated spec
- * @param {Array<Array<object>>} phases - Phase groups from buildPhases
  */
-export function printExecutionPlan(spec, phases) {
+export function printExecutionPlan(spec: TaskSpec, phases: Task[][]): void {
   console.log(`\n  🏰 Execution Plan: ${spec.name}`)
   console.log(`  Adapter: ${spec.adapter}`)
   console.log(`  Concurrency: ${spec.concurrency}`)
