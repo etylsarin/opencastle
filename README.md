@@ -245,7 +245,7 @@ tasks:
 | Adapter | Status | CLI |
 |---------|--------|-----|
 | `claude-code` | ✅ Supported | `claude` |
-| `copilot` | 🚧 Planned | — |
+| `copilot` | ✅ Supported | `copilot` |
 
 After each run, a JSON report is written to `.opencastle/runs/` with statuses, durations, and output summaries.
 
