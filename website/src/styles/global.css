@@ -496,7 +496,7 @@ img {
 .dashboard-preview {
   position: relative;
   margin-top: 48px;
-  border-radius: 16px;
+  border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border-color);
   box-shadow: 0 20px 80px rgba(0, 0, 0, 0.5);
@@ -508,6 +508,59 @@ img {
   border-color: var(--border-accent);
   box-shadow: 0 20px 80px rgba(99, 102, 241, 0.15);
   transform: translateY(-2px);
+}
+
+/* Browser chrome bar */
+.browser-chrome {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: #1a1a24;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.browser-chrome__dots {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.browser-chrome__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.browser-chrome__dot--red {
+  background: #ff5f57;
+}
+
+.browser-chrome__dot--yellow {
+  background: #febc2e;
+}
+
+.browser-chrome__dot--green {
+  background: #28c840;
+}
+
+.browser-chrome__url {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-family: inherit;
+}
+
+.browser-chrome__url svg {
+  flex-shrink: 0;
+  opacity: 0.5;
 }
 
 .dashboard-preview__overlay {

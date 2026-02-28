@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://etylsarin.github.io/opencastle/">Website</a> &middot;
+  <a href="https://www.opencastle.dev/">Website</a> &middot;
   <a href="#quick-start">Quick Start</a> &middot;
   <a href="#architecture">Architecture</a> &middot;
   <a href="LICENSE">MIT License</a>

@@ -1,0 +1,857 @@
+---
+import Layout from '../layouts/Layout.astro';
+import '../styles/dashboard.css';
+---
+
+<Layout title="Observability Dashboard — OpenCastle">
+  <!-- Header -->
+  <header class="dash-header">
+    <div class="dash-header__inner">
+      <div class="dash-header__brand">
+        <img class="dash-header__icon" src="/dashboard/icon-192.png" alt="OpenCastle" width="32" height="32" />
+        <h1 class="dash-header__title">Observability Dashboard</h1>
+      </div>
+    </div>
+  </header>
+
+  <div class="dash-layout">
+    <!-- Sidebar Navigation -->
+    <nav class="dash-sidebar" id="dash-sidebar">
+      <ul class="dash-sidebar__list">
+        <li><a class="dash-sidebar__link dash-sidebar__link--active" href="#kpi-row" data-section="kpi-row">Overview</a></li>
+        <li><a class="dash-sidebar__link" href="#pipeline-section" data-section="pipeline-section">Pipeline</a></li>
+        <li><a class="dash-sidebar__link" href="#agent-section" data-section="agent-section">Agents</a></li>
+        <li><a class="dash-sidebar__link" href="#tier-section" data-section="tier-section">Tiers</a></li>
+        <li><a class="dash-sidebar__link" href="#timeline-section" data-section="timeline-section">Timeline</a></li>
+        <li><a class="dash-sidebar__link" href="#model-section" data-section="model-section">Models</a></li>
+        <li><a class="dash-sidebar__link" href="#execution-section" data-section="execution-section">Exec Log</a></li>
+        <li><a class="dash-sidebar__link" href="#panel-section" data-section="panel-section">Panels</a></li>
+        <li><a class="dash-sidebar__link" href="#sessions-section" data-section="sessions-section">Sessions</a></li>
+      </ul>
+    </nav>
+
+  <main class="dash-main">
+    <!-- KPI Row -->
+    <section class="kpi-row" id="kpi-row" data-nav-section>
+      <div class="kpi-card" id="kpi-sessions">
+        <span class="kpi-card__label">Total Sessions</span>
+        <span class="kpi-card__value">&mdash;</span>
+        <span class="kpi-card__sub"></span>
+      </div>
+      <div class="kpi-card" id="kpi-success">
+        <span class="kpi-card__label">Success Rate</span>
+        <span class="kpi-card__value">&mdash;</span>
+        <span class="kpi-card__sub"></span>
+      </div>
+      <div class="kpi-card" id="kpi-delegations">
+        <span class="kpi-card__label">Total Delegations</span>
+        <span class="kpi-card__value">&mdash;</span>
+        <span class="kpi-card__sub"></span>
+      </div>
+      <div class="kpi-card" id="kpi-duration">
+        <span class="kpi-card__label">Avg Duration</span>
+        <span class="kpi-card__value">&mdash;</span>
+        <span class="kpi-card__sub"></span>
+      </div>
+    </section>
+
+    <!-- Pipeline View (Steroids-inspired) -->
+    <section class="chart-card" id="pipeline-section" data-nav-section>
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Task Pipeline</h2>
+        <p class="chart-card__desc">Delegation flow across execution phases</p>
+      </div>
+      <div class="chart-card__body" id="pipeline-view">
+        <div class="loading-skeleton"></div>
+      </div>
+    </section>
+
+    <!-- Charts Row 1 -->
+    <div class="charts-row" id="agent-section" data-nav-section>
+      <section class="chart-card">
+        <div class="chart-card__header">
+          <h2 class="chart-card__title">Sessions by Agent</h2>
+          <p class="chart-card__desc">Stacked by outcome</p>
+        </div>
+        <div class="chart-card__body" id="agent-chart">
+          <div class="loading-skeleton"></div>
+        </div>
+      </section>
+      <section class="chart-card" id="tier-section" data-nav-section>
+        <div class="chart-card__header">
+          <h2 class="chart-card__title">Tier Distribution</h2>
+          <p class="chart-card__desc">Delegation model tiers</p>
+        </div>
+        <div class="chart-card__body" id="tier-chart">
+          <div class="loading-skeleton"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="charts-row" id="timeline-section" data-nav-section>
+      <section class="chart-card">
+        <div class="chart-card__header">
+          <h2 class="chart-card__title">Timeline</h2>
+          <p class="chart-card__desc">Sessions and delegations over time</p>
+        </div>
+        <div class="chart-card__body" id="timeline-chart">
+          <div class="loading-skeleton"></div>
+        </div>
+      </section>
+      <section class="chart-card" id="model-section" data-nav-section>
+        <div class="chart-card__header">
+          <h2 class="chart-card__title">Model Usage</h2>
+          <p class="chart-card__desc">Sessions by model</p>
+        </div>
+        <div class="chart-card__body" id="model-chart">
+          <div class="loading-skeleton"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Execution Log (Duvo-inspired) -->
+    <section class="chart-card" id="execution-section" data-nav-section>
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Execution Log</h2>
+        <p class="chart-card__desc">Recent agent activity, step by step</p>
+      </div>
+      <div class="chart-card__body" id="execution-log">
+        <div class="loading-skeleton"></div>
+      </div>
+    </section>
+
+    <!-- Panel Results -->
+    <section class="chart-card" id="panel-section" data-nav-section>
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Panel Reviews</h2>
+        <p class="chart-card__desc">Quality gate verdicts and fix items</p>
+      </div>
+      <div class="chart-card__body" id="panel-chart">
+        <div class="loading-skeleton"></div>
+      </div>
+    </section>
+
+    <!-- Sessions Table -->
+    <section class="chart-card" id="sessions-section" data-nav-section>
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Recent Sessions</h2>
+        <p class="chart-card__desc">Last 15 sessions by timestamp</p>
+      </div>
+      <div class="chart-card__body chart-card__body--table" id="sessions-table">
+        <div class="loading-skeleton"></div>
+      </div>
+    </section>
+  </main>
+  </div>
+</Layout>
+
+<script is:inline>
+  // ── Data Loading ──────────────────────────────────────────
+
+  async function loadNdjson(path) {
+    try {
+      const res = await fetch(path);
+      if (!res.ok) return [];
+      const text = await res.text();
+      return text
+        .trim()
+        .split('\n')
+        .filter(Boolean)
+        .map((line) => JSON.parse(line));
+    } catch {
+      return [];
+    }
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+
+  const TIER_COLORS = {
+    premium: '#f59e0b',
+    standard: '#a78bfa',
+    utility: '#3b82f6',
+    economy: '#64748b',
+  };
+
+  const MODEL_COLORS = {
+    'claude-opus-4-6': '#a78bfa',
+    'gpt-5-mini': '#64748b',
+    'gpt-5.3-codex': '#3b82f6',
+    'gemini-3.1-pro': '#f59e0b',
+  };
+
+  const OUTCOME_ICONS = {
+    success: '\u2713',
+    partial: '\u25CB',
+    failed: '\u2717',
+  };
+
+  function formatTime(ts) {
+    const d = new Date(ts);
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  function formatShortDate(dateKey) {
+    const d = new Date(dateKey + 'T00:00:00Z');
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // ── KPI Rendering ────────────────────────────────────────
+
+  function renderKpis(sessions, delegations) {
+    const total = sessions.length;
+    const successCount = sessions.filter((s) => s.outcome === 'success').length;
+    const rate = total > 0 ? Math.round((successCount / total) * 100) : 0;
+    const durSessions = sessions.filter((s) => s.duration_min != null);
+    const avgDur =
+      durSessions.length > 0
+        ? Math.round(
+            durSessions.reduce((sum, s) => sum + (s.duration_min || 0), 0) /
+              durSessions.length
+          )
+        : 0;
+    const uniqueAgents = new Set(delegations.map((d) => d.agent)).size;
+
+    const kpiSessions = document.getElementById('kpi-sessions');
+    const kpiSuccess = document.getElementById('kpi-success');
+    const kpiDelegations = document.getElementById('kpi-delegations');
+    const kpiDuration = document.getElementById('kpi-duration');
+
+    if (kpiSessions) {
+      kpiSessions.querySelector('.kpi-card__value').textContent = total;
+      kpiSessions.querySelector('.kpi-card__sub').innerHTML =
+        '<span class="kpi-trend kpi-trend--up">\u2191</span> ' +
+        successCount +
+        ' successful';
+    }
+    if (kpiSuccess) {
+      const trendClass =
+        rate >= 80 ? 'up' : rate >= 60 ? 'neutral' : 'down';
+      kpiSuccess.querySelector('.kpi-card__value').textContent = rate + '%';
+      kpiSuccess.querySelector('.kpi-card__sub').innerHTML =
+        '<span class="kpi-trend kpi-trend--' +
+        trendClass +
+        '">' +
+        (trendClass === 'up' ? '\u2191' : trendClass === 'down' ? '\u2193' : '\u2192') +
+        '</span> across all sessions';
+    }
+    if (kpiDelegations) {
+      kpiDelegations.querySelector('.kpi-card__value').textContent =
+        delegations.length;
+      kpiDelegations.querySelector('.kpi-card__sub').textContent =
+        uniqueAgents + ' unique agents';
+    }
+    if (kpiDuration) {
+      kpiDuration.querySelector('.kpi-card__value').textContent =
+        avgDur + 'm';
+      kpiDuration.querySelector('.kpi-card__sub').innerHTML =
+        '<span class="kpi-trend kpi-trend--neutral">\u2192</span> per session';
+    }
+  }
+
+  // ── Pipeline View ─────────────────────────────────────────
+
+  function renderPipeline(delegations) {
+    const el = document.getElementById('pipeline-view');
+    if (!el) return;
+
+    const phases = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    delegations.forEach((d) => {
+      const p = d.phase || 1;
+      if (phases[p] !== undefined) phases[p]++;
+    });
+
+    const stageConfig = [
+      {
+        label: 'Foundation',
+        phase: 1,
+        iconClass: 'pending',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>',
+      },
+      {
+        label: 'Integration',
+        phase: 2,
+        iconClass: 'active',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
+      },
+      {
+        label: 'Validation',
+        phase: 3,
+        iconClass: 'review',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+      },
+      {
+        label: 'QA Gate',
+        phase: 4,
+        iconClass: 'done',
+        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+      },
+    ];
+
+    el.innerHTML =
+      '<div class="pipeline">' +
+      stageConfig
+        .map(
+          (stage, i) =>
+            (i > 0 ? '<div class="pipeline-arrow">\u2192</div>' : '') +
+            '<div class="pipeline-stage">' +
+            '<div class="pipeline-stage__icon pipeline-stage__icon--' +
+            stage.iconClass +
+            '">' +
+            stage.icon +
+            '</div>' +
+            '<span class="pipeline-stage__count">' +
+            (phases[stage.phase] || 0) +
+            '</span>' +
+            '<span class="pipeline-stage__label">' +
+            stage.label +
+            '</span>' +
+            '</div>'
+        )
+        .join('') +
+      '</div>';
+  }
+
+  // ── Agent Chart ───────────────────────────────────────────
+
+  function renderAgentChart(sessions) {
+    const el = document.getElementById('agent-chart');
+    if (!el) return;
+
+    if (sessions.length === 0) {
+      el.innerHTML =
+        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDCCA</div><p class="empty-state__text">No session data available</p></div>';
+      return;
+    }
+
+    const agentMap = {};
+    sessions.forEach((s) => {
+      if (!agentMap[s.agent])
+        agentMap[s.agent] = { success: 0, partial: 0, failed: 0, total: 0 };
+      agentMap[s.agent][s.outcome] = (agentMap[s.agent][s.outcome] || 0) + 1;
+      agentMap[s.agent].total++;
+    });
+
+    const agents = Object.entries(agentMap).sort(
+      (a, b) => b[1].total - a[1].total
+    );
+    const maxTotal = Math.max(...agents.map(([, d]) => d.total));
+
+    el.innerHTML = agents
+      .map(
+        ([name, data]) =>
+          '<div class="bar-row">' +
+          '<span class="bar-label">' +
+          escapeHtml(name) +
+          '</span>' +
+          '<div class="bar-track">' +
+          '<div class="bar-segment bar--success" style="width: ' +
+          ((data.success / maxTotal) * 100).toFixed(1) +
+          '%"></div>' +
+          '<div class="bar-segment bar--partial" style="width: ' +
+          ((data.partial / maxTotal) * 100).toFixed(1) +
+          '%"></div>' +
+          '<div class="bar-segment bar--failed" style="width: ' +
+          ((data.failed / maxTotal) * 100).toFixed(1) +
+          '%"></div>' +
+          '</div>' +
+          '<span class="bar-value">' +
+          data.total +
+          '</span>' +
+          '</div>'
+      )
+      .join('');
+  }
+
+  // ── Tier Donut Chart ──────────────────────────────────────
+
+  function renderTierChart(delegations) {
+    const el = document.getElementById('tier-chart');
+    if (!el) return;
+
+    if (delegations.length === 0) {
+      el.innerHTML =
+        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDFE3</div><p class="empty-state__text">No delegation data available</p></div>';
+      return;
+    }
+
+    const tierCounts = {};
+    delegations.forEach((d) => {
+      const tier = d.tier === 'fast' ? 'utility' : d.tier;
+      tierCounts[tier] = (tierCounts[tier] || 0) + 1;
+    });
+
+    const order = ['premium', 'standard', 'utility', 'economy'];
+    const tiers = order
+      .filter((t) => tierCounts[t])
+      .map((t) => ({ name: t, count: tierCounts[t] }));
+
+    const total = delegations.length;
+    const r = 70;
+    const circumference = 2 * Math.PI * r;
+    let cumOffset = 0;
+
+    const circles = tiers.map((t) => {
+      const pct = t.count / total;
+      const dashLen = pct * circumference;
+      const segment =
+        '<circle cx="90" cy="90" r="' +
+        r +
+        '" fill="none" ' +
+        'stroke="' +
+        (TIER_COLORS[t.name] || '#64748b') +
+        '" stroke-width="18" ' +
+        'stroke-dasharray="' +
+        dashLen.toFixed(2) +
+        ' ' +
+        (circumference - dashLen).toFixed(2) +
+        '" ' +
+        'stroke-dashoffset="' +
+        (-cumOffset).toFixed(2) +
+        '" ' +
+        'transform="rotate(-90 90 90)" ' +
+        'stroke-linecap="round"/>';
+      cumOffset += dashLen;
+      return segment;
+    });
+
+    const legend = tiers
+      .map(
+        (t) =>
+          '<div class="legend-item">' +
+          '<span class="legend-dot" style="background: ' +
+          (TIER_COLORS[t.name] || '#64748b') +
+          '"></span>' +
+          '<span class="legend-name">' +
+          t.name +
+          '</span>' +
+          '<span class="legend-count">' +
+          t.count +
+          ' (' +
+          Math.round((t.count / total) * 100) +
+          '%)</span>' +
+          '</div>'
+      )
+      .join('');
+
+    el.innerHTML =
+      '<div class="donut-container">' +
+      '<div class="donut-wrap">' +
+      '<svg viewBox="0 0 180 180" class="donut-svg">' +
+      circles.join('') +
+      '</svg>' +
+      '<div class="donut-center">' +
+      '<span class="donut-total">' +
+      total +
+      '</span>' +
+      '<span class="donut-total-label">total</span>' +
+      '</div>' +
+      '</div>' +
+      '<div class="donut-legend">' +
+      legend +
+      '</div>' +
+      '</div>';
+  }
+
+  // ── Timeline Chart ────────────────────────────────────────
+
+  function renderTimelineChart(sessions, delegations) {
+    const el = document.getElementById('timeline-chart');
+    if (!el) return;
+
+    const dateMap = {};
+    sessions.forEach((s) => {
+      const key = s.timestamp.slice(0, 10);
+      if (!dateMap[key]) dateMap[key] = { sessions: 0, delegations: 0 };
+      dateMap[key].sessions++;
+    });
+    delegations.forEach((d) => {
+      const key = d.timestamp.slice(0, 10);
+      if (!dateMap[key]) dateMap[key] = { sessions: 0, delegations: 0 };
+      dateMap[key].delegations++;
+    });
+
+    const dates = Object.entries(dateMap).sort(([a], [b]) =>
+      a.localeCompare(b)
+    );
+
+    if (dates.length === 0) {
+      el.innerHTML =
+        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDCC5</div><p class="empty-state__text">No timeline data</p></div>';
+      return;
+    }
+
+    const maxVal = Math.max(
+      ...dates.map(([, d]) => Math.max(d.sessions, d.delegations))
+    );
+    const w = 500;
+    const h = 180;
+    const pad = { top: 10, right: 10, bottom: 28, left: 10 };
+    const plotW = w - pad.left - pad.right;
+    const plotH = h - pad.top - pad.bottom;
+    const groupWidth = plotW / dates.length;
+    const barWidth = Math.min(16, groupWidth * 0.35);
+
+    let rects = '';
+    let labels = '';
+
+    dates.forEach(([date, data], i) => {
+      const x = pad.left + i * groupWidth + groupWidth / 2;
+      const sH = maxVal > 0 ? (data.sessions / maxVal) * plotH : 0;
+      const dH = maxVal > 0 ? (data.delegations / maxVal) * plotH : 0;
+
+      rects +=
+        '<rect x="' +
+        (x - barWidth - 1).toFixed(1) +
+        '" y="' +
+        (pad.top + plotH - sH).toFixed(1) +
+        '" width="' +
+        barWidth.toFixed(1) +
+        '" height="' +
+        sH.toFixed(1) +
+        '" fill="#3b82f6" rx="3" opacity="0.85"/>';
+      rects +=
+        '<rect x="' +
+        (x + 1).toFixed(1) +
+        '" y="' +
+        (pad.top + plotH - dH).toFixed(1) +
+        '" width="' +
+        barWidth.toFixed(1) +
+        '" height="' +
+        dH.toFixed(1) +
+        '" fill="#a78bfa" rx="3" opacity="0.65"/>';
+      labels +=
+        '<text x="' +
+        x.toFixed(1) +
+        '" y="' +
+        (h - 6) +
+        '" text-anchor="middle" fill="#5a5a6e" font-size="10">' +
+        formatShortDate(date) +
+        '</text>';
+    });
+
+    el.innerHTML =
+      '<svg viewBox="0 0 ' +
+      w +
+      ' ' +
+      h +
+      '" class="timeline-svg" preserveAspectRatio="xMidYMid meet">' +
+      rects +
+      labels +
+      '</svg>' +
+      '<div class="timeline-legend">' +
+      '<div class="timeline-legend__item">' +
+      '<span class="timeline-legend__dot" style="background: #3b82f6"></span>' +
+      'Sessions</div>' +
+      '<div class="timeline-legend__item">' +
+      '<span class="timeline-legend__dot" style="background: #a78bfa"></span>' +
+      'Delegations</div>' +
+      '</div>';
+  }
+
+  // ── Model Chart ───────────────────────────────────────────
+
+  function renderModelChart(sessions) {
+    const el = document.getElementById('model-chart');
+    if (!el) return;
+
+    if (sessions.length === 0) {
+      el.innerHTML =
+        '<div class="empty-state"><div class="empty-state__icon">\uD83E\uDD16</div><p class="empty-state__text">No model data</p></div>';
+      return;
+    }
+
+    const modelCounts = {};
+    sessions.forEach((s) => {
+      modelCounts[s.model] = (modelCounts[s.model] || 0) + 1;
+    });
+
+    const models = Object.entries(modelCounts).sort((a, b) => b[1] - a[1]);
+    const maxCount = Math.max(...models.map(([, c]) => c));
+
+    el.innerHTML = models
+      .map(
+        ([name, count]) =>
+          '<div class="bar-row">' +
+          '<span class="bar-label">' +
+          escapeHtml(name) +
+          '</span>' +
+          '<div class="bar-track">' +
+          '<div class="bar-segment" style="width: ' +
+          ((count / maxCount) * 100).toFixed(1) +
+          '%; background: ' +
+          (MODEL_COLORS[name] || '#64748b') +
+          '"></div>' +
+          '</div>' +
+          '<span class="bar-value">' +
+          count +
+          '</span>' +
+          '</div>'
+      )
+      .join('');
+  }
+
+  // ── Execution Log ─────────────────────────────────────────
+
+  function renderExecutionLog(sessions) {
+    const el = document.getElementById('execution-log');
+    if (!el) return;
+
+    const sorted = sessions
+      .slice()
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 10);
+
+    if (sorted.length === 0) {
+      el.innerHTML =
+        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDCDD</div><p class="empty-state__text">No sessions recorded yet</p></div>';
+      return;
+    }
+
+    el.innerHTML =
+      '<div class="exec-log">' +
+      sorted
+        .map(
+          (s, i) =>
+            '<div class="exec-step">' +
+            '<div class="exec-step__indicator">' +
+            '<div class="exec-step__dot exec-step__dot--' +
+            s.outcome +
+            '">' +
+            (OUTCOME_ICONS[s.outcome] || '') +
+            '</div>' +
+            (i < sorted.length - 1
+              ? '<div class="exec-step__line"></div>'
+              : '') +
+            '</div>' +
+            '<div class="exec-step__content">' +
+            '<div class="exec-step__header">' +
+            '<span class="exec-step__agent">' +
+            escapeHtml(s.agent) +
+            '</span>' +
+            '<span class="exec-step__badge exec-step__badge--' +
+            s.outcome +
+            '">' +
+            s.outcome +
+            '</span>' +
+            '</div>' +
+            '<div class="exec-step__task">' +
+            escapeHtml(s.task) +
+            '</div>' +
+            '<div class="exec-step__meta">' +
+            '<span class="exec-step__meta-item">\uD83D\uDD52 ' +
+            formatTime(s.timestamp) +
+            '</span>' +
+            (s.duration_min != null
+              ? '<span class="exec-step__meta-item">\u23F1 ' +
+                s.duration_min +
+                'm</span>'
+              : '') +
+            (s.files_changed != null
+              ? '<span class="exec-step__meta-item">\uD83D\uDCC1 ' +
+                s.files_changed +
+                ' files</span>'
+              : '') +
+            (s.model
+              ? '<span class="exec-step__meta-item">\uD83E\uDD16 ' +
+                escapeHtml(s.model) +
+                '</span>'
+              : '') +
+            '</div>' +
+            '</div>' +
+            '</div>'
+        )
+        .join('') +
+      '</div>';
+  }
+
+  // ── Panel Chart ───────────────────────────────────────────
+
+  function renderPanelChart(panels) {
+    const el = document.getElementById('panel-chart');
+    if (!el) return;
+
+    if (panels.length === 0) {
+      el.innerHTML =
+        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDEE1\uFE0F</div><p class="empty-state__text">No panel reviews yet</p></div>';
+      return;
+    }
+
+    el.innerHTML =
+      '<div class="panel-grid">' +
+      panels
+        .map(
+          (p) =>
+            '<div class="panel-item">' +
+            '<div class="panel-item__header">' +
+            '<span class="panel-item__key">' +
+            escapeHtml(p.panel_key) +
+            '</span>' +
+            '<span class="panel-item__verdict panel-item__verdict--' +
+            p.verdict +
+            '">' +
+            p.verdict +
+            '</span>' +
+            '</div>' +
+            '<div class="panel-item__votes">' +
+            Array.from({ length: p.pass_count })
+              .map(
+                () =>
+                  '<div class="panel-item__vote panel-item__vote--pass">\u2713</div>'
+              )
+              .join('') +
+            Array.from({ length: p.block_count })
+              .map(
+                () =>
+                  '<div class="panel-item__vote panel-item__vote--block">\u2717</div>'
+              )
+              .join('') +
+            '</div>' +
+            '<div class="panel-item__fixes">' +
+            (p.must_fix > 0
+              ? '<strong>' + p.must_fix + ' must-fix</strong>'
+              : '') +
+            (p.must_fix > 0 && p.should_fix > 0 ? ' \u00B7 ' : '') +
+            (p.should_fix > 0 ? p.should_fix + ' should-fix' : '') +
+            (p.must_fix === 0 && p.should_fix === 0 ? 'Clean' : '') +
+            '</div>' +
+            '</div>'
+        )
+        .join('') +
+      '</div>';
+  }
+
+  // ── Sessions Table ────────────────────────────────────────
+
+  function renderSessionsTable(sessions) {
+    const el = document.getElementById('sessions-table');
+    if (!el) return;
+
+    const sorted = sessions
+      .slice()
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 15);
+
+    if (sorted.length === 0) {
+      el.innerHTML =
+        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDCCB</div><p class="empty-state__text">No sessions recorded</p></div>';
+      return;
+    }
+
+    el.innerHTML =
+      '<table class="sessions-table">' +
+      '<thead><tr>' +
+      '<th>Timestamp</th>' +
+      '<th>Agent</th>' +
+      '<th>Task</th>' +
+      '<th>Outcome</th>' +
+      '<th>Duration</th>' +
+      '<th>Files</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+      sorted
+        .map(
+          (s) =>
+            '<tr>' +
+            '<td>' +
+            formatTime(s.timestamp) +
+            '</td>' +
+            '<td class="td-agent">' +
+            escapeHtml(s.agent) +
+            '</td>' +
+            '<td class="td-task">' +
+            escapeHtml(s.task) +
+            '</td>' +
+            '<td><span class="outcome-badge outcome-badge--' +
+            s.outcome +
+            '">' +
+            s.outcome +
+            '</span></td>' +
+            '<td class="td-num">' +
+            (s.duration_min != null ? s.duration_min + 'm' : '\u2014') +
+            '</td>' +
+            '<td class="td-num">' +
+            (s.files_changed != null ? s.files_changed : '\u2014') +
+            '</td>' +
+            '</tr>'
+        )
+        .join('') +
+      '</tbody></table>';
+  }
+
+  // ── Main ──────────────────────────────────────────────────
+
+  async function main() {
+    const [sessions, delegations, panels] = await Promise.all([
+      loadNdjson('/dashboard/data/sessions.ndjson'),
+      loadNdjson('/dashboard/data/delegations.ndjson'),
+      loadNdjson('/dashboard/data/panels.ndjson'),
+    ]);
+
+    renderKpis(sessions, delegations);
+    renderPipeline(delegations);
+    renderAgentChart(sessions);
+    renderTierChart(delegations);
+    renderTimelineChart(sessions, delegations);
+    renderModelChart(sessions);
+    renderExecutionLog(sessions);
+    renderPanelChart(panels);
+    renderSessionsTable(sessions);
+
+    // ── Sidebar Navigation ────────────────────────────────
+    initSidebarNav();
+  }
+
+  function initSidebarNav() {
+    const links = document.querySelectorAll('.dash-sidebar__link');
+    const sections = document.querySelectorAll('[data-nav-section]');
+
+    // Intersection observer for active state
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            links.forEach((link) => {
+              link.classList.toggle(
+                'dash-sidebar__link--active',
+                link.dataset.section === id
+              );
+            });
+          }
+        });
+      },
+      { rootMargin: '-20% 0px -70% 0px', threshold: 0 }
+    );
+
+    sections.forEach((s) => observer.observe(s));
+
+    // Smooth scroll on click
+    links.forEach((link) => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.getElementById(link.dataset.section);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  }
+
+  main();
+</script>
