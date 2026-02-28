@@ -1,4 +1,4 @@
-import type { CmsChoice, DbChoice, StackConfig, CopyDirOptions } from './types.js';
+import type { CmsChoice, DbChoice, PmChoice, NotifChoice, StackConfig, CopyDirOptions } from './types.js';
 
 // ── Skill / Technology labels ─────────────────────────────────
 
@@ -13,6 +13,18 @@ const CMS_LABELS: Record<Exclude<CmsChoice, 'none'>, { tech: string; skill: stri
 const DB_LABELS: Record<Exclude<DbChoice, 'none'>, { tech: string; skill: string }> = {
   supabase: { tech: 'Supabase', skill: 'supabase-database' },
   convex: { tech: 'Convex', skill: 'convex-database' },
+};
+
+/** Display name for each PM choice */
+const PM_LABELS: Record<Exclude<PmChoice, 'none'>, { tech: string; skill: string }> = {
+  linear: { tech: 'Linear', skill: 'task-management' },
+  jira: { tech: 'Jira', skill: 'jira-management' },
+};
+
+/** Display name for each notifications choice */
+const NOTIF_LABELS: Record<Exclude<NotifChoice, 'none'>, { tech: string; skill: string }> = {
+  slack: { tech: 'Slack', skill: 'slack-notifications' },
+  teams: { tech: 'Teams', skill: 'teams-notifications' },
 };
 
 // ── Exclusion / inclusion maps ────────────────────────────────
@@ -30,6 +42,13 @@ const DB_SKILL_MAP: Record<DbChoice, string[]> = {
   supabase: ['convex-database'],
   convex: ['supabase-database'],
   none: ['supabase-database', 'convex-database'],
+};
+
+/** Skills to EXCLUDE based on PM choice */
+const PM_SKILL_MAP: Record<PmChoice, string[]> = {
+  linear: ['jira-management'],
+  jira: ['task-management'],
+  none: ['task-management', 'jira-management'],
 };
 
 /** Agents to EXCLUDE based on CMS choice */
@@ -62,13 +81,36 @@ const DB_MCP_MAP: Record<DbChoice, string[]> = {
   none: [],
 };
 
+/** MCP server keys to INCLUDE based on PM choice */
+const PM_MCP_MAP: Record<PmChoice, string[]> = {
+  linear: ['Linear'],
+  jira: ['Jira'],
+  none: [],
+};
+
+/** Skills to EXCLUDE based on notifications choice */
+const NOTIF_SKILL_MAP: Record<NotifChoice, string[]> = {
+  slack: ['teams-notifications'],
+  teams: ['slack-notifications'],
+  none: ['slack-notifications', 'teams-notifications'],
+};
+
+/** MCP server keys to INCLUDE based on notifications choice */
+const NOTIF_MCP_MAP: Record<NotifChoice, string[]> = {
+  slack: ['Slack'],
+  teams: ['Teams'],
+  none: [],
+};
+
 /** Always-included MCP servers */
-const CORE_MCP_SERVERS = ['chrome-devtools', 'Linear', 'Vercel'];
+const CORE_MCP_SERVERS = ['chrome-devtools', 'Vercel'];
 
 export function getExcludedSkills(stack: StackConfig): Set<string> {
   return new Set([
     ...CMS_SKILL_MAP[stack.cms],
     ...DB_SKILL_MAP[stack.db],
+    ...PM_SKILL_MAP[stack.pm],
+    ...NOTIF_SKILL_MAP[stack.notifications],
   ]);
 }
 
@@ -84,6 +126,8 @@ export function getIncludedMcpServers(stack: StackConfig): Set<string> {
     ...CORE_MCP_SERVERS,
     ...CMS_MCP_MAP[stack.cms],
     ...DB_MCP_MAP[stack.db],
+    ...PM_MCP_MAP[stack.pm],
+    ...NOTIF_MCP_MAP[stack.notifications],
   ]);
 }
 

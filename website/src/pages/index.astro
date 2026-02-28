@@ -42,9 +42,9 @@ const features = [
   },
   {
     icon: 'skills',
-    title: '28 On-Demand Skills',
+    title: '34 On-Demand Skills',
     description:
-      'Modular knowledge files loaded per task. Keeps context windows lean while enabling deep domain expertise.',
+      'Modular knowledge files loaded per task. Keeps context windows lean while enabling deep domain expertise. Stack-specific skills are auto-selected during init.',
   },
   {
     icon: 'workflows',
@@ -102,6 +102,12 @@ const integrationIcons: Record<string, string> = {
   sanity: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="m23.327 15.205-.893-1.555-4.321 2.632 4.799-6.11.726-.426-.179-.27.33-.421-1.515-1.261-.693.883-13.992 8.186 5.173-6.221 9.636-5.282-.915-1.769-5.248 2.876 2.584-3.106-1.481-1.305-5.816 6.994-5.777 3.168 4.423-5.847 2.771-1.442-.88-1.789-8.075 4.203L6.186 4.43 4.648 3.198 0 9.349l.072.058.868 1.768 5.153-2.683-4.696 6.207.77.617.458.885 5.425-2.974-5.974 7.185 1.481 1.304.297-.358 14.411-8.459-4.785 6.094.078.065-.007.005.992 1.726 6.364-3.877-2.451 3.954 1.642 1.077L24 15.648z"/></svg>`,
   vercel: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 19.5h20L12 2Z"/></svg>`,
   chrome: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C8.21 0 4.831 1.757 2.632 4.501l3.953 6.848A5.454 5.454 0 0 1 12 6.545h10.691A12 12 0 0 0 12 0zM1.931 5.47A11.943 11.943 0 0 0 0 12c0 6.012 4.42 10.991 10.189 11.864l3.953-6.847a5.45 5.45 0 0 1-6.865-2.29zm13.342 2.166a5.446 5.446 0 0 1 1.45 7.09l.002.001h-.002l-5.344 9.257c.206.01.413.016.621.016 6.627 0 12-5.373 12-12 0-1.54-.29-3.011-.818-4.364zM12 16.364a4.364 4.364 0 1 1 0-8.728 4.364 4.364 0 0 1 0 8.728Z"/></svg>`,
+  contentful: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M8.16 18.09c-1.16-.81-1.97-2.04-2.24-3.44a4.73 4.73 0 0 1 .64-3.55c.2-.3.42-.58.67-.84a5.05 5.05 0 0 1-.67-3.37A5.17 5.17 0 0 1 8.79 3.4a5.3 5.3 0 0 1 3.56 1.05 5.3 5.3 0 0 1 3.56-1.05c1.15.81 1.96 2.03 2.23 3.44.27 1.21.08 2.46-.53 3.55.61.98.84 2.14.64 3.26a5.2 5.2 0 0 1-2.34 3.44 5.2 5.2 0 0 1-3.56 1.05 5.2 5.2 0 0 1-3.56 1.05c-.36-.25-.68-.55-.97-.88l-.16-.22Zm1.74-1.36c.61.45 1.36.69 2.12.69a3.3 3.3 0 0 0 .83-.11 2.39 2.39 0 0 1-.5-.29 5.2 5.2 0 0 1-2.09-3.24 5.05 5.05 0 0 1 .3-2.81 5.05 5.05 0 0 1-.3-2.81A5.2 5.2 0 0 1 12.03 5a2.39 2.39 0 0 1 .56-.33 3.36 3.36 0 0 0-2.95.58 3.28 3.28 0 0 0-1.42 2.19 3.03 3.03 0 0 0 .41 2.14l.31.47-.31.47a3.03 3.03 0 0 0-.41 2.14 3.28 3.28 0 0 0 1.42 2.19l.26.08Z"/></svg>`,
+  strapi: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M7.608 0h8.784v7.609H24v8.783h-7.608V24H7.608v-7.608H0V7.61h7.608V0zm.8 8.408v7.184h7.184V8.408H8.408zM16.392.8V7.21h5.886L16.392.8zM7.608 16.792V23.2l-5.886-6.408h5.886z"/></svg>`,
+  convex: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.41 14.59L6 12l1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z"/></svg>`,
+  jira: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.593 24V12.518a1.005 1.005 0 0 0-1.022-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.235 5.214V6.758a1.001 1.001 0 0 0-1.021-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24.013 12.5V1.005A1.005 1.005 0 0 0 23.013 0z"/></svg>`,
+  slack: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>`,
+  teams: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M20.625 8.5h-3.75c.69 0 1.25-.56 1.25-1.25S17.565 6 16.875 6h1.25C19.16 6 20 5.16 20 4.125S19.16 2.25 18.125 2.25 16.25 3.09 16.25 4.125c0 .345.1.665.265.945H14.25v5.68a3.25 3.25 0 0 1-1.5 2.74v-2.74c0-.69-.56-1.25-1.25-1.25H2.25c-.69 0-1.25.56-1.25 1.25v5c0 .69.56 1.25 1.25 1.25h1.5v2.75c0 .414.336.75.75.75s.75-.336.75-.75V17h3.5v2.75c0 .414.336.75.75.75s.75-.336.75-.75V17h1.5c.69 0 1.25-.56 1.25-1.25v-2.04c.93-.525 1.5-1.51 1.5-2.71v-.5h5.125c.76 0 1.375-.615 1.375-1.375S21.385 8.5 20.625 8.5zM7 13.75a1.75 1.75 0 1 1 0-3.5 1.75 1.75 0 0 1 0 3.5z"/></svg>`,
 };
 
 const arrowIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.33 8h9.33M8.67 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -286,12 +292,12 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
       <div class="container">
         <span class="section__label">Installation</span>
         <h2 class="section__title">
-          One command. Any IDE.
+          One command. Your stack.
         </h2>
         <p class="section__subtitle">
-          Run <code>npx opencastle init</code> and select your IDE. The CLI
-          generates the right file format automatically — Copilot agents,
-          Cursor .mdc rules, or Claude Code commands — plus MCP server configs.
+          Run <code>npx opencastle init</code> and follow the guided onboarding.
+          Choose your IDE, CMS, database, project management, and notification
+          tools. The CLI installs only the skills and MCP servers you need.
         </p>
         <div class="code-block">
           <div class="code-block__header">
@@ -307,6 +313,11 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
 <span class="code-folder">  1) VS Code      </span><span class="code-comment">— .github/ agents, instructions, skills</span>
 <span class="code-folder">  2) Cursor       </span><span class="code-comment">— .cursorrules &amp; .cursor/rules/*.mdc</span>
 <span class="code-folder">  3) Claude Code  </span><span class="code-comment">— CLAUDE.md &amp; .claude/ commands</span>
+
+<span class="code-comment"># Choose your CMS:         Sanity / Contentful / Strapi / None</span>
+<span class="code-comment"># Choose your Database:    Supabase / Convex / None</span>
+<span class="code-comment"># Choose your PM tool:     Linear / Jira / None</span>
+<span class="code-comment"># Choose your Notifications: Slack / Teams / None</span>
 
 <span class="code-comment"># Other commands</span>
 <span class="code-folder">$ npx opencastle update  </span><span class="code-comment"># Update framework, preserve customizations</span>
@@ -563,7 +574,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
             <div class="stat__label">Specialist Agents</div>
           </div>
           <div class="stat">
-            <div class="stat__value">28</div>
+            <div class="stat__value">34</div>
             <div class="stat__label">On-Demand Skills</div>
           </div>
           <div class="stat">
@@ -586,9 +597,9 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
           MCP servers, ready to connect.
         </h2>
         <p class="section__subtitle">
-          OpenCastle ships with Model Context Protocol server configs for
-          popular services. Agents get direct tool access — no manual
-          wiring required.
+          OpenCastle ships with 11 Model Context Protocol server configs.
+          Choose your stack during onboarding — the CLI includes only the
+          servers you need. Agents get direct tool access, no manual wiring.
         </p>
         <div class="integrations-grid">
           <div class="integration-card">
@@ -599,6 +610,13 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
             </div>
           </div>
           <div class="integration-card">
+            <Fragment set:html={integrationIcons.jira} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Jira</span>
+              <span class="integration-card__desc">Project tracking &amp; sprint management</span>
+            </div>
+          </div>
+          <div class="integration-card">
             <Fragment set:html={integrationIcons.supabase} />
             <div class="integration-card__info">
               <span class="integration-card__name">Supabase</span>
@@ -606,10 +624,45 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
             </div>
           </div>
           <div class="integration-card">
+            <Fragment set:html={integrationIcons.convex} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Convex</span>
+              <span class="integration-card__desc">Reactive database &amp; real-time sync</span>
+            </div>
+          </div>
+          <div class="integration-card">
             <Fragment set:html={integrationIcons.sanity} />
             <div class="integration-card__info">
               <span class="integration-card__name">Sanity</span>
               <span class="integration-card__desc">Headless CMS &amp; content queries</span>
+            </div>
+          </div>
+          <div class="integration-card">
+            <Fragment set:html={integrationIcons.contentful} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Contentful</span>
+              <span class="integration-card__desc">Headless CMS &amp; content delivery</span>
+            </div>
+          </div>
+          <div class="integration-card">
+            <Fragment set:html={integrationIcons.strapi} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Strapi</span>
+              <span class="integration-card__desc">Open-source headless CMS</span>
+            </div>
+          </div>
+          <div class="integration-card">
+            <Fragment set:html={integrationIcons.slack} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Slack</span>
+              <span class="integration-card__desc">Agent notifications &amp; progress updates</span>
+            </div>
+          </div>
+          <div class="integration-card">
+            <Fragment set:html={integrationIcons.teams} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Microsoft Teams</span>
+              <span class="integration-card__desc">Agent notifications &amp; progress updates</span>
             </div>
           </div>
           <div class="integration-card">
