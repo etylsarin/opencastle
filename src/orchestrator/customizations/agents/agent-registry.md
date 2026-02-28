@@ -20,6 +20,7 @@ Project-specific agent-to-model assignments and scope examples referenced by the
 | **DevOps Expert** | GPT-5.3-Codex | Fast | Deployments, cron jobs, terminal-heavy infrastructure |
 | **Documentation Writer** | GPT-5 mini | Economy | Docs, roadmaps, ADRs (cost-effective) |
 | **Architect** | Claude Opus 4.6 | Premium | Architecture decisions, critical review, expert reasoning |
+| **Reviewer** | GPT-5 mini | Economy | Mandatory fast review after every delegation, code correctness checks |
 | **Researcher** | GPT-5 mini | Economy | Codebase exploration, pattern discovery, git archaeology, pre-implementation research |
 | **Copywriter** | GPT-5 mini | Economy | UI microcopy, marketing text, email templates |
 | **SEO Specialist** | GPT-5 mini | Economy | Meta tags, structured data, sitemaps |

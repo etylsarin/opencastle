@@ -8,7 +8,9 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 |------|------------|--------|
 | `sessions.ndjson` | All agents (via self-improvement protocol) | Session record |
 | `delegations.ndjson` | Team Lead agent | Delegation record |
+| `reviews.ndjson` | Team Lead (via fast-review skill) | Fast review record |
 | `panels.ndjson` | Panel runner (via panel majority vote skill) | Panel record |
+| `disputes.ndjson` | Team Lead (via dispute protocol) | Dispute record |
 
 ## Session Record Schema
 
@@ -74,6 +76,40 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 | `phase` | `number` | No | Execution phase number |
 | `file_partition` | `string[]` | No | Directories/files assigned |
 
+## Fast Review Record Schema
+
+```json
+{
+  "timestamp": "2026-02-28T14:30:00Z",
+  "linear_issue": "PRJ-42",
+  "agent": "Developer",
+  "reviewer_model": "gpt-5-mini",
+  "verdict": "pass",
+  "attempt": 1,
+  "issues_critical": 0,
+  "issues_major": 0,
+  "issues_minor": 2,
+  "confidence": "high",
+  "escalated": false,
+  "duration_sec": 45
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `timestamp` | `string` | Yes | ISO 8601 datetime (YYYY-MM-DDTHH:MM:SSZ) |
+| `linear_issue` | `string` | No | Issue ID if applicable |
+| `agent` | `string` | Yes | Agent whose output was reviewed |
+| `reviewer_model` | `string` | Yes | Model used for the reviewer (e.g., `gpt-5-mini`) |
+| `verdict` | `string` | Yes | `pass` or `fail` |
+| `attempt` | `number` | Yes | Review attempt number (1, 2, or 3) |
+| `issues_critical` | `number` | Yes | Count of critical severity issues |
+| `issues_major` | `number` | Yes | Count of major severity issues |
+| `issues_minor` | `number` | Yes | Count of minor severity issues |
+| `confidence` | `string` | Yes | Reviewer self-reported confidence: `low`, `medium`, `high` |
+| `escalated` | `boolean` | Yes | Whether this review triggered escalation to panel |
+| `duration_sec` | `number` | No | Review duration in seconds |
+
 ## Panel Record Schema
 
 ```json
@@ -109,3 +145,37 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 | `linear_issue` | `string` | No | Issue ID if applicable |
 | `artifacts_count` | `number` | No | Number of artifacts reviewed |
 | `report_path` | `string` | No | Path to the full panel report |
+
+## Dispute Record Schema
+
+```json
+{
+  "timestamp": "2026-02-28T16:00:00Z",
+  "dispute_id": "DSP-001",
+  "linear_issue": "PRJ-42",
+  "priority": "high",
+  "trigger": "panel-3x-block",
+  "implementing_agent": "Developer",
+  "reviewing_agents": ["Reviewer", "Panel (3x)"],
+  "total_attempts": 6,
+  "est_tokens_spent": 120000,
+  "status": "pending",
+  "resolution_option_chosen": null,
+  "resolved_at": null
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `timestamp` | `string` | Yes | ISO 8601 datetime when dispute was created |
+| `dispute_id` | `string` | Yes | Dispute ID (e.g., `DSP-001`) |
+| `linear_issue` | `string` | No | Issue ID if applicable |
+| `priority` | `string` | Yes | `critical`, `high`, `medium`, `low` |
+| `trigger` | `string` | Yes | `panel-3x-block`, `approach-conflict`, `criteria-conflict`, `architectural-ambiguity`, `external-dependency` |
+| `implementing_agent` | `string` | Yes | Agent that attempted the implementation |
+| `reviewing_agents` | `string[]` | Yes | Agents that reviewed (e.g., `["Reviewer", "Panel (3x)"]`) |
+| `total_attempts` | `number` | Yes | Sum of fast review + panel attempts |
+| `est_tokens_spent` | `number` | No | Estimated tokens spent across all attempts |
+| `status` | `string` | Yes | `pending`, `resolved`, `deferred` |
+| `resolution_option_chosen` | `string` | No | Which option the human chose (null if pending) |
+| `resolved_at` | `string` | No | ISO 8601 datetime when resolved (null if pending) |
