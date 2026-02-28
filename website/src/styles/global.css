@@ -990,6 +990,94 @@ img {
   }
 }
 
+/* ---------- Autonomous Mode ---------- */
+.autonomous-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+@media (min-width: 960px) {
+  .autonomous-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+  }
+}
+
+.autonomous-grid .code-block {
+  margin-top: 0;
+}
+
+.autonomous-details {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 640px) and (max-width: 959px) {
+  .autonomous-details {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.autonomous-feature {
+  padding: 20px 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all var(--transition-fast);
+}
+
+.autonomous-feature:hover {
+  border-color: var(--border-accent);
+  background: var(--bg-card-hover);
+}
+
+.autonomous-feature__title {
+  font-size: 0.875rem;
+  font-weight: 650;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.autonomous-feature__desc {
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+
+.autonomous-feature__desc code {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 4px;
+  color: var(--text-accent);
+}
+
+.autonomous-feature__desc strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* YAML syntax highlighting */
+.code-block__body .code-key {
+  color: #7dd3fc;
+}
+
+.code-block__body .code-string {
+  color: #86efac;
+}
+
+.code-block__filename {
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin-left: auto;
+}
+
 /* ---------- Scroll animations (opt-in) ---------- */
 .fade-in {
   opacity: 0;
