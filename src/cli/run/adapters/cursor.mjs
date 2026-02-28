@@ -62,7 +62,7 @@ export async function execute(task, options = {}) {
     })
 
     proc.on('close', (code) => {
-      const output = stdout || stderr
+      const output = [stdout, stderr].filter(Boolean).join('\n')
       resolve({
         success: code === 0,
         output: output.slice(0, 10000), // Cap output size
@@ -73,7 +73,7 @@ export async function execute(task, options = {}) {
     proc.on('error', (err) => {
       resolve({
         success: false,
-        output: `Failed to spawn agent: ${err.message}`,
+        output: `Failed to spawn cursor agent CLI: ${err.message}`,
         exitCode: -1,
       })
     })

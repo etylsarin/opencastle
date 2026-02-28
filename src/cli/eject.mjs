@@ -3,7 +3,7 @@ import { unlink } from 'node:fs/promises'
 import { readManifest } from './manifest.mjs'
 import { confirm, closePrompts } from './prompt.mjs'
 
-export default async function eject({ pkgRoot, args }) {
+export default async function eject({ pkgRoot: _pkgRoot, args: _args }) {
   const projectRoot = process.cwd()
 
   const manifest = await readManifest(projectRoot)

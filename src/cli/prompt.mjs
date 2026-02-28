@@ -1,4 +1,4 @@
-/* global console */
+/* global console, process */
 import { createInterface } from 'node:readline/promises'
 import { stdin, stdout } from 'node:process'
 
@@ -86,6 +86,11 @@ export async function select(message, options) {
   let choice
   while (!choice) {
     const answer = await nextLine(`\n  Select [1-${options.length}]: `)
+    // Handle EOF — stdin closed without valid selection
+    if (answer === '' && (!_rl || !stdin.isTTY)) {
+      console.error('\n  ✗ No input received (stdin closed). Aborting.')
+      process.exit(1)
+    }
     const num = parseInt(answer, 10)
     if (num >= 1 && num <= options.length) {
       choice = options[num - 1]

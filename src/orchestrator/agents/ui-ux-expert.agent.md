@@ -1,7 +1,7 @@
 ---
 description: 'UI/UX expert for designing and building accessible, consistent React components with deep knowledge of the design system.'
 name: 'UI/UX Expert'
-model: Gemini 3.1 Pro (Preview)
+model: Gemini 3.1 Pro
 tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'vscode/getProjectSetupInfo', 'vscode/installExtension', 'vscode/newWorkspace', 'vscode/runCommand', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages', 'chrome-devtools/*']
 ---
 

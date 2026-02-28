@@ -89,14 +89,19 @@ export function createExecutor(spec, adapter, reporter) {
     reporter.onTaskStart(task)
 
     try {
+      const timeout = timeoutPromise(timeoutMs, task.id)
       const result = await Promise.race([
         adapter.execute(task, { verbose: spec._verbose }),
-        timeoutPromise(timeoutMs, task.id),
+        timeout.promise,
       ])
 
       const duration = Date.now() - startTimes.get(task.id)
 
       if (result._timedOut) {
+        // Kill the orphaned child process
+        if (typeof adapter.kill === 'function') {
+          adapter.kill(task)
+        }
         statuses.set(task.id, 'timed-out')
         const taskResult = {
           id: task.id,
@@ -110,6 +115,8 @@ export function createExecutor(spec, adapter, reporter) {
         return taskResult
       }
 
+      // Task completed normally — cancel the timeout timer
+      timeout.clear()
       const status = result.success ? 'done' : 'failed'
       statuses.set(task.id, status)
       const taskResult = {
@@ -248,14 +255,17 @@ export function createExecutor(spec, adapter, reporter) {
 
 /**
  * Create a timeout promise that resolves with a sentinel.
+ * Returns { promise, clear } so the timer can be cancelled after normal completion.
  * @param {number} ms
  * @param {string} taskId
- * @returns {Promise<{_timedOut: true}>}
+ * @returns {{ promise: Promise<{_timedOut: true}>, clear: () => void }}
  */
 function timeoutPromise(ms, taskId) {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve({ _timedOut: true, taskId }), ms)
+  let timerId
+  const promise = new Promise((resolve) => {
+    timerId = setTimeout(() => resolve({ _timedOut: true, taskId }), ms)
   })
+  return { promise, clear: () => clearTimeout(timerId) }
 }
 
 /**

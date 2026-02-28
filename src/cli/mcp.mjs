@@ -1,4 +1,3 @@
-/* global console */
 import { resolve, dirname } from 'node:path'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
