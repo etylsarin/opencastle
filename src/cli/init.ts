@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { select, confirm, closePrompts } from './prompt.js'
 import { readManifest, writeManifest, createManifest } from './manifest.js'
-import type { CliContext, IdeAdapter, CmsChoice, DbChoice, StackConfig } from './types.js'
+import type { CliContext, IdeAdapter, CmsChoice, DbChoice, PmChoice, StackConfig } from './types.js'
 
 const ADAPTERS: Record<string, () => Promise<IdeAdapter>> = {
   vscode: () => import('./adapters/vscode.js') as Promise<IdeAdapter>,
@@ -70,10 +70,17 @@ export default async function init({ pkgRoot }: CliContext): Promise<void> {
     { label: 'None', hint: 'No database — skip DB skills and agents', value: 'none' },
   ])
 
-  const stack: StackConfig = { cms: cms as CmsChoice, db: db as DbChoice }
+  // ── Project management selection ────────────────────────────────
+  const pm = await select('Which project management tool are you using?', [
+    { label: 'Linear', hint: 'Issue tracking with MCP integration', value: 'linear' },
+    { label: 'Jira', hint: 'Atlassian issue tracking via Rovo MCP', value: 'jira' },
+    { label: 'None', hint: 'No project management — skip PM skills', value: 'none' },
+  ])
+
+  const stack: StackConfig = { cms: cms as CmsChoice, db: db as DbChoice, pm: pm as PmChoice }
 
   console.log(`\n  Installing for ${ide}...`)
-  console.log(`  Stack: CMS=${stack.cms}, DB=${stack.db}\n`)
+  console.log(`  Stack: CMS=${stack.cms}, DB=${stack.db}, PM=${stack.pm}\n`)
 
   // ── Run adapter ─────────────────────────────────────────────────
   const adapter = await ADAPTERS[ide]()

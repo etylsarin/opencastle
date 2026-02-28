@@ -4,10 +4,12 @@ import type { ChildProcess } from 'node:child_process';
 
 export type CmsChoice = 'sanity' | 'contentful' | 'strapi' | 'none';
 export type DbChoice = 'supabase' | 'convex' | 'none';
+export type PmChoice = 'linear' | 'jira' | 'none';
 
 export interface StackConfig {
   cms: CmsChoice;
   db: DbChoice;
+  pm: PmChoice;
 }
 
 /** Context passed from bin/cli.mjs to every command handler. */

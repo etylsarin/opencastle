@@ -38,6 +38,10 @@
       "env": {
         "LINEAR_API_KEY": "${env:LINEAR_API_KEY}"
       }
+    },
+    "Jira": {
+      "url": "https://mcp.atlassian.com/v2/sse",
+      "type": "http"
     }
   }
 }

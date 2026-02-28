@@ -21,18 +21,19 @@ Without customizations, agents operate blind — they don't know the project's t
 
 ## Pre-Existing Stack Info
 
-Before starting discovery, check for **`.opencastle.json`** in the project root. If it exists and contains a `stack` field, the user already declared their CMS and database during `opencastle init`. Use these as confirmed facts — skip re-detecting them and focus discovery on the project-specific details (IDs, schemas, config values).
+Before starting discovery, check for **`.opencastle.json`** in the project root. If it exists and contains a `stack` field, the user already declared their CMS, database, and project management tool during `opencastle init`. Use these as confirmed facts — skip re-detecting them and focus discovery on the project-specific details (IDs, schemas, config values).
 
 ```json
 {
   "stack": {
     "cms": "sanity",      // sanity | contentful | strapi | none
-    "db": "supabase"      // supabase | convex | none
+    "db": "supabase",     // supabase | convex | none
+    "pm": "linear"        // linear | jira | none
   }
 }
 ```
 
-The skill matrix (`customizations/agents/skill-matrix.md`) will already have the `cms` and `database` rows pre-filled based on this selection. Verify they are correct and fill in any remaining empty rows.
+The skill matrix (`customizations/agents/skill-matrix.md`) will already have the `cms` and `database` rows pre-filled based on this selection. The appropriate task management skill (`task-management` for Linear, `jira-management` for Jira) will already be installed. Verify they are correct and fill in any remaining empty rows.
 
 ## Workflow
 
