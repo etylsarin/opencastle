@@ -84,7 +84,7 @@ Each row shows which capability slots an agent needs (resolved through this matr
 | **Release Manager** | `monorepo`, `deployment` | `validation-gates`, `documentation-standards` |
 | **Documentation Writer** | — | `documentation-standards`, `code-commenting` |
 | **Researcher** | — | `context-map`, `self-improvement` |
-| **Team Lead** | — | `team-lead-reference`, `task-management`, `session-checkpoints`, `validation-gates`, `panel-majority-vote`, `context-map`, `memory-merger`, `agent-hooks` |
+| **Team Lead** | — | `team-lead-reference`, `task-management`, `session-checkpoints`, `validation-gates`, `fast-review`, `panel-majority-vote`, `context-map`, `memory-merger`, `agent-hooks` |
 
 ¹ UI/UX Expert uses `e2e-testing` as a utility (viewport resize commands) — resolved through the matrix like other slots.
 
@@ -104,6 +104,7 @@ These are methodology/workflow skills — not tied to any technology. Referenced
 | `agent-memory` | Agent expertise tracking, cross-session knowledge graph |
 | `task-management` | Linear board conventions, issue naming, priorities |
 | `team-lead-reference` | Team Lead orchestration reference, model routing |
+| `fast-review` | Mandatory single-reviewer gate after every delegation |
 | `validation-gates` | Shared validation gate definitions (lint, test, build) |
 | `documentation-standards` | Documentation templates, formatting rules |
 

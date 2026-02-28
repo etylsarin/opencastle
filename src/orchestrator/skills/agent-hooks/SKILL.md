@@ -98,6 +98,7 @@ Pre-Delegate:
 
 ### Actions
 
+0. **Fast review (mandatory)** — Run the `fast-review` skill against the agent's output. This is a **non-skippable gate**. See the fast-review skill for the full procedure (single reviewer sub-agent, automatic retry, escalation). Only after the fast review passes do you proceed to the remaining post-delegate actions below.
 1. **Verify output** — Read changed files. Check that changes stay within the agent's file partition.
 2. **Run verification** — Execute appropriate checks: lint, type-check, tests, or visual inspection.
 3. **Check acceptance criteria** — Compare output against the Linear issue's acceptance criteria. Each criterion must be independently verified.
@@ -112,10 +113,11 @@ Post-Delegate:
 ☐ Changed files reviewed
 ☐ Files within partition
 ☐ Lint/test/build passes
+☐ Fast review PASS (mandatory — load fast-review skill)
 ☐ Acceptance criteria met
 ☐ Discovered issues tracked (not ignored)
 ☐ Lessons captured (if retries occurred)
-☐ Linear issue updated
+☐ Issue updated
 ```
 
 ---

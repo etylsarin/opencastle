@@ -22,6 +22,7 @@ const agents = [
   { name: 'Release Manager', tier: 'utility' },
   { name: 'Documentation Writer', tier: 'economy' },
   { name: 'Researcher', tier: 'economy' },
+  { name: 'Reviewer', tier: 'economy' },
   { name: 'Copywriter', tier: 'economy' },
   { name: 'SEO Specialist', tier: 'economy' },
 ];
@@ -35,13 +36,13 @@ const features = [
   },
   {
     icon: 'agents',
-    title: '17 Specialist Agents',
+    title: '18 Specialist Agents',
     description:
       'From frontend developer to security expert, each with curated tools, model tiers, and domain-specific skills.',
   },
   {
     icon: 'skills',
-    title: '27 On-Demand Skills',
+    title: '28 On-Demand Skills',
     description:
       'Modular knowledge files loaded per task. Keeps context windows lean while enabling deep domain expertise.',
   },
@@ -55,7 +56,7 @@ const features = [
     icon: 'shield',
     title: 'Quality Gates',
     description:
-      'Panel majority vote with independent reviewers, deterministic lint/test/build checks, and browser testing at multiple breakpoints.',
+      'Mandatory fast review after every step, panel majority vote for high-stakes decisions, structured dispute escalation, deterministic lint/test/build checks, and browser testing at multiple breakpoints.',
   },
   {
     icon: 'brain',
@@ -182,7 +183,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
         <p class="hero__description">
           OpenCastle turns GitHub Copilot, Cursor, and Claude Code into
           coordinated multi-agent development teams. One orchestrator.
-          Seventeen specialists. Zero chaos.
+          Eighteen specialists. Zero chaos.
         </p>
         <div class="hero__actions">
           <a
@@ -451,7 +452,8 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
         </h2>
         <p class="section__subtitle">
           Multi-layered quality assurance — from automated lint checks to
-          panel reviews with three independent AI reviewers.
+          panel reviews with three independent AI reviewers, with structured
+          dispute escalation when agents can't converge.
         </p>
         <div class="quality-grid">
           <div class="quality-card">
@@ -475,7 +477,17 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
           </div>
           <div class="quality-card">
             <h3 class="quality-card__title">
-              <span style="opacity: 0.5">03</span> Browser Testing
+              <span style="opacity: 0.5">03</span> Structured Disputes
+            </h3>
+            <p class="quality-card__description">
+              When agents exhaust all automated resolution, formal dispute
+              records package both perspectives and resolution options —
+              giving humans clear action items instead of raw failure logs.
+            </p>
+          </div>
+          <div class="quality-card">
+            <h3 class="quality-card__title">
+              <span style="opacity: 0.5">04</span> Browser Testing
             </h3>
             <p class="quality-card__description">
               Chrome DevTools MCP validates UI changes at three breakpoints:
@@ -484,7 +496,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
           </div>
           <div class="quality-card">
             <h3 class="quality-card__title">
-              <span style="opacity: 0.5">04</span> Self-Review
+              <span style="opacity: 0.5">05</span> Self-Review
             </h3>
             <p class="quality-card__description">
               Every agent is asked: &ldquo;What edge cases am I missing? What test

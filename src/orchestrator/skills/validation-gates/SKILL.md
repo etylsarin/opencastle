@@ -19,6 +19,24 @@ yarn nx run <project>:build
 
 All must pass with zero errors. Run for **every** project that consumed modified files, not just the primary project.
 
+## Gate 1.5: Fast Review (MANDATORY)
+
+> **HARD GATE:** Every agent delegation output must pass fast review before acceptance. This is non-negotiable — even for overnight/unattended runs. Load the **fast-review** skill for the full procedure.
+
+After deterministic checks (Gate 1) pass:
+
+1. **Spawn a single reviewer sub-agent** with the review prompt from the fast-review skill
+2. **On PASS** — proceed to remaining gates
+3. **On FAIL** — re-delegate to the same agent with reviewer feedback (up to 2 retries)
+4. **On 3x FAIL** — escalate to panel review (Gate 5)
+
+The reviewer validates: acceptance criteria met, file partition respected, no regressions, type safety, error handling, security basics, and edge cases.
+
+**Auto-PASS conditions** (skip the reviewer sub-agent):
+- Pure research/exploration with no code changes
+- Only `.md` files were modified
+- All deterministic gates passed AND the change is ≤10 lines across ≤2 files
+
 ## Gate 2: Cache Clearing (BEFORE Browser Testing)
 
 **Always clear before testing.** Testing stale code wastes time and produces false results.
@@ -71,6 +89,7 @@ If the panel returns BLOCK, extract MUST-FIX items, re-delegate to the same agen
 Use this checklist for any orchestration workflow:
 
 - [ ] Lint, test, and build pass for all affected projects
+- [ ] **Fast review passed** (mandatory — load **fast-review** skill)
 - [ ] Dev server started with **clean cache** (`rm -rf .next && yarn nx reset`)
 - [ ] UI changes verified in Chrome with screenshots at all breakpoints
 - [ ] Every acceptance criteria item visually confirmed — not just "page loads"

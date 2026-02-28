@@ -59,9 +59,9 @@ All targets include a pre-configured **MCP server config** for Sanity, Vercel, S
 
 ```
 .github/
-├── agents/              # 17 specialist agent definitions
+├── agents/              # 18 specialist agent definitions
 ├── instructions/        # Always-loaded project context
-├── skills/              # 27 on-demand knowledge modules
+├── skills/              # 28 on-demand knowledge modules
 ├── agent-workflows/     # 8 reproducible execution templates
 ├── prompts/             # 9 reusable prompt templates
 └── customizations/      # Your project config (never overwritten)
@@ -76,12 +76,12 @@ All targets include a pre-configured **MCP server config** for Sanity, Vercel, S
 | Feature | What it does |
 |---------|-------------|
 | **Team Lead orchestrator** | Analyzes, decomposes, delegates, and verifies work across agents |
-| **17 specialist agents** | Developer, UI/UX, Database, Security, Testing, and more |
-| **27 on-demand skills** | Loaded per task to keep context windows lean |
+| **18 specialist agents** | Developer, UI/UX, Database, Security, Testing, Reviewer, and more |
+| **28 on-demand skills** | Loaded per task to keep context windows lean |
 | **8 workflow templates** | Features, bug fixes, data pipelines, security audits, etc. |
 | **Multi-IDE support** | VS Code, Cursor, Claude Code — native formats for each |
 | **Autonomous mode** | Queue tasks in YAML, run overnight without supervision |
-| **Quality gates** | Panel majority vote, lint/test/build checks, browser testing |
+| **Quality gates** | Fast review after every step, panel majority vote for high-stakes, structured dispute escalation, lint/test/build checks, browser testing |
 | **Cost-aware routing** | Auto-selects model tier (Premium → Economy) by complexity |
 | **Self-improvement** | Agents capture lessons and graduate them into instructions |
 
@@ -144,6 +144,7 @@ graph TB
     subgraph Economy["Economy Tier"]
         DOCS[Docs Writer]
         RES[Researcher]
+        REV[Reviewer]
         COPY[Copywriter]
         SEO[SEO Specialist]
     end
@@ -289,7 +290,9 @@ After each run, a JSON report is written to `.opencastle/runs/` with statuses, d
 | Gate | Method |
 |------|--------|
 | **Deterministic** | Lint, type-check, unit tests, build verification |
-| **Panel review** | 3 isolated reviewer sub-agents, 2/3 majority wins |
+| **Fast review** | Mandatory single-reviewer sub-agent after every delegation, with automatic retry and escalation |
+| **Panel review** | 3 isolated reviewer sub-agents, 2/3 majority wins (high-stakes or escalation) |
+| **Structured disputes** | Formal dispute records when automated resolution is exhausted — packages both perspectives and resolution options for human decision |
 | **Browser testing** | Chrome DevTools MCP at 3 responsive breakpoints |
 | **Self-review** | Every agent asked *"What edge cases am I missing?"* |
 
@@ -301,6 +304,8 @@ Forged in a production monorepo shipping real consumer apps — thousands of age
 
 - **88 orchestration files** · ~45K tokens of curated knowledge
 - **8 workflow templates** covering the full SDLC
+- **Mandatory fast review** on every step — inspired by [Steroids CLI](https://github.com/UnlikeOtherAI/steroids-cli)'s coder/reviewer separation
+- **Structured dispute escalation** — when agents can't resolve after N attempts, formal dispute records replace raw failure logs, giving humans clear action items (also inspired by Steroids CLI)
 - **Self-improving** — agents capture lessons and graduate them into permanent instructions
 
 ## License

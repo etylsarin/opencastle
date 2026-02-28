@@ -15,8 +15,10 @@ Add an entry when **any** of these occur:
 
 - A delegated agent fails to complete its task after 2+ attempts
 - A background agent produces output that fails all verification gates
-- A panel review BLOCKs 3 times and requires escalation
+- A panel review BLOCKs 3 times and requires escalation → **create a dispute record** in `DISPUTES.md` instead (see below)
 - An agent encounters an unrecoverable error (e.g., MCP server down, tool unavailable)
+
+> **Disputes vs. DLQ:** When a panel BLOCKs 3 times or agents fundamentally disagree on an approach, create a **dispute record** in `DISPUTES.md` — not a DLQ entry. Disputes package both perspectives and resolution options for human decision-making. DLQ entries are for simple failures (tool errors, timeouts, scope creep).
 
 ### Entry format
 

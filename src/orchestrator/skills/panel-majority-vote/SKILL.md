@@ -92,6 +92,7 @@ Finally: ensure whatever produced the claim being verified links the consolidate
 
 ## Notes
 - If the panel output is BLOCK, prefer to change the underlying work and re-run the same panel question over re-wording the question.
+- After 3 consecutive BLOCKs on the same panel key, create a **dispute record** in `.github/customizations/DISPUTES.md` instead of retrying further. The dispute packages the agent's position, all reviewer feedback, attempt history, and resolution options for human decision-making. See the **team-lead-reference** skill § Dispute Protocol for the full procedure.
 
 ## Model Selection for Reviewers
 

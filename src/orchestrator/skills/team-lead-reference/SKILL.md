@@ -185,8 +185,9 @@ This prevents the Team Lead from confusing which agent produced what, especially
 Log to `.github/customizations/AGENT-FAILURES.md` when:
 - A delegated agent fails to complete its task after 2+ attempts
 - A background agent produces output that fails all verification gates
-- A panel review BLOCKs 3 times and requires escalation
 - An agent encounters an unrecoverable error (e.g., MCP server down, tool unavailable)
+
+> **Note:** When a panel review BLOCKs 3 times, create a **dispute record** instead of a DLQ entry. See § Dispute Protocol below.
 
 ### Failure Entry Format
 
@@ -258,6 +259,52 @@ Common failure modes and how to recover:
 
 **Symptom:** Tests pass individually but fail when multiple agent outputs are merged.
 **Recovery:** (1) Run affected tests to identify which projects break. (2) Check for import conflicts, duplicate definitions, or state pollution. (3) Delegate fix to the agent whose changes are most likely the cause.
+
+## Dispute Protocol
+
+When automated resolution is exhausted (panel 3x BLOCK, approach conflicts, or criteria contradictions), create a **formal dispute record** in `.github/customizations/DISPUTES.md`. Inspired by the [Steroids CLI](https://github.com/UnlikeOtherAI/steroids-cli) dispute/escalation pattern.
+
+### When to Create a Dispute (vs. DLQ Entry)
+
+| Scenario | Action |
+|----------|--------|
+| Tool error, timeout, MCP failure | DLQ entry |
+| Scope creep | DLQ entry + redirect |
+| Agent fails 2+ times (simple) | DLQ entry |
+| Panel BLOCKs 3 times | **Dispute record** |
+| Agent and reviewer fundamentally disagree | **Dispute record** |
+| Acceptance criteria contradict each other | **Dispute record** |
+| Multiple valid approaches, agents can't converge | **Dispute record** |
+| Fix requires external/human action | **Dispute record** |
+
+### Dispute Creation Procedure
+
+1. **Number the dispute** — Increment from the last `DSP-XXX` ID in the Index table
+2. **Set priority** — Use the priority guidelines in DISPUTES.md (critical/high/medium/low)
+3. **Document both perspectives** — Agent's position AND reviewer's position with specific file/code references
+4. **Build attempt history** — List every fast review and panel attempt with one-line verdict summaries
+5. **Present resolution options** — At least 2 concrete options with rationale and risk for each
+6. **Recommend an action** — Which option the Team Lead thinks is best, with specific next steps
+7. **Link artifacts** — Panel reports, review logs, changed files, DLQ entries
+8. **Log to disputes.ndjson** — Append a machine-readable record (see logs README)
+9. **Update the Linear issue** — Add the dispute ID and link to the dispute record
+10. **Update the Index table** — Add the new dispute to the bottom of the Index
+
+### After Human Resolution
+
+When a human resolves a dispute:
+1. Update the dispute `Status` → `resolved` or `deferred`
+2. Record which option was chosen and any additional instructions
+3. If `resolved` → re-delegate the task with the human's decision as an explicit constraint
+4. If `deferred` → create a follow-up Linear issue and continue with other work
+5. Log the resolution in `disputes.ndjson` (update the existing record or append a resolution event)
+
+### Session Start: Check Disputes
+
+At the start of each session, after checking the DLQ, also check `DISPUTES.md` for:
+- **Pending disputes** that a human has resolved since the last session → act on the resolution
+- **Critical/high disputes** that are still pending → flag to the user before proceeding
+- **Patterns** — recurring disputes may indicate a skill gap, ambiguous instructions, or a need for a new validation gate
 
 ## Background Agent Git Merge Strategy
 
