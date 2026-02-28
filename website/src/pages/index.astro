@@ -16,10 +16,10 @@ const agents = [
   { name: 'Database Engineer', tier: 'standard' },
   { name: 'Performance Expert', tier: 'standard' },
   { name: 'API Designer', tier: 'standard' },
-  { name: 'Testing Expert', tier: 'utility' },
-  { name: 'Data Expert', tier: 'utility' },
-  { name: 'DevOps Expert', tier: 'utility' },
-  { name: 'Release Manager', tier: 'utility' },
+  { name: 'Testing Expert', tier: 'fast' },
+  { name: 'Data Expert', tier: 'fast' },
+  { name: 'DevOps Expert', tier: 'fast' },
+  { name: 'Release Manager', tier: 'fast' },
   { name: 'Documentation Writer', tier: 'economy' },
   { name: 'Researcher', tier: 'economy' },
   { name: 'Reviewer', tier: 'economy' },
@@ -232,7 +232,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
           Specialized agents, intelligent routing.
         </h2>
         <p class="section__subtitle">
-          17 specialist agents, each with its own model tier, tool access, and
+          18 specialist agents, each with its own model tier, tool access, and
           file partition. The Team Lead orchestrator routes tasks based on
           complexity scoring.
         </p>
@@ -264,7 +264,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
             </div>
           </div>
           <div class="tier-card">
-            <div class="tier-card__tier tier-card__tier--utility">Utility</div>
+            <div class="tier-card__tier tier-card__tier--fast">Fast</div>
             <div class="tier-card__model">GPT-5.3-Codex</div>
             <div class="tier-card__use">
               Testing, pipelines, deploy
@@ -327,7 +327,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
         </h2>
         <p class="section__subtitle">
           8 workflow templates define phases, agent assignments, exit criteria,
-          and file partitions. 8 prompt templates cover common tasks from
+          and file partitions. 9 prompt templates cover common tasks from
           brainstorming to PR reviews.
         </p>
         <table class="workflow-table">
@@ -559,11 +559,11 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
         </p>
         <div class="stats-row" style="margin-top: 32px">
           <div class="stat">
-            <div class="stat__value">17</div>
+            <div class="stat__value">18</div>
             <div class="stat__label">Specialist Agents</div>
           </div>
           <div class="stat">
-            <div class="stat__value">27</div>
+            <div class="stat__value">28</div>
             <div class="stat__label">On-Demand Skills</div>
           </div>
           <div class="stat">
@@ -626,13 +626,6 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
               <span class="integration-card__desc">Browser testing &amp; visual validation</span>
             </div>
           </div>
-          <div class="integration-card">
-            <Fragment set:html={compatIcons.slack} />
-            <div class="integration-card__info">
-              <span class="integration-card__name">Slack</span>
-              <span class="integration-card__desc">Notifications &amp; team updates</span>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -644,7 +637,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
           Ready to orchestrate?
         </h2>
         <p class="cta-section__subtitle">
-          One command to install. One Team Lead to coordinate. Seventeen
+          One command to install. One Team Lead to coordinate. Eighteen
           specialists ready to build.
         </p>
         <div class="hero__actions" style="position: relative; z-index: 1">

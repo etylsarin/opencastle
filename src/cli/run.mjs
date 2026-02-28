@@ -51,9 +51,15 @@ function parseArgs(args) {
         opts.dryRun = true
         break
       case '--concurrency':
-      case '-c':
-        opts.concurrency = parseInt(args[++i], 10)
+      case '-c': {
+        const val = parseInt(args[++i], 10)
+        if (!Number.isFinite(val) || val < 1) {
+          console.error(`  ✗ --concurrency must be an integer >= 1`)
+          process.exit(1)
+        }
+        opts.concurrency = val
         break
+      }
       case '--adapter':
       case '-a':
         opts.adapter = args[++i]

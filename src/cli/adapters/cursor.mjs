@@ -1,7 +1,7 @@
 import { resolve, basename } from 'node:path'
 import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { copyDir, getOrchestratorRoot } from '../copy.mjs'
+import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.mjs'
 import { scaffoldMcpConfig } from '../mcp.mjs'
 
 /**
@@ -171,6 +171,12 @@ export async function update(pkgRoot, projectRoot) {
 
   const rulesRoot = resolve(projectRoot, '.cursor', 'rules')
 
+  // Remove existing framework rule directories to clear stale files
+  const FRAMEWORK_RULE_DIRS = ['agents', 'skills', 'agent-workflows', 'prompts']
+  for (const dir of FRAMEWORK_RULE_DIRS) {
+    await removeDirIfExists(resolve(rulesRoot, dir))
+  }
+
   // Overwrite framework rules
   await convertDir(srcRoot, 'instructions', rulesRoot, results, {
     alwaysApply: true,
@@ -200,6 +206,10 @@ export async function update(pkgRoot, projectRoot) {
   )
 
   // Customizations are NEVER overwritten.
+
+  // All re-installed framework files count as "updated" (copied), not "created"
+  results.copied.push(...results.created)
+  results.created = []
 
   return results
 }

@@ -4,6 +4,7 @@ import {
   mkdir,
   writeFile,
   copyFile,
+  rm,
 } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { existsSync } from 'node:fs'
@@ -73,4 +74,14 @@ export async function copyDir(
  */
 export function getOrchestratorRoot(pkgRoot) {
   return resolve(pkgRoot, 'src', 'orchestrator')
+}
+
+/**
+ * Remove a directory if it exists. No-op if it doesn't.
+ * @param {string} dirPath - Absolute path to the directory
+ */
+export async function removeDirIfExists(dirPath) {
+  if (existsSync(dirPath)) {
+    await rm(dirPath, { recursive: true })
+  }
 }

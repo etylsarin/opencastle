@@ -1,7 +1,7 @@
 ---
 description: 'Full-stack developer for building pages, components, routing, layouts, API routes, server-side logic, and feature implementation.'
 name: 'Developer'
-model: Gemini 3.1 Pro (Preview)
+model: Gemini 3.1 Pro
 tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'vscode/getProjectSetupInfo', 'vscode/installExtension', 'vscode/newWorkspace', 'vscode/runCommand', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages', 'nx-mcp-server/nx_project_details', 'nx-mcp-server/nx_workspace', 'nx-mcp-server/nx_generators']
 ---
 

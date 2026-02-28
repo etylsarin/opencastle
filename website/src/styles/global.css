@@ -478,7 +478,7 @@ img {
   background: #34d399;
 }
 
-.agent-chip__dot--utility {
+.agent-chip__dot--fast {
   background: #fbbf24;
 }
 
@@ -880,7 +880,7 @@ img {
   color: #34d399;
 }
 
-.tier-card__tier--utility {
+.tier-card__tier--fast {
   color: #fbbf24;
 }
 

@@ -1,7 +1,7 @@
 import { resolve } from 'node:path'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { copyDir, getOrchestratorRoot } from '../copy.mjs'
+import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.mjs'
 import { scaffoldMcpConfig } from '../mcp.mjs'
 
 /**
@@ -94,15 +94,20 @@ export async function update(pkgRoot, projectRoot) {
   )
   results.copied.push(copilotDest)
 
-  // Overwrite framework directories
+  // Remove existing framework directories to clear stale files
+  for (const dir of FRAMEWORK_DIRS) {
+    await removeDirIfExists(resolve(destRoot, dir))
+  }
+
+  // Re-copy framework directories
   for (const dir of FRAMEWORK_DIRS) {
     const srcDir = resolve(srcRoot, dir)
     if (!existsSync(srcDir)) continue
     const destDir = resolve(destRoot, dir)
     const sub = await copyDir(srcDir, destDir, { overwrite: true })
-    results.copied.push(...sub.copied)
+    // All re-installed framework files count as "updated" (copied), not "created"
+    results.copied.push(...sub.copied, ...sub.created)
     results.skipped.push(...sub.skipped)
-    results.created.push(...sub.created)
   }
 
   // Customizations are NEVER overwritten during update.

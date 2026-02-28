@@ -1,7 +1,7 @@
 ---
 description: 'Performance optimization expert for frontend, backend, and build performance.'
 name: 'Performance Expert'
-model: Gemini 3.1 Pro (Preview)
+model: Gemini 3.1 Pro
 tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages', 'chrome-devtools/*', 'nx-mcp-server/nx_project_details', 'nx-mcp-server/nx_workspace']
 ---
 

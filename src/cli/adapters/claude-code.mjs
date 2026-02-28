@@ -222,18 +222,28 @@ export async function install(pkgRoot, projectRoot) {
 // ─── Update ───────────────────────────────────────────────────────
 
 export async function update(pkgRoot, projectRoot) {
+  const srcRoot = getOrchestratorRoot(pkgRoot)
   const results = { copied: [], skipped: [], created: [] }
+  const claudeDir = resolve(projectRoot, '.claude')
 
-  // Regenerate CLAUDE.md (overwrite)
+  // 1. Regenerate CLAUDE.md (overwrite)
   const claudeMd = resolve(projectRoot, 'CLAUDE.md')
-  // Remove existing so install() will recreate it
   if (existsSync(claudeMd)) {
     const { unlink } = await import('node:fs/promises')
     await unlink(claudeMd)
   }
-  // Re-run install logic for CLAUDE.md only ← rebuild from sources
-  // (We need to call install-like logic but with overwrite semantics.
-  //  For v1, we regenerate the full file.)
+
+  // 2. Remove existing framework files so install() recreates them
+  const frameworkDirs = ['agents', 'skills', 'commands']
+  for (const dir of frameworkDirs) {
+    const dirPath = resolve(claudeDir, dir)
+    if (existsSync(dirPath)) {
+      const { rm } = await import('node:fs/promises')
+      await rm(dirPath, { recursive: true })
+    }
+  }
+
+  // 3. Re-run full install (CLAUDE.md + agents + skills + commands)
   const installResult = await install(pkgRoot, projectRoot)
   // Everything install created is an "update" copy
   results.copied.push(...installResult.created)

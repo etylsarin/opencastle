@@ -10,6 +10,8 @@ const ADAPTERS = {
   'claude-code': () => import('./adapters/claude-code.mjs'),
 }
 
+const VALID_IDES = Object.keys(ADAPTERS)
+
 export default async function update({ pkgRoot, args }) {
   const projectRoot = process.cwd()
 
@@ -17,6 +19,13 @@ export default async function update({ pkgRoot, args }) {
   if (!manifest) {
     console.error(
       '  ✗ No OpenCastle installation found. Run "npx opencastle init" first.'
+    )
+    process.exit(1)
+  }
+
+  if (!manifest.ide || !VALID_IDES.includes(manifest.ide)) {
+    console.error(
+      `  ✗ Invalid IDE "${manifest.ide}" in .opencastle.json. Valid options: ${VALID_IDES.join(', ')}`
     )
     process.exit(1)
   }
