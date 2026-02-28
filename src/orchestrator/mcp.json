@@ -42,6 +42,14 @@
     "Jira": {
       "url": "https://mcp.atlassian.com/v2/sse",
       "type": "http"
+    },
+    "Slack": {
+      "url": "https://mcp.slack.com/mcp",
+      "type": "http"
+    },
+    "Teams": {
+      "url": "https://mcp.microsoft365.com/mcp",
+      "type": "http"
     }
   }
 }

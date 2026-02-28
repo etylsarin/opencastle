@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { select, confirm, closePrompts } from './prompt.js'
 import { readManifest, writeManifest, createManifest } from './manifest.js'
-import type { CliContext, IdeAdapter, CmsChoice, DbChoice, PmChoice, StackConfig } from './types.js'
+import type { CliContext, IdeAdapter, CmsChoice, DbChoice, PmChoice, NotifChoice, StackConfig } from './types.js'
 
 const ADAPTERS: Record<string, () => Promise<IdeAdapter>> = {
   vscode: () => import('./adapters/vscode.js') as Promise<IdeAdapter>,
@@ -77,10 +77,17 @@ export default async function init({ pkgRoot }: CliContext): Promise<void> {
     { label: 'None', hint: 'No project management — skip PM skills', value: 'none' },
   ])
 
-  const stack: StackConfig = { cms: cms as CmsChoice, db: db as DbChoice, pm: pm as PmChoice }
+  // ── Notifications selection ────────────────────────────────────
+  const notifications = await select('Which notifications tool are you using?', [
+    { label: 'Slack', hint: 'Agent notifications and bi-directional communication', value: 'slack' },
+    { label: 'Microsoft Teams', hint: 'Agent notifications via Teams channels', value: 'teams' },
+    { label: 'None', hint: 'No notifications — skip messaging skills', value: 'none' },
+  ])
+
+  const stack: StackConfig = { cms: cms as CmsChoice, db: db as DbChoice, pm: pm as PmChoice, notifications: notifications as NotifChoice }
 
   console.log(`\n  Installing for ${ide}...`)
-  console.log(`  Stack: CMS=${stack.cms}, DB=${stack.db}, PM=${stack.pm}\n`)
+  console.log(`  Stack: CMS=${stack.cms}, DB=${stack.db}, PM=${stack.pm}, Notifications=${stack.notifications}\n`)
 
   // ── Run adapter ─────────────────────────────────────────────────
   const adapter = await ADAPTERS[ide]()
