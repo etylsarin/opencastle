@@ -109,7 +109,22 @@ All three targets also get a pre-configured **MCP server config** with Sanity, V
 npx opencastle update   # Update framework files (preserves customizations)
 npx opencastle diff     # Preview what an update would change
 npx opencastle eject    # Remove dependency, keep all files standalone
+npx opencastle run      # Process a task queue autonomously (daemon mode)
 ```
+
+### Daemon / Autonomous Mode
+
+Run a batch of tasks unattended by defining them in a YAML spec file:
+
+```bash
+npx opencastle run                         # Uses opencastle.tasks.yml
+npx opencastle run -f my-tasks.yml         # Custom spec file
+npx opencastle run --dry-run               # Preview execution plan
+npx opencastle run --adapter claude-code   # Override adapter
+npx opencastle run --concurrency 3         # Run up to 3 tasks in parallel
+```
+
+See [Task Queue](#task-queue) below for the full spec format.
 
 ### Project structure (VS Code example)
 
@@ -146,6 +161,94 @@ npx opencastle eject    # Remove dependency, keep all files standalone
 | `schema-changes` | CMS/content model modifications and queries |
 | `database-migration` | DB migrations, access policies, rollback |
 | `refactoring` | Safe code refactoring with behavior preservation |
+
+## Task Queue
+
+The `opencastle run` command processes a YAML task spec file, delegating tasks to AI coding agents without human supervision. Tasks form a DAG (directed acyclic graph) — dependencies are resolved automatically, and independent tasks can run in parallel.
+
+### Spec format
+
+Create an `opencastle.tasks.yml` file in your project root:
+
+```yaml
+name: "Overnight feature batch"
+concurrency: 1          # Max parallel tasks (default: 1)
+on_failure: continue     # "continue" | "stop" (default: "continue")
+adapter: claude-code     # Which agent runtime to use
+
+tasks:
+  - id: migrate-db
+    description: "Add reviews table with RLS policies"
+    agent: database-engineer
+    prompt: |
+      Create a new Supabase migration for a reviews table.
+    files:
+      - supabase/migrations/
+    timeout: 10m
+
+  - id: build-component
+    description: "Create ReviewCard component"
+    agent: ui-ux-expert
+    prompt: |
+      Build a ReviewCard component following existing patterns.
+    files:
+      - libs/shared-ui/src/components/ReviewCard/
+    timeout: 15m
+
+  - id: wire-page
+    description: "Wire reviews into the place detail page"
+    agent: developer
+    prompt: |
+      Add a reviews section to the place detail page.
+    depends_on: [migrate-db, build-component]
+    timeout: 20m
+```
+
+### Task fields
+
+| Field | Required | Default | Description |
+|-------|----------|---------|-------------|
+| `id` | Yes | — | Unique identifier |
+| `prompt` | Yes | — | Instructions for the AI agent |
+| `description` | No | Same as `id` | Human-readable description |
+| `agent` | No | `developer` | Specialist agent role |
+| `depends_on` | No | `[]` | Task IDs that must complete first |
+| `files` | No | `[]` | File/directory scope hints |
+| `timeout` | No | `30m` | Max duration (`30s`, `10m`, `1h`) |
+
+### Top-level options
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `name` | (required) | Human-readable run name |
+| `concurrency` | `1` | Max tasks running in parallel |
+| `on_failure` | `continue` | `continue` skips dependents; `stop` halts everything |
+| `adapter` | `claude-code` | Agent runtime adapter |
+
+### CLI options
+
+```
+opencastle run [options]
+
+  --file, -f <path>        Task spec file (default: opencastle.tasks.yml)
+  --dry-run                Show execution plan without running
+  --concurrency, -c <n>    Override max parallel tasks
+  --adapter, -a <name>     Override agent runtime adapter
+  --report-dir <path>      Where to write run reports (default: .opencastle/runs)
+  --verbose                Show full agent output
+  --help, -h               Show this help
+```
+
+### Adapters
+
+| Adapter | Status | CLI |
+|---------|--------|-----|
+| `claude-code` | ✅ Supported | `claude` |
+| `copilot` | 🚧 Planned | — |
+
+### Run reports
+
+After each run, a JSON report is written to `.opencastle/runs/` with task statuses, durations, and output summaries.
 
 ## Quality Gates
 
