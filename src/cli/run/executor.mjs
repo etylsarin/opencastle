@@ -1,4 +1,4 @@
-/* global console */
+/* global setTimeout */
 import { parseTimeout } from './schema.mjs'
 
 /**

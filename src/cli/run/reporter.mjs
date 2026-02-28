@@ -1,6 +1,6 @@
-/* global console */
+/* global process */
 import { mkdir, writeFile } from 'node:fs/promises'
-import { resolve, dirname } from 'node:path'
+import { resolve } from 'node:path'
 import { formatDuration } from './executor.mjs'
 
 /**

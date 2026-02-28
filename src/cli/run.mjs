@@ -78,7 +78,7 @@ function parseArgs(args) {
  * CLI entry point for the `run` command.
  * @param {{ pkgRoot: string, args: string[] }} ctx
  */
-export default async function run({ pkgRoot, args }) {
+export default async function run({ args }) {
   const opts = parseArgs(args)
 
   if (opts.help) {

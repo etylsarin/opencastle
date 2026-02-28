@@ -1,4 +1,4 @@
-/* global console, process */
+/* global process, setTimeout */
 import { spawn } from 'node:child_process'
 
 /** Adapter name */
@@ -40,7 +40,7 @@ export async function execute(task, options = {}) {
     '50',
   ]
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const proc = spawn('copilot', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env },

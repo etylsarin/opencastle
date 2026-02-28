@@ -1,6 +1,5 @@
-/* global console, process */
+/* global process, setTimeout */
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
 
 /** Adapter name */
 export const name = 'claude-code'
@@ -39,7 +38,7 @@ export async function execute(task, options = {}) {
     '50',
   ]
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const proc = spawn('claude', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env },
