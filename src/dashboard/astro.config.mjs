@@ -2,5 +2,5 @@ import { defineConfig } from 'astro/config';
 
 export default defineConfig({
   site: 'https://www.opencastle.dev',
-  base: '/dashboard',
+  base: process.env.DASHBOARD_BASE || '/',
 });
