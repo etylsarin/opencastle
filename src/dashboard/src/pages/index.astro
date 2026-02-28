@@ -453,8 +453,7 @@ const base = import.meta.env.BASE_URL;
 
     const tierCounts = {};
     delegations.forEach((d) => {
-      const tier = d.tier === 'fast' ? 'utility' : d.tier;
-      tierCounts[tier] = (tierCounts[tier] || 0) + 1;
+      tierCounts[d.tier] = (tierCounts[d.tier] || 0) + 1;
     });
 
     const order = ['premium', 'standard', 'utility', 'economy'];

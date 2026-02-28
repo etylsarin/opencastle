@@ -35,7 +35,7 @@ const AGENTS = [
 const MODELS = ['claude-opus-4-6', 'gpt-5.3-codex', 'gemini-3.1-pro', 'gpt-5-mini'];
 
 const TIERS: Array<{ name: string; weight: number }> = [
-  { name: 'fast', weight: 0.4 },
+  { name: 'utility', weight: 0.4 },
   { name: 'standard', weight: 0.25 },
   { name: 'economy', weight: 0.2 },
   { name: 'premium', weight: 0.15 },

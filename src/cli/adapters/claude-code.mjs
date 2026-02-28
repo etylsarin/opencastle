@@ -222,7 +222,6 @@ export async function install(pkgRoot, projectRoot) {
 // ─── Update ───────────────────────────────────────────────────────
 
 export async function update(pkgRoot, projectRoot) {
-  const srcRoot = getOrchestratorRoot(pkgRoot)
   const results = { copied: [], skipped: [], created: [] }
   const claudeDir = resolve(projectRoot, '.claude')
 

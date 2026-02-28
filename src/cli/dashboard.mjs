@@ -162,7 +162,7 @@ export default async function dashboard({ pkgRoot, args }) {
         res.writeHead(404)
         res.end('Not Found')
       }
-    } catch (err) {
+    } catch (_err) {
       res.writeHead(500)
       res.end('Internal Server Error')
     }

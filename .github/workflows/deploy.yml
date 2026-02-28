@@ -43,6 +43,8 @@ jobs:
       - name: Build dashboard
         run: npm run build
         working-directory: src/dashboard
+        env:
+          DASHBOARD_BASE: /dashboard/
 
       - name: Merge dashboard into website output
         run: mkdir -p website/dist/dashboard && cp -r src/dashboard/dist/* website/dist/dashboard/

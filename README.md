@@ -134,7 +134,7 @@ graph TB
         ARCH[Architect]
     end
 
-    subgraph Fast["Fast Tier"]
+    subgraph Utility["Utility Tier"]
         TEST[Testing Expert]
         DATA[Data Expert]
         DEVOPS[DevOps Expert]
@@ -151,7 +151,7 @@ graph TB
 
     TL --> Standard
     TL --> Premium
-    TL --> Fast
+    TL --> Utility
     TL --> Economy
 
     KB["📚 Instructions · Skills · Workflows · Prompts"]
@@ -164,7 +164,7 @@ graph TB
 |------|-------|----------|
 | Premium | Claude Opus 4.6 | Architecture, security, orchestration |
 | Standard | Gemini 3.1 Pro | Features, schemas, UI |
-| Fast | GPT-5.3-Codex | Testing, data, deployment |
+| Utility | GPT-5.3-Codex | Testing, data, deployment |
 | Economy | GPT-5 mini | Documentation |
 
 ---

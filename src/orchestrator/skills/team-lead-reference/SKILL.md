@@ -17,7 +17,7 @@ Choose models deliberately based on task complexity. Not every task needs the mo
 |------|------|---------|
 | **Premium** | $$$ | Architecture decisions, security audits, complex reasoning, panel reviews |
 | **Standard** | $$ | Feature implementation, schema design, component building |
-| **Fast** | $$ | Terminal-heavy tasks, E2E tests, data pipelines, scripted workflows |
+| **Utility** | $$ | Terminal-heavy tasks, E2E tests, data pipelines, scripted workflows |
 | **Economy** | $ | Documentation, simple config changes, formatting, boilerplate |
 
 ### Selection Rules
@@ -46,7 +46,7 @@ During decomposition, assign a **complexity score** (Fibonacci: 1, 2, 3, 5, 8, 1
 
 | Score | Tier | Examples |
 |-------|------|----------|
-| **1-2** | Economy/Fast | Docs update, config tweak, rename, simple test |
+| **1-2** | Economy/Utility | Docs update, config tweak, rename, simple test |
 | **3-5** | Standard | Component build, GROQ query, API route, migration |
 | **8** | Premium | Architecture decision, security audit, complex refactor |
 | **13** | Premium + Panel | DB migration with data transform, auth flow redesign |
@@ -147,7 +147,7 @@ After completing a feature (all Linear issues Done), add a cost summary to the r
 | Sub-agent delegations | X |
 | Background agent delegations | X |
 | Panel reviews | X |
-| Model tiers used | Premium: X, Standard: X, Fast: X, Economy: X |
+| Model tiers used | Premium: X, Standard: X, Utility: X, Economy: X |
 | Upgrades/downgrades | [reason if any] |
 | Est. total tokens | ~XXK |
 ```
@@ -202,7 +202,7 @@ Log to `.github/customizations/AGENT-FAILURES.md` when:
 | **Failure Type** | `verification-fail` / `tool-error` / `panel-block` / `timeout` / `scope-creep` |
 | **Attempts** | Number of attempts before logging |
 | **Est. Tokens Spent** | ~XXK across all attempts |
-| **Model Tier** | Economy / Fast / Standard / Premium |
+| **Model Tier** | Economy / Utility / Standard / Premium |
 
 **Task:** What was the agent supposed to do?
 
