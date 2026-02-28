@@ -27,7 +27,32 @@ One command. Any repo. Any IDE.
 npx opencastle init
 ```
 
-Choose your IDE and the CLI generates the right format:
+The guided onboarding asks about your IDE and tech stack, then installs only the relevant agents, skills, and MCP servers:
+
+```
+$ npx opencastle init
+
+🏰 OpenCastle v0.1.0
+
+Which IDE are you using?
+  1) VS Code       — .github/ agents, instructions, skills
+  2) Cursor        — .cursorrules & .cursor/rules/*.mdc
+  3) Claude Code   — CLAUDE.md & .claude/ commands
+
+Which CMS are you using?
+  1) Sanity        2) Contentful    3) Strapi        4) None
+
+Which database are you using?
+  1) Supabase      2) Convex        3) None
+
+Which project management tool are you using?
+  1) Linear        2) Jira          3) None
+
+Which notifications tool are you using?
+  1) Slack         2) Microsoft Teams   3) None
+```
+
+Your selections are stored in `.opencastle.json` and control which skills get installed, which MCP servers are configured, and how the skill matrix is pre-populated.
 
 | IDE | Output |
 |-----|--------|
@@ -35,7 +60,7 @@ Choose your IDE and the CLI generates the right format:
 | **Cursor** | `.cursorrules` + `.cursor/rules/**/*.mdc` |
 | **Claude Code** | `CLAUDE.md` + `.claude/` — agents, skills, commands |
 
-All targets include a pre-configured **MCP server config** for Sanity, Vercel, Supabase, Linear, and Chrome DevTools.
+All targets include a pre-configured **MCP server config** — only the servers matching your stack are included (from Sanity, Contentful, Strapi, Supabase, Convex, Vercel, Chrome DevTools, Linear, Jira, Slack, and Teams).
 
 ### Getting started
 
@@ -61,7 +86,7 @@ All targets include a pre-configured **MCP server config** for Sanity, Vercel, S
 .github/
 ├── agents/              # 18 specialist agent definitions
 ├── instructions/        # Always-loaded project context
-├── skills/              # 28 on-demand knowledge modules
+├── skills/              # 34 on-demand knowledge modules
 ├── agent-workflows/     # 8 reproducible execution templates
 ├── prompts/             # 9 reusable prompt templates
 └── customizations/      # Your project config (never overwritten)
@@ -77,7 +102,7 @@ All targets include a pre-configured **MCP server config** for Sanity, Vercel, S
 |---------|-------------|
 | **Team Lead orchestrator** | Analyzes, decomposes, delegates, and verifies work across agents |
 | **18 specialist agents** | Developer, UI/UX, Database, Security, Testing, Reviewer, and more |
-| **28 on-demand skills** | Loaded per task to keep context windows lean |
+| **34 on-demand skills** | Loaded per task to keep context windows lean — stack-specific skills auto-selected during init |
 | **8 workflow templates** | Features, bug fixes, data pipelines, security audits, etc. |
 | **Multi-IDE support** | VS Code, Cursor, Claude Code — native formats for each |
 | **Autonomous mode** | Queue tasks in YAML, run overnight without supervision |
