@@ -24,6 +24,7 @@ const base = import.meta.env.BASE_URL;
         <li><a class="dash-sidebar__link" href="#pipeline-section" data-section="pipeline-section">Pipeline</a></li>
         <li><a class="dash-sidebar__link" href="#agent-section" data-section="agent-section">Agents</a></li>
         <li><a class="dash-sidebar__link" href="#tier-section" data-section="tier-section">Tiers</a></li>
+        <li><a class="dash-sidebar__link" href="#delegation-section" data-section="delegation-section">Delegations</a></li>
         <li><a class="dash-sidebar__link" href="#timeline-section" data-section="timeline-section">Timeline</a></li>
         <li><a class="dash-sidebar__link" href="#model-section" data-section="model-section">Models</a></li>
         <li><a class="dash-sidebar__link" href="#execution-section" data-section="execution-section">Exec Log</a></li>
@@ -52,6 +53,16 @@ const base = import.meta.env.BASE_URL;
       </div>
       <div class="kpi-card" id="kpi-duration">
         <span class="kpi-card__label">Avg Duration</span>
+        <span class="kpi-card__value">&mdash;</span>
+        <span class="kpi-card__sub"></span>
+      </div>
+      <div class="kpi-card" id="kpi-retries">
+        <span class="kpi-card__label">Total Retries</span>
+        <span class="kpi-card__value">&mdash;</span>
+        <span class="kpi-card__sub"></span>
+      </div>
+      <div class="kpi-card" id="kpi-lessons">
+        <span class="kpi-card__label">Lessons Added</span>
         <span class="kpi-card__value">&mdash;</span>
         <span class="kpi-card__sub"></span>
       </div>
@@ -85,6 +96,28 @@ const base = import.meta.env.BASE_URL;
           <p class="chart-card__desc">Delegation model tiers</p>
         </div>
         <div class="chart-card__body" id="tier-chart">
+          <div class="loading-skeleton"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Charts Row: Delegation Insights -->
+    <div class="charts-row" id="delegation-section" data-nav-section>
+      <section class="chart-card">
+        <div class="chart-card__header">
+          <h2 class="chart-card__title">Delegation Mechanism</h2>
+          <p class="chart-card__desc">Sub-agent vs background split</p>
+        </div>
+        <div class="chart-card__body" id="mechanism-chart">
+          <div class="loading-skeleton"></div>
+        </div>
+      </section>
+      <section class="chart-card">
+        <div class="chart-card__header">
+          <h2 class="chart-card__title">Delegation Outcomes</h2>
+          <p class="chart-card__desc">Success rate by delegation</p>
+        </div>
+        <div class="chart-card__body" id="delegation-outcome-chart">
           <div class="loading-skeleton"></div>
         </div>
       </section>
@@ -263,6 +296,32 @@ const base = import.meta.env.BASE_URL;
         avgDur + 'm';
       kpiDuration.querySelector('.kpi-card__sub').innerHTML =
         '<span class="kpi-trend kpi-trend--neutral">\u2192</span> per session';
+    }
+
+    // Retries KPI
+    const totalRetries = sessions.reduce((sum, s) => sum + (s.retries || 0), 0);
+    const kpiRetries = document.getElementById('kpi-retries');
+    if (kpiRetries) {
+      kpiRetries.querySelector('.kpi-card__value').textContent = totalRetries;
+      const retriedSessions = sessions.filter((s) => (s.retries || 0) > 0).length;
+      kpiRetries.querySelector('.kpi-card__sub').textContent =
+        retriedSessions + ' sessions with retries';
+    }
+
+    // Lessons KPI
+    const totalLessons = sessions.reduce(
+      (sum, s) => sum + (s.lessons_added ? s.lessons_added.length : 0),
+      0
+    );
+    const kpiLessons = document.getElementById('kpi-lessons');
+    if (kpiLessons) {
+      kpiLessons.querySelector('.kpi-card__value').textContent = totalLessons;
+      const discoveryCount = sessions.reduce(
+        (sum, s) => sum + (s.discoveries ? s.discoveries.length : 0),
+        0
+      );
+      kpiLessons.querySelector('.kpi-card__sub').textContent =
+        discoveryCount + ' issues discovered';
     }
   }
 
@@ -470,6 +529,129 @@ const base = import.meta.env.BASE_URL;
       '</div>';
   }
 
+  // ── Mechanism Donut Chart ─────────────────────────────────
+
+  function renderMechanismChart(delegations) {
+    const el = document.getElementById('mechanism-chart');
+    if (!el) return;
+
+    if (delegations.length === 0) {
+      el.innerHTML =
+        '<div class="empty-state"><div class="empty-state__icon">\u2699\uFE0F</div><p class="empty-state__text">No delegation data available</p></div>';
+      return;
+    }
+
+    const mechCounts = {};
+    delegations.forEach((d) => {
+      const mech = d.mechanism || 'unknown';
+      mechCounts[mech] = (mechCounts[mech] || 0) + 1;
+    });
+
+    var MECH_COLORS = {
+      'sub-agent': '#3b82f6',
+      'background': '#a78bfa',
+      'unknown': '#64748b',
+    };
+
+    var MECH_LABELS = {
+      'sub-agent': 'Sub-agent (inline)',
+      'background': 'Background (worktree)',
+      'unknown': 'Unknown',
+    };
+
+    var mechOrder = ['sub-agent', 'background', 'unknown'];
+    var mechs = mechOrder
+      .filter(function (m) { return mechCounts[m]; })
+      .map(function (m) { return { name: m, count: mechCounts[m] }; });
+
+    var total = delegations.length;
+    var r = 70;
+    var circumference = 2 * Math.PI * r;
+    var cumOffset = 0;
+
+    var circles = mechs.map(function (m) {
+      var pct = m.count / total;
+      var dashLen = pct * circumference;
+      var segment =
+        '<circle cx="90" cy="90" r="' + r + '" fill="none" ' +
+        'stroke="' + (MECH_COLORS[m.name] || '#64748b') + '" stroke-width="18" ' +
+        'stroke-dasharray="' + dashLen.toFixed(2) + ' ' + (circumference - dashLen).toFixed(2) + '" ' +
+        'stroke-dashoffset="' + (-cumOffset).toFixed(2) + '" ' +
+        'transform="rotate(-90 90 90)" stroke-linecap="round"/>';
+      cumOffset += dashLen;
+      return segment;
+    });
+
+    var legend = mechs
+      .map(function (m) {
+        return '<div class="legend-item">' +
+          '<span class="legend-dot" style="background: ' + (MECH_COLORS[m.name] || '#64748b') + '"></span>' +
+          '<span class="legend-name">' + (MECH_LABELS[m.name] || m.name) + '</span>' +
+          '<span class="legend-count">' + m.count + ' (' + Math.round((m.count / total) * 100) + '%)</span>' +
+          '</div>';
+      })
+      .join('');
+
+    el.innerHTML =
+      '<div class="donut-container">' +
+      '<div class="donut-wrap">' +
+      '<svg viewBox="0 0 180 180" class="donut-svg">' +
+      circles.join('') +
+      '</svg>' +
+      '<div class="donut-center">' +
+      '<span class="donut-total">' + total + '</span>' +
+      '<span class="donut-total-label">total</span>' +
+      '</div>' +
+      '</div>' +
+      '<div class="donut-legend">' +
+      legend +
+      '</div>' +
+      '</div>';
+  }
+
+  // ── Delegation Outcome Chart ──────────────────────────────
+
+  function renderDelegationOutcomeChart(delegations) {
+    var el = document.getElementById('delegation-outcome-chart');
+    if (!el) return;
+
+    if (delegations.length === 0) {
+      el.innerHTML =
+        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDCCA</div><p class="empty-state__text">No delegation data available</p></div>';
+      return;
+    }
+
+    var OUTCOME_COLORS = {
+      success: '#22c55e',
+      partial: '#f59e0b',
+      failed: '#ef4444',
+      redirected: '#64748b',
+    };
+
+    var outcomeCounts = {};
+    delegations.forEach(function (d) {
+      var outcome = d.outcome || 'unknown';
+      outcomeCounts[outcome] = (outcomeCounts[outcome] || 0) + 1;
+    });
+
+    var outcomes = Object.entries(outcomeCounts).sort(function (a, b) { return b[1] - a[1]; });
+    var maxCount = Math.max.apply(null, outcomes.map(function (o) { return o[1]; }));
+
+    el.innerHTML = outcomes
+      .map(function (entry) {
+        var name = entry[0];
+        var count = entry[1];
+        return '<div class="bar-row">' +
+          '<span class="bar-label">' + escapeHtml(name) + '</span>' +
+          '<div class="bar-track">' +
+          '<div class="bar-segment" style="width: ' + ((count / maxCount) * 100).toFixed(1) + '%; background: ' + (OUTCOME_COLORS[name] || '#64748b') + '"></div>' +
+          '</div>' +
+          '<span class="bar-value">' + count + '</span>' +
+          '</div>';
+      })
+      .join('');
+  }
+
   // ── Timeline Chart ────────────────────────────────────────
 
   function renderTimelineChart(sessions, delegations) {
@@ -674,6 +856,21 @@ const base = import.meta.env.BASE_URL;
                 escapeHtml(s.model) +
                 '</span>'
               : '') +
+            (s.retries > 0
+              ? '<span class="exec-step__meta-item">\uD83D\uDD04 ' +
+                s.retries +
+                ' retries</span>'
+              : '') +
+            (s.lessons_added && s.lessons_added.length > 0
+              ? '<span class="exec-step__meta-item">\uD83D\uDCA1 ' +
+                s.lessons_added.length +
+                ' lessons</span>'
+              : '') +
+            (s.discoveries && s.discoveries.length > 0
+              ? '<span class="exec-step__meta-item">\uD83D\uDD0D ' +
+                s.discoveries.length +
+                ' discoveries</span>'
+              : '') +
             '</div>' +
             '</div>' +
             '</div>'
@@ -732,6 +929,11 @@ const base = import.meta.env.BASE_URL;
             (p.should_fix > 0 ? p.should_fix + ' should-fix' : '') +
             (p.must_fix === 0 && p.should_fix === 0 ? 'Clean' : '') +
             '</div>' +
+            '<div class="panel-item__meta">' +
+            '<span class="panel-item__meta-item">\uD83E\uDD16 ' + escapeHtml(p.reviewer_model || 'unknown') + '</span>' +
+            (p.attempt > 1 ? '<span class="panel-item__meta-item">\uD83D\uDD04 attempt ' + p.attempt + '</span>' : '') +
+            (p.artifacts_count ? '<span class="panel-item__meta-item">\uD83D\uDCC4 ' + p.artifacts_count + ' artifacts</span>' : '') +
+            '</div>' +
             '</div>'
         )
         .join('') +
@@ -764,6 +966,8 @@ const base = import.meta.env.BASE_URL;
       '<th>Outcome</th>' +
       '<th>Duration</th>' +
       '<th>Files</th>' +
+      '<th>Retries</th>' +
+      '<th>Issue</th>' +
       '</tr></thead>' +
       '<tbody>' +
       sorted
@@ -790,6 +994,12 @@ const base = import.meta.env.BASE_URL;
             '<td class="td-num">' +
             (s.files_changed != null ? s.files_changed : '\u2014') +
             '</td>' +
+            '<td class="td-num">' +
+            (s.retries != null ? s.retries : '\u2014') +
+            '</td>' +
+            '<td class="td-issue">' +
+            (s.linear_issue ? escapeHtml(s.linear_issue) : '\u2014') +
+            '</td>' +
             '</tr>'
         )
         .join('') +
@@ -809,6 +1019,8 @@ const base = import.meta.env.BASE_URL;
     renderPipeline(delegations);
     renderAgentChart(sessions);
     renderTierChart(delegations);
+    renderMechanismChart(delegations);
+    renderDelegationOutcomeChart(delegations);
     renderTimelineChart(sessions, delegations);
     renderModelChart(sessions);
     renderExecutionLog(sessions);

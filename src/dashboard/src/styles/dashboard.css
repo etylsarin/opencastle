@@ -211,7 +211,7 @@ body {
 
 @media (min-width: 960px) {
   .kpi-row {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   }
 }
 
@@ -833,6 +833,21 @@ body {
   color: var(--text-tertiary);
 }
 
+.panel-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+.panel-item__meta-item {
+  font-size: 0.625rem;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
 /* ---------- Sessions Table ---------- */
 .sessions-table {
   width: 100%;
@@ -920,6 +935,13 @@ body {
 .td-num {
   font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+.td-issue {
+  font-size: 0.75rem;
+  color: var(--text-accent);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
 }
 
 /* ---------- Loading State ---------- */
@@ -1011,6 +1033,12 @@ body {
 }
 .dash-main > *:nth-child(9) {
   animation-delay: 480ms;
+}
+.dash-main > *:nth-child(10) {
+  animation-delay: 540ms;
+}
+.dash-main > *:nth-child(11) {
+  animation-delay: 600ms;
 }
 
 /* ---------- Responsive Fine-Tuning ---------- */
