@@ -5,6 +5,7 @@
 const ADAPTERS = {
   'claude-code': () => import('./claude-code.mjs'),
   copilot: () => import('./copilot.mjs'),
+  cursor: () => import('./cursor.mjs'),
 }
 
 /**

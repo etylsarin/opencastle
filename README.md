@@ -246,6 +246,7 @@ tasks:
 |---------|--------|-----|
 | `claude-code` | ✅ Supported | `claude` |
 | `copilot` | ✅ Supported | `copilot` |
+| `cursor` | ✅ Supported | `agent` |
 
 After each run, a JSON report is written to `.opencastle/runs/` with statuses, durations, and output summaries.
 
