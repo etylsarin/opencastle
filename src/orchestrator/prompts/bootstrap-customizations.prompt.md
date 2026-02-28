@@ -19,6 +19,21 @@ The `.github/customizations/` directory holds project-specific configuration tha
 
 Without customizations, agents operate blind — they don't know the project's table schema, API routes, deployment target, or task board. This prompt fixes that.
 
+## Pre-Existing Stack Info
+
+Before starting discovery, check for **`.opencastle.json`** in the project root. If it exists and contains a `stack` field, the user already declared their CMS and database during `opencastle init`. Use these as confirmed facts — skip re-detecting them and focus discovery on the project-specific details (IDs, schemas, config values).
+
+```json
+{
+  "stack": {
+    "cms": "sanity",      // sanity | contentful | strapi | none
+    "db": "supabase"      // supabase | convex | none
+  }
+}
+```
+
+The skill matrix (`customizations/agents/skill-matrix.md`) will already have the `cms` and `database` rows pre-filled based on this selection. Verify they are correct and fill in any remaining empty rows.
+
 ## Workflow
 
 ### Phase 1: Discovery
@@ -27,6 +42,7 @@ Explore the project systematically. Gather facts — don't assume.
 
 #### 1.1 Project Overview
 
+- **First**: Read `.opencastle.json` if it exists — note the `stack.cms` and `stack.db` values
 - Read `README.md`, `package.json`, and any workspace config (`nx.json`, `turbo.json`, `pnpm-workspace.yaml`, `lerna.json`)
 - Identify: monorepo vs single app, package manager, language, framework(s)
 - List all apps and libraries with their purpose

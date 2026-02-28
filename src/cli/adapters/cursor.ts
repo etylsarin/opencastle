@@ -3,7 +3,7 @@ import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
-import { getExcludedSkills, getExcludedAgents } from '../stack-config.js'
+import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform } from '../stack-config.js'
 import type { CopyResults, ManagedPaths, StackConfig } from '../types.js'
 
 /**
@@ -175,11 +175,12 @@ export async function install(
     removeExt: '.prompt.md',
   })
 
-  // 7. Customizations (scaffold once, plain copy)
+  // 7. Customizations (scaffold once, pre-populated with stack choices)
   const custSrc = resolve(srcRoot, 'customizations')
   if (existsSync(custSrc)) {
     const custDest = resolve(rulesRoot, 'customizations')
-    const sub = await copyDir(custSrc, custDest)
+    const custTransform = stack ? getCustomizationsTransform(stack) : undefined
+    const sub = await copyDir(custSrc, custDest, { transform: custTransform })
     results.created.push(...sub.created)
     results.skipped.push(...sub.skipped)
   }

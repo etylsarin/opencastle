@@ -1,4 +1,21 @@
-import type { CmsChoice, DbChoice, StackConfig } from './types.js';
+import type { CmsChoice, DbChoice, StackConfig, CopyDirOptions } from './types.js';
+
+// ── Skill / Technology labels ─────────────────────────────────
+
+/** Display name for each CMS choice */
+const CMS_LABELS: Record<Exclude<CmsChoice, 'none'>, { tech: string; skill: string }> = {
+  sanity: { tech: 'Sanity', skill: 'sanity-cms' },
+  contentful: { tech: 'Contentful', skill: 'contentful-cms' },
+  strapi: { tech: 'Strapi', skill: 'strapi-cms' },
+};
+
+/** Display name for each DB choice */
+const DB_LABELS: Record<Exclude<DbChoice, 'none'>, { tech: string; skill: string }> = {
+  supabase: { tech: 'Supabase', skill: 'supabase-database' },
+  convex: { tech: 'Convex', skill: 'convex-database' },
+};
+
+// ── Exclusion / inclusion maps ────────────────────────────────
 
 /** Skills to EXCLUDE based on CMS choice */
 const CMS_SKILL_MAP: Record<CmsChoice, string[]> = {
@@ -68,4 +85,52 @@ export function getIncludedMcpServers(stack: StackConfig): Set<string> {
     ...CMS_MCP_MAP[stack.cms],
     ...DB_MCP_MAP[stack.db],
   ]);
+}
+
+// ── Customization file transforms ─────────────────────────────
+
+/**
+ * Return a transform callback that pre-populates customization files
+ * based on the user's stack selection.
+ *
+ * Used by all adapters when copying the `customizations/` directory.
+ */
+export function getCustomizationsTransform(
+  stack: StackConfig
+): NonNullable<CopyDirOptions['transform']> {
+  return (content: string, srcPath: string) => {
+    // Pre-fill skill matrix with CMS and DB bindings
+    if (srcPath.endsWith('skill-matrix.md')) {
+      return transformSkillMatrix(content, stack);
+    }
+    return content;
+  };
+}
+
+/**
+ * Fill in the `database` and `cms` rows in the skill matrix
+ * based on the user's stack selection.
+ */
+function transformSkillMatrix(content: string, stack: StackConfig): string {
+  let result = content;
+
+  // Fill the database row
+  if (stack.db !== 'none') {
+    const { tech, skill } = DB_LABELS[stack.db];
+    result = result.replace(
+      /(\| `database`\s*\|)\s*\|(\s*\|)/,
+      `$1 ${tech} | \`${skill}\` $2`
+    );
+  }
+
+  // Fill the CMS row
+  if (stack.cms !== 'none') {
+    const { tech, skill } = CMS_LABELS[stack.cms];
+    result = result.replace(
+      /(\| `cms`\s*\|)\s*\|(\s*\|)/,
+      `$1 ${tech} | \`${skill}\` $2`
+    );
+  }
+
+  return result;
 }

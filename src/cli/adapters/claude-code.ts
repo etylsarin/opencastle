@@ -3,7 +3,7 @@ import { mkdir, writeFile, readdir, readFile, unlink, rm } from 'node:fs/promise
 import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
-import { getExcludedSkills, getExcludedAgents } from '../stack-config.js'
+import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform } from '../stack-config.js'
 import type { CopyResults, ManagedPaths, StackConfig } from '../types.js'
 
 /**
@@ -216,11 +216,12 @@ export async function install(
     }
   }
 
-  // 6. Customizations (scaffold once)
+  // 6. Customizations (scaffold once, pre-populated with stack choices)
   const custDir = resolve(srcRoot, 'customizations')
   if (existsSync(custDir)) {
     const destCust = resolve(claudeDir, 'customizations')
-    const sub = await copyDir(custDir, destCust)
+    const custTransform = stack ? getCustomizationsTransform(stack) : undefined
+    const sub = await copyDir(custDir, destCust, { transform: custTransform })
     results.created.push(...sub.created)
     results.skipped.push(...sub.skipped)
   }
