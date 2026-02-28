@@ -12,7 +12,6 @@
   <a href="https://www.npmjs.com/package/opencastle"><img src="https://img.shields.io/npm/v/opencastle.svg?v=1" alt="npm version" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/npm/l/opencastle.svg?v=1" alt="license" /></a>
   <a href="https://www.npmjs.com/package/opencastle"><img src="https://img.shields.io/npm/dm/opencastle.svg?v=1" alt="downloads" /></a>
-  <a href="https://github.com/etylsarin/opencastle"><img src="https://img.shields.io/github/stars/etylsarin/opencastle.svg?style=social" alt="GitHub stars" /></a>
 </p>
 
 <p align="center">
@@ -207,6 +206,8 @@ OpenCastle is free and open-source.
 <p align="center">
   <a href="https://ko-fi.com/A0A61V4992" target="_blank"><img height="36" style="border:0px;height:36px;" src="https://storage.ko-fi.com/cdn/kofi4.png?v=6" border="0" alt="Buy Me a Coffee at ko-fi.com" /></a>
 </p>
+
+For corporate sponsorship inquiries, open a [GitHub Discussion](https://github.com/etylsarin/opencastle/discussions).
 
 <br>
 
