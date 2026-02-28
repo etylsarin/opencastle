@@ -1,5 +1,15 @@
 import type { ChildProcess } from 'node:child_process';
 
+// ── Stack selection types ──────────────────────────────────────
+
+export type CmsChoice = 'sanity' | 'contentful' | 'strapi' | 'none';
+export type DbChoice = 'supabase' | 'convex' | 'none';
+
+export interface StackConfig {
+  cms: CmsChoice;
+  db: DbChoice;
+}
+
 /** Context passed from bin/cli.mjs to every command handler. */
 export interface CliContext {
   pkgRoot: string;
@@ -30,6 +40,7 @@ export interface Manifest {
   installedAt: string;
   updatedAt: string;
   managedPaths?: ManagedPaths;
+  stack?: StackConfig;
 }
 
 /** Framework vs customizable file paths. */
@@ -40,8 +51,8 @@ export interface ManagedPaths {
 
 /** IDE adapter interface (init/update commands). */
 export interface IdeAdapter {
-  install(_pkgRoot: string, _projectRoot: string): Promise<CopyResults>;
-  update(_pkgRoot: string, _projectRoot: string): Promise<CopyResults>;
+  install(_pkgRoot: string, _projectRoot: string, _stack?: StackConfig): Promise<CopyResults>;
+  update(_pkgRoot: string, _projectRoot: string, _stack?: StackConfig): Promise<CopyResults>;
   getManagedPaths(): ManagedPaths;
 }
 

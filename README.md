@@ -298,16 +298,6 @@ After each run, a JSON report is written to `.opencastle/runs/` with statuses, d
 
 ---
 
-## Battle-Tested
-
-Forged in a production monorepo shipping real consumer apps — thousands of agent delegations, not theory.
-
-- **~58K words** of curated knowledge
-- **8 workflow templates** covering the full SDLC
-- **Mandatory fast review** on every step — inspired by [Steroids CLI](https://github.com/UnlikeOtherAI/steroids-cli)'s coder/reviewer separation
-- **Structured dispute escalation** — when agents can't resolve after N attempts, formal dispute records replace raw failure logs, giving humans clear action items (also inspired by Steroids CLI)
-- **Self-improving** — agents capture lessons and graduate them into permanent instructions
-
 ## License
 
 [MIT](LICENSE) — Filip Mares, 2026

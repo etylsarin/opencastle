@@ -3,7 +3,8 @@ import { mkdir, writeFile, readdir, readFile, unlink, rm } from 'node:fs/promise
 import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
-import type { CopyResults, ManagedPaths } from '../types.js'
+import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform } from '../stack-config.js'
+import type { CopyResults, ManagedPaths, StackConfig } from '../types.js'
 
 /**
  * Claude Code adapter.
@@ -46,10 +47,14 @@ function parseFrontmatterMeta(content: string): Record<string, string> {
 
 export async function install(
   pkgRoot: string,
-  projectRoot: string
+  projectRoot: string,
+  stack?: StackConfig
 ): Promise<CopyResults> {
   const srcRoot = getOrchestratorRoot(pkgRoot)
   const results: CopyResults = { copied: [], skipped: [], created: [] }
+
+  const excludedSkills = stack ? getExcludedSkills(stack) : new Set<string>()
+  const excludedAgents = stack ? getExcludedAgents(stack) : new Set<string>()
 
   // 1. Build CLAUDE.md ← copilot-instructions + instructions/* + agent index + skill index
   const claudeMd = resolve(projectRoot, 'CLAUDE.md')
@@ -84,6 +89,7 @@ export async function install(
       )
       for (const file of (await readdir(agentsDir)).sort()) {
         if (!file.endsWith('.md')) continue
+        if (excludedAgents.has(file)) continue
         const meta = parseFrontmatterMeta(
           await readFile(resolve(agentsDir, file), 'utf8')
         )
@@ -110,6 +116,7 @@ export async function install(
       for (const entry of subdirs.sort((a, b) =>
         a.name.localeCompare(b.name)
       )) {
+        if (excludedSkills.has(entry.name)) continue
         const skillFile = resolve(skillsDir, entry.name, 'SKILL.md')
         if (!existsSync(skillFile)) continue
         const meta = parseFrontmatterMeta(await readFile(skillFile, 'utf8'))
@@ -136,6 +143,7 @@ export async function install(
     await mkdir(destAgents, { recursive: true })
     for (const file of await readdir(agentsDir)) {
       if (!file.endsWith('.md')) continue
+      if (excludedAgents.has(file)) continue
       const destPath = resolve(destAgents, file)
       if (existsSync(destPath)) {
         results.skipped.push(destPath)
@@ -156,6 +164,7 @@ export async function install(
       await readdir(skillsDir, { withFileTypes: true })
     ).filter((e) => e.isDirectory())
     for (const entry of subdirs) {
+      if (excludedSkills.has(entry.name)) continue
       const skillFile = resolve(skillsDir, entry.name, 'SKILL.md')
       if (!existsSync(skillFile)) continue
       const destPath = resolve(destSkills, `${entry.name}.md`)
@@ -207,11 +216,12 @@ export async function install(
     }
   }
 
-  // 6. Customizations (scaffold once)
+  // 6. Customizations (scaffold once, pre-populated with stack choices)
   const custDir = resolve(srcRoot, 'customizations')
   if (existsSync(custDir)) {
     const destCust = resolve(claudeDir, 'customizations')
-    const sub = await copyDir(custDir, destCust)
+    const custTransform = stack ? getCustomizationsTransform(stack) : undefined
+    const sub = await copyDir(custDir, destCust, { transform: custTransform })
     results.created.push(...sub.created)
     results.skipped.push(...sub.skipped)
   }
@@ -220,7 +230,8 @@ export async function install(
   const mcpResult = await scaffoldMcpConfig(
     pkgRoot,
     projectRoot,
-    '.claude/mcp.json'
+    '.claude/mcp.json',
+    stack
   )
   results[mcpResult.action].push(mcpResult.path)
 
@@ -231,7 +242,8 @@ export async function install(
 
 export async function update(
   pkgRoot: string,
-  projectRoot: string
+  projectRoot: string,
+  stack?: StackConfig
 ): Promise<CopyResults> {
   const results: CopyResults = { copied: [], skipped: [], created: [] }
   const claudeDir = resolve(projectRoot, '.claude')
@@ -252,7 +264,7 @@ export async function update(
   }
 
   // 3. Re-run full install (CLAUDE.md + agents + skills + commands)
-  const installResult = await install(pkgRoot, projectRoot)
+  const installResult = await install(pkgRoot, projectRoot, stack)
   // Everything install created is an "update" copy
   results.copied.push(...installResult.created)
   results.skipped.push(...installResult.skipped)

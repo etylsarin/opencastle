@@ -3,7 +3,8 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
-import type { CopyResults, ManagedPaths } from '../types.js'
+import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform } from '../stack-config.js'
+import type { CopyResults, ManagedPaths, StackConfig } from '../types.js'
 
 /**
  * VS Code / GitHub Copilot adapter.
@@ -36,7 +37,8 @@ const CUSTOMIZABLE_DIRS = ['customizations']
 
 export async function install(
   pkgRoot: string,
-  projectRoot: string
+  projectRoot: string,
+  stack?: StackConfig
 ): Promise<CopyResults> {
   const srcRoot = getOrchestratorRoot(pkgRoot)
   const destRoot = resolve(projectRoot, '.github')
@@ -44,6 +46,9 @@ export async function install(
   await mkdir(destRoot, { recursive: true })
 
   const results: CopyResults = { copied: [], skipped: [], created: [] }
+
+  const excludedSkills = stack ? getExcludedSkills(stack) : new Set<string>()
+  const excludedAgents = stack ? getExcludedAgents(stack) : new Set<string>()
 
   // copilot-instructions.md
   const copilotSrc = resolve(srcRoot, 'copilot-instructions.md')
@@ -60,18 +65,28 @@ export async function install(
     const srcDir = resolve(srcRoot, dir)
     if (!existsSync(srcDir)) continue
     const destDir = resolve(destRoot, dir)
-    const sub = await copyDir(srcDir, destDir)
+
+    // Build filter based on directory type
+    let filter: ((_name: string, _srcPath: string) => boolean) | undefined
+    if (dir === 'skills') {
+      filter = (name) => !excludedSkills.has(name)
+    } else if (dir === 'agents') {
+      filter = (name) => !excludedAgents.has(name)
+    }
+
+    const sub = await copyDir(srcDir, destDir, { filter })
     results.copied.push(...sub.copied)
     results.skipped.push(...sub.skipped)
     results.created.push(...sub.created)
   }
 
   // Customization templates (scaffold once)
+  const custTransform = stack ? getCustomizationsTransform(stack) : undefined
   for (const dir of CUSTOMIZABLE_DIRS) {
     const srcDir = resolve(srcRoot, dir)
     if (!existsSync(srcDir)) continue
     const destDir = resolve(destRoot, dir)
-    const sub = await copyDir(srcDir, destDir)
+    const sub = await copyDir(srcDir, destDir, { transform: custTransform })
     results.copied.push(...sub.copied)
     results.skipped.push(...sub.skipped)
     results.created.push(...sub.created)
@@ -81,7 +96,8 @@ export async function install(
   const mcpResult = await scaffoldMcpConfig(
     pkgRoot,
     projectRoot,
-    '.vscode/mcp.json'
+    '.vscode/mcp.json',
+    stack
   )
   results[mcpResult.action].push(mcpResult.path)
 
@@ -90,12 +106,16 @@ export async function install(
 
 export async function update(
   pkgRoot: string,
-  projectRoot: string
+  projectRoot: string,
+  stack?: StackConfig
 ): Promise<CopyResults> {
   const srcRoot = getOrchestratorRoot(pkgRoot)
   const destRoot = resolve(projectRoot, '.github')
 
   const results: CopyResults = { copied: [], skipped: [], created: [] }
+
+  const excludedSkills = stack ? getExcludedSkills(stack) : new Set<string>()
+  const excludedAgents = stack ? getExcludedAgents(stack) : new Set<string>()
 
   // Overwrite copilot-instructions.md
   const copilotDest = resolve(destRoot, 'copilot-instructions.md')
@@ -115,7 +135,15 @@ export async function update(
     const srcDir = resolve(srcRoot, dir)
     if (!existsSync(srcDir)) continue
     const destDir = resolve(destRoot, dir)
-    const sub = await copyDir(srcDir, destDir, { overwrite: true })
+
+    let filter: ((_name: string, _srcPath: string) => boolean) | undefined
+    if (dir === 'skills') {
+      filter = (name) => !excludedSkills.has(name)
+    } else if (dir === 'agents') {
+      filter = (name) => !excludedAgents.has(name)
+    }
+
+    const sub = await copyDir(srcDir, destDir, { overwrite: true, filter })
     // All re-installed framework files count as "updated" (copied), not "created"
     results.copied.push(...sub.copied, ...sub.created)
     results.skipped.push(...sub.skipped)
