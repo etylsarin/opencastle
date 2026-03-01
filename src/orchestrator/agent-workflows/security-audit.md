@@ -1,3 +1,5 @@
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Workflow: Security Audit
 
 Comprehensive security review workflow for auth, RLS, headers, and API security.

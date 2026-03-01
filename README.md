@@ -60,11 +60,19 @@ MCP servers are auto-configured for your stack (Sanity, Supabase, Linear, Slack,
 | Command | Description |
 |---------|-------------|
 | `opencastle init` | Set up agents in your project |
-| `opencastle update` | Update framework files (keeps your config) |
-| `opencastle diff` | Preview what an update would change |
+| `opencastle update` | Update framework files (keeps your customizations) |
 | `opencastle eject` | Remove the dependency, keep all files |
 | `opencastle run` | Run a [task queue](#task-queue) autonomously |
 | `opencastle dashboard` | Open the observability dashboard |
+
+Add `--dry-run` to any command to preview what it would change without writing files.
+
+**Updating to a specific version:**
+
+```bash
+npx opencastle@latest update   # latest version
+npx opencastle@1.2.3 update    # pin to a specific version
+```
 
 <br>
 

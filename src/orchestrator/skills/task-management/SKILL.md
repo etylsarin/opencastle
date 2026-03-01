@@ -3,6 +3,8 @@ name: task-management
 description: "Linear board conventions for tracking feature work — issue naming, labels, priorities, status workflow, and session continuity. Use when decomposing features into tasks or resuming interrupted sessions."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Task Management with Linear
 
 Conventions for tracking feature work on the Linear board via MCP tools. For project-specific team ID, workflow state UUIDs, and label UUIDs, see [linear-config.md](../../customizations/project/linear-config.md).

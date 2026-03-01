@@ -1,3 +1,5 @@
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 ```chatagent
 ---
 description: 'Mandatory fast reviewer that validates every agent delegation output before acceptance. Checks acceptance criteria, file partitions, regressions, type safety, and security basics.'

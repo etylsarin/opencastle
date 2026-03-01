@@ -3,6 +3,8 @@ name: nx-workspace
 description: "NX monorepo commands, conventions, code generation, and task running patterns. Use when running builds, tests, linting, code generation, or any development commands."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # NX Workspace
 
 ## Commands

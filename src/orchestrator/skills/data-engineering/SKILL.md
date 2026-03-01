@@ -3,6 +3,8 @@ name: data-engineering
 description: "Data pipeline ETL workflows, web scraping with Puppeteer, NDJSON processing, and CMS data import. Use when building scrapers, processing data, running CLI tools, or importing to a CMS."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Data Engineering
 
 Generic data pipeline patterns and scraping methodology. For project-specific pipeline architecture, sources, CLI commands, and data status, see [data-pipeline-config.md](../../customizations/stack/data-pipeline-config.md).

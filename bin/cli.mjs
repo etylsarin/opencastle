@@ -15,17 +15,17 @@ const HELP = `
   🏰 opencastle — Multi-agent orchestration framework
 
   Usage:
-    npx opencastle <command>
+    npx opencastle <command> [options]
 
   Commands:
     init        Set up OpenCastle in your project
     update      Update framework files (preserves customizations)
-    diff        Preview what an update would change
     eject       Remove dependency, keep all files standalone
     run         Process a task queue from a spec file autonomously
     dashboard   View agent observability dashboard in your browser
 
   Options:
+    --dry-run        Preview what a command would change without writing files
     --help, -h       Show this help message
     --version, -v    Show version number
 `
@@ -46,7 +46,6 @@ if (command === '--version' || command === '-v') {
 const commands = {
   init: () => import('../dist/cli/init.js'),
   update: () => import('../dist/cli/update.js'),
-  diff: () => import('../dist/cli/diff.js'),
   eject: () => import('../dist/cli/eject.js'),
   run: () => import('../dist/cli/run.js'),
   dashboard: () => import('../dist/cli/dashboard.js'),

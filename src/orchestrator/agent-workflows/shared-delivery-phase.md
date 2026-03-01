@@ -1,3 +1,5 @@
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Shared Delivery Phase
 
 This phase is referenced by all workflow templates. It covers the final delivery steps after all implementation and verification is complete.

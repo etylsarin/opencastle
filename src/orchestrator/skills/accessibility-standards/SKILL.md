@@ -3,6 +3,8 @@ name: accessibility-standards
 description: "WCAG 2.2 Level AA accessibility patterns for React/HTML/CSS. Use when creating or modifying UI components, forms, navigation, tables, images, or any user-facing elements. Covers keyboard navigation, screen reader semantics, low vision contrast, voice access, and inclusive language."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Accessibility Standards
 
 Code must conform to [WCAG 2.2 Level AA](https://www.w3.org/TR/WCAG22/). Go beyond minimal conformance wherever possible.

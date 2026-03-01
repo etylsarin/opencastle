@@ -3,6 +3,8 @@ name: strapi-cms
 description: "Strapi CMS development patterns, REST/GraphQL API usage, content type building, plugin development, and deployment best practices. Use when working with Strapi content types, controllers, services, or plugins."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Strapi CMS
 
 Generic Strapi CMS development methodology. For project-specific configuration, content types, and deployment details, see [cms-config.md](../../customizations/stack/cms-config.md).

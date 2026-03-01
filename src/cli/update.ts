@@ -38,17 +38,32 @@ export default async function update({
     await readFile(resolve(pkgRoot, 'package.json'), 'utf8')
   ) as { version: string }
 
-  if (manifest.version === pkg.version && !args.includes('--force')) {
+  const dryRun = args.includes('--dry-run')
+
+  if (manifest.version === pkg.version && !args.includes('--force') && !dryRun) {
     console.log(`  Already up to date (v${pkg.version}).`)
     return
   }
 
   console.log(
-    `\n  🏰 OpenCastle update: v${manifest.version} → v${pkg.version}\n`
+    `\n  🏰 OpenCastle ${dryRun ? 'dry-run' : 'update'}: v${manifest.version} → v${pkg.version}\n`
   )
   console.log(`  IDE: ${manifest.ide}`)
   console.log('  Framework files will be overwritten.')
   console.log('  Customization files will be preserved.\n')
+
+  if (dryRun) {
+    console.log('  [dry-run] Framework files that would be updated:\n')
+    for (const p of manifest.managedPaths?.framework ?? []) {
+      console.log(`    ↻ ${p}`)
+    }
+    console.log('\n  Customization files that would be preserved:\n')
+    for (const p of manifest.managedPaths?.customizable ?? []) {
+      console.log(`    ✓ ${p}`)
+    }
+    console.log('\n  No files were written.\n')
+    return
+  }
 
   const proceed = await confirm('Proceed with update?')
   if (!proceed) {

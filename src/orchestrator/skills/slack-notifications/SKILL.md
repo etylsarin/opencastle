@@ -3,6 +3,8 @@ name: slack-notifications
 description: "Slack MCP integration for agent-to-human notifications and bi-directional communication. Use when agents need to post progress updates, request approvals, or read user responses via Slack channels and threads."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Slack Notifications
 
 Agent communication patterns via the Slack MCP server. Enables agents to post progress updates, request human approvals, and read responses — all through Slack channels and threads.

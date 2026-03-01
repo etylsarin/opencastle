@@ -3,6 +3,8 @@ description: 'Generate a valid opencastle.tasks.yml spec file for autonomous ove
 agent: Team Lead
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Generate Task Spec for Autonomous Run
 
 You are the Team Lead. The user wants to run `opencastle run` to execute a batch of tasks autonomously (e.g., overnight). Your job is to produce a valid `opencastle.tasks.yml` file they can feed to the CLI.

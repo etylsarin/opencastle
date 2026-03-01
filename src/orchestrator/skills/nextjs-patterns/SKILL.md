@@ -3,6 +3,8 @@ name: nextjs-patterns
 description: "Next.js App Router best practices for server/client components, routing, API routes, and project structure. Use when creating or modifying Next.js pages, layouts, route handlers, or Server Actions."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Next.js Patterns (2025)
 
 ## Project Structure

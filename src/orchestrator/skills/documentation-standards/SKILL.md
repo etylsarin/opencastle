@@ -3,6 +3,8 @@ name: documentation-standards
 description: "Documentation templates, structure, and standards for project docs, roadmaps, ADRs, and known issues. Use when writing or updating documentation files."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Documentation Standards
 
 Generic documentation templates and writing standards. For project-specific directory structure and practices, see [docs-structure.md](../../customizations/project/docs-structure.md).

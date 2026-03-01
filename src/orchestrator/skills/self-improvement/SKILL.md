@@ -3,6 +3,8 @@ name: self-improvement
 description: "Protocol for reading and updating the lessons-learned knowledge base. MUST be followed by ALL agents — read lessons before work, write lessons after retries. This makes the agent team self-improving across sessions."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Self-Improvement Protocol
 
 This skill defines how agents learn from mistakes and share knowledge so the same pitfalls are never repeated.

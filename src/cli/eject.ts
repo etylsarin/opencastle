@@ -6,9 +6,10 @@ import type { CliContext } from './types.js'
 
 export default async function eject({
   pkgRoot: _pkgRoot,
-  args: _args,
+  args,
 }: CliContext): Promise<void> {
   const projectRoot = process.cwd()
+  const dryRun = args.includes('--dry-run')
 
   const manifest = await readManifest(projectRoot)
   if (!manifest) {
@@ -23,6 +24,11 @@ export default async function eject({
   console.log(
     '    • You can safely uninstall the opencastle package after this\n'
   )
+
+  if (dryRun) {
+    console.log('  [dry-run] No files were changed.\n')
+    return
+  }
 
   const proceed = await confirm('Continue?')
   if (!proceed) {

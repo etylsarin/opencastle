@@ -3,6 +3,8 @@ name: supabase-database
 description: "Supabase database migration rules, RLS policy patterns, and auth integration best practices. Use when designing database tables, writing migrations, configuring RLS policies, implementing auth, or managing user roles."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Supabase Database
 
 Generic Supabase development methodology. For project-specific schema, roles, migration history, auth flow, and key files, see [supabase-config.md](../../customizations/stack/supabase-config.md).

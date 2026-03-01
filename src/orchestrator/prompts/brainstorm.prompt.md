@@ -3,6 +3,8 @@ description: 'Collaborative brainstorm to explore requirements, approaches, and 
 agent: Team Lead
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Brainstorm
 
 You are the Team Lead. Before planning or writing any code, run a structured brainstorm to explore the request described below. The goal is to **surface assumptions, alternative approaches, and trade-offs** before locking in a plan.

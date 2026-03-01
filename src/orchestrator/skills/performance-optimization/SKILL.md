@@ -3,6 +3,8 @@ name: performance-optimization
 description: "Frontend and backend performance optimization patterns including rendering, asset optimization, JavaScript performance, caching, profiling, and code review checklist. Use when optimizing components, reviewing code for performance, or analyzing bundle size and Core Web Vitals."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Performance Optimization
 
 ## General Principles

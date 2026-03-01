@@ -1,3 +1,5 @@
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Workflow Templates
 
 Declarative workflow templates for common orchestration patterns. Inspired by Sandcastle's YAML workflow engine, these templates provide reproducible execution plans that the Team Lead and prompts can reference.

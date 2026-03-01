@@ -1,3 +1,5 @@
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Workflow: Schema / CMS Changes
 
 Structured workflow for CMS schema modifications, query updates, and content model changes.

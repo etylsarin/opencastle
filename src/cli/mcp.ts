@@ -6,7 +6,7 @@ import { getIncludedMcpServers } from './stack-config.js';
 import type { ScaffoldResult, StackConfig } from './types.js';
 
 /**
- * Scaffold the MCP server config into the target project.
+ * Scaffold or merge the MCP server config into the target project.
  *
  * Reads the template from `opencastle/src/orchestrator/mcp.json`,
  * writes it to `<projectRoot>/<destRelPath>` (e.g. `.vscode/mcp.json`).
@@ -14,7 +14,8 @@ import type { ScaffoldResult, StackConfig } from './types.js';
  * When a StackConfig is provided, only servers relevant to the chosen
  * CMS/DB stack (plus core servers) are included.
  *
- * This is a customizable file — scaffolded once, never overwritten on update.
+ * If the file already exists, missing servers are merged in without
+ * overwriting any existing server configs.
  */
 export async function scaffoldMcpConfig(
   pkgRoot: string,
@@ -23,10 +24,6 @@ export async function scaffoldMcpConfig(
   stack?: StackConfig
 ): Promise<ScaffoldResult> {
   const destPath = resolve(projectRoot, destRelPath);
-
-  if (existsSync(destPath)) {
-    return { path: destPath, action: 'skipped' };
-  }
 
   const srcRoot = getOrchestratorRoot(pkgRoot);
   const templatePath = resolve(srcRoot, 'mcp.json');
@@ -40,6 +37,34 @@ export async function scaffoldMcpConfig(
     template.servers = Object.fromEntries(
       Object.entries(template.servers).filter(([key]) => included.has(key))
     );
+  }
+
+  if (existsSync(destPath)) {
+    // Merge: add missing servers without overwriting existing ones
+    const existingContent = await readFile(destPath, 'utf8');
+    const existing = JSON.parse(existingContent) as {
+      servers?: Record<string, unknown>;
+      [key: string]: unknown;
+    };
+
+    if (!existing.servers) {
+      existing.servers = {};
+    }
+
+    let added = 0;
+    for (const [key, value] of Object.entries(template.servers)) {
+      if (!(key in existing.servers)) {
+        existing.servers[key] = value;
+        added++;
+      }
+    }
+
+    if (added === 0) {
+      return { path: destPath, action: 'skipped' };
+    }
+
+    await writeFile(destPath, JSON.stringify(existing, null, 2) + '\n');
+    return { path: destPath, action: 'created' };
   }
 
   await mkdir(dirname(destPath), { recursive: true });

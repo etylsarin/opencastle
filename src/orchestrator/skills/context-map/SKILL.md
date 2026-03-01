@@ -3,6 +3,8 @@ name: context-map
 description: "Generate a structured file impact map before making changes. Identifies all files that will be affected, their relationships, and cascade effects — improving file partitioning for parallel work and reducing unexpected side effects."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Skill: Context Map
 
 Generate a structured **file impact map** before any code changes begin. This map identifies all files that will be touched, their relationships, and cascade effects — directly improving the Team Lead's file partitioning for parallel agents.

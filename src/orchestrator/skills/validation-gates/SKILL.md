@@ -3,6 +3,8 @@ name: validation-gates
 description: "Shared validation gates for all orchestration workflows — deterministic checks, browser testing, cache management, regression checks. Referenced by prompt templates to maintain single source of truth."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Validation Gates
 
 Canonical reference for validation gates shared across all orchestration workflows. Prompt templates reference this skill to avoid duplication.

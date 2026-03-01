@@ -1,3 +1,5 @@
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Workflow: Data Pipeline
 
 Standard execution plan for scraping, processing, and importing data.
