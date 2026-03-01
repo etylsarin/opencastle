@@ -84,12 +84,23 @@ jobs:
 
       - name: Publish
         if: steps.bump.outputs.type != 'none'
+        id: publish
         run: |
           if [ -z "$NODE_AUTH_TOKEN" ]; then
             echo "::error::NPM_TOKEN secret is not set. Add it in repo Settings → Secrets → Actions."
             exit 1
           fi
-          npm publish --ignore-scripts --access public
+
+          # Check if this version already exists on npm (idempotent re-runs)
+          PKG_NAME=$(node -p "require('./package.json').name")
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if npm view "${PKG_NAME}@${PKG_VERSION}" version 2>/dev/null; then
+            echo "⏭️ ${PKG_NAME}@${PKG_VERSION} already published — skipping"
+            echo "skipped=true" >> "$GITHUB_OUTPUT"
+          else
+            npm publish --ignore-scripts --access public
+            echo "skipped=false" >> "$GITHUB_OUTPUT"
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -103,7 +114,18 @@ jobs:
 
       - name: Create GitHub Release
         if: steps.bump.outputs.type != 'none'
-        run: gh release create "${{ steps.version.outputs.new }}" --title "${{ steps.version.outputs.new }}" --generate-notes
+        run: |
+          # Check if release already exists (idempotent re-runs)
+          if gh release view "${{ steps.version.outputs.new }}" &>/dev/null; then
+            echo "⏭️ Release ${{ steps.version.outputs.new }} already exists — skipping"
+          else
+            # Brief delay to ensure the tag is available on the remote
+            sleep 5
+            gh release create "${{ steps.version.outputs.new }}" \
+              --title "${{ steps.version.outputs.new }}" \
+              --generate-notes \
+              --target main
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
