@@ -5,6 +5,7 @@ import { select, confirm, closePrompts } from './prompt.js'
 import { readManifest, writeManifest, createManifest } from './manifest.js'
 import { removeDirIfExists } from './copy.js'
 import { updateGitignore } from './gitignore.js'
+import { getRequiredMcpEnvVars } from './stack-config.js'
 import type { CliContext, IdeAdapter, CmsChoice, DbChoice, PmChoice, NotifChoice, StackConfig } from './types.js'
 
 const ADAPTERS: Record<string, () => Promise<IdeAdapter>> = {
@@ -166,6 +167,16 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
     console.log(`  → Skipped ${skipped} existing files`)
   }
 
+  // ── Env var notice ──────────────────────────────────────────────
+  const envVars = getRequiredMcpEnvVars(stack)
+  if (envVars.length > 0) {
+    console.log(`\n  ⚠  Required environment variables for MCP servers:\n`)
+    for (const { envVar, hint } of envVars) {
+      console.log(`     ${envVar}`)
+      console.log(`     └ ${hint}\n`)
+    }
+  }
+
   console.log(`\n  Next steps:`)
   if (ide === 'vscode') {
     console.log(
@@ -176,11 +187,16 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
       '  0. Reload Cursor window to pick up the new rule files'
     )
   }
+  if (envVars.length > 0) {
+    console.log(
+      `  1. Set the environment variable${envVars.length > 1 ? 's' : ''} listed above`
+    )
+  }
   console.log(
-    '  1. Run the "Bootstrap Customizations" prompt to configure for your project'
+    `  ${envVars.length > 0 ? '2' : '1'}. Run the "Bootstrap Customizations" prompt to configure for your project`
   )
-  console.log('  2. Customize agent definitions for your tech stack')
-  console.log('  3. Commit the generated files to your repository')
+  console.log(`  ${envVars.length > 0 ? '3' : '2'}. Customize agent definitions for your tech stack`)
+  console.log(`  ${envVars.length > 0 ? '4' : '3'}. Commit the generated files to your repository`)
   console.log()
 
   closePrompts()
