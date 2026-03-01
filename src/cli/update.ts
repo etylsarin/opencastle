@@ -57,7 +57,7 @@ export default async function update({
   }
 
   const adapter = await ADAPTERS[manifest.ide]()
-  const results = await adapter.update(pkgRoot, projectRoot)
+  const results = await adapter.update(pkgRoot, projectRoot, manifest.stack)
 
   // Update manifest
   manifest.version = pkg.version

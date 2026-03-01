@@ -340,11 +340,36 @@ function parseBlockScalar(lines: string[], startIdx: number, parentIndent: numbe
 
 /**
  * Parse a flow sequence: [item1, item2, item3]
+ * Handles quoted strings that may contain commas.
  */
 function parseFlowSequence(text: string): Array<string | number | boolean | null> {
   const inner = text.slice(1, -1).trim()
   if (inner === '') return []
-  return inner.split(',').map((s) => castScalar(s.trim()))
+
+  const items: string[] = []
+  let current = ''
+  let inQuote: string | null = null
+
+  for (let i = 0; i < inner.length; i++) {
+    const ch = inner[i]
+    if (inQuote) {
+      if (ch === inQuote) {
+        inQuote = null
+      } else {
+        current += ch
+      }
+    } else if (ch === '"' || ch === "'") {
+      inQuote = ch
+    } else if (ch === ',') {
+      items.push(current.trim())
+      current = ''
+    } else {
+      current += ch
+    }
+  }
+  if (current.trim()) items.push(current.trim())
+
+  return items.map(castScalar)
 }
 
 // ── Schema validation ──────────────────────────────────────────────

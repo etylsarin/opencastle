@@ -1,5 +1,5 @@
 import { resolve, basename } from 'node:path'
-import { mkdir, writeFile, readdir, readFile } from 'node:fs/promises'
+import { mkdir, writeFile, readdir, readFile, unlink } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
@@ -130,13 +130,16 @@ export async function install(
   const excludedSkills = stack ? getExcludedSkills(stack) : new Set<string>()
   const excludedAgents = stack ? getExcludedAgents(stack) : new Set<string>()
 
-  // 1. .cursorrules  ← copilot-instructions.md (body only)
+  // 1. .cursorrules  ← Cursor-specific intro (not copilot-instructions.md verbatim)
   const cursorrules = resolve(projectRoot, '.cursorrules')
   if (!existsSync(cursorrules)) {
-    const { body } = stripFrontmatter(
-      await readFile(resolve(srcRoot, 'copilot-instructions.md'), 'utf8')
-    )
-    await writeFile(cursorrules, body.trim() + '\n')
+    const cursorIntro = [
+      '# Project Instructions',
+      '',
+      'All conventions, architecture, and project context live in `.cursor/rules/`. Read those files before making changes.',
+      '',
+    ].join('\n')
+    await writeFile(cursorrules, cursorIntro)
     results.created.push(cursorrules)
   } else {
     results.skipped.push(cursorrules)
@@ -166,7 +169,7 @@ export async function install(
     'agent-workflows',
     resolve(rulesRoot, 'agent-workflows'),
     results,
-    { descriptionPrefix: 'Workflow: ' }
+    { descriptionPrefix: 'Workflow: ', excludeFiles: new Set(['README.md']) }
   )
 
   // 6. Prompts → .cursor/rules/prompts/*.mdc
@@ -210,11 +213,14 @@ export async function update(
   const excludedSkills = stack ? getExcludedSkills(stack) : new Set<string>()
   const excludedAgents = stack ? getExcludedAgents(stack) : new Set<string>()
 
-  // Overwrite .cursorrules
-  const { body } = stripFrontmatter(
-    await readFile(resolve(srcRoot, 'copilot-instructions.md'), 'utf8')
-  )
-  await writeFile(resolve(projectRoot, '.cursorrules'), body.trim() + '\n')
+  // Overwrite .cursorrules with Cursor-specific intro
+  const cursorIntro = [
+    '# Project Instructions',
+    '',
+    'All conventions, architecture, and project context live in `.cursor/rules/`. Read those files before making changes.',
+    '',
+  ].join('\n')
+  await writeFile(resolve(projectRoot, '.cursorrules'), cursorIntro)
   results.copied.push('.cursorrules')
 
   const rulesRoot = resolve(projectRoot, '.cursor', 'rules')
@@ -223,6 +229,15 @@ export async function update(
   const FRAMEWORK_RULE_DIRS = ['agents', 'skills', 'agent-workflows', 'prompts']
   for (const dir of FRAMEWORK_RULE_DIRS) {
     await removeDirIfExists(resolve(rulesRoot, dir))
+  }
+
+  // Remove stale root-level instruction .mdc files (in case instructions were renamed)
+  if (existsSync(rulesRoot)) {
+    for (const file of await readdir(rulesRoot)) {
+      if (file.endsWith('.mdc')) {
+        await unlink(resolve(rulesRoot, file))
+      }
+    }
   }
 
   // Overwrite framework rules
@@ -243,7 +258,7 @@ export async function update(
     'agent-workflows',
     resolve(rulesRoot, 'agent-workflows'),
     results,
-    { descriptionPrefix: 'Workflow: ', overwrite: true }
+    { descriptionPrefix: 'Workflow: ', overwrite: true, excludeFiles: new Set(['README.md']) }
   )
   await convertDir(
     srcRoot,

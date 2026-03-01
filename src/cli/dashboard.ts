@@ -78,16 +78,21 @@ function tryListen(
     let attempt = 0
 
     function attemptListen(): void {
-      server.listen(port + attempt, '127.0.0.1', () => {
-        res(port + attempt)
-      })
-      server.once('error', (err: Error & { code?: string }) => {
+      const currentPort = port + attempt
+
+      const onError = (err: Error & { code?: string }): void => {
         if (err.code === 'EADDRINUSE' && attempt < maxAttempts) {
           attempt++
           attemptListen()
         } else {
           rej(err)
         }
+      }
+
+      server.once('error', onError)
+      server.listen(currentPort, '127.0.0.1', () => {
+        server.removeListener('error', onError)
+        res(currentPort)
       })
     }
 

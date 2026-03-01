@@ -61,12 +61,13 @@ export async function install(
   if (!existsSync(claudeMd)) {
     const sections: string[] = []
 
-    // Main instructions
-    const main = await readFile(
-      resolve(srcRoot, 'copilot-instructions.md'),
-      'utf8'
+    // Claude-specific header (not copilot-instructions.md verbatim)
+    sections.push(
+      '# Project Instructions\n\n' +
+      'All conventions, architecture, and project context are embedded below. ' +
+      'Skills are in `.claude/skills/` — read them when a task matches. ' +
+      'Agent definitions are in `.claude/agents/` — read the relevant file when adopting a persona.'
     )
-    sections.push(stripFrontmatter(main))
 
     // Always-loaded instruction files
     const instDir = resolve(srcRoot, 'instructions')
@@ -204,6 +205,7 @@ export async function install(
     await mkdir(destCmds, { recursive: true })
     for (const file of await readdir(wfDir)) {
       if (!file.endsWith('.md')) continue
+      if (file === 'README.md') continue // Skip README — not a workflow
       const name = basename(file, '.md')
       const destPath = resolve(destCmds, `workflow-${name}.md`)
       if (existsSync(destPath)) {
