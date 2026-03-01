@@ -11,11 +11,16 @@ concurrency:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # Skip version-bump commits to prevent infinite loops
+    if: "!startsWith(github.event.head_commit.message, 'chore: release v')"
     permissions:
       contents: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
@@ -26,33 +31,59 @@ jobs:
             package-lock.json
             src/dashboard/package-lock.json
 
-      - name: Check if version changed
-        id: version
+      - name: Determine version bump
+        id: bump
         run: |
-          LOCAL=$(node -p "require('./package.json').version")
-          PUBLISHED=$(npm view opencastle version 2>/dev/null || echo "0.0.0")
-          echo "local=$LOCAL" >> "$GITHUB_OUTPUT"
-          echo "published=$PUBLISHED" >> "$GITHUB_OUTPUT"
-          if [ "$LOCAL" != "$PUBLISHED" ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+          # Find commits since last version tag
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          if [ -z "$LAST_TAG" ]; then
+            COMMITS=$(git log --oneline --format="%s")
           else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            COMMITS=$(git log "$LAST_TAG"..HEAD --oneline --format="%s")
           fi
 
+          if [ -z "$COMMITS" ]; then
+            echo "type=none" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Commits since $LAST_TAG:"
+          echo "$COMMITS"
+
+          # Check for breaking changes
+          if echo "$COMMITS" | grep -qiE 'BREAKING CHANGE|^[a-z]+!:'; then
+            echo "type=major" >> "$GITHUB_OUTPUT"
+          elif echo "$COMMITS" | grep -qE '^feat(\(.+\))?:'; then
+            echo "type=minor" >> "$GITHUB_OUTPUT"
+          else
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Bump version
+        if: steps.bump.outputs.type != 'none'
+        id: version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          NEW_VERSION=$(npm version ${{ steps.bump.outputs.type }} --no-git-tag-version)
+          echo "new=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Bumped to $NEW_VERSION (${{ steps.bump.outputs.type }})"
+
       - name: Install dependencies
-        if: steps.version.outputs.changed == 'true'
+        if: steps.bump.outputs.type != 'none'
         run: |
           npm ci
           cd src/dashboard && npm ci
 
       - name: Build
-        if: steps.version.outputs.changed == 'true'
+        if: steps.bump.outputs.type != 'none'
         run: |
           npm run build:cli
           npm run build:dashboard
 
       - name: Publish
-        if: steps.version.outputs.changed == 'true'
+        if: steps.bump.outputs.type != 'none'
         run: |
           if [ -z "$NODE_AUTH_TOKEN" ]; then
             echo "::error::NPM_TOKEN secret is not set. Add it in repo Settings → Secrets → Actions."
@@ -62,16 +93,24 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Commit version bump & tag
+        if: steps.bump.outputs.type != 'none'
+        run: |
+          git add package.json package-lock.json
+          git commit -m "chore: release ${{ steps.version.outputs.new }}"
+          git tag "${{ steps.version.outputs.new }}"
+          git push origin main --follow-tags
+
       - name: Create GitHub Release
-        if: steps.version.outputs.changed == 'true'
-        run: gh release create "v${{ steps.version.outputs.local }}" --title "v${{ steps.version.outputs.local }}" --generate-notes --target "${{ github.sha }}"
+        if: steps.bump.outputs.type != 'none'
+        run: gh release create "${{ steps.version.outputs.new }}" --title "${{ steps.version.outputs.new }}" --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Summary
         run: |
-          if [ "${{ steps.version.outputs.changed }}" == "true" ]; then
-            echo "📦 Published opencastle@${{ steps.version.outputs.local }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.bump.outputs.type }}" != "none" ]; then
+            echo "📦 Published opencastle@${{ steps.version.outputs.new }} (${{ steps.bump.outputs.type }} bump)" >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "⏭️ Version ${{ steps.version.outputs.local }} already published — skipped" >> "$GITHUB_STEP_SUMMARY"
+            echo "⏭️ No new commits since last release — skipped" >> "$GITHUB_STEP_SUMMARY"
           fi
