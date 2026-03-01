@@ -103,7 +103,13 @@ jobs:
 
       - name: Create GitHub Release
         if: steps.bump.outputs.type != 'none'
-        run: gh release create "${{ steps.version.outputs.new }}" --title "${{ steps.version.outputs.new }}" --generate-notes
+        run: |
+          # Wait briefly for the pushed tag to propagate
+          sleep 5
+          gh release create "${{ steps.version.outputs.new }}" \
+            --title "${{ steps.version.outputs.new }}" \
+            --generate-notes \
+            --target main
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
