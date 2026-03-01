@@ -177,6 +177,12 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
     }
   }
 
+  // ── OAuth setup guides ────────────────────────────────────────
+  if (stack.notifications === 'slack') {
+    console.log(`  📖 Slack MCP requires a Slack App with a bot token.`)
+    console.log(`     Setup guide: https://www.opencastle.dev/guides/slack-mcp-setup\n`)
+  }
+
   console.log(`\n  Next steps:`)
   if (ide === 'vscode') {
     console.log(
@@ -195,8 +201,7 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
   console.log(
     `  ${envVars.length > 0 ? '2' : '1'}. Run the "Bootstrap Customizations" prompt to configure for your project`
   )
-  console.log(`  ${envVars.length > 0 ? '3' : '2'}. Customize agent definitions for your tech stack`)
-  console.log(`  ${envVars.length > 0 ? '4' : '3'}. Commit the generated files to your repository`)
+  console.log(`  ${envVars.length > 0 ? '3' : '2'}. Commit the customizations/ folder to your repository`)
   console.log()
 
   closePrompts()

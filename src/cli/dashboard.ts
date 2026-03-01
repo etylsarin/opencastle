@@ -107,6 +107,7 @@ export default async function dashboard({
   const { port, openBrowser, seed } = parseArgs(args)
 
   const distDir = resolve(pkgRoot, 'src', 'dashboard', 'dist')
+  const seedDir = resolve(pkgRoot, 'src', 'dashboard', 'seed-data')
   const projectRoot = process.cwd()
   const logsDir = resolve(projectRoot, '.github', 'customizations', 'logs')
 
@@ -146,7 +147,7 @@ export default async function dashboard({
           let filePath: string
 
           if (seed) {
-            filePath = join(distDir, 'data', filename)
+            filePath = join(seedDir, filename)
           } else {
             filePath = join(logsDir, filename)
           }

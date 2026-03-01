@@ -13,37 +13,90 @@ Agent communication patterns via the Slack MCP server. Enables agents to post pr
 
 | Field | Value |
 |-------|-------|
-| **URL** | `https://mcp.slack.com/mcp` |
-| **Type** | Streamable HTTP (JSON-RPC 2.0) |
-| **Auth** | OAuth 2.0 via registered Slack app (`client_id` + `client_secret`) |
-| **Supported clients** | Claude.ai, Claude Code, Cursor, Perplexity |
+| **Package** | [`@kazuph/mcp-slack`](https://www.npmjs.com/package/@kazuph/mcp-slack) |
+| **Type** | stdio (spawned via `npx -y @kazuph/mcp-slack`) |
+| **Auth** | Bot token (`xoxb-…`) via `SLACK_MCP_XOXB_TOKEN` env var (loaded from `.env` or `envFile`) |
+| **Extra env** | `SLACK_MCP_ADD_MESSAGE_TOOL=true` — enables the `conversations_add_message` tool |
+| **Supported clients** | VS Code, Claude Code, Cursor, any MCP-compatible client with stdio support |
 
-### Required OAuth Scopes
+### Authentication
 
-The Slack app must be granted scopes for the operations agents will perform:
+The `@kazuph/mcp-slack` server supports multiple token types (only one is needed):
+
+| Env Variable | Token Type | Notes |
+|-------------|------------|-------|
+| `SLACK_MCP_XOXB_TOKEN` | Bot token (`xoxb-…`) | Limited to invited channels only, no search |
+| `SLACK_MCP_XOXP_TOKEN` | User OAuth token (`xoxp-…`) | Full access, requires OAuth app setup |
+| `SLACK_MCP_XOXC_TOKEN` + `SLACK_MCP_XOXD_TOKEN` | Browser tokens | "Stealth mode" — no app install needed |
+
+This project uses a **bot token** (`SLACK_MCP_XOXB_TOKEN`). Add these under **Bot Token Scopes** in the Slack app configuration:
 
 | Scope | Purpose |
 |-------|---------|
-| `channels:read` | List and search public channels |
-| `channels:history` | Read messages in public channels |
 | `chat:write` | Post messages and replies |
-| `users:read` | Look up user profiles for mentions |
-| `reactions:read` | Read emoji reactions (approval signals) |
-| `reactions:write` | Add emoji reactions (acknowledgments) |
-| `search:read` | Search messages and files |
+| `channels:read` | List public channels and their metadata |
+| `channels:history` | Read messages in public channels |
+| `channels:manage` | Create/rename channels, set topics (optional) |
+| `groups:read` | List private channels |
+| `groups:history` | Read messages in private channels |
+| `im:read` | List direct message conversations |
+| `im:history` | Read direct messages |
+| `mpim:read` | List group DM conversations |
+| `mpim:history` | Read group DMs |
+| `users:read` | Look up user profiles |
+| `users:read.email` | Look up user emails |
+
+> **Note:** `channels:manage` is optional — only needed if agents should create channels or rename them. Without it, `conversations_create` and `conversations_rename` will return `missing_scope`.
+> 
+> **Note:** Bot tokens cannot search messages. If search is needed, use a user token (`xoxp-…`) instead.
 
 Admin approval is required. Work with the workspace admin to install the app.
 
 ## Available MCP Tools
 
-The Slack MCP server exposes tools for:
+The Slack MCP server exposes the following tools (prefixed with `mcp_slack_` in VS Code / Copilot):
 
-- **Search** — `slack_search_messages`, `slack_search_channels`, `slack_search_users`
-- **Read** — `slack_get_channel_history`, `slack_get_thread_replies`, `slack_get_channel_info`
-- **Write** — `slack_post_message`, `slack_reply_to_thread`, `slack_add_reaction`
-- **Canvases** — `slack_create_canvas`, `slack_update_canvas`
+### Channel Management
 
-Tool names may vary by MCP server version. Use tool discovery to list available tools at runtime.
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `channels_list` | List workspace channels | `channel_types` (public/private), `limit`, `cursor` |
+| `conversations_create` | Create a new channel | `name` (required). Needs `channels:manage` scope |
+| `conversations_rename` | Rename a channel | `channel_id`, `name`. Needs `channels:manage` scope |
+| `conversations_set_topic` | Set a channel's topic | `channel_id`, `topic` |
+| `conversations_invite` | Invite user(s) to a channel | `channel_id`, `users` (comma-separated user IDs) |
+
+### Messaging
+
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `conversations_add_message` | Post a message to a channel or thread | `channel_id` (ID or name), `payload` (message text), `content_type` (`text/markdown` or `text/plain`, default: `text/markdown`), `thread_ts` (optional, for threading) |
+| `conversations_history` | Read recent messages from a channel | `channel_id`, `limit` (time range like `1d`/`7d`/`30d` or message count like `50`), `cursor` |
+| `conversations_replies` | Get replies in a thread | `channel_id`, `thread_ts`, `limit`, `cursor` |
+| `conversations_search_messages` | Search messages across channels | `search_query`, `filter_in_channel`, `filter_users_from`, `filter_date_before`/`after`/`on`/`during`, `limit` (1-100) |
+
+### Users
+
+| Tool | Description | Key Parameters |
+|------|-------------|----------------|
+| `users_resolve` | Look up a user by name or email | Returns user ID for mentions |
+
+### Channel ID Resolution
+
+The `channel_id` parameter in messaging tools accepts:
+- **Channel ID** — e.g., `C0AHAQFJ7C1` (most reliable)
+- **Channel name** — e.g., `new-channel` (without `#` prefix)
+
+When a channel name is ambiguous or not found, use `channels_list` first to get the correct ID.
+
+### Key Differences from Documented Slack Web API
+
+- Tool names use `conversations_*` pattern, not `chat.postMessage` etc.
+- Message body is sent via `payload` parameter, not `text`
+- Message posting is **disabled by default** — requires `SLACK_MCP_ADD_MESSAGE_TOOL=true` env var
+- `limit` on history/replies accepts time ranges (`1d`, `7d`, `30d`) or message counts (`50`)
+- No reaction tools — reactions are not available via this MCP server
+- No canvas tools — canvases are not exposed
 
 ## Agent Notification Patterns
 
@@ -80,46 +133,93 @@ Format:
 
 ## Bi-Directional Communication
 
-### Human-in-the-Loop Approval
+### Dual-Channel Approval Pattern
 
-When an agent needs approval before proceeding (destructive operations, production deployments, large refactors):
+Approval requests are always **dual-channel** — posted to Slack AND asked in the chat window. The first response (from either channel) wins.
 
-1. **Post approval request** to the channel with clear options:
+```
+Agent needs approval
+ ├─→ Posts to Slack channel/thread
+ │     → User replies in Slack
+ │     → Agent polls & picks it up ──────┐
+ │                                       ▼
+ │                                  Agent acts
+ │                                       ▲
+ └─→ Asks in VS Code chat                │
+       → User replies here ──────────────┘
+       (immediate, no polling needed)
+```
+
+**Why dual-channel:** The chat path is instant (user's next message is the answer). The Slack path covers the case where the user is away from VS Code (mobile, another machine) and wants to unblock the agent remotely.
+
+### Approval Flow
+
+1. **Post to Slack** with a structured approval request:
    ```
    ⏳ **Approval Required**
    Task: TAS-42 — Database migration adds `price_range` column
    Action: Run migration on production database
-   
-   React with:
-   ✅ — Approve and proceed
-   ❌ — Reject and stop
-   💬 — Reply in thread with questions
+
+   Reply in this thread with:
+   ✅ "approved" — Approve and proceed
+   ❌ "rejected" — Reject and stop
+   💬 Or reply with questions
    ```
 
-2. **Poll for response** — Read reactions or thread replies to determine the decision
-3. **Acknowledge** — Post confirmation of the action taken
+2. **Ask in chat** — Yield to the user with the same question so they can respond directly in the chat window.
+
+3. **If the user responds in chat** — The agent receives the answer immediately. Post confirmation to the Slack thread:
+   ```
+   ✅ Approved via VS Code chat. Proceeding.
+   ```
+
+4. **If waiting for Slack reply** — While the agent has non-blocked work, poll every 30 seconds:
+   - Use `conversations_replies` with the message's `thread_ts`
+   - Continue with independent subtasks between polls
+   - When a reply arrives, parse it and proceed
+
+5. **If session ends before reply** — Save to checkpoint (see session-checkpoints skill):
+   ```markdown
+   ## Pending Approvals
+   | Provider | Channel | Thread ID | Question | Posted At |
+   |----------|---------|-----------|----------|-----------|
+   | slack | C0AHAQFJ7C1 | 1772393542.345149 | Run migration on production? | 2026-03-01 14:30 |
+   ```
+   The next session's `on-session-start` hook checks for replies.
 
 ### Reading User Responses
 
 To check for approvals or instructions:
 
-1. Use `slack_get_thread_replies` to read replies to the approval message
-2. Use `slack_get_channel_history` with a time range to find recent directives
-3. Parse reactions on messages for quick yes/no signals
+1. Use `conversations_replies` with the `thread_ts` of the approval message to read replies
+2. Use `conversations_history` with `oldest`/`latest` time range to find recent directives
+3. Thread replies are the primary mechanism — reactions are not available via MCP
+
+### Resolution Rule
+
+- **First response wins** — whether from chat or Slack
+- **Cross-post confirmation** — when answered in one channel, post confirmation to the other
+- **Conflicting responses** — if both arrive simultaneously, prefer the chat response (it's more intentional)
 
 ### Parsing Conventions
 
 | Signal | Meaning |
 |--------|---------|
-| ✅ reaction | Approved — proceed |
-| ❌ reaction | Rejected — stop and report |
-| 👀 reaction | Acknowledged — user is reviewing |
-| Thread reply | Detailed instructions or questions |
+| Thread reply with "approved" / "yes" / "go" | Approved — proceed |
+| Thread reply with "rejected" / "no" / "stop" | Rejected — stop and report |
+| Thread reply with "reviewing" / "looking" | Acknowledged — user is reviewing |
+| Thread reply with detailed text | Instructions or questions |
 | `@agent` mention | Direct command or question for the agent |
+
+> **Note:** Reactions (emoji responses) are not available via the Slack MCP server. Use thread replies for all approval workflows.
 
 ## Channel & Thread Conventions
 
-### Channel Structure
+### Channel Configuration
+
+Project-specific channel mappings are defined in `.github/customizations/stack/notifications-config.md`. Agents read that file to determine which channel to post to for each event type. Always prefer channel IDs from the config over hardcoded names.
+
+### Default Channel Structure
 
 | Channel | Purpose |
 |---------|---------|
@@ -170,9 +270,9 @@ Slack uses a markdown-like syntax with some differences:
 
 ## Security Considerations
 
-- **OAuth tokens** are managed by the MCP server — agents never see raw tokens
-- **Scope minimization** — request only the scopes agents actually need
-- **Channel restrictions** — limit the app to specific channels rather than granting workspace-wide access
+- **Bot tokens** are passed via `SLACK_MCP_XOXB_TOKEN` env var (in `.env` file) — never hardcode in config files or commit to git
+- **Scope minimization** — request only the scopes agents actually need (omit `channels:manage` if agents shouldn't create channels)
+- **Channel restrictions** — limit the bot to specific channels rather than granting workspace-wide access
 - **Audit logging** — Slack Enterprise Grid provides audit logs for all API activity
 - **No secrets in messages** — never post tokens, passwords, or credentials in Slack messages (per Constitution #1)
 

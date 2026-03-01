@@ -35,7 +35,7 @@
   "author": "Filip Mares",
   "scripts": {
     "build:cli": "tsc",
-    "build:dashboard": "cd src/dashboard && npm run build",
+    "build:dashboard": "cd src/dashboard && npm run build:seed",
     "prepublishOnly": "npm run build:cli && npm run build:dashboard"
   },
   "engines": {

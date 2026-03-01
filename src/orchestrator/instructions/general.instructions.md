@@ -153,6 +153,34 @@ If Linear MCP tools are not available in the current session, do NOT block on is
 4. **Ask the user** to create the issues manually if tracking is critical for the task
 5. After implementation, update commit messages and PR descriptions when issue IDs become available
 
+## Observability Logging (Mandatory)
+
+**Every agent MUST log every session to the observability NDJSON files.** No exceptions. No threshold. No "too small to log." The dashboard depends on this data.
+
+### What to log
+
+| File | Who appends | When |
+|------|------------|------|
+| `sessions.ndjson` | **All agents** | After every session — always |
+| `delegations.ndjson` | **Team Lead** | After each delegation to a specialist agent |
+| `panels.ndjson` | **Panel runner** | After each majority-vote review |
+
+See `.github/customizations/logs/README.md` for the full schema of each record.
+
+### How to log
+
+Append one JSON line per task. When the Team Lead works directly, use the agent role that best describes the work (e.g., `"agent": "Developer"`, `"agent": "UI-UX Expert"`). If a single conversation involves multiple distinct tasks, log one record per task.
+
+```bash
+echo '{"timestamp":"2026-03-01T14:00:00Z","agent":"Developer","model":"claude-opus-4-6","task":"Fix login redirect bug","outcome":"success","duration_min":15,"files_changed":3,"retries":0,"lessons_added":[],"discoveries":[]}' >> .github/customizations/logs/sessions.ndjson
+```
+
+### Rules
+
+- **Log before yielding to the user** — logging is the last action before responding.
+- **Log per task**, not per conversation. Multiple tasks = multiple records.
+- **Never batch-log retrospectively** across sessions.
+
 ## Self-Improvement Protocol
 
 **Every agent must learn from mistakes and share knowledge.** This prevents the same pitfalls from being repeated across sessions.
@@ -160,7 +188,6 @@ If Linear MCP tools are not available in the current session, do NOT block on is
 1. **Before starting work:** Read `.github/customizations/LESSONS-LEARNED.md` — apply relevant lessons proactively
 2. **During execution:** If you retry a command/tool with a different approach and it works, **immediately** add a lesson entry to `.github/customizations/LESSONS-LEARNED.md`
 3. **Update source files:** If the lesson reveals a gap in instruction/skill files, update those files too
-5. **Log the session:** Append a JSON line to `.github/customizations/logs/sessions.ndjson` when your work is complete — see `.github/customizations/logs/README.md` for the schema
 4. **Update instructions:** Proactively suggest updates to `.github/instructions/` or `.github/skills/` files when:
    - The user had to intervene or correct the agent's approach
    - Multiple back-and-forth attempts were needed to get something right
@@ -183,11 +210,13 @@ These rules apply to ALL specialist agents automatically. **Do not duplicate the
 1. **Never delegate** — Specialist agents complete their own work and return results. Never invoke the Team Lead or spawn sub-agents. If work requires another domain, document the need in your output contract.
 2. **Follow the Discovered Issues Policy** — Track any pre-existing bugs found during your work (see § Discovered Issues Policy above).
 3. **Read and update lessons** — Read `.github/customizations/LESSONS-LEARNED.md` before starting. If you retry anything with a different approach that works, add a lesson immediately.
+4. **Log every session** — Append to `.github/customizations/logs/sessions.ndjson` after every session. No exceptions. See § Observability Logging above.
 
 ## Base Output Contract
 
-Every specialist agent's Output Contract MUST end with these two standard items (in addition to domain-specific items above them):
+Every specialist agent's Output Contract MUST end with these standard items (in addition to domain-specific items above them):
 
+- **Session Logged** — Confirm that a session record was appended to `.github/customizations/logs/sessions.ndjson` (mandatory per § Observability Logging)
 - **Discovered Issues** — Pre-existing bugs or anomalies found during work, with tracking action taken per the Discovered Issues Policy
 - **Lessons Applied** — Lessons from `.github/customizations/LESSONS-LEARNED.md` that influenced this work, and any new lessons added
 

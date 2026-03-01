@@ -54,6 +54,18 @@ Phase N of M — Brief description of what this phase does
 |------|--------|-------|-------------|-------|
 | Description | TAS-AA | Agent Name | TAS-ZZ | file4.ts, file5.ts |
 
+## Pending Approvals
+
+Approval requests posted to the messaging provider that haven't been answered yet.
+The `on-session-start` hook checks for replies when a new session begins.
+
+| Provider | Channel | Thread ID | Question | Posted At |
+|----------|---------|-----------|----------|-----------|
+| slack | C0AHAQFJ7C1 | 1772393542.345149 | Run migration on production? | 2026-03-01 14:30 |
+
+If the user answered in the VS Code chat during the previous session, remove
+the row from this table — the approval was already resolved.
+
 ## Key Decisions Made
 
 - Decision 1: Why this approach was chosen

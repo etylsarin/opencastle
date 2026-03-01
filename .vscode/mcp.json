@@ -1,0 +1,34 @@
+{
+  "servers": {
+    "Vercel": {
+      "url": "https://mcp.vercel.com",
+      "type": "http"
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ],
+      "type": "stdio"
+    },
+    "Linear": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@mseep/linear-mcp"
+      ],
+      "envFile": "${workspaceFolder}/.env"
+    },
+    "Slack": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@kazuph/mcp-slack"],
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "SLACK_MCP_ADD_MESSAGE_TOOL": "true"
+      }
+    }
+  }
+}

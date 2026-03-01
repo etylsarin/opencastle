@@ -30,8 +30,9 @@ Session Lifecycle:
 
 1. **Read lessons learned** — Scan `.github/customizations/LESSONS-LEARNED.md` for entries relevant to the current task domain. Apply proactively.
 2. **Check for checkpoint** — If `docs/SESSION-CHECKPOINT.md` exists, read it. Resume from last known state instead of re-analyzing.
-3. **Check dead letter queue** — Scan `.github/customizations/AGENT-FAILURES.md` for pending failures related to the current scope.
-4. **Load domain skills** — Based on the task description, load the appropriate skills before writing code. Don't start coding without the relevant skill loaded.
+3. **Check pending approvals** — If the checkpoint has a `## Pending Approvals` section, check for replies using the configured messaging provider's MCP tools (e.g., `conversations_replies` for Slack). Read `.opencastle.json` → `stack.notifications` to determine the provider. If no messaging is configured, skip this step.
+4. **Check dead letter queue** — Scan `.github/customizations/AGENT-FAILURES.md` for pending failures related to the current scope.
+5. **Load domain skills** — Based on the task description, load the appropriate skills before writing code. Don't start coding without the relevant skill loaded.
 
 ### Template for Delegation Prompts
 
@@ -39,19 +40,22 @@ Include this reminder in every delegation:
 
 ```
 **Session Start:** Read `.github/customizations/LESSONS-LEARNED.md` before starting.
-Check `docs/SESSION-CHECKPOINT.md` for prior state. Load relevant skills
-before writing code.
+Check `docs/SESSION-CHECKPOINT.md` for prior state and pending approvals.
+If pending approvals exist, check for replies via the messaging provider.
+Load relevant skills before writing code.
 ```
 
 ---
 
 ## Hook: on-session-end
 
-**When:** Before the agent yields control back to the user or completes its task.
+**When:** Before the agent yields control back to the user — every time, unconditionally.
+
+> **You MUST log every session.** No threshold, no exceptions, no "too small to log."
 
 ### Actions
 
-1. **Log the session** — Append a JSON line to `.github/customizations/logs/sessions.ndjson` with: agent name, task summary, files changed, duration estimate, outcome (success/partial/failed), and lessons count.
+1. **Log the session (MANDATORY)** — Append a JSON line to `.github/customizations/logs/sessions.ndjson` with: agent name, task summary, files changed, duration estimate, outcome (success/partial/failed), and lessons count. See `general.instructions.md` § Observability Logging for full rules.
 2. **Save checkpoint** (Team Lead only) — If work is incomplete, write `docs/SESSION-CHECKPOINT.md` with current state so the next session can resume. Load **session-checkpoints** skill for format.
 3. **Verify lessons captured** — If any retries occurred during the session, confirm that each retry resulted in a lesson entry in `LESSONS-LEARNED.md`.
 4. **Memory merge check** — If `LESSONS-LEARNED.md` has grown significantly (5+ new entries this session), flag for memory merge consideration.
@@ -143,7 +147,9 @@ Each workflow's **Compound phase** naturally serves as the on-session-end hook f
 ## Anti-Patterns
 
 - **Skipping on-session-start** — Leads to repeated mistakes already documented in lessons learned
-- **Forgetting session logging** — Makes performance tracking and agent improvement impossible
+- **Forgetting session logging** — Makes the observability dashboard empty and performance tracking impossible. This is the #1 most common failure.
+- **Treating logging as optional** — Every session gets logged. No threshold, no exceptions.
+- **Batch-logging retrospectively** — Log each task as it completes, not all at once at the end of a long conversation.
 - **Partial post-delegate checks** — "It compiled, ship it" without checking acceptance criteria
 - **No cleanup** — Temp files accumulate and confuse future sessions
 - **Hooks as blockers** — Hooks should add ~2 minutes overhead, not 20. If a hook takes too long, skip the optional parts

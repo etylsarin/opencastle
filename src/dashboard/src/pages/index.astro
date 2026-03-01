@@ -246,10 +246,84 @@ const base = import.meta.env.BASE_URL;
     return div.innerHTML;
   }
 
+  // ── SVG Icon Library (empty states) ────────────────────
+
+  const EMPTY_ICONS = {
+    welcome: '<svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M24 4L6 14v20l18 10 18-10V14L24 4z" opacity="0.3"/><path d="M24 4L6 14v20l18 10 18-10V14L24 4z"/><path d="M24 24v20"/><path d="M6 14l18 10 18-10"/><rect x="18" y="18" width="12" height="14" rx="1" opacity="0.5"/><path d="M21 32v-6h6v6"/></svg>',
+    agents: '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="14" r="6"/><path d="M8 34c0-6.627 5.373-12 12-12s12 5.373 12 12"/><circle cx="32" cy="12" r="4" opacity="0.4"/><path d="M36 26c0-3.5-2-6-4-7" opacity="0.4"/></svg>',
+    tiers: '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="20" cy="10" rx="14" ry="5"/><path d="M6 10v8c0 2.761 6.268 5 14 5s14-2.239 14-5v-8"/><path d="M6 18v8c0 2.761 6.268 5 14 5s14-2.239 14-5v-8" opacity="0.5"/></svg>',
+    mechanism: '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="20" r="6"/><path d="M20 6v6M20 28v6M6 20h6M28 20h6"/><path d="M10.1 10.1l4.2 4.2M25.7 25.7l4.2 4.2M10.1 29.9l4.2-4.2M25.7 14.3l4.2-4.2" opacity="0.5"/></svg>',
+    outcomes: '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="28" height="28" rx="4"/><polyline points="12 22 18 28 28 14" opacity="0.5"/><line x1="12" y1="16" x2="18" y2="16" opacity="0.3"/><line x1="12" y1="12" x2="24" y2="12" opacity="0.3"/></svg>',
+    timeline: '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="28" height="26" rx="3"/><line x1="6" y1="16" x2="34" y2="16"/><line x1="14" y1="8" x2="14" y2="12"/><line x1="26" y1="8" x2="26" y2="12"/><circle cx="14" cy="24" r="2" opacity="0.4"/><circle cx="20" cy="28" r="2" opacity="0.4"/><circle cx="26" cy="22" r="2" opacity="0.4"/></svg>',
+    models: '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="24" height="24" rx="4"/><circle cx="20" cy="20" r="4"/><path d="M20 12v4M20 24v4M12 20h4M24 20h4" opacity="0.5"/><circle cx="14" cy="14" r="1.5" opacity="0.3"/><circle cx="26" cy="14" r="1.5" opacity="0.3"/><circle cx="14" cy="26" r="1.5" opacity="0.3"/><circle cx="26" cy="26" r="1.5" opacity="0.3"/></svg>',
+    execLog: '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 8h18a2 2 0 0 1 2 2v20a2 2 0 0 1-2 2H14"/><circle cx="10" cy="14" r="3"/><circle cx="10" cy="24" r="3" opacity="0.4"/><line x1="10" y1="17" x2="10" y2="21" opacity="0.3"/><line x1="18" y1="14" x2="28" y2="14" opacity="0.5"/><line x1="18" y1="24" x2="26" y2="24" opacity="0.3"/><line x1="18" y1="19" x2="24" y2="19" opacity="0.2"/></svg>',
+    panels: '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6l2 4h4l-3 3 1 5-4-2.5L16 18l1-5-3-3h4l2-4z"/><rect x="8" y="22" width="24" height="12" rx="3" opacity="0.4"/><line x1="14" y1="28" x2="26" y2="28" opacity="0.3"/><line x1="14" y1="31" x2="22" y2="31" opacity="0.2"/></svg>',
+    sessions: '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="28" height="28" rx="3"/><line x1="6" y1="14" x2="34" y2="14"/><line x1="14" y1="6" x2="14" y2="34" opacity="0.3"/><line x1="6" y1="22" x2="34" y2="22" opacity="0.2"/><line x1="6" y1="30" x2="34" y2="30" opacity="0.2"/></svg>',
+    pipeline: '<svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="14" width="8" height="12" rx="2" opacity="0.3"/><rect x="16" y="14" width="8" height="12" rx="2" opacity="0.3"/><rect x="28" y="14" width="8" height="12" rx="2" opacity="0.3"/><path d="M12 20h4M24 20h4" opacity="0.4"/></svg>',
+  };
+
+  function emptyStateHtml(iconKey, title, description) {
+    return '<div class="empty-state empty-state--enhanced">' +
+      '<div class="empty-state__icon-wrap">' + EMPTY_ICONS[iconKey] + '</div>' +
+      '<p class="empty-state__title">' + title + '</p>' +
+      '<p class="empty-state__desc">' + description + '</p>' +
+      '</div>';
+  }
+
+  // ── Welcome Banner (all data empty) ────────────────────
+
+  function renderWelcomeBanner() {
+    const existing = document.getElementById('welcome-banner');
+    if (existing) existing.remove();
+
+    const banner = document.createElement('section');
+    banner.id = 'welcome-banner';
+    banner.className = 'welcome-banner';
+    banner.innerHTML =
+      '<div class="welcome-banner__glow"></div>' +
+      '<div class="welcome-banner__content">' +
+        '<div class="welcome-banner__icon">' + EMPTY_ICONS.welcome + '</div>' +
+        '<h2 class="welcome-banner__title">Welcome to your Observability Dashboard</h2>' +
+        '<p class="welcome-banner__subtitle">Agent sessions, delegations, and quality reviews will appear here as your team completes work.</p>' +
+        '<div class="welcome-banner__steps">' +
+          '<div class="welcome-step">' +
+            '<span class="welcome-step__num">1</span>' +
+            '<div class="welcome-step__text">' +
+              '<strong>Configure agents</strong>' +
+              '<span>Set up your orchestrator and specialist agents</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="welcome-step">' +
+            '<span class="welcome-step__num">2</span>' +
+            '<div class="welcome-step__text">' +
+              '<strong>Run a session</strong>' +
+              '<span>Delegate tasks — session logs are captured automatically</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="welcome-step">' +
+            '<span class="welcome-step__num">3</span>' +
+            '<div class="welcome-step__text">' +
+              '<strong>Watch insights flow in</strong>' +
+              '<span>Charts, metrics, and trends populate in real time</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    const main = document.querySelector('.dash-main');
+    if (main) main.prepend(banner);
+  }
+
+  function removeWelcomeBanner() {
+    const existing = document.getElementById('welcome-banner');
+    if (existing) existing.remove();
+  }
+
   // ── KPI Rendering ────────────────────────────────────────
 
   function renderKpis(sessions, delegations) {
     const total = sessions.length;
+    const isEmpty = total === 0;
     const successCount = sessions.filter((s) => s.outcome === 'success').length;
     const rate = total > 0 ? Math.round((successCount / total) * 100) : 0;
     const durSessions = sessions.filter((s) => s.duration_min != null);
@@ -262,50 +336,61 @@ const base = import.meta.env.BASE_URL;
         : 0;
     const uniqueAgents = new Set(delegations.map((d) => d.agent)).size;
 
+    // Toggle ghost class on KPI row
+    const kpiRow = document.querySelector('.kpi-row');
+    if (kpiRow) kpiRow.classList.toggle('kpi-row--empty', isEmpty);
+
     const kpiSessions = document.getElementById('kpi-sessions');
     const kpiSuccess = document.getElementById('kpi-success');
     const kpiDelegations = document.getElementById('kpi-delegations');
     const kpiDuration = document.getElementById('kpi-duration');
 
     if (kpiSessions) {
-      kpiSessions.querySelector('.kpi-card__value').textContent = total;
-      kpiSessions.querySelector('.kpi-card__sub').innerHTML =
-        '<span class="kpi-trend kpi-trend--up">\u2191</span> ' +
-        successCount +
-        ' successful';
+      kpiSessions.querySelector('.kpi-card__value').textContent = isEmpty ? '0' : total;
+      kpiSessions.querySelector('.kpi-card__sub').innerHTML = isEmpty
+        ? '<span class="kpi-card__hint">No sessions yet</span>'
+        : '<span class="kpi-trend kpi-trend--up">\u2191</span> ' + successCount + ' successful';
     }
     if (kpiSuccess) {
-      const trendClass =
-        rate >= 80 ? 'up' : rate >= 60 ? 'neutral' : 'down';
-      kpiSuccess.querySelector('.kpi-card__value').textContent = rate + '%';
-      kpiSuccess.querySelector('.kpi-card__sub').innerHTML =
-        '<span class="kpi-trend kpi-trend--' +
-        trendClass +
-        '">' +
-        (trendClass === 'up' ? '\u2191' : trendClass === 'down' ? '\u2193' : '\u2192') +
-        '</span> across all sessions';
+      if (isEmpty) {
+        kpiSuccess.querySelector('.kpi-card__value').textContent = '\u2014';
+        kpiSuccess.querySelector('.kpi-card__sub').innerHTML =
+          '<span class="kpi-card__hint">No sessions yet</span>';
+      } else {
+        const trendClass =
+          rate >= 80 ? 'up' : rate >= 60 ? 'neutral' : 'down';
+        kpiSuccess.querySelector('.kpi-card__value').textContent = rate + '%';
+        kpiSuccess.querySelector('.kpi-card__sub').innerHTML =
+          '<span class="kpi-trend kpi-trend--' +
+          trendClass +
+          '">' +
+          (trendClass === 'up' ? '\u2191' : trendClass === 'down' ? '\u2193' : '\u2192') +
+          '</span> across all sessions';
+      }
     }
     if (kpiDelegations) {
       kpiDelegations.querySelector('.kpi-card__value').textContent =
-        delegations.length;
-      kpiDelegations.querySelector('.kpi-card__sub').textContent =
-        uniqueAgents + ' unique agents';
+        delegations.length === 0 ? '0' : delegations.length;
+      kpiDelegations.querySelector('.kpi-card__sub').innerHTML = isEmpty
+        ? '<span class="kpi-card__hint">No delegations yet</span>'
+        : uniqueAgents + ' unique agents';
     }
     if (kpiDuration) {
-      kpiDuration.querySelector('.kpi-card__value').textContent =
-        avgDur + 'm';
-      kpiDuration.querySelector('.kpi-card__sub').innerHTML =
-        '<span class="kpi-trend kpi-trend--neutral">\u2192</span> per session';
+      kpiDuration.querySelector('.kpi-card__value').textContent = isEmpty ? '\u2014' : avgDur + 'm';
+      kpiDuration.querySelector('.kpi-card__sub').innerHTML = isEmpty
+        ? '<span class="kpi-card__hint">No duration yet</span>'
+        : '<span class="kpi-trend kpi-trend--neutral">\u2192</span> per session';
     }
 
     // Retries KPI
     const totalRetries = sessions.reduce((sum, s) => sum + (s.retries || 0), 0);
     const kpiRetries = document.getElementById('kpi-retries');
     if (kpiRetries) {
-      kpiRetries.querySelector('.kpi-card__value').textContent = totalRetries;
+      kpiRetries.querySelector('.kpi-card__value').textContent = isEmpty ? '0' : totalRetries;
       const retriedSessions = sessions.filter((s) => (s.retries || 0) > 0).length;
-      kpiRetries.querySelector('.kpi-card__sub').textContent =
-        retriedSessions + ' sessions with retries';
+      kpiRetries.querySelector('.kpi-card__sub').innerHTML = isEmpty
+        ? '<span class="kpi-card__hint">No retries yet</span>'
+        : retriedSessions + ' sessions with retries';
     }
 
     // Lessons KPI
@@ -315,13 +400,14 @@ const base = import.meta.env.BASE_URL;
     );
     const kpiLessons = document.getElementById('kpi-lessons');
     if (kpiLessons) {
-      kpiLessons.querySelector('.kpi-card__value').textContent = totalLessons;
+      kpiLessons.querySelector('.kpi-card__value').textContent = isEmpty ? '0' : totalLessons;
       const discoveryCount = sessions.reduce(
         (sum, s) => sum + (s.discoveries ? s.discoveries.length : 0),
         0
       );
-      kpiLessons.querySelector('.kpi-card__sub').textContent =
-        discoveryCount + ' issues discovered';
+      kpiLessons.querySelector('.kpi-card__sub').innerHTML = isEmpty
+        ? '<span class="kpi-card__hint">No lessons yet</span>'
+        : discoveryCount + ' issues discovered';
     }
   }
 
@@ -330,6 +416,11 @@ const base = import.meta.env.BASE_URL;
   function renderPipeline(delegations) {
     const el = document.getElementById('pipeline-view');
     if (!el) return;
+
+    if (delegations.length === 0) {
+      el.innerHTML = emptyStateHtml('pipeline', 'No pipeline activity yet', 'Delegation phases appear here as tasks flow through Foundation, Integration, Validation, and QA stages.');
+      return;
+    }
 
     const phases = { 1: 0, 2: 0, 3: 0, 4: 0 };
     delegations.forEach((d) => {
@@ -395,8 +486,7 @@ const base = import.meta.env.BASE_URL;
     if (!el) return;
 
     if (sessions.length === 0) {
-      el.innerHTML =
-        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDCCA</div><p class="empty-state__text">No session data available</p></div>';
+      el.innerHTML = emptyStateHtml('agents', 'No agent sessions yet', 'A breakdown of sessions per agent will appear here — stacked by outcome (success, partial, failed).');
       return;
     }
 
@@ -421,15 +511,18 @@ const base = import.meta.env.BASE_URL;
           escapeHtml(name) +
           '</span>' +
           '<div class="bar-track">' +
-          '<div class="bar-segment bar--success" style="width: ' +
-          ((data.success / maxTotal) * 100).toFixed(1) +
-          '%"></div>' +
-          '<div class="bar-segment bar--partial" style="width: ' +
-          ((data.partial / maxTotal) * 100).toFixed(1) +
-          '%"></div>' +
-          '<div class="bar-segment bar--failed" style="width: ' +
-          ((data.failed / maxTotal) * 100).toFixed(1) +
-          '%"></div>' +
+          (data.success > 0
+            ? '<div class="bar-segment bar--success" style="width: ' +
+              ((data.success / maxTotal) * 100).toFixed(1) + '%"></div>'
+            : '') +
+          (data.partial > 0
+            ? '<div class="bar-segment bar--partial" style="width: ' +
+              ((data.partial / maxTotal) * 100).toFixed(1) + '%"></div>'
+            : '') +
+          (data.failed > 0
+            ? '<div class="bar-segment bar--failed" style="width: ' +
+              ((data.failed / maxTotal) * 100).toFixed(1) + '%"></div>'
+            : '') +
           '</div>' +
           '<span class="bar-value">' +
           data.total +
@@ -446,8 +539,7 @@ const base = import.meta.env.BASE_URL;
     if (!el) return;
 
     if (delegations.length === 0) {
-      el.innerHTML =
-        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDFE3</div><p class="empty-state__text">No delegation data available</p></div>';
+      el.innerHTML = emptyStateHtml('tiers', 'No tier data yet', 'Model tier distribution (Premium, Standard, Utility, Economy) will be visualized as a donut chart.');
       return;
     }
 
@@ -469,6 +561,8 @@ const base = import.meta.env.BASE_URL;
     const circles = tiers.map((t) => {
       const pct = t.count / total;
       const dashLen = pct * circumference;
+      // Skip round linecap for single-segment donuts to avoid overlap artifact
+      const linecap = tiers.length === 1 ? 'butt' : 'round';
       const segment =
         '<circle cx="90" cy="90" r="' +
         r +
@@ -485,7 +579,7 @@ const base = import.meta.env.BASE_URL;
         (-cumOffset).toFixed(2) +
         '" ' +
         'transform="rotate(-90 90 90)" ' +
-        'stroke-linecap="round"/>';
+        'stroke-linecap="' + linecap + '"/>';
       cumOffset += dashLen;
       return segment;
     });
@@ -535,8 +629,7 @@ const base = import.meta.env.BASE_URL;
     if (!el) return;
 
     if (delegations.length === 0) {
-      el.innerHTML =
-        '<div class="empty-state"><div class="empty-state__icon">\u2699\uFE0F</div><p class="empty-state__text">No delegation data available</p></div>';
+      el.innerHTML = emptyStateHtml('mechanism', 'No delegation data yet', 'The split between sub-agent (inline) and background (worktree) delegations will be shown here.');
       return;
     }
 
@@ -571,12 +664,14 @@ const base = import.meta.env.BASE_URL;
     var circles = mechs.map(function (m) {
       var pct = m.count / total;
       var dashLen = pct * circumference;
+      // Skip round linecap for single-segment donuts to avoid overlap artifact
+      var linecap = mechs.length === 1 ? 'butt' : 'round';
       var segment =
         '<circle cx="90" cy="90" r="' + r + '" fill="none" ' +
         'stroke="' + (MECH_COLORS[m.name] || '#64748b') + '" stroke-width="18" ' +
         'stroke-dasharray="' + dashLen.toFixed(2) + ' ' + (circumference - dashLen).toFixed(2) + '" ' +
         'stroke-dashoffset="' + (-cumOffset).toFixed(2) + '" ' +
-        'transform="rotate(-90 90 90)" stroke-linecap="round"/>';
+        'transform="rotate(-90 90 90)" stroke-linecap="' + linecap + '"/>';
       cumOffset += dashLen;
       return segment;
     });
@@ -615,8 +710,7 @@ const base = import.meta.env.BASE_URL;
     if (!el) return;
 
     if (delegations.length === 0) {
-      el.innerHTML =
-        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDCCA</div><p class="empty-state__text">No delegation data available</p></div>';
+      el.innerHTML = emptyStateHtml('outcomes', 'No outcome data yet', 'Delegation results — success, partial, failed, redirected — will be tracked and compared here.');
       return;
     }
 
@@ -674,8 +768,7 @@ const base = import.meta.env.BASE_URL;
     );
 
     if (dates.length === 0) {
-      el.innerHTML =
-        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDCC5</div><p class="empty-state__text">No timeline data</p></div>';
+      el.innerHTML = emptyStateHtml('timeline', 'No timeline data yet', 'A daily activity chart will build here as sessions and delegations accumulate over time.');
       return;
     }
 
@@ -687,14 +780,21 @@ const base = import.meta.env.BASE_URL;
     const pad = { top: 10, right: 10, bottom: 28, left: 10 };
     const plotW = w - pad.left - pad.right;
     const plotH = h - pad.top - pad.bottom;
-    const groupWidth = plotW / dates.length;
-    const barWidth = Math.min(16, groupWidth * 0.35);
+    // Prevent sparse layout when there are very few dates
+    const groupWidth = dates.length <= 3
+      ? Math.min(100, plotW / dates.length)
+      : plotW / dates.length;
+    const barWidth = Math.min(dates.length <= 3 ? 24 : 16, groupWidth * 0.35);
+    // Center the bars when there are few dates
+    const timelineStartX = dates.length <= 3
+      ? pad.left + (plotW - dates.length * groupWidth) / 2
+      : pad.left;
 
     let rects = '';
     let labels = '';
 
     dates.forEach(([date, data], i) => {
-      const x = pad.left + i * groupWidth + groupWidth / 2;
+      const x = timelineStartX + i * groupWidth + groupWidth / 2;
       const sH = maxVal > 0 ? (data.sessions / maxVal) * plotH : 0;
       const dH = maxVal > 0 ? (data.delegations / maxVal) * plotH : 0;
 
@@ -754,8 +854,7 @@ const base = import.meta.env.BASE_URL;
     if (!el) return;
 
     if (sessions.length === 0) {
-      el.innerHTML =
-        '<div class="empty-state"><div class="empty-state__icon">\uD83E\uDD16</div><p class="empty-state__text">No model data</p></div>';
+      el.innerHTML = emptyStateHtml('models', 'No model data yet', 'Model utilization across sessions — Claude Opus, GPT-5, Gemini, etc. — will be compared here.');
       return;
     }
 
@@ -801,8 +900,7 @@ const base = import.meta.env.BASE_URL;
       .slice(0, 10);
 
     if (sorted.length === 0) {
-      el.innerHTML =
-        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDCDD</div><p class="empty-state__text">No sessions recorded yet</p></div>';
+      el.innerHTML = emptyStateHtml('execLog', 'No execution history yet', 'A step-by-step trace of agent activity — with outcomes, durations, and metadata — will appear here.');
       return;
     }
 
@@ -885,8 +983,7 @@ const base = import.meta.env.BASE_URL;
     if (!el) return;
 
     if (panels.length === 0) {
-      el.innerHTML =
-        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDEE1\uFE0F</div><p class="empty-state__text">No panel reviews yet</p></div>';
+      el.innerHTML = emptyStateHtml('panels', 'No panel reviews yet', 'Quality gate verdicts from majority-vote panels — with pass/block counts and must-fix items — will be shown here.');
       return;
     }
 
@@ -951,8 +1048,7 @@ const base = import.meta.env.BASE_URL;
       .slice(0, 15);
 
     if (sorted.length === 0) {
-      el.innerHTML =
-        '<div class="empty-state"><div class="empty-state__icon">\uD83D\uDCCB</div><p class="empty-state__text">No sessions recorded</p></div>';
+      el.innerHTML = emptyStateHtml('sessions', 'No session records yet', 'A detailed table of recent sessions — with timestamps, agents, tasks, outcomes, and linked issues — will populate here.');
       return;
     }
 
@@ -1013,6 +1109,14 @@ const base = import.meta.env.BASE_URL;
       loadNdjson(base + 'data/delegations.ndjson'),
       loadNdjson(base + 'data/panels.ndjson'),
     ]);
+
+    // Show/hide welcome banner
+    const allEmpty = sessions.length === 0 && delegations.length === 0 && panels.length === 0;
+    if (allEmpty) {
+      renderWelcomeBanner();
+    } else {
+      removeWelcomeBanner();
+    }
 
     renderKpis(sessions, delegations);
     renderPipeline(delegations);

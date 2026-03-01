@@ -29,7 +29,10 @@ export async function scaffoldMcpConfig(
   const templatePath = resolve(srcRoot, 'mcp.json');
   const content = await readFile(templatePath, 'utf8');
 
-  const template = JSON.parse(content) as { servers: Record<string, unknown> };
+  const template = JSON.parse(content) as {
+    servers: Record<string, unknown>;
+    inputs?: Array<{ id: string; [key: string]: unknown }>;
+  };
 
   // Filter servers based on stack config
   if (stack) {
@@ -37,6 +40,17 @@ export async function scaffoldMcpConfig(
     template.servers = Object.fromEntries(
       Object.entries(template.servers).filter(([key]) => included.has(key))
     );
+
+    // Filter inputs to only include those referenced by included servers
+    if (template.inputs) {
+      const serverJson = JSON.stringify(template.servers);
+      template.inputs = template.inputs.filter(
+        (input) => serverJson.includes(`\${input:${input.id}}`)
+      );
+      if (template.inputs.length === 0) {
+        delete template.inputs;
+      }
+    }
   }
 
   if (existsSync(destPath)) {
@@ -44,6 +58,7 @@ export async function scaffoldMcpConfig(
     const existingContent = await readFile(destPath, 'utf8');
     const existing = JSON.parse(existingContent) as {
       servers?: Record<string, unknown>;
+      inputs?: Array<{ id: string; [key: string]: unknown }>;
       [key: string]: unknown;
     };
 
@@ -56,6 +71,20 @@ export async function scaffoldMcpConfig(
       if (!(key in existing.servers)) {
         existing.servers[key] = value;
         added++;
+      }
+    }
+
+    // Merge inputs: add missing input definitions
+    if (template.inputs && template.inputs.length > 0) {
+      if (!existing.inputs) {
+        existing.inputs = [];
+      }
+      const existingIds = new Set(existing.inputs.map((i) => i.id));
+      for (const input of template.inputs) {
+        if (!existingIds.has(input.id)) {
+          existing.inputs.push(input);
+          added++;
+        }
       }
     }
 
