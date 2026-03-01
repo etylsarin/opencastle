@@ -1,7 +1,9 @@
 import { resolve } from 'node:path'
-import { readFile } from 'node:fs/promises'
+import { readFile, unlink } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { select, confirm, closePrompts } from './prompt.js'
 import { readManifest, writeManifest, createManifest } from './manifest.js'
+import { removeDirIfExists } from './copy.js'
 import type { CliContext, IdeAdapter, CmsChoice, DbChoice, PmChoice, NotifChoice, StackConfig } from './types.js'
 
 const ADAPTERS: Record<string, () => Promise<IdeAdapter>> = {
@@ -16,6 +18,7 @@ export default async function init({ pkgRoot }: CliContext): Promise<void> {
 
   // Check for existing installation
   const existing = await readManifest(projectRoot)
+  let isReinit = false
   if (existing) {
     const proceed = await confirm(
       `OpenCastle already installed (v${existing.version}, ${existing.ide}). Re-initialize?`,
@@ -25,6 +28,7 @@ export default async function init({ pkgRoot }: CliContext): Promise<void> {
       console.log('  Aborted.')
       return
     }
+    isReinit = true
   }
 
   const pkg = JSON.parse(
@@ -88,6 +92,31 @@ export default async function init({ pkgRoot }: CliContext): Promise<void> {
 
   console.log(`\n  Installing for ${ide}...`)
   console.log(`  Stack: CMS=${stack.cms}, DB=${stack.db}, PM=${stack.pm}, Notifications=${stack.notifications}\n`)
+
+  // ── Clean up previous installation on re-init ────────────────
+  if (isReinit && existing) {
+    const frameworkPaths = existing.managedPaths?.framework ?? []
+    for (const p of frameworkPaths) {
+      const fullPath = resolve(projectRoot, p)
+      if (p.endsWith('/')) {
+        await removeDirIfExists(fullPath)
+      } else if (existsSync(fullPath)) {
+        await unlink(fullPath)
+      }
+    }
+    // Remove MCP config so it gets regenerated with new stack
+    const mcpCandidates = [
+      '.vscode/mcp.json',
+      '.cursor/mcp.json',
+      '.claude/mcp.json',
+    ]
+    for (const mcpPath of mcpCandidates) {
+      const fullPath = resolve(projectRoot, mcpPath)
+      if (existsSync(fullPath)) {
+        await unlink(fullPath)
+      }
+    }
+  }
 
   // ── Run adapter ─────────────────────────────────────────────────
   const adapter = await ADAPTERS[ide]()

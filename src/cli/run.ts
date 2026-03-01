@@ -43,6 +43,7 @@ function parseArgs(args: string[]): RunOptions {
         break
       case '--file':
       case '-f':
+        if (i + 1 >= args.length) { console.error('  \u2717 --file requires a path'); process.exit(1) }
         opts.file = args[++i]
         break
       case '--dry-run':
@@ -50,6 +51,7 @@ function parseArgs(args: string[]): RunOptions {
         break
       case '--concurrency':
       case '-c': {
+        if (i + 1 >= args.length) { console.error('  \u2717 --concurrency requires a number'); process.exit(1) }
         const val = parseInt(args[++i], 10)
         if (!Number.isFinite(val) || val < 1) {
           console.error(`  ✗ --concurrency must be an integer >= 1`)
@@ -60,9 +62,11 @@ function parseArgs(args: string[]): RunOptions {
       }
       case '--adapter':
       case '-a':
+        if (i + 1 >= args.length) { console.error('  \u2717 --adapter requires a name'); process.exit(1) }
         opts.adapter = args[++i]
         break
       case '--report-dir':
+        if (i + 1 >= args.length) { console.error('  \u2717 --report-dir requires a path'); process.exit(1) }
         opts.reportDir = args[++i]
         break
       case '--verbose':
