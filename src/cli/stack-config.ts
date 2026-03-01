@@ -105,6 +105,30 @@ const NOTIF_MCP_MAP: Record<NotifChoice, string[]> = {
 /** Always-included MCP servers */
 const CORE_MCP_SERVERS = ['chrome-devtools', 'Vercel'];
 
+// ── MCP environment variable requirements ─────────────────────
+
+export interface McpEnvRequirement {
+  /** MCP server key (must match mcp.json) */
+  server: string;
+  /** Environment variable name */
+  envVar: string;
+  /** Short description of where to get the key */
+  hint: string;
+}
+
+/**
+ * Registry of MCP servers that require API keys via environment variables.
+ * Only servers with `env` fields in mcp.json need to be listed here.
+ * HTTP-based servers (Sanity, Slack, Vercel, etc.) handle auth via OAuth.
+ */
+const MCP_ENV_REQUIREMENTS: McpEnvRequirement[] = [
+  {
+    server: 'Linear',
+    envVar: 'LINEAR_API_KEY',
+    hint: 'Create at linear.app → Settings → API → Personal API keys',
+  },
+];
+
 export function getExcludedSkills(stack: StackConfig): Set<string> {
   return new Set([
     ...CMS_SKILL_MAP[stack.cms],
@@ -129,6 +153,15 @@ export function getIncludedMcpServers(stack: StackConfig): Set<string> {
     ...PM_MCP_MAP[stack.pm],
     ...NOTIF_MCP_MAP[stack.notifications],
   ]);
+}
+
+/**
+ * Returns env var requirements for the MCP servers included in the stack.
+ * Only returns entries for servers that actually need API keys.
+ */
+export function getRequiredMcpEnvVars(stack: StackConfig): McpEnvRequirement[] {
+  const included = getIncludedMcpServers(stack);
+  return MCP_ENV_REQUIREMENTS.filter((req) => included.has(req.server));
 }
 
 // ── Customization file transforms ─────────────────────────────
