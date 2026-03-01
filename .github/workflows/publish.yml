@@ -21,6 +21,10 @@ jobs:
         with:
           node-version: 22
           registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            src/dashboard/package-lock.json
 
       - name: Check if version changed
         id: version
@@ -37,15 +41,19 @@ jobs:
 
       - name: Install dependencies
         if: steps.version.outputs.changed == 'true'
-        run: npm ci
+        run: |
+          npm ci
+          cd src/dashboard && npm ci
 
       - name: Build
         if: steps.version.outputs.changed == 'true'
-        run: npm run build:cli
+        run: |
+          npm run build:cli
+          npm run build:dashboard
 
       - name: Publish
         if: steps.version.outputs.changed == 'true'
-        run: npm publish --provenance --access public
+        run: npm publish --ignore-scripts --provenance --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
