@@ -15,4 +15,16 @@ dist/
 
 # IDE
 .idea/
-.vscode/
+.vscode/*
+
+# >>> OpenCastle managed (do not edit) >>>
+.github/copilot-instructions.md
+.github/agents/
+.github/instructions/
+.github/skills/
+.github/agent-workflows/
+.github/prompts/
+.opencastle.json
+.github/customizations/
+!.vscode/mcp.json
+# <<< OpenCastle managed <<<

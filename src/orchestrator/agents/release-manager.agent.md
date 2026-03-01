@@ -2,7 +2,7 @@
 description: 'Release manager for pre-release verification, changelog generation, version management, regression checks, and release coordination.'
 name: 'Release Manager'
 model: GPT-5.3-Codex
-tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages', 'vercel/get_deployment', 'vercel/get_deployment_build_logs', 'vercel/get_runtime_logs', 'vercel/list_deployments', 'vercel/list_projects', 'nx-mcp-server/nx_project_details', 'nx-mcp-server/nx_workspace', 'nx-mcp-server/nx_workspace_path']
+tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages', 'vercel/get_deployment', 'vercel/get_deployment_build_logs', 'vercel/get_runtime_logs', 'vercel/list_deployments', 'vercel/list_projects', 'nx-mcp-server/nx_project_details', 'nx-mcp-server/nx_workspace', 'nx-mcp-server/nx_workspace_path', 'slack/*']
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->

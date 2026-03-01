@@ -34,18 +34,24 @@
     "Linear": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "@mseep/linear-mcp"],
-      "env": {
-        "LINEAR_API_KEY": "${env:LINEAR_API_KEY}"
-      }
+      "args": [
+        "-y",
+        "@mseep/linear-mcp"
+      ],
+      "envFile": "${workspaceFolder}/.env"
     },
     "Jira": {
       "url": "https://mcp.atlassian.com/v2/sse",
       "type": "http"
     },
     "Slack": {
-      "url": "https://mcp.slack.com/mcp",
-      "type": "http"
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@kazuph/mcp-slack"],
+      "envFile": "${workspaceFolder}/.env",
+      "env": {
+        "SLACK_MCP_ADD_MESSAGE_TOOL": "true"
+      }
     },
     "Teams": {
       "url": "https://mcp.microsoft365.com/mcp",

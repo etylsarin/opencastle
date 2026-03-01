@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "astro dev --port 4300",
     "build": "astro build",
+    "build:seed": "astro build && mkdir -p dist/data && cp seed-data/*.ndjson dist/data/",
     "preview": "astro preview --port 4300"
   },
   "dependencies": {

@@ -1,0 +1,474 @@
+---
+import '../../styles/global.css';
+
+const title = 'Slack MCP Setup Guide — OpenCastle';
+const description = 'How to connect the Slack MCP server to your AI coding assistant for agent notifications and bi-directional communication.';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+  </head>
+  <body>
+    <main class="guide">
+      <a href="/" class="back-link">← Back to OpenCastle</a>
+
+      <h1>Slack MCP Setup Guide</h1>
+      <p class="subtitle">
+        Connect the <a href="https://www.npmjs.com/package/@kazuph/mcp-slack" target="_blank" rel="noopener"><code>@kazuph/mcp-slack</code></a> MCP server so your AI agents can post progress updates,
+        request approvals, and read responses — all through Slack channels.
+      </p>
+
+      <div class="callout">
+        <strong>Why not the official Slack MCP server?</strong>
+        The official server (<code>mcp.slack.com</code>) requires OAuth, but VS Code
+        redirects to <code>http://127.0.0.1:&lt;port&gt;</code> which Slack rejects
+        because it requires HTTPS redirect URLs.
+        We use <code>@kazuph/mcp-slack</code> instead — it runs locally via stdio
+        and reads the bot token from <code>.env</code>, no OAuth needed.
+      </div>
+
+      <nav class="toc">
+        <h2>Contents</h2>
+        <ol>
+          <li><a href="#prerequisites">Prerequisites</a></li>
+          <li><a href="#create-slack-app">Create a Slack App</a></li>
+          <li><a href="#configure-scopes">Configure Bot Token Scopes</a></li>
+          <li><a href="#get-token">Get Your Bot Token</a></li>
+          <li><a href="#connect-vscode">Connect in VS Code</a></li>
+          <li><a href="#connect-cursor">Connect in Cursor</a></li>
+          <li><a href="#connect-claude-code">Connect in Claude Code</a></li>
+          <li><a href="#verify">Verify the Connection</a></li>
+          <li><a href="#troubleshooting">Troubleshooting</a></li>
+        </ol>
+      </nav>
+
+      <hr />
+
+      <section id="prerequisites">
+        <h2>1. Prerequisites</h2>
+        <ul>
+          <li>A Slack workspace where you have permission to install apps</li>
+          <li>OpenCastle initialized with Slack enabled (<code>npx opencastle init</code>)</li>
+          <li>Your IDE (VS Code, Cursor, or Claude Code)</li>
+        </ul>
+      </section>
+
+      <section id="create-slack-app">
+        <h2>2. Create a Slack App</h2>
+        <ol>
+          <li>
+            Go to <a href="https://api.slack.com/apps" target="_blank" rel="noopener">api.slack.com/apps</a>
+          </li>
+          <li>Click <strong>Create New App</strong> → <strong>From scratch</strong></li>
+          <li>
+            Name it something like <code>OpenCastle Agents</code> and select your workspace
+          </li>
+          <li>Click <strong>Create App</strong></li>
+          <li>
+            In the left sidebar, go to <strong>App Home</strong> and enable
+            <strong>"Allow users to send Slash commands and messages from the messages tab"</strong>
+            — this lets you DM the bot directly
+          </li>
+        </ol>
+      </section>
+
+      <section id="configure-scopes">
+        <h2>3. Configure Bot Token Scopes</h2>
+        <ol>
+          <li>In your Slack app settings, go to <strong>OAuth &amp; Permissions</strong></li>
+          <li>Scroll down to <strong>Bot Token Scopes</strong></li>
+          <li>Add the scopes listed below</li>
+        </ol>
+
+        <h4>Minimum (agent notifications)</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Scope</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>chat:write</code></td><td>Send messages and replies</td></tr>
+            <tr><td><code>channels:read</code></td><td>List channels</td></tr>
+            <tr><td><code>channels:history</code></td><td>Read messages in public channels</td></tr>
+            <tr><td><code>users:read</code></td><td>Look up user profiles</td></tr>
+          </tbody>
+        </table>
+
+        <h4>Recommended (full MCP server capabilities)</h4>
+        <table>
+          <thead>
+            <tr>
+              <th>Scope</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td><code>chat:write</code></td><td>Send messages</td></tr>
+            <tr><td><code>channels:read</code></td><td>List channels and metadata</td></tr>
+            <tr><td><code>channels:history</code></td><td>Read public channel history</td></tr>
+            <tr><td><code>channels:manage</code></td><td>Create/rename channels, set topics</td></tr>
+            <tr><td><code>groups:read</code></td><td>List private channels</td></tr>
+            <tr><td><code>groups:history</code></td><td>Read private channel history</td></tr>
+            <tr><td><code>mpim:read</code></td><td>List group DMs</td></tr>
+            <tr><td><code>mpim:history</code></td><td>Read group DM history</td></tr>
+            <tr><td><code>im:read</code></td><td>List direct message conversations</td></tr>
+            <tr><td><code>im:history</code></td><td>Read DM history</td></tr>
+            <tr><td><code>users:read</code></td><td>Read user profiles</td></tr>
+            <tr><td><code>users:read.email</code></td><td>Read user emails</td></tr>
+          </tbody>
+        </table>
+
+        <div class="callout">
+          <strong>Note:</strong> <code>channels:manage</code> is optional — only
+          needed if agents should create or rename channels. Bot tokens cannot
+          search messages; if you need search, use a user token (<code>xoxp-…</code>)
+          instead.
+        </div>
+      </section>
+
+      <section id="get-token">
+        <h2>4. Get Your Bot Token</h2>
+        <ol>
+          <li>
+            Still in your Slack app settings, scroll to the top of the
+            <strong>OAuth &amp; Permissions</strong> page
+          </li>
+          <li>
+            Click <strong>Install to Workspace</strong> (or <strong>Reinstall to Workspace</strong>
+            if you've already installed it before adding scopes)
+          </li>
+          <li>
+            Authorize the app when prompted
+          </li>
+          <li>
+            Copy the <strong>Bot User OAuth Token</strong> (<code>xoxb-…</code>) that appears
+            at the top of the page
+          </li>
+        </ol>
+
+        <div class="callout callout-warning">
+          <strong>Security:</strong> Treat this token like a password. Store it in
+          your project's <code>.env</code> file (which should be in
+          <code>.gitignore</code>). Never commit it to source control.
+        </div>
+
+        <h3>Add the token to your <code>.env</code> file</h3>
+        <p>Create or update the <code>.env</code> file in your project root:</p>
+        <pre><code>SLACK_MCP_XOXB_TOKEN="xoxb-your-token-here"</code></pre>
+      </section>
+
+      <section id="connect-vscode">
+        <h2>5. Connect in VS Code</h2>
+        <p>
+          OpenCastle uses the <a href="https://www.npmjs.com/package/@kazuph/mcp-slack" target="_blank" rel="noopener"><code>@kazuph/mcp-slack</code></a>
+          MCP server, which runs as a local stdio process and reads the bot token
+          from your <code>.env</code> file.
+        </p>
+        <ol>
+          <li>
+            Ensure <code>.vscode/mcp.json</code> includes the Slack server
+            (this is automatic if you ran <code>npx opencastle init</code>
+            with Slack enabled):
+          </li>
+        </ol>
+        <pre><code>{`{
+  "servers": {
+    "Slack": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@kazuph/mcp-slack"],
+      "envFile": "\${workspaceFolder}/.env",
+      "env": {
+        "SLACK_MCP_ADD_MESSAGE_TOOL": "true"
+      }
+    }
+  }
+}`}</code></pre>
+        <ol start="2">
+          <li>
+            Make sure your <code>.env</code> file contains the bot token:
+            <pre><code>SLACK_MCP_XOXB_TOKEN="xoxb-your-token-here"</code></pre>
+          </li>
+          <li>
+            Start the Slack MCP server (from the Command Palette: <em>"MCP: List Servers"</em>
+            → <strong>Slack</strong> → <strong>Start</strong>)
+          </li>
+        </ol>
+        <div class="callout">
+          <strong>Note:</strong> The <code>SLACK_MCP_ADD_MESSAGE_TOOL</code> env var
+          enables the <code>conversations_add_message</code> tool, which is disabled
+          by default for safety. Set it to <code>true</code> to allow posting to all
+          channels, or to a comma-separated list of channel IDs to restrict posting.
+        </div>
+      </section>
+
+      <section id="connect-cursor">
+        <h2>6. Connect in Cursor</h2>
+        <p>
+          Cursor also uses the <code>@kazuph/mcp-slack</code> package via stdio.
+        </p>
+        <ol>
+          <li>Open Cursor Settings → <strong>MCP</strong></li>
+          <li>
+            The Slack server should appear from <code>.cursor/mcp.json</code>
+            (auto-generated by <code>npx opencastle init</code>)
+          </li>
+          <li>
+            Ensure your <code>.env</code> file contains <code>SLACK_MCP_XOXB_TOKEN</code>
+          </li>
+          <li>Click <strong>Enable</strong> to start the server</li>
+        </ol>
+      </section>
+
+      <section id="connect-claude-code">
+        <h2>7. Connect in Claude Code</h2>
+        <ol>
+          <li>
+            Claude Code reads MCP config from <code>.claude/mcp.json</code>
+          </li>
+          <li>
+            Ensure it includes the <code>@kazuph/mcp-slack</code> server entry
+            (auto-generated by <code>npx opencastle init</code>)
+          </li>
+          <li>
+            Run <code>claude mcp list</code> to verify the Slack server is registered
+          </li>
+        </ol>
+      </section>
+
+      <section id="verify">
+        <h2>8. Verify the Connection</h2>
+        <p>Ask your AI assistant:</p>
+        <blockquote>
+          "List my Slack channels using the Slack MCP tools"
+        </blockquote>
+        <p>
+          If it returns a list of channels, the connection is working. You can now
+          use agent notifications as described in the
+          <code>slack-notifications</code> skill.
+        </p>
+      </section>
+
+      <section id="troubleshooting">
+        <h2>9. Troubleshooting</h2>
+
+        <h3>"missing_scope" error</h3>
+        <p>
+          You're missing one or more bot token scopes. Go back to your Slack app's
+          <strong>OAuth &amp; Permissions</strong> → <strong>Bot Token Scopes</strong>,
+          add the missing scope(s) from the table in step 3, then click
+          <strong>Reinstall to Workspace</strong> to apply the new scopes.
+        </p>
+
+        <h3>"not_authed" or "invalid_auth" errors</h3>
+        <p>
+          Your token may be invalid. Check that:
+        </p>
+        <ul>
+          <li>Your <code>.env</code> file contains <code>SLACK_MCP_XOXB_TOKEN</code> with a valid <code>xoxb-…</code> token</li>
+          <li>The token is wrapped in quotes and has no trailing whitespace</li>
+          <li>The app is still installed to the workspace (check at <a href="https://api.slack.com/apps" target="_blank" rel="noopener">api.slack.com/apps</a>)</li>
+        </ul>
+
+        <h3>Bot can't see channels</h3>
+        <p>
+          Bot tokens can only access channels the bot has been invited to.
+          Invite the bot to the channel by typing <code>/invite @OpenCastle Agents</code>
+          (or your bot's name) in the channel. Alternatively, ensure you have the
+          <code>channels:read</code> scope for listing public channels.
+        </p>
+
+        <h3>Can't post messages</h3>
+        <p>
+          Message posting is disabled by default in <code>@kazuph/mcp-slack</code>.
+          Ensure <code>SLACK_MCP_ADD_MESSAGE_TOOL=true</code> is set in your
+          MCP config's <code>env</code> block (see step 5).
+        </p>
+
+        <h3>"Sending messages to this app has been turned off"</h3>
+        <p>
+          Go to your Slack app settings → <strong>App Home</strong> and enable
+          <strong>"Allow users to send Slash commands and messages from the messages tab"</strong>.
+          This lets users DM the bot directly. For channel-based communication
+          (thread replies), this setting isn't required.
+        </p>
+
+        <h3>Don't need Slack right now?</h3>
+        <p>
+          Remove the <code>"Slack"</code> entry from your MCP config file
+          (<code>.vscode/mcp.json</code>, <code>.cursor/mcp.json</code>, or
+          <code>.claude/mcp.json</code>). Agents will work normally without
+          notifications. You can re-add it later by running
+          <code>npx opencastle init</code> again.
+        </p>
+      </section>
+
+      <hr />
+      <p class="footer">
+        <a href="/">← Back to OpenCastle</a>
+      </p>
+    </main>
+
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0a0a0a;
+        color: #e0e0e0;
+        margin: 0;
+        padding: 0;
+        line-height: 1.7;
+      }
+
+      .guide {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 4rem;
+      }
+
+      .back-link {
+        color: #888;
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+      .back-link:hover {
+        color: #ccc;
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin-top: 1.5rem;
+        color: #fff;
+      }
+
+      .subtitle {
+        color: #999;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+      }
+
+      .toc {
+        background: #141414;
+        border: 1px solid #222;
+        border-radius: 8px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 2rem;
+      }
+      .toc h2 {
+        font-size: 1rem;
+        margin: 0 0 0.5rem;
+        color: #ccc;
+      }
+      .toc ol {
+        margin: 0;
+        padding-left: 1.2rem;
+      }
+      .toc li {
+        margin: 0.25rem 0;
+      }
+      .toc a {
+        color: #6ea8fe;
+        text-decoration: none;
+      }
+      .toc a:hover {
+        text-decoration: underline;
+      }
+
+      h2 {
+        font-size: 1.4rem;
+        margin-top: 2.5rem;
+        color: #fff;
+        border-bottom: 1px solid #222;
+        padding-bottom: 0.3rem;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        margin-top: 1.5rem;
+        color: #ddd;
+      }
+
+      code {
+        background: #1a1a2e;
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.9em;
+        color: #c9d1d9;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+      }
+      th, td {
+        text-align: left;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #222;
+      }
+      th {
+        background: #141414;
+        color: #ccc;
+      }
+
+      blockquote {
+        border-left: 3px solid #444;
+        padding: 0.5rem 1rem;
+        margin: 1rem 0;
+        color: #bbb;
+        font-style: italic;
+      }
+
+      .callout {
+        background: #1a1a0a;
+        border: 1px solid #444400;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin: 1rem 0;
+        font-size: 0.95rem;
+      }
+
+      .callout-warning {
+        background: #1a0a0a;
+        border-color: #662200;
+      }
+
+      kbd {
+        background: #222;
+        border: 1px solid #444;
+        border-radius: 3px;
+        padding: 0.1rem 0.4rem;
+        font-size: 0.85em;
+      }
+
+      hr {
+        border: none;
+        border-top: 1px solid #222;
+        margin: 3rem 0 1.5rem;
+      }
+
+      .footer {
+        color: #666;
+        font-size: 0.9rem;
+      }
+      .footer a {
+        color: #888;
+        text-decoration: none;
+      }
+      .footer a:hover {
+        color: #ccc;
+      }
+
+      a {
+        color: #6ea8fe;
+      }
+    </style>
+  </body>
+</html>

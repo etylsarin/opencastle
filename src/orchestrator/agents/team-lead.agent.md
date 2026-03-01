@@ -2,7 +2,7 @@
 description: 'Task orchestrator that analyzes work, decomposes it into subtasks, and delegates to specialized agents via sub-agents (inline) or background sessions (parallel worktrees).'
 name: 'Team Lead'
 model: Claude Opus 4.6
-tools: [read/problems, read/readFile, agent/runSubagent, edit/createDirectory, edit/createFile, edit/createJupyterNotebook, edit/editFiles, edit/editNotebook, search/changes, search/codebase, search/fileSearch, search/listDirectory, search/searchResults, search/textSearch, search/usages, web/fetch, agent, execute/runInTerminal, execute/getTerminalOutput, read/terminalLastCommand, read/terminalSelection, linear/create_issue, linear/get_issue, linear/list_issues, linear/list_projects, linear/list_teams, linear/search_issues, linear/update_issue]
+tools: [read/problems, read/readFile, agent/runSubagent, edit/createDirectory, edit/createFile, edit/createJupyterNotebook, edit/editFiles, edit/editNotebook, search/changes, search/codebase, search/fileSearch, search/listDirectory, search/searchResults, search/textSearch, search/usages, web/fetch, agent, execute/runInTerminal, execute/getTerminalOutput, read/terminalLastCommand, read/terminalSelection, linear/create_issue, linear/get_issue, linear/list_issues, linear/list_projects, linear/list_teams, linear/search_issues, linear/update_issue, slack/*]
 agents: ['*']
 handoffs:
   - label: Implement Feature
@@ -594,6 +594,8 @@ When multiple agents complete work simultaneously, batch similar reviews. Load *
 - [ ] All Linear issues moved to Done
 - [ ] Lint, test, and build pass for affected projects
 - [ ] Documentation updated
+- [ ] **Session records logged** to `.github/customizations/logs/sessions.ndjson` — one entry per completed task
+- [ ] **Delegation records logged** to `.github/customizations/logs/delegations.ndjson` — one entry per delegation
 - [ ] All changes committed to the feature branch with Linear issue IDs in commit messages
 - [ ] Branch pushed to origin
 - [ ] PR opened on GitHub (NOT merged)
@@ -617,6 +619,15 @@ See `general.instructions.md` § Delivery Outcome for the universal rules (dedic
 Track failed agent delegations in `.github/customizations/AGENT-FAILURES.md` so they can be diagnosed and retried. Failed work should never silently disappear. Load the **team-lead-reference** skill for the full DLQ entry format and review cadence.
 
 When automated resolution is exhausted (panel 3x BLOCK, unresolvable conflicts), create a **formal dispute record** in `.github/customizations/DISPUTES.md` instead. Disputes package both perspectives, attempt history, and resolution options — giving humans a clear, actionable decision rather than a raw failure log. See the **team-lead-reference** skill § Dispute Protocol for the full procedure.
+
+## Observability Logging
+
+**The Team Lead MUST log every session.** No exceptions. See `general.instructions.md` § Observability Logging for the full rules.
+
+- After delegations: log a **session record** + a **delegation record**
+- After working directly: log a **session record** (use the matching agent role)
+- Log **per task**, before yielding to the user
+- Multiple tasks in one conversation = multiple records
 
 ## Anti-Patterns
 
@@ -644,3 +655,4 @@ When automated resolution is exhausted (panel 3x BLOCK, unresolvable conflicts),
 - **Never merge a PR yourself** — PRs are opened for human review only
 - **Never forget to link the PR to Linear** — traceability is mandatory
 - **Never exceed session budget without checkpointing** — context degrades after 8+ delegations; save state and resume in a fresh session
+- **Never skip observability logging** — every session gets logged. No exceptions. No threshold. No "too small to log"
