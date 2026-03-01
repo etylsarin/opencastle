@@ -1,3 +1,5 @@
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Workflow: Feature Implementation
 
 Standard execution plan for multi-layer features. Customize file paths, agents, and criteria per task.

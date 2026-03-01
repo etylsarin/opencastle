@@ -3,6 +3,8 @@ name: panel-majority-vote
 description: "Run 3 isolated reviewer sub-agents against the same question and decide PASS/BLOCK by majority vote (2/3 wins). Use when deterministic verification is insufficient."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Skill: Panel majority vote (3 reviewers)
 
 Use this skill when deterministic verification is unavailable and you need a panel to decide PASS/BLOCK for a single question against a declared artifact scope.

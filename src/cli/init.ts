@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs'
 import { select, confirm, closePrompts } from './prompt.js'
 import { readManifest, writeManifest, createManifest } from './manifest.js'
 import { removeDirIfExists } from './copy.js'
+import { updateGitignore } from './gitignore.js'
 import type { CliContext, IdeAdapter, CmsChoice, DbChoice, PmChoice, NotifChoice, StackConfig } from './types.js'
 
 const ADAPTERS: Record<string, () => Promise<IdeAdapter>> = {
@@ -13,8 +14,9 @@ const ADAPTERS: Record<string, () => Promise<IdeAdapter>> = {
     import('./adapters/claude-code.js') as Promise<IdeAdapter>,
 }
 
-export default async function init({ pkgRoot }: CliContext): Promise<void> {
+export default async function init({ pkgRoot, args }: CliContext): Promise<void> {
   const projectRoot = process.cwd()
+  const dryRun = args.includes('--dry-run')
 
   // Check for existing installation
   const existing = await readManifest(projectRoot)
@@ -93,6 +95,24 @@ export default async function init({ pkgRoot }: CliContext): Promise<void> {
   console.log(`\n  Installing for ${ide}...`)
   console.log(`  Stack: CMS=${stack.cms}, DB=${stack.db}, PM=${stack.pm}, Notifications=${stack.notifications}\n`)
 
+  // ── Dry run ─────────────────────────────────────────────────────
+  if (dryRun) {
+    const adapter = await ADAPTERS[ide]()
+    const managed = adapter.getManagedPaths()
+    console.log('  [dry-run] Files that would be created:\n')
+    for (const p of managed.framework) {
+      console.log(`    + ${p}`)
+    }
+    for (const p of managed.customizable) {
+      console.log(`    + ${p}`)
+    }
+    console.log(`    + .opencastle.json`)
+    console.log(`    + .gitignore (OpenCastle entries)`)
+    console.log('\n  No files were written.\n')
+    closePrompts()
+    return
+  }
+
   // ── Clean up previous installation on re-init ────────────────
   if (isReinit && existing) {
     const frameworkPaths = existing.managedPaths?.framework ?? []
@@ -128,16 +148,34 @@ export default async function init({ pkgRoot }: CliContext): Promise<void> {
   manifest.stack = stack
   await writeManifest(projectRoot, manifest)
 
+  // ── Update .gitignore ───────────────────────────────────────────
+  const managedPaths = adapter.getManagedPaths()
+  const gitignoreResult = await updateGitignore(projectRoot, managedPaths)
+
   // ── Summary ─────────────────────────────────────────────────────
   const created = results.created.length
   const skipped = results.skipped.length
 
   console.log(`  ✓ Created ${created} files`)
+  if (gitignoreResult === 'created') {
+    console.log('  ✓ Created .gitignore with OpenCastle entries')
+  } else if (gitignoreResult === 'updated') {
+    console.log('  ✓ Updated .gitignore with OpenCastle entries')
+  }
   if (skipped > 0) {
     console.log(`  → Skipped ${skipped} existing files`)
   }
 
   console.log(`\n  Next steps:`)
+  if (ide === 'vscode') {
+    console.log(
+      '  0. Reload VS Code window (Cmd+Shift+P → "Reload Window") to pick up agents'
+    )
+  } else if (ide === 'cursor') {
+    console.log(
+      '  0. Reload Cursor window to pick up the new rule files'
+    )
+  }
   console.log(
     '  1. Run the "Bootstrap Customizations" prompt to configure for your project'
   )

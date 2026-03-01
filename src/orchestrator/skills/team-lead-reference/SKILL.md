@@ -3,6 +3,8 @@ name: team-lead-reference
 description: "Reference data for Team Lead orchestration — model routing, pre-delegation checks, cost tracking template, and DLQ format. Load when starting a delegation session."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Team Lead Reference
 
 For the specialist agent registry and model assignments, see [agent-registry.md](../../customizations/agents/agent-registry.md).

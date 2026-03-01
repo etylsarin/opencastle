@@ -3,6 +3,8 @@ description: 'Handle follow-up refinements after a roadmap task — bug fixes, U
 agent: Team Lead
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Follow-Up Refinement
 
 You are the Team Lead. Handle the follow-up refinement described below. This is a **post-task adjustment** — a bug fix, UI tweak, or polish item that came up after reviewing a completed roadmap task. It does NOT require Linear tracking.

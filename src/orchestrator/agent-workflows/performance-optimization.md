@@ -1,3 +1,5 @@
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Workflow: Performance Optimization
 
 Measure-first optimization workflow. Never optimize without profiling data.

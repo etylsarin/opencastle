@@ -3,6 +3,8 @@ description: 'Investigate and fix a reported bug with proper triage, root cause 
 agent: Team Lead
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Fix Bug
 
 You are the Team Lead. Investigate and fix the bug described below. Bugs are real defects that affect users — treat them seriously with proper triage, tracking, and verification.

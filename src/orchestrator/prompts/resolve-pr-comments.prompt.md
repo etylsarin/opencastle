@@ -3,6 +3,8 @@ description: 'Resolve GitHub PR review comments by reading them, grouping by fil
 agent: Team Lead
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Resolve PR Comments
 
 You are the Team Lead. A pull request has review comments that need to be resolved. Read the comments, group them by file, and delegate fixes efficiently.

@@ -3,6 +3,8 @@ name: testing-workflow
 description: "Comprehensive testing workflow including test planning, unit/integration/E2E testing patterns, coverage requirements, and common testing mistakes. Use when writing tests, planning test strategies, or validating feature completeness."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Testing Workflow
 
 ## Core Principles

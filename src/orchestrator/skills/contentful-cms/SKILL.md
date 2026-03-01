@@ -3,6 +3,8 @@ name: contentful-cms
 description: "Contentful CMS development patterns, GraphQL/REST API usage, content modeling, and migration best practices. Use when working with Contentful content types, entries, assets, or the Management API."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Contentful CMS
 
 Generic Contentful CMS development methodology. For project-specific configuration, content types, and API keys, see [cms-config.md](../../customizations/stack/cms-config.md).

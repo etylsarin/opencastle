@@ -3,6 +3,8 @@ name: teams-notifications
 description: "Microsoft Teams MCP integration for agent-to-human notifications and bi-directional communication. Use when agents need to post progress updates, request approvals, or read user responses via Teams channels and chats."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Teams Notifications
 
 Agent communication patterns via the Microsoft Teams MCP server (Microsoft Agent 365). Enables agents to post progress updates, request human approvals, and read responses — all through Teams channels and chats.

@@ -3,6 +3,8 @@ description: 'Bootstrap the .github/customizations/ directory for a new project.
 agent: Researcher
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Bootstrap Project Customizations
 
 You are setting up the AI agent framework for a new project. Your job is to **discover** the project's structure, tech stack, and configuration, then **generate** the customization files that skills reference for project-specific context.

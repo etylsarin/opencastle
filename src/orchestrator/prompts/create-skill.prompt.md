@@ -3,6 +3,8 @@ description: 'Scaffold a new skill directory with proper frontmatter, structure,
 agent: Team Lead
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Create Skill
 
 Scaffold a new skill for the AI agent configuration. Skills encode domain-specific knowledge that agents load on demand.

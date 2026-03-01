@@ -3,6 +3,8 @@ name: session-checkpoints
 description: "Protocol for saving and restoring session state across agent sessions. Enables replay, fork, and resume of interrupted work — inspired by Sandcastle Run Time Machine."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Skill: Session Checkpoints
 
 Use this skill when working on multi-session features or when a session may be interrupted. Checkpoints allow any future session to resume work without re-analyzing the entire codebase.

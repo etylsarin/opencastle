@@ -3,6 +3,8 @@ name: memory-merger
 description: "Protocol for graduating mature lessons from LESSONS-LEARNED.md into permanent instruction and skill files. Closes the self-improvement loop by codifying validated knowledge at the source level."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Skill: Memory Merger
 
 This skill automates the final step of the self-improvement cycle: promoting validated lessons into the instruction and skill files where they have structural, permanent impact.

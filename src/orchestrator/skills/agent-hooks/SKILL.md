@@ -3,6 +3,8 @@ name: agent-hooks
 description: "Lifecycle hooks for AI agent sessions — reusable actions that run at specific points (session start, session end, pre-delegation, post-delegation). Defines what to do at each lifecycle event so agents behave consistently."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Agent Lifecycle Hooks
 
 Hooks are **standardized actions** that agents execute at specific points during their lifecycle. They enforce consistency across sessions and prevent common oversights (missing lessons, forgotten checkpoints, untracked issues).

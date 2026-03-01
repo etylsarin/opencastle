@@ -3,6 +3,8 @@ name: browser-testing
 description: "Chrome DevTools MCP automation patterns for validating UI changes in real browsers. Use when performing E2E browser testing, validating visual changes, testing user interactions, or debugging UI issues with Chrome DevTools."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Browser Testing with Chrome DevTools MCP
 
 Generic browser testing methodology using Chrome DevTools MCP. For project-specific test app, selectors, suites, and breakpoint config, see [testing-config.md](../../customizations/stack/testing-config.md).

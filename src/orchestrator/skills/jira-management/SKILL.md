@@ -3,6 +3,8 @@ name: jira-management
 description: "Jira board conventions for tracking feature work — issue naming, labels, priorities, status workflow, and session continuity via Atlassian Rovo MCP. Use when decomposing features into tasks or resuming interrupted sessions."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Task Management with Jira
 
 Conventions for tracking feature work on Jira via the Atlassian Rovo MCP server. For project-specific project keys, workflow state IDs, and board configuration, see [jira-config.md](../../customizations/project/jira-config.md).

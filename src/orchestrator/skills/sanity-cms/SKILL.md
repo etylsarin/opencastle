@@ -3,6 +3,8 @@ name: sanity-cms
 description: "Sanity CMS development rules, GROQ query patterns, and content management best practices. Use when working with Sanity schemas, writing GROQ queries, modifying content models, or managing CMS configuration."
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Sanity CMS
 
 Generic Sanity CMS development methodology. For project-specific configuration, schemas, plugins, document types, and GROQ examples, see [sanity-config.md](../../customizations/stack/sanity-config.md).

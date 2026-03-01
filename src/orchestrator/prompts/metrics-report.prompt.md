@@ -3,6 +3,8 @@ description: 'Collect and report metrics from agent logs, GitHub PRs, Linear iss
 agent: Researcher
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Metrics Report
 
 Generate a comprehensive metrics dashboard from all project data sources.

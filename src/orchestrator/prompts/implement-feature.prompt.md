@@ -3,6 +3,8 @@ description: 'Instruct the Team Lead to implement a specific task from the post-
 agent: Team Lead
 ---
 
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Implement Roadmap Task
 
 You are the Team Lead. Implement the roadmap task described below following this strict workflow. The task comes from `docs/ROADMAP-POST-MVP.md`.

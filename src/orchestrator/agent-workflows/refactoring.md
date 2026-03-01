@@ -1,3 +1,5 @@
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+
 # Workflow: Code Refactoring
 
 Structured workflow for safe code refactoring — improving code quality without changing behavior.
