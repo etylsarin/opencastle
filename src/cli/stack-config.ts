@@ -133,8 +133,8 @@ export function getExcludedSkills(stack: StackConfig): Set<string> {
   return new Set([
     ...CMS_SKILL_MAP[stack.cms],
     ...DB_SKILL_MAP[stack.db],
-    ...PM_SKILL_MAP[stack.pm],
-    ...NOTIF_SKILL_MAP[stack.notifications],
+    ...PM_SKILL_MAP[stack.pm ?? 'none'],
+    ...NOTIF_SKILL_MAP[stack.notifications ?? 'none'],
   ]);
 }
 
@@ -150,8 +150,8 @@ export function getIncludedMcpServers(stack: StackConfig): Set<string> {
     ...CORE_MCP_SERVERS,
     ...CMS_MCP_MAP[stack.cms],
     ...DB_MCP_MAP[stack.db],
-    ...PM_MCP_MAP[stack.pm],
-    ...NOTIF_MCP_MAP[stack.notifications],
+    ...PM_MCP_MAP[stack.pm ?? 'none'],
+    ...NOTIF_MCP_MAP[stack.notifications ?? 'none'],
   ]);
 }
 
