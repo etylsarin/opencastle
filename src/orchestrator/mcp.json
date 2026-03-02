@@ -5,12 +5,13 @@
       "type": "http"
     },
     "Contentful": {
-      "url": "https://mcp.contentful.com/sse",
-      "type": "http"
+      "command": "npx",
+      "args": ["-y", "@contentful/mcp-server"],
+      "type": "stdio"
     },
     "Strapi": {
       "command": "npx",
-      "args": ["-y", "@strapi/mcp-server"],
+      "args": ["-y", "strapi-mcp"],
       "type": "stdio"
     },
     "Vercel": {
@@ -23,7 +24,7 @@
     },
     "Convex": {
       "command": "npx",
-      "args": ["-y", "@anthropic-ai/convex-mcp-server"],
+      "args": ["-y", "convex@latest", "mcp", "start"],
       "type": "stdio"
     },
     "chrome-devtools": {
@@ -41,7 +42,7 @@
       "envFile": "${workspaceFolder}/.env"
     },
     "Jira": {
-      "url": "https://mcp.atlassian.com/v2/sse",
+      "url": "https://mcp.atlassian.com/v1/mcp",
       "type": "http"
     },
     "Slack": {
@@ -54,8 +55,15 @@
       }
     },
     "Teams": {
-      "url": "https://mcp.microsoft365.com/mcp",
-      "type": "http"
+			"type": "http",
+			"url": "https://agent365.svc.cloud.microsoft/agents/tenants/${input:tenant_id}/servers/mcp_TeamsServer"
     }
-  }
+  },
+	"inputs": [
+		{
+			"id": "tenant_id",
+			"type": "promptString",
+			"description": "Microsoft Entra tenant ID (GUID)"
+		}
+	]
 }
