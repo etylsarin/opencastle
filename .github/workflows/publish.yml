@@ -27,9 +27,7 @@ jobs:
           node-version: 22
           registry-url: https://registry.npmjs.org
           cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            src/dashboard/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Determine version bump
         id: bump
@@ -72,15 +70,13 @@ jobs:
 
       - name: Install dependencies
         if: steps.bump.outputs.type != 'none'
-        run: |
-          npm ci
-          cd src/dashboard && npm ci
+        run: npm ci
 
       - name: Build
         if: steps.bump.outputs.type != 'none'
         run: |
-          npm run build:cli
-          npm run build:dashboard
+          npm run cli:build
+          npm run dashboard:build
 
       - name: Publish
         if: steps.bump.outputs.type != 'none'

@@ -24,27 +24,21 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            website/package-lock.json
-            src/dashboard/package-lock.json
+          cache-dependency-path: package-lock.json
 
-      - name: Install website dependencies
+      - name: Install dependencies
         run: npm ci
-        working-directory: website
 
       - name: Build website
-        run: npm run build
-        working-directory: website
-
-      - name: Install dashboard dependencies
-        run: npm ci
-        working-directory: src/dashboard
+        run: npm run website:build
 
       - name: Build dashboard
-        run: npm run build
-        working-directory: src/dashboard
+        run: npm run dashboard:build
         env:
           DASHBOARD_BASE: /dashboard/
+
+      - name: Copy seed data into dashboard build output
+        run: mkdir -p src/dashboard/dist/data && cp src/dashboard/seed-data/*.ndjson src/dashboard/dist/data/
 
       - name: Merge dashboard into website output
         run: mkdir -p website/dist/dashboard && cp -r src/dashboard/dist/* website/dist/dashboard/
