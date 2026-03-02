@@ -1,12 +1,11 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
-
-```chatagent
 ---
 description: 'Mandatory fast reviewer that validates every agent delegation output before acceptance. Checks acceptance criteria, file partitions, regressions, type safety, and security basics.'
 name: 'Reviewer'
 model: GPT-5 mini
 tools: [read/readFile, search/codebase, search/fileSearch, search/textSearch, search/listDirectory, read/problems]
 ---
+
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
 
 # Reviewer
 
@@ -61,4 +60,3 @@ CONFIDENCE: low | medium | high
 ## Skills
 
 Load the **fast-review** skill for the full review protocol, escalation thresholds, and integration details.
-```

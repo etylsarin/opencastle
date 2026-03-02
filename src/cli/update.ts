@@ -74,10 +74,17 @@ export default async function update({
   const adapter = await ADAPTERS[manifest.ide]()
   const results = await adapter.update(pkgRoot, projectRoot, manifest.stack)
 
+  // Refresh repo research on update
+  const { detectRepoInfo, mergeStackIntoRepoInfo } = await import('./detect.js')
+  const repoInfo = await detectRepoInfo(projectRoot)
+
   // Update manifest
   manifest.version = pkg.version
   manifest.updatedAt = new Date().toISOString()
   manifest.managedPaths = adapter.getManagedPaths()
+  manifest.repoInfo = manifest.stack
+    ? mergeStackIntoRepoInfo(repoInfo, manifest.stack)
+    : repoInfo
   await writeManifest(projectRoot, manifest)
 
   console.log(`\n  ✓ Updated ${results.copied.length} framework files`)

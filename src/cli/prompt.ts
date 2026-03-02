@@ -2,6 +2,18 @@ import { createInterface, type Interface } from 'node:readline/promises';
 import { stdin, stdout } from 'node:process';
 import type { SelectOption } from './types.js';
 
+// ── ANSI helpers ──────────────────────────────────────────────────
+
+const ESC = '\x1B';
+const CSI = `${ESC}[`;
+const HIDE_CURSOR = `${CSI}?25l`;
+const SHOW_CURSOR = `${CSI}?25h`;
+const ERASE_LINE = `${CSI}2K`;
+
+function moveUp(n: number): string {
+  return n > 0 ? `${CSI}${n}A` : '';
+}
+
 // ── Line-buffered readline ────────────────────────────────────────
 // readline.question() drops lines that arrived between calls because
 // it only listens for the NEXT 'line' event.  When piped input
@@ -70,8 +82,119 @@ export function closePrompts(): void {
 
 /**
  * Interactive single-choice selection prompt.
+ *
+ * TTY mode:  arrow-key navigation (↑/↓) with Enter to confirm.
+ * Piped mode: falls back to number-based selection for scripts.
  */
 export async function select(
+  message: string,
+  options: SelectOption[]
+): Promise<string> {
+  if (stdin.isTTY) {
+    return selectInteractive(message, options);
+  }
+  return selectNumbered(message, options);
+}
+
+// ── Arrow-key selection (TTY) ─────────────────────────────────────
+
+function renderOptions(
+  options: SelectOption[],
+  cursor: number,
+  initial: boolean
+): void {
+  // Move back up to overwrite previous render (skip on first draw)
+  if (!initial) {
+    stdout.write(moveUp(options.length));
+  }
+
+  for (let i = 0; i < options.length; i++) {
+    const active = i === cursor;
+    const marker = active ? '❯' : ' ';
+    const hint = options[i].hint ? ` — ${options[i].hint}` : '';
+    const label = active
+      ? `\x1B[36m${options[i].label}\x1B[0m${hint}`
+      : `${options[i].label}${hint}`;
+    stdout.write(`${ERASE_LINE}\r    ${marker} ${label}\n`);
+  }
+}
+
+function selectInteractive(
+  message: string,
+  options: SelectOption[]
+): Promise<string> {
+  return new Promise<string>((resolve) => {
+    let cursor = 0;
+
+    // Pause the readline interface so raw mode can take over
+    if (_rl) _rl.pause();
+
+    stdout.write(`\n  ${message}\n\n`);
+    stdout.write(HIDE_CURSOR);
+    renderOptions(options, cursor, true);
+
+    stdin.setRawMode(true);
+    stdin.resume();
+
+    const onData = (data: Buffer): void => {
+      const key = data.toString();
+
+      // Arrow up or k
+      if (key === `${ESC}[A` || key === 'k') {
+        cursor = (cursor - 1 + options.length) % options.length;
+        renderOptions(options, cursor, false);
+        return;
+      }
+
+      // Arrow down or j
+      if (key === `${ESC}[B` || key === 'j') {
+        cursor = (cursor + 1) % options.length;
+        renderOptions(options, cursor, false);
+        return;
+      }
+
+      // Enter
+      if (key === '\r' || key === '\n') {
+        cleanup();
+        // Re-render final state with the selected option highlighted
+        stdout.write(moveUp(options.length));
+        for (let i = 0; i < options.length; i++) {
+          const active = i === cursor;
+          const hint = options[i].hint ? ` — ${options[i].hint}` : '';
+          const label = active
+            ? `\x1B[36m${options[i].label}\x1B[0m${hint}`
+            : `\x1B[2m${options[i].label}${hint}\x1B[0m`;
+          const marker = active ? '✔' : ' ';
+          stdout.write(`${ERASE_LINE}\r    ${marker} ${label}\n`);
+        }
+        stdout.write('\n');
+        resolve(options[cursor].value);
+        return;
+      }
+
+      // Ctrl+C
+      if (key === '\x03') {
+        cleanup();
+        stdout.write('\n');
+        process.exit(130);
+      }
+    };
+
+    function cleanup(): void {
+      stdin.removeListener('data', onData);
+      stdin.setRawMode(false);
+      stdout.write(SHOW_CURSOR);
+      // Resume readline for subsequent confirm() calls
+      if (_rl) _rl.resume();
+    }
+
+    stdin.on('data', onData);
+  });
+}
+
+// ── Number-based selection (piped / non-TTY) ──────────────────────
+
+async function selectNumbered(
   message: string,
   options: SelectOption[]
 ): Promise<string> {

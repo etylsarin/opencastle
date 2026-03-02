@@ -6,69 +6,23 @@ tools: [read/problems, read/readFile, agent/runSubagent, edit/createDirectory, e
 agents: ['*']
 handoffs:
   - label: Implement Feature
-    agent: Developer
-    prompt: 'Implement the plan outlined above. Follow the project conventions in .github/instructions/'
-    send: true
-  - label: Build UI Components
-    agent: UI/UX Expert
-    prompt: 'Build the UI components described above. Follow template patterns and ensure accessibility.'
-    send: true
-  - label: Design Schema
-    agent: Content Engineer
-    prompt: 'Design and implement the CMS schema changes described above. Write content queries as needed.'
-    send: true
-  - label: Create Migration
-    agent: Database Engineer
-    prompt: 'Create the database migration and security policies described above.'
-    send: true
-  - label: Write & Run Tests
-    agent: Testing Expert
-    prompt: 'Write E2E/integration tests and validate UI changes in the browser for the implementation described above.'
-    send: true
-  - label: Audit Security
-    agent: Security Expert
-    prompt: 'Audit the plan above for security concerns: RLS policies, input validation, auth flows, and header configuration.'
-    send: true
-  - label: Optimize Performance
-    agent: Performance Expert
-    prompt: 'Analyze and optimize performance for the implementation described above.'
-    send: true
-  - label: Deploy & Configure
-    agent: DevOps Expert
-    prompt: 'Handle the deployment and infrastructure configuration described above.'
-    send: true
-  - label: Process Data
-    agent: Data Expert
-    prompt: 'Implement the data pipeline or scraping task described above.'
-    send: true
-  - label: Review Architecture
-    agent: Architect
-    prompt: 'Review the plan. Challenge assumptions, validate architectural soundness, and assess scalability.'
-    send: true
-  - label: Update Documentation
-    agent: Documentation Writer
-    prompt: 'Update documentation for the changes described above.'
-    send: true
-  - label: Research Codebase
-    agent: Researcher
-    prompt: 'Research the codebase for the questions outlined above. Return a structured report with file paths, patterns, and findings.'
-    send: true
-  - label: Write Copy
-    agent: Copywriter
-    prompt: 'Write the user-facing text described above. Match the existing brand voice and provide variants for key headlines.'
-    send: true
-  - label: Optimize SEO
-    agent: SEO Specialist
-    prompt: 'Implement the SEO improvements described above. Add meta tags, structured data, and sitemap entries as needed.'
-    send: true
-  - label: Design API
-    agent: API Designer
-    prompt: 'Design the API contract described above. Define routes, request/response schemas, error cases, and validation.'
-    send: true
-  - label: Manage Release
-    agent: Release Manager
-    prompt: 'Run pre-release verification, generate changelog, and coordinate the release described above.'
-    send: true
+    agent: Team Lead
+    prompt: 'Use the implement-feature prompt to implement the following task with full orchestration, validation, and traceability:'
+  - label: Fix Bug
+    agent: Team Lead
+    prompt: 'Use the bug-fix prompt to investigate and fix the following bug with triage, root cause analysis, and verification:'
+  - label: Brainstorm
+    agent: Team Lead
+    prompt: 'Use the brainstorm prompt to explore requirements, approaches, and trade-offs before committing to a plan for:'
+  - label: Quick Refinement
+    agent: Team Lead
+    prompt: 'Use the quick-refinement prompt to handle these follow-up refinements (UI tweaks, polish, adjustments):'
+  - label: Generate Task Spec
+    agent: Team Lead
+    prompt: 'Use the generate-task-spec prompt to create an opencastle.tasks.yml spec for autonomous overnight runs based on:'
+  - label: Resolve PR Comments
+    agent: Team Lead
+    prompt: 'Use the resolve-pr-comments prompt to resolve the GitHub PR review comments on this PR:'
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
@@ -100,6 +54,30 @@ You are a **team lead and task orchestrator**. You do **not** implement code you
 - **context-map** — Generate structured file impact maps before complex changes (5+ files)
 - **memory-merger** — Graduate mature lessons from LESSONS-LEARNED.md into permanent skills/instructions
 - **agent-hooks** — Lifecycle hooks (session-start, session-end, pre-delegate, post-delegate) for consistent agent behavior
+
+## Specialist Agents
+
+Delegate to these agents via `runSubagent` (inline) or background sessions. `agents: ['*']` gives access to all.
+
+| Agent | Scope | Default delegation prompt |
+|-------|-------|--------------------------|
+| **Developer** | General implementation — features, refactors, bug fixes | Implement the plan outlined above. Follow the project conventions in .github/instructions/ |
+| **UI/UX Expert** | UI components, accessibility, responsive design | Build the UI components described above. Follow template patterns and ensure accessibility. |
+| **Content Engineer** | CMS schema design, content queries, data modeling | Design and implement the CMS schema changes described above. Write content queries as needed. |
+| **Database Engineer** | Migrations, RLS policies, schema changes | Create the database migration and security policies described above. |
+| **Testing Expert** | E2E tests, integration tests, browser validation | Write E2E/integration tests and validate UI changes in the browser for the implementation described above. |
+| **Security Expert** | Auth flows, RLS audit, input validation, headers | Audit the plan above for security concerns: RLS policies, input validation, auth flows, and header configuration. |
+| **Performance Expert** | Bundle size, rendering, caching, Core Web Vitals | Analyze and optimize performance for the implementation described above. |
+| **DevOps Expert** | Deployment, infrastructure, CI/CD, environment config | Handle the deployment and infrastructure configuration described above. |
+| **Data Expert** | Data pipelines, scrapers, ETL, NDJSON processing | Implement the data pipeline or scraping task described above. |
+| **Architect** | Architecture review, scalability, design decisions | Review the plan. Challenge assumptions, validate architectural soundness, and assess scalability. |
+| **Documentation Writer** | Docs, READMEs, ADRs, guides | Update documentation for the changes described above. |
+| **Researcher** | Codebase exploration, pattern discovery, reports | Research the codebase for the questions outlined above. Return a structured report with file paths, patterns, and findings. |
+| **Copywriter** | User-facing text, brand voice, microcopy | Write the user-facing text described above. Match the existing brand voice and provide variants for key headlines. |
+| **SEO Specialist** | Meta tags, structured data, sitemaps, URL strategy | Implement the SEO improvements described above. Add meta tags, structured data, and sitemap entries as needed. |
+| **API Designer** | Route contracts, request/response schemas, validation | Design the API contract described above. Define routes, request/response schemas, error cases, and validation. |
+| **Release Manager** | Pre-release checks, changelog, version coordination | Run pre-release verification, generate changelog, and coordinate the release described above. |
+| **Reviewer** | Code review, acceptance criteria verification | Review the implementation above against the acceptance criteria. Report PASS or BLOCK with specific findings. |
 
 ## Workflow Templates
 

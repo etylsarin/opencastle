@@ -23,18 +23,51 @@ Without customizations, agents operate blind — they don't know the project's t
 
 ## Pre-Existing Stack Info
 
-Before starting discovery, check for **`.opencastle.json`** in the project root. If it exists and contains a `stack` field, the user already declared their CMS, database, project management, and notifications tool during `opencastle init`. Use these as confirmed facts — skip re-detecting them and focus discovery on the project-specific details (IDs, schemas, config values).
+Before starting discovery, check for **`.opencastle.json`** in the project root. If it exists, it contains a combined `repoInfo` field from `opencastle init` that merges two sources:
+
+1. **Auto-detected tooling** — the init command scanned config files, `package.json` dependencies, and directory structures
+2. **User-declared choices** — the user selected CMS, database, project management, and notifications via the interactive questionnaire
+
+The result is a single unified view of the project's tech stack:
 
 ```json
 {
+  "repoInfo": {
+    "packageManager": "pnpm",
+    "monorepo": "nx",
+    "language": "typescript",
+    "frameworks": ["next", "astro"],
+    "databases": ["prisma", "supabase"],
+    "cms": ["sanity"],
+    "deployment": ["vercel"],
+    "testing": ["playwright", "vitest"],
+    "cicd": ["github-actions"],
+    "styling": ["css-modules", "tailwind"],
+    "auth": ["next-auth", "supabase-auth"],
+    "pm": ["linear"],
+    "notifications": ["slack"],
+    "mcpConfig": true,
+    "configFiles": ["nx.json", "package.json", "tsconfig.json", "vercel.json"]
+  },
   "stack": {
-    "cms": "sanity",           // sanity | contentful | strapi | none
-    "db": "supabase",          // supabase | convex | none
-    "pm": "linear",            // linear | jira | none
-    "notifications": "slack"   // slack | teams | none
+    "cms": "sanity",
+    "db": "supabase",
+    "pm": "linear",
+    "notifications": "slack"
   }
 }
 ```
+
+**Use `repoInfo` to:**
+- Skip re-scanning for technologies already listed — go straight to reading their config files
+- Pre-fill the tech stack table in `project.instructions.md`
+- Know which `stack/` config files to create (e.g., if `repoInfo.databases` includes `"prisma"`, create `stack/prisma-config.md`)
+- Know which `project/` config files to create (e.g., if `repoInfo.pm` includes `"linear"`, create `project/linear-config.md`)
+- Identify `configFiles` to read for deep inspection (Phase 1.3)
+
+**`stack` vs `repoInfo`:** The `stack` field holds the raw user questionnaire answers (used internally for MCP server filtering and skill selection). The `repoInfo` field is the combined view you should use for discovery — it includes everything from `stack` plus all auto-detected tooling.
+
+**Still verify:** `repoInfo` detects presence, not configuration details. You still need to read the actual config files for schemas, IDs, routes, etc.
 
 The skill matrix (`customizations/agents/skill-matrix.md`) will already have the `cms` and `database` rows pre-filled based on this selection. The appropriate task management skill (`task-management` for Linear, `jira-management` for Jira) and notifications skill (`slack-notifications` for Slack, `teams-notifications` for Teams) will already be installed. Verify they are correct and fill in any remaining empty rows.
 
@@ -46,7 +79,8 @@ Explore the project systematically. Gather facts — don't assume.
 
 #### 1.1 Project Overview
 
-- **First**: Read `.opencastle.json` if it exists — note the `stack.cms` and `stack.db` values
+- **First**: Read `.opencastle.json` if it exists — note `stack` choices and `repoInfo` detections
+- If `repoInfo` is present, use it as your starting inventory — skip re-scanning for the technologies it already lists
 - Read `README.md`, `package.json`, and any workspace config (`nx.json`, `turbo.json`, `pnpm-workspace.yaml`, `lerna.json`)
 - Identify: monorepo vs single app, package manager, language, framework(s)
 - List all apps and libraries with their purpose
@@ -226,6 +260,19 @@ For each file created, report:
 - Key sections included
 
 End with a summary of what was discovered, what was generated, and what (if anything) needs manual input (e.g., Linear team IDs that require API access to discover).
+
+After your summary, suggest next steps:
+
+### Suggested Next Steps
+
+Now that your project is configured, here's what you can do:
+
+1. **Review the generated files** — Scan `customizations/` for any `<!-- TODO: verify -->` comments and fill in missing values (e.g., Linear team IDs, Supabase project IDs)
+2. **Commit the customizations** — `git add .github/customizations/ && git commit -m "chore: bootstrap OpenCastle customizations"`
+3. **Implement a feature** — Use the **"Implement Feature"** prompt to have the Team Lead orchestrate a full feature build with task tracking, delegation, and verification
+4. **Fix a bug** — Use the **"Bug Fix"** prompt for structured triage, root cause analysis, and fix with Linear tracking
+5. **Brainstorm first** — Not sure how to approach something? Use the **"Brainstorm"** prompt to explore requirements and trade-offs before committing to a plan
+6. **Create a task spec** — Use the **"Generate Task Spec"** prompt to create `opencastle.tasks.yml` for autonomous overnight runs with `npx opencastle run` CLI command.
 
 ## Guidelines
 

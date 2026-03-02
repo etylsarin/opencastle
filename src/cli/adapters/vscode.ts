@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
 import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform } from '../stack-config.js'
-import type { CopyResults, ManagedPaths, StackConfig } from '../types.js'
+import type { CopyResults, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
 
 /**
  * VS Code / GitHub Copilot adapter.
@@ -38,7 +38,8 @@ const CUSTOMIZABLE_DIRS = ['customizations']
 export async function install(
   pkgRoot: string,
   projectRoot: string,
-  stack?: StackConfig
+  stack?: StackConfig,
+  repoInfo?: RepoInfo
 ): Promise<CopyResults> {
   const srcRoot = getOrchestratorRoot(pkgRoot)
   const destRoot = resolve(projectRoot, '.github')
@@ -97,7 +98,8 @@ export async function install(
     pkgRoot,
     projectRoot,
     '.vscode/mcp.json',
-    stack
+    stack,
+    repoInfo
   )
   results[mcpResult.action].push(mcpResult.path)
 
