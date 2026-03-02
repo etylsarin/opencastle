@@ -731,8 +731,9 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
           id="demo-video"
           class="video-modal__video"
           controls
+          playsinline
           preload="none"
-          poster=""
+          webkit-playsinline
         >
           <source src="/opencastle-demo.mp4" type="video/mp4" />
         </video>
@@ -749,7 +750,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
       function openModal() {
         modal!.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
-        video.play();
+        video.play().catch(() => {});
       }
 
       function closeModal() {
