@@ -3,6 +3,22 @@ description: 'Codebase exploration specialist for deep research, pattern discove
 name: 'Researcher'
 model: GPT-5 mini
 tools: ['search/codebase', 'search/textSearch', 'search/fileSearch', 'search/usages', 'read/readFile', 'search/listDirectory', 'web/fetch', 'execute/runInTerminal', 'read/terminalLastCommand']
+handoffs:
+  - label: Implement Feature
+    agent: Team Lead
+    prompt: 'Use the implement-feature prompt to implement the following task with full orchestration, validation, and traceability:'
+  - label: Fix Bug
+    agent: Team Lead
+    prompt: 'Use the bug-fix prompt to investigate and fix the following bug with triage, root cause analysis, and verification:'
+  - label: Brainstorm
+    agent: Team Lead
+    prompt: 'Use the brainstorm prompt to explore requirements, approaches, and trade-offs before committing to a plan for:'
+  - label: Quick Refinement
+    agent: Team Lead
+    prompt: 'Use the quick-refinement prompt to handle these follow-up refinements (UI tweaks, polish, adjustments):'
+  - label: Generate Task Spec
+    agent: Team Lead
+    prompt: 'Use the generate-task-spec prompt to create an opencastle.tasks.yml spec for autonomous overnight runs based on:'
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->

@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { getOrchestratorRoot } from './copy.js';
 import { getIncludedMcpServers } from './stack-config.js';
-import type { ScaffoldResult, StackConfig } from './types.js';
+import type { ScaffoldResult, StackConfig, RepoInfo } from './types.js';
 
 /**
  * Scaffold or merge the MCP server config into the target project.
@@ -21,7 +21,8 @@ export async function scaffoldMcpConfig(
   pkgRoot: string,
   projectRoot: string,
   destRelPath: string,
-  stack?: StackConfig
+  stack?: StackConfig,
+  repoInfo?: RepoInfo
 ): Promise<ScaffoldResult> {
   const destPath = resolve(projectRoot, destRelPath);
 
@@ -36,7 +37,7 @@ export async function scaffoldMcpConfig(
 
   // Filter servers based on stack config
   if (stack) {
-    const included = getIncludedMcpServers(stack);
+    const included = getIncludedMcpServers(stack, repoInfo);
     template.servers = Object.fromEntries(
       Object.entries(template.servers).filter(([key]) => included.has(key))
     );

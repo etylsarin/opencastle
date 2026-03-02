@@ -150,9 +150,6 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
               <a href="#installation">Install</a>
             </li>
             <li>
-              <a href="#workflows">Workflows</a>
-            </li>
-            <li>
               <a href="#autonomous">Autonomous</a>
             </li>
             <li>
@@ -160,6 +157,9 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
             </li>
             <li>
               <a href="#compatible">Integrations</a>
+            </li>
+            <li>
+              <a href="#workflows">Workflows</a>
             </li>
           </ul>
         </nav>
@@ -333,37 +333,6 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
       </div>
     </section>
 
-    <!-- ==================== Workflows ==================== -->
-    <section class="section section--border-top" id="workflows">
-      <div class="container">
-        <span class="section__label">Workflow Templates</span>
-        <h2 class="section__title">
-          Reproducible execution plans for every task type.
-        </h2>
-        <p class="section__subtitle">
-          Advanced workflow templates define phases, agent assignments, exit criteria,
-          and file partitions. Handy prompt templates cover common tasks from
-          brainstorming to PR reviews.
-        </p>
-        <table class="workflow-table">
-          <thead>
-            <tr>
-              <th>Template</th>
-              <th>Pipeline</th>
-            </tr>
-          </thead>
-          <tbody>
-            {workflows.map((w) => (
-              <tr>
-                <td>{w.name}</td>
-                <td>{w.description}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </section>
-
     <!-- ==================== Autonomous Mode ==================== -->
     <section class="section section--border-top" id="autonomous">
       <div class="container">
@@ -458,70 +427,6 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
       </div>
     </section>
 
-    <!-- ==================== Quality Gates ==================== -->
-    <section class="section section--border-top" id="quality">
-      <div class="container">
-        <span class="section__label">Quality Gates</span>
-        <h2 class="section__title">
-          No code ships without verification.
-        </h2>
-        <p class="section__subtitle">
-          Multi-layered quality assurance — from automated lint checks to
-          panel reviews with three independent AI reviewers, with structured
-          dispute escalation when agents can't converge.
-        </p>
-        <div class="quality-grid">
-          <div class="quality-card">
-            <h3 class="quality-card__title">
-              <span style="opacity: 0.5">01</span> Deterministic Checks
-            </h3>
-            <p class="quality-card__description">
-              Lint, type-check, unit tests, and build verification run
-              automatically after every agent output. No false positives.
-            </p>
-          </div>
-          <div class="quality-card">
-            <h3 class="quality-card__title">
-              <span style="opacity: 0.5">02</span> Panel Majority Vote
-            </h3>
-            <p class="quality-card__description">
-              Three isolated reviewer sub-agents evaluate high-stakes changes.
-              2/3 majority wins. BLOCK items become fix requests, not stop
-              signals.
-            </p>
-          </div>
-          <div class="quality-card">
-            <h3 class="quality-card__title">
-              <span style="opacity: 0.5">03</span> Structured Disputes
-            </h3>
-            <p class="quality-card__description">
-              When agents exhaust all automated resolution, formal dispute
-              records package both perspectives and resolution options —
-              giving humans clear action items instead of raw failure logs.
-            </p>
-          </div>
-          <div class="quality-card">
-            <h3 class="quality-card__title">
-              <span style="opacity: 0.5">04</span> Browser Testing
-            </h3>
-            <p class="quality-card__description">
-              Chrome DevTools MCP validates UI changes at your
-              project-defined responsive breakpoints.
-            </p>
-          </div>
-          <div class="quality-card">
-            <h3 class="quality-card__title">
-              <span style="opacity: 0.5">05</span> Self-Review
-            </h3>
-            <p class="quality-card__description">
-              Every agent is asked: &ldquo;What edge cases am I missing? What test
-              coverage is incomplete? What assumptions could be wrong?&rdquo;
-            </p>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- ==================== Observability ==================== -->
     <section class="section section--border-top" id="dashboard">
       <div class="container">
@@ -557,39 +462,6 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
             View live demo →
           </div>
         </a>
-      </div>
-    </section>
-
-    <!-- ==================== Stats ==================== -->
-    <section class="section section--border-top">
-      <div class="container">
-        <span class="section__label">By the Numbers</span>
-        <h2 class="section__title">
-          A complete orchestration framework, out of the box.
-        </h2>
-        <p class="section__subtitle">
-          52K+ words of curated knowledge, and everything
-          you need to run a coordinated AI development team — from agent
-          definitions to quality gates.
-        </p>
-        <div class="stats-row" style="margin-top: 32px">
-          <div class="stat">
-            <div class="stat__value">18</div>
-            <div class="stat__label">Specialist Agents</div>
-          </div>
-          <div class="stat">
-            <div class="stat__value">34</div>
-            <div class="stat__label">On-Demand Skills</div>
-          </div>
-          <div class="stat">
-            <div class="stat__value">8</div>
-            <div class="stat__label">Workflow Templates</div>
-          </div>
-          <div class="stat">
-            <div class="stat__value">3</div>
-            <div class="stat__label">IDE Adapters</div>
-          </div>
-        </div>
       </div>
     </section>
 
@@ -682,6 +554,134 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
               <span class="integration-card__name">Chrome DevTools</span>
               <span class="integration-card__desc">Browser testing &amp; visual validation</span>
             </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Workflows ==================== -->
+    <section class="section section--border-top" id="workflows">
+      <div class="container">
+        <span class="section__label">Workflow Templates</span>
+        <h2 class="section__title">
+          Reproducible execution plans for every task type.
+        </h2>
+        <p class="section__subtitle">
+          Advanced workflow templates define phases, agent assignments, exit criteria,
+          and file partitions. Handy prompt templates cover common tasks from
+          brainstorming to PR reviews.
+        </p>
+        <table class="workflow-table">
+          <thead>
+            <tr>
+              <th>Template</th>
+              <th>Pipeline</th>
+            </tr>
+          </thead>
+          <tbody>
+            {workflows.map((w) => (
+              <tr>
+                <td>{w.name}</td>
+                <td>{w.description}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== Quality Gates ==================== -->
+    <section class="section section--border-top" id="quality">
+      <div class="container">
+        <span class="section__label">Quality Gates</span>
+        <h2 class="section__title">
+          No code ships without verification.
+        </h2>
+        <p class="section__subtitle">
+          Multi-layered quality assurance — from automated lint checks to
+          panel reviews with three independent AI reviewers, with structured
+          dispute escalation when agents can't converge.
+        </p>
+        <div class="quality-grid">
+          <div class="quality-card">
+            <h3 class="quality-card__title">
+              <span style="opacity: 0.5">01</span> Deterministic Checks
+            </h3>
+            <p class="quality-card__description">
+              Lint, type-check, unit tests, and build verification run
+              automatically after every agent output. No false positives.
+            </p>
+          </div>
+          <div class="quality-card">
+            <h3 class="quality-card__title">
+              <span style="opacity: 0.5">02</span> Panel Majority Vote
+            </h3>
+            <p class="quality-card__description">
+              Three isolated reviewer sub-agents evaluate high-stakes changes.
+              2/3 majority wins. BLOCK items become fix requests, not stop
+              signals.
+            </p>
+          </div>
+          <div class="quality-card">
+            <h3 class="quality-card__title">
+              <span style="opacity: 0.5">03</span> Structured Disputes
+            </h3>
+            <p class="quality-card__description">
+              When agents exhaust all automated resolution, formal dispute
+              records package both perspectives and resolution options —
+              giving humans clear action items instead of raw failure logs.
+            </p>
+          </div>
+          <div class="quality-card">
+            <h3 class="quality-card__title">
+              <span style="opacity: 0.5">04</span> Browser Testing
+            </h3>
+            <p class="quality-card__description">
+              Chrome DevTools MCP validates UI changes at your
+              project-defined responsive breakpoints.
+            </p>
+          </div>
+          <div class="quality-card">
+            <h3 class="quality-card__title">
+              <span style="opacity: 0.5">05</span> Self-Review
+            </h3>
+            <p class="quality-card__description">
+              Every agent is asked: &ldquo;What edge cases am I missing? What test
+              coverage is incomplete? What assumptions could be wrong?&rdquo;
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== Stats ==================== -->
+    <section class="section section--border-top">
+      <div class="container">
+        <span class="section__label">By the Numbers</span>
+        <h2 class="section__title">
+          A complete orchestration framework, out of the box.
+        </h2>
+        <p class="section__subtitle">
+          52K+ words of curated knowledge, and everything
+          you need to run a coordinated AI development team — from agent
+          definitions to quality gates.
+        </p>
+        <div class="stats-row" style="margin-top: 32px">
+          <div class="stat">
+            <div class="stat__value">18</div>
+            <div class="stat__label">Specialist Agents</div>
+          </div>
+          <div class="stat">
+            <div class="stat__value">34</div>
+            <div class="stat__label">On-Demand Skills</div>
+          </div>
+          <div class="stat">
+            <div class="stat__value">8</div>
+            <div class="stat__label">Workflow Templates</div>
+          </div>
+          <div class="stat">
+            <div class="stat__value">3</div>
+            <div class="stat__label">IDE Adapters</div>
           </div>
         </div>
       </div>

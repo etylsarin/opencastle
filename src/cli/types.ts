@@ -37,6 +37,25 @@ export interface CopyDirOptions {
   ) => Promise<string | null> | string | null;
 }
 
+/** Combined repository tooling info — auto-detected + user-declared. */
+export interface RepoInfo {
+  packageManager?: string;
+  monorepo?: string;
+  language?: string;
+  frameworks?: string[];
+  databases?: string[];
+  cms?: string[];
+  deployment?: string[];
+  testing?: string[];
+  cicd?: string[];
+  styling?: string[];
+  auth?: string[];
+  pm?: string[];
+  notifications?: string[];
+  mcpConfig?: boolean;
+  configFiles?: string[];
+}
+
 /** OpenCastle project manifest (.opencastle.json). */
 export interface Manifest {
   version: string;
@@ -45,6 +64,7 @@ export interface Manifest {
   updatedAt: string;
   managedPaths?: ManagedPaths;
   stack?: StackConfig;
+  repoInfo?: RepoInfo;
 }
 
 /** Framework vs customizable file paths. */
@@ -55,7 +75,7 @@ export interface ManagedPaths {
 
 /** IDE adapter interface (init/update commands). */
 export interface IdeAdapter {
-  install(_pkgRoot: string, _projectRoot: string, _stack?: StackConfig): Promise<CopyResults>;
+  install(_pkgRoot: string, _projectRoot: string, _stack?: StackConfig, _repoInfo?: RepoInfo): Promise<CopyResults>;
   update(_pkgRoot: string, _projectRoot: string, _stack?: StackConfig): Promise<CopyResults>;
   getManagedPaths(): ManagedPaths;
 }

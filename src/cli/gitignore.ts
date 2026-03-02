@@ -21,9 +21,6 @@ function buildBlock(managed: ManagedPaths): string {
     lines.push(p)
   }
 
-  // Manifest file
-  lines.push('.opencastle.json')
-
   // Un-ignore customizable paths so they stay tracked
   for (const p of managed.customizable) {
     lines.push(`!${p}`)

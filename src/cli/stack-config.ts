@@ -1,4 +1,4 @@
-import type { CmsChoice, DbChoice, PmChoice, NotifChoice, StackConfig, CopyDirOptions } from './types.js';
+import type { CmsChoice, DbChoice, PmChoice, NotifChoice, StackConfig, CopyDirOptions, RepoInfo } from './types.js';
 
 // ── Skill / Technology labels ─────────────────────────────────
 
@@ -103,7 +103,12 @@ const NOTIF_MCP_MAP: Record<NotifChoice, string[]> = {
 };
 
 /** Always-included MCP servers */
-const CORE_MCP_SERVERS = ['chrome-devtools', 'Vercel'];
+const CORE_MCP_SERVERS = ['chrome-devtools'];
+
+/** MCP servers included only when detected in the repo */
+const DETECTED_MCP_MAP: Record<string, string> = {
+  vercel: 'Vercel',
+};
 
 // ── MCP environment variable requirements ─────────────────────
 
@@ -145,22 +150,30 @@ export function getExcludedAgents(stack: StackConfig): Set<string> {
   ]);
 }
 
-export function getIncludedMcpServers(stack: StackConfig): Set<string> {
-  return new Set([
+export function getIncludedMcpServers(stack: StackConfig, repoInfo?: RepoInfo): Set<string> {
+  const servers = new Set([
     ...CORE_MCP_SERVERS,
     ...CMS_MCP_MAP[stack.cms],
     ...DB_MCP_MAP[stack.db],
     ...PM_MCP_MAP[stack.pm ?? 'none'],
     ...NOTIF_MCP_MAP[stack.notifications ?? 'none'],
   ]);
+
+  // Add servers for detected deployment targets
+  for (const dep of repoInfo?.deployment ?? []) {
+    const server = DETECTED_MCP_MAP[dep];
+    if (server) servers.add(server);
+  }
+
+  return servers;
 }
 
 /**
  * Returns env var requirements for the MCP servers included in the stack.
  * Only returns entries for servers that actually need API keys.
  */
-export function getRequiredMcpEnvVars(stack: StackConfig): McpEnvRequirement[] {
-  const included = getIncludedMcpServers(stack);
+export function getRequiredMcpEnvVars(stack: StackConfig, repoInfo?: RepoInfo): McpEnvRequirement[] {
+  const included = getIncludedMcpServers(stack, repoInfo);
   return MCP_ENV_REQUIREMENTS.filter((req) => included.has(req.server));
 }
 

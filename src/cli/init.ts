@@ -6,6 +6,7 @@ import { readManifest, writeManifest, createManifest } from './manifest.js'
 import { removeDirIfExists } from './copy.js'
 import { updateGitignore } from './gitignore.js'
 import { getRequiredMcpEnvVars } from './stack-config.js'
+import { detectRepoInfo, mergeStackIntoRepoInfo, formatRepoInfo } from './detect.js'
 import type { CliContext, IdeAdapter, CmsChoice, DbChoice, PmChoice, NotifChoice, StackConfig } from './types.js'
 
 const ADAPTERS: Record<string, () => Promise<IdeAdapter>> = {
@@ -42,6 +43,16 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
   console.log(
     '  Multi-agent orchestration framework for AI coding assistants\n'
   )
+
+  // ── Repo research ───────────────────────────────────────────────
+  console.log('  Scanning repository...')
+  const repoInfo = await detectRepoInfo(projectRoot)
+  const summary = formatRepoInfo(repoInfo)
+  if (summary) {
+    console.log('  Detected:\n' + summary + '\n')
+  } else {
+    console.log('  No tooling detected (empty project?)\n')
+  }
 
   // ── IDE selection ───────────────────────────────────────────────
   const ide = await select('Which IDE are you using?', [
@@ -93,6 +104,9 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
 
   const stack: StackConfig = { cms: cms as CmsChoice, db: db as DbChoice, pm: pm as PmChoice, notifications: notifications as NotifChoice }
 
+  // ── Merge user choices into detected info ────────────────────
+  const combinedRepoInfo = mergeStackIntoRepoInfo(repoInfo, stack)
+
   console.log(`\n  Installing for ${ide}...`)
   console.log(`  Stack: CMS=${stack.cms}, DB=${stack.db}, PM=${stack.pm}, Notifications=${stack.notifications}\n`)
 
@@ -141,12 +155,13 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
 
   // ── Run adapter ─────────────────────────────────────────────────
   const adapter = await ADAPTERS[ide]()
-  const results = await adapter.install(pkgRoot, projectRoot, stack)
+  const results = await adapter.install(pkgRoot, projectRoot, stack, combinedRepoInfo)
 
   // ── Write manifest ──────────────────────────────────────────────
   const manifest = createManifest(pkg.version, ide)
   manifest.managedPaths = adapter.getManagedPaths()
   manifest.stack = stack
+  manifest.repoInfo = combinedRepoInfo
   await writeManifest(projectRoot, manifest)
 
   // ── Update .gitignore ───────────────────────────────────────────
@@ -168,7 +183,7 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
   }
 
   // ── Env var notice ──────────────────────────────────────────────
-  const envVars = getRequiredMcpEnvVars(stack)
+  const envVars = getRequiredMcpEnvVars(stack, combinedRepoInfo)
   if (envVars.length > 0) {
     console.log(`\n  ⚠  Required environment variables for MCP servers:\n`)
     for (const { envVar, hint } of envVars) {
@@ -186,7 +201,7 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
   console.log(`\n  Next steps:`)
   if (ide === 'vscode') {
     console.log(
-      '  0. Reload VS Code window (Cmd+Shift+P → "Reload Window") to pick up agents'
+      '  0. Reload VS Code window (Cmd+Shift+P → "Developer: Reload Window") to pick up agents'
     )
   } else if (ide === 'cursor') {
     console.log(

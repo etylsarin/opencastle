@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
 import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform } from '../stack-config.js'
-import type { CopyResults, ManagedPaths, StackConfig } from '../types.js'
+import type { CopyResults, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
 
 /**
  * Claude Code adapter.
@@ -48,7 +48,8 @@ function parseFrontmatterMeta(content: string): Record<string, string> {
 export async function install(
   pkgRoot: string,
   projectRoot: string,
-  stack?: StackConfig
+  stack?: StackConfig,
+  repoInfo?: RepoInfo
 ): Promise<CopyResults> {
   const srcRoot = getOrchestratorRoot(pkgRoot)
   const results: CopyResults = { copied: [], skipped: [], created: [] }
@@ -233,7 +234,8 @@ export async function install(
     pkgRoot,
     projectRoot,
     '.claude/mcp.json',
-    stack
+    stack,
+    repoInfo
   )
   results[mcpResult.action].push(mcpResult.path)
 
