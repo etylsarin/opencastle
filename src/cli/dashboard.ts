@@ -114,7 +114,7 @@ export default async function dashboard({
   // Check if dist exists
   if (!(await fileExists(distDir))) {
     throw new Error(
-      'Dashboard not built. Run "npm run build:dashboard" in the opencastle package first.'
+      'Dashboard not built. Run "npm run dashboard:build" in the opencastle package first.'
     )
   }
 

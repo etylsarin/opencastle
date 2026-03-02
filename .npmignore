@@ -1,0 +1,19 @@
+# dependencies
+node_modules/
+
+# cache
+.cache/
+.astro/
+
+.env
+.env.*
+*.log
+.DS_Store
+
+# IDE
+.idea/
+.vscode/*
+
+# Dashboard build artifacts (not the dist itself)
+src/dashboard/node_modules/
+src/dashboard/.astro/

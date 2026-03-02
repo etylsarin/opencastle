@@ -34,15 +34,22 @@
   "license": "MIT",
   "author": "Filip Mares",
   "scripts": {
-    "build:cli": "tsc",
-    "build:dashboard": "cd src/dashboard && npm run build:seed",
-    "prepublishOnly": "npm run build:cli && npm run build:dashboard"
+    "cli:build": "tsc",
+    "dashboard:dev": "astro dev --root src/dashboard --port 4300",
+    "dashboard:build": "astro build --root src/dashboard",
+    "dashboard:preview": "astro preview --root src/dashboard --port 4300",
+    "website:dev": "astro dev --root website",
+    "website:build": "astro build --root website",
+    "website:preview": "astro preview --root website",
+    "prepublishOnly": "npm run cli:build && npm run dashboard:build"
   },
   "engines": {
     "node": ">=18"
   },
   "devDependencies": {
-    "typescript": "^5.7.0",
-    "@types/node": "^22.0.0"
+    "@astrojs/check": "^0.9.6",
+    "@types/node": "^22.0.0",
+    "astro": "^5.5.0",
+    "typescript": "^5.7.0"
   }
 }
