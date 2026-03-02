@@ -1,0 +1,7 @@
+# Generated assets — don't commit binaries
+audio/
+clips/
+output/
+assets/
+node_modules/
+package-lock.json
