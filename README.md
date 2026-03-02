@@ -21,6 +21,12 @@
   <a href="#contributing">Contributing</a>
 </p>
 
+<p align="center">
+  <a href="https://www.opencastle.dev/opencastle-demo.mp4">
+    ▶️ Watch the demo (1 min)
+  </a>
+</p>
+
 ---
 
 Works with **[GitHub Copilot](https://github.com/features/copilot)**, **[Cursor](https://www.cursor.com/)**, and **[Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview)**.
