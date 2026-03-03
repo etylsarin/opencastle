@@ -57,10 +57,21 @@ Acceptance criteria:
 
 ### Phase 4: Verify & Report
 
-1. **Run verification** — run lint, test, and build for all affected projects (see the **codebase-tool** skill for commands)
-2. **Commit fixes** — Use descriptive commit messages referencing the PR: `TAS-XX: Address PR review — [summary]`
-3. **Push to the same branch** — The PR updates automatically
-4. **Report back** — Provide a structured summary of what was resolved
+> Load the **validation-gates** skill for detailed steps on each gate.
+
+All fixes must pass applicable gates before pushing:
+
+1. **Gate 1: Secret Scanning** — scan diff for API keys, tokens, passwords, connection strings — block immediately if found
+2. **Gate 2: Deterministic Checks** — run lint, test, and build for all affected projects (see the **codebase-tool** skill for commands) — all zero errors
+3. **Gate 3: Blast Radius Check** — verify changes are scoped to commented files only; flag any files modified outside the comment scope
+4. **Gate 4: Fast Review** (MANDATORY) — single reviewer sub-agent validates the combined PR comment fixes
+5. **Gate 5: Regression Testing** — run tests for all projects consuming modified files
+
+After all gates pass:
+
+6. **Commit fixes** — Use descriptive commit messages referencing the PR: `TAS-XX: Address PR review — [summary]`
+7. **Push to the same branch** — The PR updates automatically
+8. **Report back** — Provide a structured summary of what was resolved
 
 ## Output Format
 
@@ -85,9 +96,12 @@ After resolving comments, report:
 | path/to/file.ts | [question/debate] | [your take + options] |
 
 ### Verification
+- Secret Scanning: PASS/FAIL
 - Lint: PASS/FAIL
 - Tests: PASS/FAIL
 - Build: PASS/FAIL
+- Blast Radius: PASS/ESCALATED
+- Fast Review: PASS/FAIL
 
 ### Commits
 - `abc1234` TAS-XX: Address PR review — [summary]

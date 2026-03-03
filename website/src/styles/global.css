@@ -682,6 +682,12 @@ img {
   }
 }
 
+@media (min-width: 1024px) {
+  .quality-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 .quality-card {
   padding: 28px 24px;
   background: var(--bg-card);

@@ -79,10 +79,15 @@ Include the self-improvement reminder in every delegation prompt (see `general.i
 
 Every subtask must pass ALL gates before being marked Done:
 
-1. **Gate 1: Deterministic Checks** — run lint, test, and build for all affected projects (see the **codebase-tool** skill for commands) — all zero errors
-2. **Gate 2: Browser Testing** (MANDATORY for UI changes) — clear cache, start server, verify features + responsive + screenshots
-3. **Gate 3: Regression Testing** — full test suite for affected projects, browser-test adjacent pages if shared components changed
-4. **Gate 4: Panel Review** (for high-stakes changes) — use **panel-majority-vote** skill for security, DB migrations, architecture
+1. **Gate 1: Secret Scanning** — scan diff for API keys, tokens, passwords, connection strings — block immediately if found
+2. **Gate 2: Deterministic Checks** — run lint, test, and build for all affected projects (see the **codebase-tool** skill for commands) — all zero errors
+3. **Gate 3: Blast Radius Check** — verify scope is expected (≤200 lines, ≤5 files normal; escalate if >500 lines or >10 files)
+4. **Gate 4: Dependency Audit** (when `package.json` changes) — vulnerability scan, license check, bundle size, duplicates
+5. **Gate 5: Fast Review** (MANDATORY) — single reviewer sub-agent validates every delegation output. No auto-PASS for sensitive files
+6. **Gate 6: Browser Testing** (MANDATORY for UI changes) — clear cache, start server, verify features + responsive + screenshots
+7. **Gate 7: Regression Testing** — full test suite for affected projects, browser-test adjacent pages if shared components changed
+8. **Gate 8: Panel Review** (for high-stakes changes) — use **panel-majority-vote** skill for security, DB migrations, architecture
+9. **Gate 9: Final Smoke Test** — after all tasks Done, verify the complete feature end-to-end as a cohesive unit
 
 ### 5. Delivery
 

@@ -123,7 +123,9 @@ CONFIDENCE: low | medium | high
 **Auto-PASS conditions (skip reviewer):**
 - The delegation was pure research/exploration with no code changes
 - The delegation only modified documentation files (`.md`)
-- All deterministic gates already passed AND the change is ≤10 lines across ≤2 files
+- All deterministic gates already passed AND the change is ≤10 lines across ≤2 files AND **no sensitive files were touched** (see validation-gates Gate 3 sensitive file list)
+
+> **Sensitive file override:** Changes to auth/middleware files, database migrations, RLS policies, security headers, CSP configuration, environment variable schemas, or CI/CD configuration **always** require a reviewer — even for 1-line changes. Auto-PASS never applies to these files.
 
 ### Step 4: Handle Verdict
 
@@ -247,14 +249,23 @@ Fast review sits between the agent's output and the Team Lead's acceptance:
 Agent completes work
        │
        ▼
-Deterministic checks (lint, test, build)  ← validation-gates Gate 1
+Secret Scanning                           ← validation-gates Gate 1
        │
        ▼
-Fast Review (this skill)                  ← validation-gates Gate 1.5
+Deterministic checks (lint, test, build)  ← validation-gates Gate 2
+       │
+       ▼
+Blast Radius Check                        ← validation-gates Gate 3
+       │
+       ▼
+Dependency Audit (if packages changed)    ← validation-gates Gate 4
+       │
+       ▼
+Fast Review (this skill)                  ← validation-gates Gate 5
        │
        ├── PASS → Accept, move to next task
        ├── FAIL → Retry loop (up to 2x)
-       └── 3x FAIL → Escalate to Panel (Gate 5)
+       └── 3x FAIL → Escalate to Panel (Gate 9)
 ```
 
 ### Relationship to on-post-delegate Hook

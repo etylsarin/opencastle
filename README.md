@@ -85,11 +85,11 @@ npx opencastle@1.2.3 update    # pin to a specific version
 
 ## What's Inside
 
-**18 agents.** Developer, UI/UX, Database, Security, Testing, Reviewer, and more.
+**Specialist Agents.** Developer, UI/UX, Database, Security, Testing, Reviewer, and more.
 
-**34 skills.** Loaded on demand to keep context windows lean. Auto-selected during init based on your stack.
+**On-Demand Skills.** Loaded on demand to keep context windows lean. Auto-selected during init based on your stack.
 
-**8 workflows.** Features, bug fixes, data pipelines, security audits — reproducible execution templates.
+**Workflow Templates.** Features, bug fixes, data pipelines, security audits — reproducible execution templates.
 
 **Quality gates.** Fast review after every step. Panel majority vote for high-stakes changes. Lint, test, build checks.
 
