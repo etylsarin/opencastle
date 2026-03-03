@@ -1,9 +1,9 @@
 import { resolve, basename } from 'node:path'
 import { mkdir, writeFile, readdir, readFile, unlink } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.js'
+import { copyDir, getOrchestratorRoot, removeDirIfExists, getPluginsRoot, getPluginSkillEntries } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
-import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform } from '../stack-config.js'
+import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform, getIncludedPluginIds } from '../stack-config.js'
 import type { CopyResults, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
 
 /**
@@ -164,6 +164,24 @@ export async function install(
   // 4. Skills → .cursor/rules/skills/*.mdc
   await convertSkills(srcRoot, resolve(rulesRoot, 'skills'), results, false, excludedSkills)
 
+  // 4b. Plugin skills → .cursor/rules/skills/<plugin-id>.mdc
+  {
+    const pluginsRoot = getPluginsRoot(pkgRoot)
+    const includedPlugins = stack ? getIncludedPluginIds(stack) : undefined
+    const pluginEntries = await getPluginSkillEntries(pluginsRoot, includedPlugins)
+    const skillsDest = resolve(rulesRoot, 'skills')
+    await mkdir(skillsDest, { recursive: true })
+    for (const { id, skillPath } of pluginEntries) {
+      const destPath = resolve(skillsDest, `${id}.mdc`)
+      await writeConverted(
+        skillPath,
+        destPath,
+        { descriptionFallback: `Skill: ${id}` },
+        results
+      )
+    }
+  }
+
   // 5. Agent Workflows → .cursor/rules/agent-workflows/*.mdc
   await convertDir(
     srcRoot,
@@ -191,11 +209,11 @@ export async function install(
 
   // 8. MCP server config → .cursor/mcp.json (scaffold once)
   const mcpResult = await scaffoldMcpConfig(
-    pkgRoot,
     projectRoot,
     '.cursor/mcp.json',
     stack,
-    repoInfo
+    repoInfo,
+    'cursor'
   )
   results[mcpResult.action].push(mcpResult.path)
 
@@ -255,6 +273,26 @@ export async function update(
     { descriptionPrefix: 'Agent: ', removeExt: '.agent.md', overwrite: true, excludeFiles: excludedAgents }
   )
   await convertSkills(srcRoot, resolve(rulesRoot, 'skills'), results, true, excludedSkills)
+
+  // Plugin skills → .cursor/rules/skills/<plugin-id>.mdc (overwrite)
+  {
+    const pluginsRoot = getPluginsRoot(pkgRoot)
+    const includedPlugins = stack ? getIncludedPluginIds(stack) : undefined
+    const pluginEntries = await getPluginSkillEntries(pluginsRoot, includedPlugins)
+    const skillsDest = resolve(rulesRoot, 'skills')
+    await mkdir(skillsDest, { recursive: true })
+    for (const { id, skillPath } of pluginEntries) {
+      const destPath = resolve(skillsDest, `${id}.mdc`)
+      await writeConverted(
+        skillPath,
+        destPath,
+        { descriptionFallback: `Skill: ${id}` },
+        results,
+        true
+      )
+    }
+  }
+
   await convertDir(
     srcRoot,
     'agent-workflows',

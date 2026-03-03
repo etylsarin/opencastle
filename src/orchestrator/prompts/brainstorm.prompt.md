@@ -3,7 +3,7 @@ description: 'Collaborative brainstorm to explore requirements, approaches, and 
 agent: Team Lead
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Brainstorm
 
@@ -35,7 +35,7 @@ Before exploring solutions, make sure the problem is well-understood:
 Research before proposing. Gather data, don't guess:
 
 1. **Search existing code** — is there already a partial implementation, similar pattern, or relevant utility?
-2. **Check documentation** — read `docs/PROJECT.md`, `docs/DECISIONS.md`, `docs/KNOWN-ISSUES.md` for constraints
+2. **Check documentation** — read `.github/customizations/project.instructions.md`, `.github/customizations/project/decisions.md`, `.github/customizations/KNOWN-ISSUES.md` for constraints
 3. **Check lessons learned** — read `.github/customizations/LESSONS-LEARNED.md` for pitfalls in this area
 4. **Identify affected layers** — which apps, libs, data stores, and third-party services are involved?
 
@@ -114,4 +114,4 @@ Once the brainstorm is complete and the user confirms (or you're confident in th
 
 1. **Transition to planning** — use the brainstorm report as input for `implement-feature` or the appropriate workflow
 2. **Preserve context** — include the brainstorm report in delegation prompts so agents understand *why* an approach was chosen
-3. **Reference in Linear** — link the brainstorm findings in the Linear issue description
+3. **Reference in tracker** — link the brainstorm findings in the tracker issue description

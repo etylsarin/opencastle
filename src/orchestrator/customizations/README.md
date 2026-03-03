@@ -14,6 +14,7 @@ Skills reference these files with relative links like `../../customizations/stac
 |------|---------|
 | `project.instructions.md` | High-level project context — apps, libraries, tech stack, ports, URLs |
 | `LESSONS-LEARNED.md` | Knowledge base of retries, workarounds, and gotchas — read before every session |
+| `KNOWN-ISSUES.md` | Tracked issues, limitations, and accepted risks discovered during sessions |
 | `AGENT-FAILURES.md` | Dead letter queue for failed agent delegations |
 | `AGENT-PERFORMANCE.md` | Agent success tracking, log query recipes, performance metrics |
 | `AGENT-EXPERTISE.md` | Structured tracking of agent strengths/weaknesses across sessions |
@@ -36,7 +37,9 @@ Skills reference these files with relative links like `../../customizations/stac
 
 | File | Purpose |
 |------|---------|
-| `docs-structure.md` | `docs/` directory tree and documentation practices |
+| `docs-structure.md` | Project documentation directory tree and practices |
+| `roadmap.md` | Project roadmap with planned features and their status |
+| `decisions.md` | Architecture Decision Records (ADRs) for the project |
 | _(task tracker config created by `bootstrap-customizations` prompt)_ | |
 
 ### `logs/` — Append-only NDJSON session logs
@@ -52,7 +55,7 @@ Structured machine-readable logs appended automatically by agents during session
 
 ## When to update
 
-Update these files when the project changes — new tables, new API routes, new apps, new Linear labels, etc. The skills themselves should rarely need editing; changing a project ID or adding a table column is a customization change, not a skill change.
+Update these files when the project changes — new tables, new API routes, new apps, new tracker labels, etc. The skills themselves should rarely need editing; changing a project ID or adding a table column is a customization change, not a skill change.
 
 ## Bootstrap
 

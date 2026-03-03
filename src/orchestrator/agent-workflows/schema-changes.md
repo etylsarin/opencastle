@@ -1,10 +1,10 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Workflow: Schema / CMS Changes
 
 Structured workflow for CMS schema modifications, query updates, and content model changes.
 
-> **Project config:** For CMS-specific paths, schema locations, and query library details, see the relevant CMS customization file (e.g., `sanity-config.md`).
+> **Project config:** For CMS-specific paths, schema locations, and query library details, see the relevant CMS customization file in `customizations/stack/`.
 
 ## Phases
 
@@ -37,14 +37,14 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 3. Check the query library (see CMS customization) for queries that will be affected
 4. Verify schema changes don't conflict with existing content in the CMS
 5. Document field mapping (new vs existing fields)
-6. Create Linear issue with schema change details
+6. Create tracker issue with schema change details
 
 ### Exit Criteria
 
 - [ ] Existing schema understood
 - [ ] Impact on data queries assessed
 - [ ] Impact on existing content assessed
-- [ ] Linear issue created
+- [ ] Tracker issue created
 - [ ] Approach decided (new type vs modify existing)
 
 ---
@@ -146,7 +146,7 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 3. Start dev server and verify pages render correctly
 4. Check both apps if shared schema/queries changed
 5. Verify data model documentation is updated
-6. Move Linear issue to Done
+6. Move tracker issue to Done
 
 ### Exit Criteria
 
@@ -154,8 +154,8 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 - [ ] Pages render correctly in browser
 - [ ] Both apps verified (if shared code changed)
 - [ ] Data model documentation updated (if applicable)
-- [ ] Linear issue moved to Done
-- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), Linear linked
+- [ ] Tracker issue moved to Done
+- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
 
 ---
 
@@ -163,4 +163,4 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >
-> Commit → Push → PR → Linear linkage. Team Lead owns delivery.
+> Commit → Push → PR → tracker linkage. Team Lead owns delivery.

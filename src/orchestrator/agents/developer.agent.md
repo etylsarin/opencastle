@@ -2,10 +2,10 @@
 description: 'Full-stack developer for building pages, components, routing, layouts, API routes, server-side logic, and feature implementation.'
 name: 'Developer'
 model: Gemini 3.1 Pro (Preview)
-tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'vscode/getProjectSetupInfo', 'vscode/installExtension', 'vscode/newWorkspace', 'vscode/runCommand', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages', 'nx-mcp-server/nx_project_details', 'nx-mcp-server/nx_workspace', 'nx-mcp-server/nx_generators']
+tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'vscode/getProjectSetupInfo', 'vscode/installExtension', 'vscode/newWorkspace', 'vscode/runCommand', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages']
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Developer
 
@@ -44,7 +44,7 @@ After code changes, always run lint, test, and build for affected projects. The 
 
 ## Done When
 
-- All acceptance criteria from the Linear issue are met
+- All acceptance criteria from the tracker issue are met
 - Lint, test, and build pass for the affected project(s)
 - Changed files stay within the assigned file partition
 - TypeScript compiler reports zero errors in modified files
@@ -62,7 +62,7 @@ When completing a task, return a structured summary:
 
 1. **Files Changed** — List every file created or modified with a one-line description
 2. **Verification Results** — Lint, test, and build output (pass/fail + error count)
-3. **Acceptance Criteria Status** — Checklist from the Linear issue, each item marked ✅ or ❌
+3. **Acceptance Criteria Status** — Checklist from the tracker issue, each item marked ✅ or ❌
 4. **Assumptions Made** — Decisions you made that weren't explicitly specified
 
 See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).

@@ -2,16 +2,36 @@ import type { ChildProcess } from 'node:child_process';
 
 // ── Stack selection types ──────────────────────────────────────
 
-export type CmsChoice = 'sanity' | 'contentful' | 'strapi' | 'none';
-export type DbChoice = 'supabase' | 'convex' | 'none';
-export type PmChoice = 'linear' | 'jira' | 'none';
-export type NotifChoice = 'slack' | 'teams' | 'none';
+export type IdeChoice = 'vscode' | 'cursor' | 'claude-code' | 'opencode';
+export type TechTool = 'sanity' | 'contentful' | 'strapi' | 'supabase' | 'convex' | 'vercel' | 'nx' | 'chrome-devtools';
+export type TeamTool = 'linear' | 'jira' | 'slack' | 'teams';
 
 export interface StackConfig {
-  cms: CmsChoice;
-  db: DbChoice;
-  pm: PmChoice;
-  notifications: NotifChoice;
+  ides: IdeChoice[];
+  techTools: TechTool[];
+  teamTools: TeamTool[];
+}
+
+/** Check if a stack config uses the legacy v1 format (individual choices with 'none'). */
+export function isLegacyStack(stack: unknown): stack is { cms: string; db: string; pm?: string; notifications?: string } {
+  return typeof stack === 'object' && stack !== null && 'cms' in stack;
+}
+
+/** Migrate a legacy v1 stack config to the v2 array format. */
+export function migrateStackConfig(
+  legacy: { cms: string; db: string; pm?: string; notifications?: string },
+  ide?: string
+): StackConfig {
+  const techTools: TechTool[] = [];
+  const teamTools: TeamTool[] = [];
+
+  if (legacy.cms && legacy.cms !== 'none') techTools.push(legacy.cms as TechTool);
+  if (legacy.db && legacy.db !== 'none') techTools.push(legacy.db as TechTool);
+  if (legacy.pm && legacy.pm !== 'none') teamTools.push(legacy.pm as TeamTool);
+  if (legacy.notifications && legacy.notifications !== 'none') teamTools.push(legacy.notifications as TeamTool);
+
+  const ides: IdeChoice[] = ide ? [ide as IdeChoice] : [];
+  return { ides, techTools, teamTools };
 }
 
 /** Context passed from bin/cli.mjs to every command handler. */
@@ -60,6 +80,7 @@ export interface RepoInfo {
 export interface Manifest {
   version: string;
   ide: string;
+  ides?: string[];
   installedAt: string;
   updatedAt: string;
   managedPaths?: ManagedPaths;
@@ -85,6 +106,8 @@ export interface SelectOption {
   label: string;
   hint?: string;
   value: string;
+  /** Whether this option starts selected (preselected). */
+  selected?: boolean;
 }
 
 /** Scaffold result from MCP config. */
@@ -92,6 +115,14 @@ export interface ScaffoldResult {
   path: string;
   action: 'created' | 'skipped';
 }
+
+/** IDE display labels. */
+export const IDE_LABELS: Record<IdeChoice, string> = {
+  vscode: 'VS Code',
+  cursor: 'Cursor',
+  'claude-code': 'Claude Code',
+  opencode: 'OpenCode',
+};
 
 // ── Run command types ──────────────────────────────────────────
 

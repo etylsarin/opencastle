@@ -3,11 +3,11 @@ description: 'Instruct the Team Lead to implement a specific task from the post-
 agent: Team Lead
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Implement Roadmap Task
 
-You are the Team Lead. Implement the roadmap task described below following this strict workflow. The task comes from `docs/ROADMAP-POST-MVP.md`.
+You are the Team Lead. Implement the roadmap task described below following this strict workflow. The task comes from `.github/customizations/project/roadmap.md`.
 
 ## Task
 
@@ -15,29 +15,29 @@ You are the Team Lead. Implement the roadmap task described below following this
 
 ---
 
-> **Canonical workflow:** `.github/agent-workflows/feature-implementation.md` defines the phase structure. This prompt adds Linear traceability, validation gate references, and completion criteria.
+> **Canonical workflow:** `.github/agent-workflows/feature-implementation.md` defines the phase structure. This prompt adds tracker traceability, validation gate references, and completion criteria.
 
 ## Workflow
 
-> **HARD GATE:** Steps 1→2 are **blocking prerequisites**. Do NOT write, edit, or delegate any code until Linear issues exist for every subtask. If you catch yourself writing code before issues are created, STOP immediately, create the issues, then resume.
+> **HARD GATE:** Steps 1→2 are **blocking prerequisites**. Do NOT write, edit, or delegate any code until tracker issues exist for every subtask. If you catch yourself writing code before issues are created, STOP immediately, create the issues, then resume.
 
 ### 1. Research & Context Gathering
 
 Before writing any code, gather all relevant context:
 
-1. **Read the roadmap** — Open `docs/ROADMAP-POST-MVP.md` and find the full scope, status, and acceptance criteria for this task
-2. **Read known issues** — Check `docs/KNOWN-ISSUES.md` for blockers or workarounds that affect this task
-3. **Read architecture docs** — Check `docs/PROJECT.md` and `docs/DECISIONS.md` for constraints and prior decisions
+1. **Read the roadmap** — Open `.github/customizations/project/roadmap.md` and find the full scope, status, and acceptance criteria for this task
+2. **Read known issues** — Check `.github/customizations/KNOWN-ISSUES.md` for blockers or workarounds that affect this task
+3. **Read architecture docs** — Check `.github/customizations/project.instructions.md` and `.github/customizations/project/decisions.md` for constraints and prior decisions
 4. **Read lessons learned** — Check `.github/customizations/LESSONS-LEARNED.md` for pitfalls relevant to this feature area
 5. **Search existing code** — Find all files, components, queries, and tests related to this feature area
 6. **Identify reusable code** — Before creating anything new, check if similar logic, components, or utilities already exist in the codebase that can be reused or extended
 
-### 2. Linear Board Setup (BLOCKING — must complete before Step 3)
+### 2. Task Board Setup (BLOCKING — must complete before Step 3)
 
-Every subtask must be tracked on Linear. **No issue = no implementation.** This step produces the issues that gate all downstream work.
+Every subtask must be tracked. **No issue = no implementation.** This step produces the issues that gate all downstream work.
 
 1. **Check existing issues** — Search the board for any in-progress or completed work related to this task
-2. **Decompose into issues** — Create one Linear issue per subtask using `[Area] Short description` naming
+2. **Decompose into issues** — Create one tracker issue per subtask using `[Area] Short description` naming
 3. **Set metadata** — Assign labels (agent name), priority, dependencies, and file partitions
 4. **Write descriptions** — Each issue must include:
    - **Objective:** One sentence
@@ -49,9 +49,9 @@ Every subtask must be tracked on Linear. **No issue = no implementation.** This 
 
 ### 3. Implementation Rules
 
-#### Linear Issue Traceability
+#### Issue Traceability
 
-- **Pass issue ID to every agent** — When delegating a subtask (sub-agent or background), include the Linear issue ID and title in the prompt so the agent knows which tracked task it is completing
+- **Pass issue ID to every agent** — When delegating a subtask (sub-agent or background), include the tracker issue ID and title in the prompt so the agent knows which tracked task it is completing
 - **Reference in commits** — Include the issue ID (e.g., `TAS-42`) in commit messages when possible
 - **Update issue status** — Move issues to In Progress before starting, Done after verification passes
 
@@ -79,29 +79,29 @@ Include the self-improvement reminder in every delegation prompt (see `general.i
 
 Every subtask must pass ALL gates before being marked Done:
 
-1. **Gate 1: Deterministic Checks** — `yarn nx run <project>:lint --fix`, `:test`, `:build` — all zero errors
+1. **Gate 1: Deterministic Checks** — run lint, test, and build for all affected projects (see the **codebase-tool** skill for commands) — all zero errors
 2. **Gate 2: Browser Testing** (MANDATORY for UI changes) — clear cache, start server, verify features + responsive + screenshots
 3. **Gate 3: Regression Testing** — full test suite for affected projects, browser-test adjacent pages if shared components changed
 4. **Gate 4: Panel Review** (for high-stakes changes) — use **panel-majority-vote** skill for security, DB migrations, architecture
 
 ### 5. Delivery
 
-Follow the **Delivery Outcome** defined in `general.instructions.md` — commit, push, open PR (not merged), and link to Linear.
+Follow the **Delivery Outcome** defined in `general.instructions.md` — commit, push, open PR (not merged), and link to the tracker.
 
 ### 6. Documentation & Traceability
 
 Keep documentation current so future sessions have full context:
 
-1. **Update roadmap** — Mark completed items in `docs/ROADMAP-POST-MVP.md` with ✅ and the completion date. **Include Linear issue IDs and links** next to each scope item so progress is traceable across sessions. Format:
+1. **Update roadmap** — Mark completed items in `.github/customizations/project/roadmap.md` with ✅ and the completion date. **Include tracker issue IDs and links** next to each scope item so progress is traceable across sessions. Format:
    ```
-   **Linear Issues:**
-   - [PREFIX-6](https://linear.app/<workspace>/issue/PREFIX-6) — [Search] Description ✅ Done
-   - [PREFIX-7](https://linear.app/<workspace>/issue/PREFIX-7) — [UI] Description 📋 Todo
+   **Tracker Issues:**
+   - [PREFIX-6](<tracker-url>/PREFIX-6) — [Search] Description ✅ Done
+   - [PREFIX-7](<tracker-url>/PREFIX-7) — [UI] Description 📋 Todo
    ```
-   > Replace `PREFIX` and `<workspace>` with the project's Linear prefix and workspace slug (see `linear-config.md`).
-2. **Update known issues** — If new limitations are discovered, add them to `docs/KNOWN-ISSUES.md`
-3. **Update architecture docs** — If architectural decisions were made, add an ADR to `docs/DECISIONS.md`
-4. **Link Linear issues** — Every issue description should reference:
+   > Replace `PREFIX` with the project's issue prefix (see `tracker-config.md`).
+2. **Update known issues** — If new limitations are discovered, add them to `.github/customizations/KNOWN-ISSUES.md`
+3. **Update architecture docs** — If architectural decisions were made, add an ADR to `.github/customizations/project/decisions.md`
+4. **Link tracker issues** — Every issue description should reference:
    - Related roadmap section
    - Files modified (the partition)
    - Related issues (dependencies and follow-ups)
@@ -111,9 +111,9 @@ Keep documentation current so future sessions have full context:
 
 The roadmap task is complete when:
 
-- [ ] All Linear subtask issues are Done
+- [ ] All tracker subtask issues are Done
 - [ ] All deterministic checks pass (lint, test, build) for affected projects
-- [ ] **Dev server started with CLEAN cache** (`rm -rf .next && yarn nx reset` before serving)
+- [ ] **Dev server started with CLEAN cache** (clear framework + task runner caches before serving — see the **codebase-tool** skill)
 - [ ] **All UI changes verified in Chrome browser via MCP with screenshots taken as proof**
 - [ ] **Every feature in the acceptance criteria visually confirmed** — not just "page loads"
 - [ ] Regression tests confirm no existing functionality is broken
@@ -121,6 +121,6 @@ The roadmap task is complete when:
 - [ ] Visual consistency maintained across all affected pages and apps
 - [ ] Documentation updated (roadmap, known issues, decisions)
 - [ ] Panel review passed for any high-stakes changes
-- [ ] Roadmap item marked complete in `docs/ROADMAP-POST-MVP.md`
-- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), Linear linked
+- [ ] Roadmap item marked complete in `.github/customizations/project/roadmap.md`
+- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
 - [ ] Lessons learned captured if any retries occurred

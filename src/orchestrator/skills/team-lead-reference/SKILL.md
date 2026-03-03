@@ -3,7 +3,7 @@ name: team-lead-reference
 description: "Reference data for Team Lead orchestration — model routing, pre-delegation checks, cost tracking template, and DLQ format. Load when starting a delegation session."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Team Lead Reference
 
@@ -49,7 +49,7 @@ During decomposition, assign a **complexity score** (Fibonacci: 1, 2, 3, 5, 8, 1
 | Score | Tier | Examples |
 |-------|------|----------|
 | **1-2** | Economy/Utility | Docs update, config tweak, rename, simple test |
-| **3-5** | Standard | Component build, GROQ query, API route, migration |
+| **3-5** | Standard | Component build, CMS query, API route, migration |
 | **8** | Premium | Architecture decision, security audit, complex refactor |
 | **13** | Premium + Panel | DB migration with data transform, auth flow redesign |
 
@@ -117,7 +117,7 @@ Run these validation checks **before** delegating any subtask. Non-negotiable ga
 
 ### Mandatory Checks (before every delegation)
 
-1. **Linear issue exists** — The subtask has a tracked issue with acceptance criteria
+1. **Tracker issue exists** — The subtask has a tracked issue with acceptance criteria
 2. **File partition is clean** — No overlap with other active/parallel agents
 3. **Dependencies are met** — All prerequisite tasks are verified Done (not just claimed done)
 4. **Prompt is specific** — Contains: objective, file paths, acceptance criteria, patterns to follow
@@ -140,7 +140,7 @@ Before calling `runSubagent` or handing off to a background agent, mentally walk
 
 ## Cost Tracking Convention
 
-After completing a feature (all Linear issues Done), add a cost summary to the roadmap update:
+After completing a feature (all tracker issues Done), add a cost summary to the roadmap update:
 
 ```markdown
 **Cost Summary:**
@@ -165,11 +165,11 @@ When collecting results from multiple sub-agents or background agents, **tag eac
 ```markdown
 ### [Content Engineer] TAS-42 Schema
 - Created `schemas/review.ts` with star rating field
-- Deployed to Sanity Studio
+- Deployed to CMS studio
 - Verification: lint ✅, type-check ✅
 
 ### [DB Engineer] TAS-43 Migration
-- Created `supabase/migrations/20260227_add_reviews.sql`
+- Created migration file for reviews table
 - RLS policies for authenticated users
 - Verification: migration applied ✅, tests ✅
 ```
@@ -200,7 +200,7 @@ Log to `.github/customizations/AGENT-FAILURES.md` when:
 |-------|-------|
 | **Date** | YYYY-MM-DD |
 | **Agent** | Agent name |
-| **Linear Issue** | TAS-XX (if applicable) |
+| **Tracker Issue** | TAS-XX (if applicable) |
 | **Failure Type** | `verification-fail` / `tool-error` / `panel-block` / `timeout` / `scope-creep` |
 | **Attempts** | Number of attempts before logging |
 | **Est. Tokens Spent** | ~XXK across all attempts |
@@ -289,7 +289,7 @@ When automated resolution is exhausted (panel 3x BLOCK, approach conflicts, or c
 6. **Recommend an action** — Which option the Team Lead thinks is best, with specific next steps
 7. **Link artifacts** — Panel reports, review logs, changed files, DLQ entries
 8. **Log to disputes.ndjson** — Append a machine-readable record (see logs README)
-9. **Update the Linear issue** — Add the dispute ID and link to the dispute record
+9. **Update the tracker issue** — Add the dispute ID and link to the dispute record
 10. **Update the Index table** — Add the new dispute to the bottom of the Index
 
 ### After Human Resolution
@@ -298,7 +298,7 @@ When a human resolves a dispute:
 1. Update the dispute `Status` → `resolved` or `deferred`
 2. Record which option was chosen and any additional instructions
 3. If `resolved` → re-delegate the task with the human's decision as an explicit constraint
-4. If `deferred` → create a follow-up Linear issue and continue with other work
+4. If `deferred` → create a follow-up tracker issue and continue with other work
 5. Log the resolution in `disputes.ndjson` (update the existing record or append a resolution event)
 
 ### Session Start: Check Disputes

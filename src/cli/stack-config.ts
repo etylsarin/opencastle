@@ -1,111 +1,39 @@
-import type { CmsChoice, DbChoice, PmChoice, NotifChoice, StackConfig, CopyDirOptions, RepoInfo } from './types.js';
+import type { TechTool, TeamTool, StackConfig, CopyDirOptions, RepoInfo } from './types.js';
+import {
+  PLUGINS,
+  TECH_PLUGINS,
+  TEAM_PLUGINS,
+  CMS_PLUGINS,
+  DB_PLUGINS,
+  ALL_PLUGIN_SKILL_NAMES,
+  getSelectedSkillNames,
+} from '../orchestrator/plugins/index.js';
+import type { PluginConfig } from '../orchestrator/plugins/types.js';
 
-// ── Skill / Technology labels ─────────────────────────────────
+// ── Tool registries (derived from plugins) ────────────────────
 
-/** Display name for each CMS choice */
-const CMS_LABELS: Record<Exclude<CmsChoice, 'none'>, { tech: string; skill: string }> = {
-  sanity: { tech: 'Sanity', skill: 'sanity-cms' },
-  contentful: { tech: 'Contentful', skill: 'contentful-cms' },
-  strapi: { tech: 'Strapi', skill: 'strapi-cms' },
-};
+interface ToolInfo {
+  tech: string;
+  skill: string | null;
+  mcpServer: string | null;
+}
 
-/** Display name for each DB choice */
-const DB_LABELS: Record<Exclude<DbChoice, 'none'>, { tech: string; skill: string }> = {
-  supabase: { tech: 'Supabase', skill: 'supabase-database' },
-  convex: { tech: 'Convex', skill: 'convex-database' },
-};
+/** All tech-tool metadata — derived from plugin configs. */
+const TECH_TOOL_INFO: Record<TechTool, ToolInfo> = Object.fromEntries(
+  TECH_PLUGINS.map((p) => [p.id, { tech: p.name, skill: p.skillName, mcpServer: p.mcpServerKey }])
+) as Record<TechTool, ToolInfo>;
 
-/** Display name for each PM choice */
-const PM_LABELS: Record<Exclude<PmChoice, 'none'>, { tech: string; skill: string }> = {
-  linear: { tech: 'Linear', skill: 'task-management' },
-  jira: { tech: 'Jira', skill: 'jira-management' },
-};
+/** All team-tool metadata — derived from plugin configs. */
+const TEAM_TOOL_INFO: Record<TeamTool, ToolInfo> = Object.fromEntries(
+  TEAM_PLUGINS.map((p) => [p.id, { tech: p.name, skill: p.skillName, mcpServer: p.mcpServerKey }])
+) as Record<TeamTool, ToolInfo>;
 
-/** Display name for each notifications choice */
-const NOTIF_LABELS: Record<Exclude<NotifChoice, 'none'>, { tech: string; skill: string }> = {
-  slack: { tech: 'Slack', skill: 'slack-notifications' },
-  teams: { tech: 'Teams', skill: 'teams-notifications' },
-};
+/** CMS-related tech tools. */
+const CMS_TOOLS: readonly TechTool[] = CMS_PLUGINS.map((p) => p.id) as TechTool[];
+/** Database-related tech tools. */
+const DB_TOOLS: readonly TechTool[] = DB_PLUGINS.map((p) => p.id) as TechTool[];
 
-// ── Exclusion / inclusion maps ────────────────────────────────
-
-/** Skills to EXCLUDE based on CMS choice */
-const CMS_SKILL_MAP: Record<CmsChoice, string[]> = {
-  sanity: ['contentful-cms', 'strapi-cms'],
-  contentful: ['sanity-cms', 'strapi-cms'],
-  strapi: ['sanity-cms', 'contentful-cms'],
-  none: ['sanity-cms', 'contentful-cms', 'strapi-cms'],
-};
-
-/** Skills to EXCLUDE based on DB choice */
-const DB_SKILL_MAP: Record<DbChoice, string[]> = {
-  supabase: ['convex-database'],
-  convex: ['supabase-database'],
-  none: ['supabase-database', 'convex-database'],
-};
-
-/** Skills to EXCLUDE based on PM choice */
-const PM_SKILL_MAP: Record<PmChoice, string[]> = {
-  linear: ['jira-management'],
-  jira: ['task-management'],
-  none: ['task-management', 'jira-management'],
-};
-
-/** Agents to EXCLUDE based on CMS choice */
-const CMS_AGENT_EXCLUSIONS: Record<CmsChoice, string[]> = {
-  sanity: [],
-  contentful: [],
-  strapi: [],
-  none: ['content-engineer.agent.md'],
-};
-
-/** Agents to EXCLUDE based on DB choice */
-const DB_AGENT_EXCLUSIONS: Record<DbChoice, string[]> = {
-  supabase: [],
-  convex: [],
-  none: ['database-engineer.agent.md'],
-};
-
-/** MCP server keys to INCLUDE based on CMS choice */
-const CMS_MCP_MAP: Record<CmsChoice, string[]> = {
-  sanity: ['Sanity'],
-  contentful: ['Contentful'],
-  strapi: ['Strapi'],
-  none: [],
-};
-
-/** MCP server keys to INCLUDE based on DB choice */
-const DB_MCP_MAP: Record<DbChoice, string[]> = {
-  supabase: ['Supabase'],
-  convex: ['Convex'],
-  none: [],
-};
-
-/** MCP server keys to INCLUDE based on PM choice */
-const PM_MCP_MAP: Record<PmChoice, string[]> = {
-  linear: ['Linear'],
-  jira: ['Jira'],
-  none: [],
-};
-
-/** Skills to EXCLUDE based on notifications choice */
-const NOTIF_SKILL_MAP: Record<NotifChoice, string[]> = {
-  slack: ['teams-notifications'],
-  teams: ['slack-notifications'],
-  none: ['slack-notifications', 'teams-notifications'],
-};
-
-/** MCP server keys to INCLUDE based on notifications choice */
-const NOTIF_MCP_MAP: Record<NotifChoice, string[]> = {
-  slack: ['Slack'],
-  teams: ['Teams'],
-  none: [],
-};
-
-/** Always-included MCP servers */
-const CORE_MCP_SERVERS = ['chrome-devtools'];
-
-/** MCP servers included only when detected in the repo */
+/** MCP servers auto-included when detected in the repo. */
 const DETECTED_MCP_MAP: Record<string, string> = {
   vercel: 'Vercel',
 };
@@ -123,46 +51,74 @@ export interface McpEnvRequirement {
 
 /**
  * Registry of MCP servers that require API keys via environment variables.
- * Only servers with `env` fields in mcp.json need to be listed here.
- * HTTP-based servers (Sanity, Slack, Vercel, etc.) handle auth via OAuth.
+ * Derived from plugin configs — only plugins with envVars are included.
  */
-const MCP_ENV_REQUIREMENTS: McpEnvRequirement[] = [
-  {
-    server: 'Linear',
-    envVar: 'LINEAR_API_KEY',
-    hint: 'Create at linear.app → Settings → API → Personal API keys',
-  },
-];
+const MCP_ENV_REQUIREMENTS: McpEnvRequirement[] = Object.values(PLUGINS)
+  .filter((p) => p.envVars.length > 0 && p.mcpServerKey)
+  .flatMap((p) =>
+    p.envVars.map((ev) => ({
+      server: p.mcpServerKey!,
+      envVar: ev.name,
+      hint: ev.hint,
+    }))
+  );
 
+// ── Exported helpers ──────────────────────────────────────────
+
+/**
+ * Skills to EXCLUDE — all tool-specific skills that are NOT selected.
+ */
 export function getExcludedSkills(stack: StackConfig): Set<string> {
-  return new Set([
-    ...CMS_SKILL_MAP[stack.cms],
-    ...DB_SKILL_MAP[stack.db],
-    ...PM_SKILL_MAP[stack.pm ?? 'none'],
-    ...NOTIF_SKILL_MAP[stack.notifications ?? 'none'],
-  ]);
+  const selectedIds = [...stack.techTools, ...stack.teamTools] as string[];
+  const includedSkills = new Set(getSelectedSkillNames(selectedIds));
+  return new Set(ALL_PLUGIN_SKILL_NAMES.filter((s) => !includedSkills.has(s)));
 }
 
+/**
+ * Plugin IDs to INCLUDE — the user's selected tools.
+ */
+export function getIncludedPluginIds(stack: StackConfig): Set<string> {
+  return new Set([...stack.techTools, ...stack.teamTools]);
+}
+
+/**
+ * Agents to EXCLUDE — content-engineer if no CMS, database-engineer if no DB.
+ */
 export function getExcludedAgents(stack: StackConfig): Set<string> {
-  return new Set([
-    ...CMS_AGENT_EXCLUSIONS[stack.cms],
-    ...DB_AGENT_EXCLUSIONS[stack.db],
-  ]);
+  const excluded = new Set<string>();
+  const hasCms = stack.techTools.some((t) => (CMS_TOOLS as readonly string[]).includes(t));
+  const hasDb = stack.techTools.some((t) => (DB_TOOLS as readonly string[]).includes(t));
+
+  if (!hasCms) excluded.add('content-engineer.agent.md');
+  if (!hasDb) excluded.add('database-engineer.agent.md');
+
+  return excluded;
 }
 
+/**
+ * MCP servers to INCLUDE — core + selected tools + auto-detected from repo.
+ */
 export function getIncludedMcpServers(stack: StackConfig, repoInfo?: RepoInfo): Set<string> {
-  const servers = new Set([
-    ...CORE_MCP_SERVERS,
-    ...CMS_MCP_MAP[stack.cms],
-    ...DB_MCP_MAP[stack.db],
-    ...PM_MCP_MAP[stack.pm ?? 'none'],
-    ...NOTIF_MCP_MAP[stack.notifications ?? 'none'],
-  ]);
+  const servers = new Set<string>();
+
+  for (const tool of stack.techTools) {
+    const server = TECH_TOOL_INFO[tool]?.mcpServer;
+    if (server) servers.add(server);
+  }
+  for (const tool of stack.teamTools) {
+    const server = TEAM_TOOL_INFO[tool]?.mcpServer;
+    if (server) servers.add(server);
+  }
 
   // Add servers for detected deployment targets
   for (const dep of repoInfo?.deployment ?? []) {
     const server = DETECTED_MCP_MAP[dep];
     if (server) servers.add(server);
+  }
+
+  // Auto-detect NX from monorepo info
+  if (repoInfo?.monorepo === 'nx' && !stack.techTools.includes('nx')) {
+    servers.add('Nx');
   }
 
   return servers;
@@ -189,7 +145,6 @@ export function getCustomizationsTransform(
   stack: StackConfig
 ): NonNullable<CopyDirOptions['transform']> {
   return (content: string, srcPath: string) => {
-    // Pre-fill skill matrix with CMS and DB bindings
     if (srcPath.endsWith('skill-matrix.md')) {
       return transformSkillMatrix(content, stack);
     }
@@ -204,23 +159,97 @@ export function getCustomizationsTransform(
 function transformSkillMatrix(content: string, stack: StackConfig): string {
   let result = content;
 
-  // Fill the database row
-  if (stack.db !== 'none') {
-    const { tech, skill } = DB_LABELS[stack.db];
-    result = result.replace(
-      /(\| `database`\s*\|)\s*\|(\s*\|)/,
-      `$1 ${tech} | \`${skill}\` $2`
-    );
+  // Find first selected DB tool
+  const db = stack.techTools.find((t) => (DB_TOOLS as readonly string[]).includes(t));
+  if (db) {
+    const info = TECH_TOOL_INFO[db as TechTool];
+    if (info?.skill) {
+      result = result.replace(
+        /(\| `database`\s*\|)\s*\|(\s*\|)/,
+        `$1 ${info.tech} | \`${info.skill}\` $2`
+      );
+    }
   }
 
-  // Fill the CMS row
-  if (stack.cms !== 'none') {
-    const { tech, skill } = CMS_LABELS[stack.cms];
-    result = result.replace(
-      /(\| `cms`\s*\|)\s*\|(\s*\|)/,
-      `$1 ${tech} | \`${skill}\` $2`
-    );
+  // Find first selected CMS tool
+  const cms = stack.techTools.find((t) => (CMS_TOOLS as readonly string[]).includes(t));
+  if (cms) {
+    const info = TECH_TOOL_INFO[cms as TechTool];
+    if (info?.skill) {
+      result = result.replace(
+        /(\| `cms`\s*\|)\s*\|(\s*\|)/,
+        `$1 ${info.tech} | \`${info.skill}\` $2`
+      );
+    }
   }
 
   return result;
+}
+
+// ── Agent tool injection ──────────────────────────────────────
+
+/**
+ * Compute tool injections per agent based on the user's selected stack.
+ * Returns a Map where key = agent name (e.g. 'content-engineer'), value = tools to inject.
+ */
+export function getAgentToolInjections(stack: StackConfig): Map<string, string[]> {
+  const injections = new Map<string, string[]>();
+  const selectedIds = [...stack.techTools, ...stack.teamTools] as string[];
+
+  for (const id of selectedIds) {
+    const plugin = PLUGINS[id];
+    if (!plugin?.agentToolMap) continue;
+
+    for (const [agentName, tools] of Object.entries(plugin.agentToolMap)) {
+      const existing = injections.get(agentName) ?? [];
+      existing.push(...tools);
+      injections.set(agentName, existing);
+    }
+  }
+
+  return injections;
+}
+
+/**
+ * Returns a transform callback that injects plugin-specific tools
+ * into agent file frontmatter based on the user's stack selection.
+ */
+export function getAgentTransform(
+  stack: StackConfig
+): NonNullable<CopyDirOptions['transform']> {
+  const injections = getAgentToolInjections(stack);
+
+  return (content: string, srcPath: string) => {
+    // Extract agent name from filename (e.g., 'content-engineer' from 'content-engineer.agent.md')
+    const match = srcPath.match(/([^/\\]+)\.agent\.md$/);
+    if (!match) return content;
+
+    const agentName = match[1];
+    const toolsToInject = injections.get(agentName);
+    if (!toolsToInject || toolsToInject.length === 0) return content;
+
+    // Parse the frontmatter to find the tools array
+    const fmMatch = content.match(/^(---\n)([\s\S]*?)\n(---\n)([\s\S]*)$/);
+    if (!fmMatch) return content;
+
+    const frontmatter = fmMatch[2];
+    const body = fmMatch[4];
+
+    // Find and modify the tools line
+    const toolsMatch = frontmatter.match(/^(tools:\s*\[)(.*?)(\]\s*)$/m);
+    if (!toolsMatch) return content;
+
+    const existingTools = toolsMatch[2];
+    const injectedToolsList = toolsToInject.map((t) => `'${t}'`).join(', ');
+    const newTools = existingTools
+      ? `${existingTools}, ${injectedToolsList}`
+      : injectedToolsList;
+
+    const newFrontmatter = frontmatter.replace(
+      toolsMatch[0],
+      `${toolsMatch[1]}${newTools}${toolsMatch[3]}`
+    );
+
+    return `---\n${newFrontmatter}\n---\n${body}`;
+  };
 }

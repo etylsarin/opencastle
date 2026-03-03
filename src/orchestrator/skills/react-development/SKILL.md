@@ -1,9 +1,9 @@
 ---
 name: react-development
-description: "React development standards for functional components, hooks, TypeScript integration, state management, styling with CSS Modules/Sass, and testing patterns. Use when creating or modifying React components, custom hooks, or component tests."
+description: "React development standards for functional components, hooks, TypeScript integration, state management, styling, and testing patterns. Use when creating or modifying React components, custom hooks, or component tests."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # React Development Standards
 
@@ -108,7 +108,7 @@ Modern React patterns following the official React documentation at https://reac
 - Co-locate tests in `__tests__` subdirectory.
 - **CRITICAL**: Never mix static imports and `require()` for lazy-loaded libraries in tests.
 - Use `jest.requireMock()` instead of `require()` in test functions.
-- Use `jest.requireActual()` in mock setup.
+- Use `jest.requireActual()` or equivalent in mock setup.
 
 ## Security
 

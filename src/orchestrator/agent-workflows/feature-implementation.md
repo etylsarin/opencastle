@@ -1,4 +1,4 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Workflow: Feature Implementation
 
@@ -77,7 +77,7 @@ Run the `brainstorm` prompt when the task has ambiguity, multiple valid approach
 
 ### Steps
 
-1. Read `docs/PROJECT.md`, `docs/KNOWN-ISSUES.md`, `.github/customizations/LESSONS-LEARNED.md`
+1. Read `.github/customizations/project.instructions.md`, `.github/customizations/KNOWN-ISSUES.md`, `.github/customizations/LESSONS-LEARNED.md`
 2. Search codebase for existing implementations
 3. Identify affected apps, libs, and layers
 4. **Spec flow analysis** — Trace the complete user flow end-to-end and identify:
@@ -86,8 +86,8 @@ Run the `brainstorm` prompt when the task has ambiguity, multiple valid approach
    - Edge cases (network failure, invalid data, concurrent access, empty collections)
    - Missing paths in the spec ("what happens when X?")
    - Accessibility flows (keyboard navigation, screen reader announcements)
-   - Document findings as acceptance criteria on the Linear issues
-5. Decompose into Linear issues with file partitions
+   - Document findings as acceptance criteria on the tracker issues
+5. Decompose into tracker issues with file partitions
 6. **Surface Open Questions** — Collect ambiguities, design choices, and assumptions that need user input. Present as a structured list for approval before proceeding.
 7. Create session checkpoint
 
@@ -112,7 +112,7 @@ If there are no open questions, explicitly state: "No open questions — plan is
 
 - [ ] All relevant docs read
 - [ ] **User flow traced** — all states, transitions, and edge cases documented
-- [ ] Linear issues created for every subtask (including edge case coverage)
+- [ ] Tracker issues created for every subtask (including edge case coverage)
 - [ ] File partitions mapped (no overlaps)
 - [ ] Dependencies identified
 - [ ] **Open questions answered** by user (or none identified)
@@ -202,19 +202,19 @@ If there are no open questions, explicitly state: "No open questions — plan is
 1. Review all output contracts from Phases 2-4
 2. Run full lint + test + build across all affected projects
 3. Verify no files outside partitions were modified
-4. Check all Linear issue acceptance criteria
+4. Check all tracker issue acceptance criteria
 5. Run panel review if high-stakes (security, DB, architecture)
 6. Move all issues to Done
 7. Update session checkpoint → delete checkpoint
-8. Update `docs/ROADMAP-POST-MVP.md`
+8. Update `.github/customizations/project/roadmap.md`
 
 ### Exit Criteria
 
 - [ ] All phases verified
-- [ ] All Linear issues Done
+- [ ] All tracker issues Done
 - [ ] Full build passes
 - [ ] Roadmap updated
-- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), Linear linked
+- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
 
 ---
 
@@ -222,4 +222,4 @@ If there are no open questions, explicitly state: "No open questions — plan is
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >
-> Commit → Push → PR → Linear linkage. Team Lead owns delivery.
+> Commit → Push → PR → tracker linkage. Team Lead owns delivery.

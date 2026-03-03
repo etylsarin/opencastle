@@ -2,10 +2,10 @@
 description: 'Software architect for strategic architecture decisions, roadmap planning, ADRs, system design, and technology evaluation.'
 name: 'Architect'
 model: Claude Opus 4.6
-tools: ['search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'search', 'search/usages', 'execute/runInTerminal', 'execute/getTerminalOutput', 'read/terminalLastCommand', 'nx-mcp-server/nx_workspace', 'nx-mcp-server/nx_project_details', 'nx-mcp-server/nx_visualize_graph']
+tools: ['search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'search', 'search/usages', 'execute/runInTerminal', 'execute/getTerminalOutput', 'read/terminalLastCommand']
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Software Architect
 

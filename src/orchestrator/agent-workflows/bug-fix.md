@@ -1,4 +1,4 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Workflow: Bug Fix
 
@@ -29,23 +29,23 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 ### Steps
 
-1. Check `docs/KNOWN-ISSUES.md` for existing entry
-2. Check Linear for existing bug ticket
+1. Check `.github/customizations/KNOWN-ISSUES.md` for existing entry
+2. Check tracker for existing bug ticket
 3. Read `.github/customizations/LESSONS-LEARNED.md` for related pitfalls
 4. **Reproduce the bug** — this is mandatory before any fix attempt:
-   a. Start the dev server: `yarn nx run <app>:serve`
+   a. Start the dev server (see the **codebase-tool** skill for the serve command)
    b. Navigate to the affected page in Chrome
    c. Follow the reproduction steps from the bug report
    d. **Confirm the failure** — screenshot the broken state as evidence
    e. If the bug **cannot be reproduced**, document what was tried and ask the reporter for more detail. Do NOT proceed to Phase 2 without reproduction
 5. Assess severity (Critical/High/Medium/Low)
-6. Create Linear issue with `[Bug]` prefix and `bug` label, including reproduction steps and screenshot
+6. Create tracker issue with `[Bug]` prefix and `bug` label, including reproduction steps and screenshot
 
 ### Exit Criteria
 
 - [ ] Bug **confirmed reproduced** with screenshot evidence (or documented as non-reproducible with investigation notes)
 - [ ] Severity assessed
-- [ ] Linear issue created with reproduction steps and screenshot
+- [ ] Tracker issue created with reproduction steps and screenshot
 - [ ] Affected apps identified (see `project.instructions.md` for inventory)
 
 ---
@@ -66,7 +66,7 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
    - Race condition (timing, hydration mismatch)
    - CSS/Layout (specificity, overflow, responsive)
    - Integration (API contract mismatch, schema drift)
-5. Update Linear issue with root cause and affected files
+5. Update tracker issue with root cause and affected files
 
 ### Exit Criteria
 
@@ -109,17 +109,17 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 3. Verify the bug is fixed in Chrome (screenshot the working state)
 4. Test adjacent features for regressions
 5. If security-related: schedule panel review
-6. Move Linear issue to Done
-7. Update `docs/KNOWN-ISSUES.md` if the bug was listed there
+6. Move tracker issue to Done
+7. Update `.github/customizations/KNOWN-ISSUES.md` if the bug was listed there
 8. Commit and push
 
 ### Exit Criteria
 
 - [ ] Bug confirmed fixed with screenshot
 - [ ] No regressions introduced
-- [ ] Linear issue moved to Done
+- [ ] Tracker issue moved to Done
 - [ ] Known issues updated (if applicable)
-- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), Linear linked
+- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
 
 ---
 
@@ -127,4 +127,4 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >
-> Commit → Push → PR → Linear linkage. Team Lead owns delivery.
+> Commit → Push → PR → tracker linkage. Team Lead owns delivery.

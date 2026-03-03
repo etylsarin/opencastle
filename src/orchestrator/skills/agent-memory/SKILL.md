@@ -3,7 +3,7 @@ name: agent-memory
 description: "Agent expertise tracking and cross-session knowledge graph. Use when delegating tasks to track agent strengths/weaknesses, or when building context about file relationships and patterns."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Agent Memory Protocol
 
@@ -30,7 +30,7 @@ Template structure:
 ### Weak Areas
 | Area | Evidence | Last Updated |
 |------|----------|-------------|
-| CSS Modules | Required 2 retries on styling task (TAS-AA) | YYYY-MM-DD |
+| Styling approach | Required 2 retries on styling task (TAS-AA) | YYYY-MM-DD |
 
 ### File Familiarity
 - `apps/tastebeer.eu/app/places/` — 3 tasks completed
@@ -67,8 +67,8 @@ Add relevant expertise context to delegation prompts. Example addition:
 
 ```
 ### Agent Context (from expertise registry)
-- Strong: Server Components, GROQ queries (3 successful tasks)
-- Weak: CSS Modules (1 retry on TAS-AA)
+- Strong: Server Components, CMS queries (3 successful tasks)
+- Weak: Component styling (1 retry on TAS-AA)
 - Familiar files: libs/queries/src/lib/search/ (2 tasks)
 ```
 
@@ -95,7 +95,7 @@ Capture structured relationships between concepts, files, agents, and decisions.
 |-------------|---------|---------|
 | `depends-on` | X requires Y to function | `F:places/page.tsx depends-on F:searchModule.ts` |
 | `caused-by` | X was caused by Y | `B:KI-042 caused-by D:use-server-components` |
-| `expert-in` | Agent X has expertise in Y | `A:Content Engineer expert-in P:GROQ-queries` |
+| `expert-in` | Agent X has expertise in Y | `A:Content Engineer expert-in P:CMS-queries` |
 | `related-to` | Loose conceptual connection | `L:LES-15 related-to P:RLS-policies` |
 | `obsoletes` | X replaces/supersedes Y | `D:use-app-router obsoletes D:use-pages-router` |
 | `blocks` | X prevents Y from working | `B:KI-099 blocks F:auth/middleware.ts` |
@@ -113,8 +113,8 @@ Template structure:
 
 | Source | Relationship | Target | Added | Context |
 |--------|-------------|--------|-------|---------|
-| A:Security Expert | expert-in | P:RLS-policies | 2026-02-23 | Completed 3 RLS audits |
-| F:searchModule.ts | depends-on | F:sanity-client.ts | 2026-02-23 | Search uses Sanity client |
+| A:Content Engineer | expert-in | P:CMS-queries | 2026-02-23 | Completed 3 CMS query tasks |
+| F:searchModule.ts | depends-on | F:cms-client.ts | 2026-02-23 | Search uses CMS client |
 | L:LES-15 | related-to | P:cookie-sessions | 2026-02-23 | Lesson about auth token format |
 ```
 

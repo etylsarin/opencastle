@@ -1,4 +1,4 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Workflow: Code Refactoring
 
@@ -32,16 +32,16 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 1. Identify all files and modules in scope for refactoring
 2. Document current behavior (screenshots, test outputs, API responses)
-3. Run baseline tests: `yarn nx run <project>:test --coverage`
-4. Run baseline lint: `yarn nx run <project>:lint`
+3. Run baseline tests (with coverage) for the project — see the **codebase-tool** skill for commands
+4. Run baseline lint for the project
 5. Record baseline metrics (test count, coverage %, lint errors, bundle size)
-6. Create Linear issues for the refactoring scope
+6. Create tracker issues for the refactoring scope
 
 ### Exit Criteria
 
 - [ ] Scope documented with file list
 - [ ] Baseline metrics recorded
-- [ ] Linear issues created
+- [ ] Tracker issues created
 
 ---
 
@@ -96,9 +96,9 @@ The refactoring agent owns only the scoped files. No changes outside the partiti
 
 ### Steps
 
-1. Run full test suite: `yarn nx run <project>:test`
-2. Run lint: `yarn nx run <project>:lint`
-3. Run build: `yarn nx run <project>:build`
+1. Run full test suite for the project
+2. Run lint for the project
+3. Run build for the project
 4. Compare metrics against Phase 1 baseline (test count, coverage, bundle size)
 5. For UI refactors: start dev server and visually verify at all breakpoints
 6. Verify no regressions in dependent code
@@ -133,7 +133,7 @@ The refactoring agent owns only the scoped files. No changes outside the partiti
 ### Exit Criteria
 
 - [ ] Panel PASS (2/3 majority)
-- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), Linear linked
+- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
 
 ---
 
@@ -141,4 +141,4 @@ The refactoring agent owns only the scoped files. No changes outside the partiti
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >
-> Commit → Push → PR → Linear linkage. Team Lead owns delivery.
+> Commit → Push → PR → tracker linkage. Team Lead owns delivery.

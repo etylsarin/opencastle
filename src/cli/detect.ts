@@ -423,30 +423,30 @@ function cleanEmpty(info: RepoInfoInternal): RepoInfo {
 
 /**
  * Merge user-declared stack choices into the auto-detected repoInfo.
- * Adds CMS, DB, PM, and notifications from the questionnaire so
+ * Adds tech tools and team tools from the questionnaire so
  * repoInfo becomes the single combined source of truth.
  */
 export function mergeStackIntoRepoInfo(info: RepoInfo, stack: StackConfig): RepoInfo {
   const merged = { ...info };
 
-  // CMS
-  if (stack.cms !== 'none') {
-    merged.cms = addUniqueToArray(merged.cms, stack.cms);
+  for (const tool of stack.techTools) {
+    if (['sanity', 'contentful', 'strapi'].includes(tool)) {
+      merged.cms = addUniqueToArray(merged.cms, tool);
+    } else if (['supabase', 'convex'].includes(tool)) {
+      merged.databases = addUniqueToArray(merged.databases, tool);
+    } else if (tool === 'vercel') {
+      merged.deployment = addUniqueToArray(merged.deployment, tool);
+    } else if (tool === 'nx') {
+      merged.monorepo = merged.monorepo ?? 'nx';
+    }
   }
 
-  // Database
-  if (stack.db !== 'none') {
-    merged.databases = addUniqueToArray(merged.databases, stack.db);
-  }
-
-  // Project management
-  if (stack.pm !== 'none') {
-    merged.pm = addUniqueToArray(merged.pm, stack.pm);
-  }
-
-  // Notifications
-  if (stack.notifications !== 'none') {
-    merged.notifications = addUniqueToArray(merged.notifications, stack.notifications);
+  for (const tool of stack.teamTools) {
+    if (['linear', 'jira'].includes(tool)) {
+      merged.pm = addUniqueToArray(merged.pm, tool);
+    } else if (['slack', 'teams'].includes(tool)) {
+      merged.notifications = addUniqueToArray(merged.notifications, tool);
+    }
   }
 
   return merged;

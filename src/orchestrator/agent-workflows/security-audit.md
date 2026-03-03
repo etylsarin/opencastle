@@ -1,4 +1,4 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Workflow: Security Audit
 
@@ -31,19 +31,19 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 ### Steps
 
 1. Define audit scope (full audit vs. targeted area)
-2. Read `docs/PROJECT.md` security sections
-3. Read `docs/KNOWN-ISSUES.md` for existing security items
+2. Read `.github/customizations/project.instructions.md` security sections
+3. Read `.github/customizations/KNOWN-ISSUES.md` for existing security items
 4. Check current CSP configuration in `next.config.js`
 5. Review auth flow (see database/auth customization for library paths)
 6. Map all API routes and Server Actions
-7. Create Linear issue for the audit
+7. Create tracker issue for the audit
 
 ### Exit Criteria
 
 - [ ] Scope defined (which apps, libs, routes)
 - [ ] Existing security docs reviewed
 - [ ] Attack surface mapped
-- [ ] Linear issue created
+- [ ] Tracker issue created
 
 ---
 
@@ -114,7 +114,7 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 ### Exit Criteria
 
 - [ ] Panel completed (PASS or BLOCK)
-- [ ] Panel report linked to Linear issue
+- [ ] Panel report linked to tracker issue
 - [ ] If BLOCK: MUST-FIX items extracted
 
 ---
@@ -127,19 +127,19 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 ### Steps
 
 1. Fix Critical and High severity findings first
-2. Create separate Linear issues for Medium/Low findings if not fixing now
+2. Create separate tracker issues for Medium/Low findings if not fixing now
 3. Run verification after each fix
 4. Re-run panel review if initial panel BLOCKed
-5. Update `docs/KNOWN-ISSUES.md` for any accepted risks
+5. Update `.github/customizations/KNOWN-ISSUES.md` for any accepted risks
 
 ### Exit Criteria
 
 - [ ] Critical/High findings remediated
-- [ ] Medium/Low findings tracked in Linear
+- [ ] Medium/Low findings tracked in tracker
 - [ ] Panel review passed (if applicable)
 - [ ] Known issues updated for accepted risks
-- [ ] All Linear issues updated
-- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), Linear linked
+- [ ] All tracker issues updated
+- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
 
 ---
 
@@ -147,4 +147,4 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >
-> Commit → Push → PR → Linear linkage. Team Lead owns delivery.
+> Commit → Push → PR → tracker linkage. Team Lead owns delivery.

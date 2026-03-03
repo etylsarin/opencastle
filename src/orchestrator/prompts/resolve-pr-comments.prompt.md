@@ -3,7 +3,7 @@ description: 'Resolve GitHub PR review comments by reading them, grouping by fil
 agent: Team Lead
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Resolve PR Comments
 
@@ -57,7 +57,7 @@ Acceptance criteria:
 
 ### Phase 4: Verify & Report
 
-1. **Run verification** — `yarn nx affected -t lint,test,build` on all affected projects
+1. **Run verification** — run lint, test, and build for all affected projects (see the **codebase-tool** skill for commands)
 2. **Commit fixes** — Use descriptive commit messages referencing the PR: `TAS-XX: Address PR review — [summary]`
 3. **Push to the same branch** — The PR updates automatically
 4. **Report back** — Provide a structured summary of what was resolved

@@ -3,7 +3,7 @@ description: 'Generate a valid opencastle.tasks.yml spec file for autonomous ove
 agent: Team Lead
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Generate Task Spec for Autonomous Run
 
@@ -107,11 +107,11 @@ Each task `prompt` must be a **complete, standalone instruction**. Include:
 - **Why** — business context so the agent can make good decisions.
 - **Constraints** — coding standards, conventions, do-not-touch files.
 - **Acceptance criteria** — bullet list of pass conditions.
-- **Verification command** — e.g., `Run: yarn nx run project:test` so the agent self-checks.
+- **Verification command** — e.g., `Run the project's test command with coverage` (see the **codebase-tool** skill) so the agent self-checks.
 
 > **Weak prompt:** "Add tests for the auth module."
 >
-> **Strong prompt:** "Write unit tests for `libs/auth/src/server.ts` covering token refresh, expiry edge cases, and invalid signatures. Place tests in `libs/auth/src/__tests__/server.test.ts`. Follow the existing Jest conventions (see `jest.preset.js`). Achieve ≥ 95 % coverage for `server.ts`. Run: `yarn nx run auth:test --coverage` and fix any failures."
+> **Strong prompt:** "Write unit tests for `libs/auth/src/server.ts` covering token refresh, expiry edge cases, and invalid signatures. Place tests in `libs/auth/src/__tests__/server.test.ts`. Follow the existing test conventions. Achieve ≥ 95 % coverage for `server.ts`. Run the project's test command with coverage (see the **codebase-tool** skill) and fix any failures."
 
 ### 6. Validate Before Outputting
 

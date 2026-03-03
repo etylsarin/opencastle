@@ -14,6 +14,19 @@ function moveUp(n: number): string {
   return n > 0 ? `${CSI}${n}A` : '';
 }
 
+// ── Color helpers ─────────────────────────────────────────────────
+
+/** ANSI color helpers for CLI output. */
+export const c = {
+  cyan: (s: string) => `\x1B[36m${s}\x1B[0m`,
+  green: (s: string) => `\x1B[32m${s}\x1B[0m`,
+  yellow: (s: string) => `\x1B[33m${s}\x1B[0m`,
+  red: (s: string) => `\x1B[31m${s}\x1B[0m`,
+  bold: (s: string) => `\x1B[1m${s}\x1B[0m`,
+  dim: (s: string) => `\x1B[2m${s}\x1B[0m`,
+  magenta: (s: string) => `\x1B[35m${s}\x1B[0m`,
+};
+
 // ── Line-buffered readline ────────────────────────────────────────
 // readline.question() drops lines that arrived between calls because
 // it only listens for the NEXT 'line' event.  When piped input
@@ -235,4 +248,167 @@ export async function confirm(
 
   if (!answer.trim()) return defaultYes;
   return answer.trim().toLowerCase().startsWith('y');
+}
+
+// ── Multiselect ───────────────────────────────────────────────────
+
+/**
+ * Interactive multi-choice selection prompt.
+ *
+ * TTY mode:  arrow-key navigation (↑/↓), Space to toggle, Enter to confirm.
+ * Piped mode: falls back to comma-separated number input.
+ *
+ * Returns an array of selected values (possibly empty).
+ */
+export async function multiselect(
+  message: string,
+  options: SelectOption[]
+): Promise<string[]> {
+  if (stdin.isTTY) {
+    return multiselectInteractive(message, options);
+  }
+  return multiselectNumbered(message, options);
+}
+
+// ── Arrow-key multiselect (TTY) ───────────────────────────────────
+
+function renderMultiselectOptions(
+  options: SelectOption[],
+  cursor: number,
+  selected: Set<number>,
+  initial: boolean
+): void {
+  if (!initial) {
+    stdout.write(moveUp(options.length));
+  }
+
+  for (let i = 0; i < options.length; i++) {
+    const active = i === cursor;
+    const checked = selected.has(i);
+    const checkbox = checked ? `\x1B[32m✔\x1B[0m` : ' ';
+    const marker = active ? '❯' : ' ';
+    const hint = options[i].hint ? ` ${c.dim('—')} ${c.dim(options[i].hint!)}` : '';
+    const label = active
+      ? `\x1B[36m${options[i].label}\x1B[0m${hint}`
+      : `${options[i].label}${hint}`;
+    stdout.write(`${ERASE_LINE}\r    ${marker} [${checkbox}] ${label}\n`);
+  }
+}
+
+function multiselectInteractive(
+  message: string,
+  options: SelectOption[]
+): Promise<string[]> {
+  return new Promise<string[]>((resolve) => {
+    let cursor = 0;
+    const selected = new Set<number>();
+    // Pre-select options marked as selected
+    for (let i = 0; i < options.length; i++) {
+      if (options[i].selected) selected.add(i);
+    }
+
+    if (_rl) _rl.pause();
+
+    stdout.write(`\n  ${message} ${c.dim('(↑/↓ navigate, Space toggle, Enter confirm)')}\n\n`);
+    stdout.write(HIDE_CURSOR);
+    renderMultiselectOptions(options, cursor, selected, true);
+
+    stdin.setRawMode(true);
+    stdin.resume();
+
+    const onData = (data: Buffer): void => {
+      const key = data.toString();
+
+      // Arrow up or k
+      if (key === `${ESC}[A` || key === 'k') {
+        cursor = (cursor - 1 + options.length) % options.length;
+        renderMultiselectOptions(options, cursor, selected, false);
+        return;
+      }
+
+      // Arrow down or j
+      if (key === `${ESC}[B` || key === 'j') {
+        cursor = (cursor + 1) % options.length;
+        renderMultiselectOptions(options, cursor, selected, false);
+        return;
+      }
+
+      // Space — toggle selection
+      if (key === ' ') {
+        if (selected.has(cursor)) {
+          selected.delete(cursor);
+        } else {
+          selected.add(cursor);
+        }
+        renderMultiselectOptions(options, cursor, selected, false);
+        return;
+      }
+
+      // Enter — confirm
+      if (key === '\r' || key === '\n') {
+        cleanup();
+        // Final render
+        stdout.write(moveUp(options.length));
+        for (let i = 0; i < options.length; i++) {
+          const checked = selected.has(i);
+          const hint = options[i].hint ? ` ${c.dim('—')} ${c.dim(options[i].hint!)}` : '';
+          const checkbox = checked ? `\x1B[32m✔\x1B[0m` : ' ';
+          const label = checked
+            ? `\x1B[36m${options[i].label}\x1B[0m${hint}`
+            : `\x1B[2m${options[i].label}${hint}\x1B[0m`;
+          stdout.write(`${ERASE_LINE}\r      [${checkbox}] ${label}\n`);
+        }
+        stdout.write('\n');
+        resolve(Array.from(selected).sort().map(i => options[i].value));
+        return;
+      }
+
+      // Ctrl+C
+      if (key === '\x03') {
+        cleanup();
+        stdout.write('\n');
+        process.exit(130);
+      }
+    };
+
+    function cleanup(): void {
+      stdin.removeListener('data', onData);
+      stdin.setRawMode(false);
+      stdout.write(SHOW_CURSOR);
+      if (_rl) _rl.resume();
+    }
+
+    stdin.on('data', onData);
+  });
+}
+
+// ── Number-based multiselect (piped / non-TTY) ────────────────────
+
+async function multiselectNumbered(
+  message: string,
+  options: SelectOption[]
+): Promise<string[]> {
+  console.log(`\n  ${message}\n`);
+  options.forEach((opt, i) => {
+    const hint = opt.hint ? ` — ${opt.hint}` : '';
+    console.log(`    ${i + 1}) ${opt.label}${hint}`);
+  });
+
+  const preselected = options
+    .map((opt, i) => (opt.selected ? i + 1 : null))
+    .filter((n): n is number => n !== null);
+  const defaultHint = preselected.length > 0 ? preselected.join(',') : 'none';
+  const answer = await nextLine(`\n  Select [comma-separated, e.g. 1,3] or Enter for ${defaultHint}: `);
+  if (!answer.trim()) {
+    return preselected.map(n => options[n - 1].value);
+  }
+
+  const nums = answer.split(',').map(s => parseInt(s.trim(), 10));
+  const result: string[] = [];
+  for (const num of nums) {
+    if (num >= 1 && num <= options.length) {
+      result.push(options[num - 1].value);
+    }
+  }
+  return result;
 }

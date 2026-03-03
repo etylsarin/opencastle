@@ -11,7 +11,7 @@ Project-specific agent-to-model assignments and scope examples referenced by the
 |-------|-------|------|----------|
 | **Developer** | Gemini 3.1 Pro | Standard | Full-stack feature implementation, pages, components, routing, API routes |
 | **Testing Expert** | GPT-5.3-Codex | Utility | E2E tests, browser validation, terminal-heavy test loops |
-| **Content Engineer** | Gemini 3.1 Pro | Standard | CMS schema, GROQ queries, MCP tool coordination |
+| **Content Engineer** | Gemini 3.1 Pro | Standard | CMS schema, content queries, MCP tool coordination |
 | **Database Engineer** | Gemini 3.1 Pro | Standard | Migrations, RLS policies, SQL optimization |
 | **UI/UX Expert** | Gemini 3.1 Pro | Standard | Components, styling, accessibility |
 | **Performance Expert** | Gemini 3.1 Pro | Standard | Bundle size, Core Web Vitals, profiling |

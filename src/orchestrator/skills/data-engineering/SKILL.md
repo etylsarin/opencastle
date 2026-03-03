@@ -1,9 +1,9 @@
 ---
 name: data-engineering
-description: "Data pipeline ETL workflows, web scraping with Puppeteer, NDJSON processing, and CMS data import. Use when building scrapers, processing data, running CLI tools, or importing to a CMS."
+description: "Data pipeline ETL workflows, web scraping, NDJSON processing, and CMS data import. Use when building scrapers, processing data, running CLI tools, or importing to a CMS."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Data Engineering
 
@@ -31,9 +31,12 @@ abstract class BaseScraper {
 }
 ```
 
-### Puppeteer Cluster Setup
+### Browser-Based Scraper Setup
+
+Use a headless browser cluster for concurrent scraping (e.g., Puppeteer Cluster, Playwright):
 
 ```typescript
+// Example using Puppeteer Cluster — adapt to your project's scraping library
 const cluster = await Cluster.launch({
   concurrency: Cluster.CONCURRENCY_CONTEXT,
   maxConcurrency: config.concurrency,
@@ -53,7 +56,7 @@ const cluster = await Cluster.launch({
 - Random delays between requests (2-5 seconds default)
 - Randomize viewport sizes
 - Block unnecessary resources (images, fonts, CSS) for speed
-- Use stealth plugin for Puppeteer
+- Use stealth plugin for the scraping library
 - Request interception for resource optimization
 
 ### Error Recovery

@@ -1,9 +1,9 @@
 ---
-description: 'Collect and report metrics from agent logs, GitHub PRs, Linear issues, and Vercel deployments'
+description: 'Collect and report metrics from agent logs, GitHub PRs, tracker issues, and deployments'
 agent: Researcher
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Metrics Report
 
@@ -46,9 +46,9 @@ Compute:
 - **Commit frequency** — commits per day/week on main
 - **Bogus/closed PRs** — PRs closed without merge (potential failed agent work)
 
-### 3. Linear Issues
+### 3. Tracker Issues
 
-Use Linear MCP tools (`list_issues`, `search_issues`):
+Use tracker MCP tools (`list_issues`, `search_issues`):
 
 ```
 list_issues with status filter for each state: Backlog, Todo, In Progress, Done, Cancelled
@@ -62,9 +62,9 @@ Compute:
 - **Cycle time** — average time from In Progress → Done (if dates available)
 - **Stale issues** — In Progress for >7 days without updates
 
-### 4. Vercel Deployments
+### 4. Deployments
 
-Use Vercel MCP tools (`list_deployments`, `get_deployment`):
+Use deployment platform tools (if available via MCP or CLI):
 
 Query deployments for all configured apps (see `project.instructions.md` for the app inventory).
 
@@ -74,7 +74,7 @@ Compute:
 - **Failure rate** — error / total
 - **Build times** — average, median, p95
 - **Deployments per day** — activity timeline
-- **Failed deployment details** — which commits/branches failed and why (use `get_deployment_build_logs` for recent failures)
+- **Failed deployment details** — which commits/branches failed and why
 
 ### 5. Panel Reviews (local)
 
@@ -110,7 +110,7 @@ Present the report as a structured markdown summary with these sections:
 - X agent sessions, Y% success rate
 - Z PRs merged, W% merge rate  
 - N deployments, M% success rate
-- P Linear issues completed
+- P tracker issues completed
 
 ## Agent Activity
 {sessions table, success rates, model usage}
@@ -121,10 +121,10 @@ Present the report as a structured markdown summary with these sections:
 ## GitHub
 {PR stats, merge rates, commit frequency}
 
-## Linear Board
+## Task Board
 {issue distribution, completion rate, stale issues}
 
-## Vercel Deployments
+## Deployments
 {success rate, failure rate, build times}
 
 ## Panel Reviews
@@ -141,4 +141,4 @@ Present the report as a structured markdown summary with these sections:
 
 Run this prompt periodically (weekly recommended) to track project health. Compare with previous reports to identify trends.
 
-If session logs are empty (no data yet), still collect GitHub/Linear/Vercel data and note that agent logging has just been enabled.
+If session logs are empty (no data yet), still collect GitHub/tracker/deployment data and note that agent logging has just been enabled.

@@ -29,7 +29,7 @@ Add a lesson when **any** of these occur:
 
 | Field | Value |
 |-------|-------|
-| **Category** | `linear` / `mcp-tools` / `nx-commands` / `terminal` / `next-js` / `sanity` / `supabase` / `git` / `vercel` / `browser-testing` / `general` |
+| **Category** | `task-management` / `mcp-tools` / `codebase-tool` / `terminal` / `framework` / `cms` / `database` / `git` / `deployment` / `browser-testing` / `general` |
 | **Added** | YYYY-MM-DD |
 | **Severity** | `high` (blocks work) / `medium` (wastes 5+ min) / `low` (minor annoyance) |
 
@@ -55,15 +55,15 @@ Add a lesson when **any** of these occur:
 
 | Category | Lessons |
 |----------|---------|
-| `linear` | — |
+| `task-management` | — |
 | `mcp-tools` | — |
-| `nx-commands` | — |
+| `codebase-tool` | — |
 | `terminal` | — |
-| `next-js` | — |
-| `sanity` | — |
-| `supabase` | — |
+| `framework` | — |
+| `cms` | — |
+| `database` | — |
 | `git` | — |
-| `vercel` | — |
+| `deployment` | — |
 | `browser-testing` | — |
 | `general` | — |
 
