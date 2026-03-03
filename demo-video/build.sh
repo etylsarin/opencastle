@@ -164,8 +164,9 @@ Set WindowBar Colorful"
   # ── Scene 2: Install
   # We need time for: typing + init prompts + output scroll
   # Audio fills naturally — just make sure total VHS time >= audio
+  # Fixed sleeps in tape ≈ 12.6s (including typing). Subtract 13 from audio.
   local sleep_install_end
-  sleep_install_end=$(to_vhs_sleep "$(echo "$dur_install - 15" | bc)")
+  sleep_install_end=$(to_vhs_sleep "$(echo "$dur_install - 13" | bc)")
   cat > tapes/02-install.tape << TAPE
 # Scene 2: Install
 Output clips/02-install.mp4
@@ -182,39 +183,42 @@ Type "npx opencastle init"
 Enter
 Sleep 2200ms
 
-# Let the first question be visible before first selection
-Sleep 1200ms
+# Wait for repo scanning and IDE question to appear
+Sleep 1500ms
 
-# IDE → VS Code (pause to let viewer read the question)
-Type "1"
+# ── IDEs (multiselect: ↑/↓ navigate, Space toggle, Enter confirm) ──
+# Cursor starts on VS Code — toggle it on
+Space
 Sleep 600ms
 Enter
 Sleep 1200ms
 
-# CMS → None
-Sleep 600ms
-Type "4"
-Sleep 600ms
-Enter
-Sleep 1200ms
-
-# DB → Supabase
-Sleep 600ms
-Type "1"
-Sleep 600ms
-Enter
-Sleep 1200ms
-
-# PM → Linear
-Sleep 600ms
-Type "1"
+# ── Tech Tools (multiselect) ─────────────────────────────────────────
+# Chrome DevTools is pre-selected. Navigate to Supabase (4th item).
+Sleep 800ms
+Down
+Sleep 300ms
+Down
+Sleep 300ms
+Down
+Sleep 300ms
+Space
 Sleep 600ms
 Enter
 Sleep 1200ms
 
-# Notifications → Slack
-Sleep 600ms
-Type "1"
+# ── Team Tools (multiselect) ─────────────────────────────────────────
+# Toggle Linear (1st item, cursor already there)
+Sleep 800ms
+Space
+Sleep 300ms
+# Navigate down to Slack (3rd item)
+Down
+Sleep 300ms
+Down
+Sleep 300ms
+# Toggle Slack
+Space
 Sleep 600ms
 Enter
 
