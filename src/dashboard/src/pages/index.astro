@@ -13,6 +13,12 @@ const base = import.meta.env.BASE_URL;
         <img class="dash-header__icon" src={`${base}icon-192.png`} alt="OpenCastle" width="32" height="32" />
         <h1 class="dash-header__title">Observability Dashboard</h1>
       </div>
+      <div class="dash-header__actions">
+        <button class="dash-btn dash-btn--ghost" id="export-btn" type="button" title="Export data as JSON">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Export
+        </button>
+      </div>
     </div>
   </header>
 
@@ -29,11 +35,40 @@ const base = import.meta.env.BASE_URL;
         <li><a class="dash-sidebar__link" href="#model-section" data-section="model-section">Models</a></li>
         <li><a class="dash-sidebar__link" href="#execution-section" data-section="execution-section">Exec Log</a></li>
         <li><a class="dash-sidebar__link" href="#panel-section" data-section="panel-section">Panels</a></li>
+        <li><a class="dash-sidebar__link" href="#reviews-section" data-section="reviews-section">Reviews</a></li>
         <li><a class="dash-sidebar__link" href="#sessions-section" data-section="sessions-section">Sessions</a></li>
       </ul>
     </nav>
 
   <main class="dash-main">
+    <!-- Filter Bar -->
+    <div class="filter-bar" id="filter-bar">
+      <div class="filter-group">
+        <label class="filter-label" for="filter-date-from">From</label>
+        <input class="filter-input" type="date" id="filter-date-from" />
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="filter-date-to">To</label>
+        <input class="filter-input" type="date" id="filter-date-to" />
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="filter-agent">Agent</label>
+        <select class="filter-select" id="filter-agent">
+          <option value="">All agents</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="filter-outcome">Outcome</label>
+        <select class="filter-select" id="filter-outcome">
+          <option value="">All outcomes</option>
+          <option value="success">Success</option>
+          <option value="partial">Partial</option>
+          <option value="failed">Failed</option>
+        </select>
+      </div>
+      <button class="dash-btn dash-btn--ghost filter-reset" id="filter-reset" type="button">Reset</button>
+    </div>
+
     <!-- KPI Row -->
     <section class="kpi-row" id="kpi-row" data-nav-section>
       <div class="kpi-card" id="kpi-sessions">
@@ -163,6 +198,17 @@ const base = import.meta.env.BASE_URL;
         <p class="chart-card__desc">Quality gate verdicts and fix items</p>
       </div>
       <div class="chart-card__body" id="panel-chart">
+        <div class="loading-skeleton"></div>
+      </div>
+    </section>
+
+    <!-- Fast Reviews -->
+    <section class="chart-card" id="reviews-section" data-nav-section>
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Fast Reviews</h2>
+        <p class="chart-card__desc">Single-reviewer quality gate results</p>
+      </div>
+      <div class="chart-card__body chart-card__body--table" id="reviews-table">
         <div class="loading-skeleton"></div>
       </div>
     </section>
@@ -321,7 +367,7 @@ const base = import.meta.env.BASE_URL;
 
   // ── KPI Rendering ────────────────────────────────────────
 
-  function renderKpis(sessions, delegations) {
+  function renderKpis(sessions, delegations, reviews) {
     const total = sessions.length;
     const isEmpty = total === 0;
     const successCount = sessions.filter((s) => s.outcome === 'success').length;
@@ -1103,22 +1149,75 @@ const base = import.meta.env.BASE_URL;
 
   // ── Main ──────────────────────────────────────────────────
 
-  async function main() {
-    const [sessions, delegations, panels] = await Promise.all([
-      loadNdjson(base + 'data/sessions.ndjson'),
-      loadNdjson(base + 'data/delegations.ndjson'),
-      loadNdjson(base + 'data/panels.ndjson'),
-    ]);
+  // Store raw data globally for filtering/export
+  let rawSessions = [];
+  let rawDelegations = [];
+  let rawPanels = [];
+  let rawReviews = [];
 
-    // Show/hide welcome banner
-    const allEmpty = sessions.length === 0 && delegations.length === 0 && panels.length === 0;
+  function applyFilters() {
+    const dateFrom = document.getElementById('filter-date-from').value;
+    const dateTo = document.getElementById('filter-date-to').value;
+    const agentFilter = document.getElementById('filter-agent').value;
+    const outcomeFilter = document.getElementById('filter-outcome').value;
+
+    function matchDate(ts) {
+      const date = ts.slice(0, 10);
+      if (dateFrom && date < dateFrom) return false;
+      if (dateTo && date > dateTo) return false;
+      return true;
+    }
+
+    const sessions = rawSessions.filter((s) => {
+      if (!matchDate(s.timestamp)) return false;
+      if (agentFilter && s.agent !== agentFilter) return false;
+      if (outcomeFilter && s.outcome !== outcomeFilter) return false;
+      return true;
+    });
+
+    const delegations = rawDelegations.filter((d) => {
+      if (!matchDate(d.timestamp)) return false;
+      if (agentFilter && d.agent !== agentFilter) return false;
+      if (outcomeFilter && d.outcome !== outcomeFilter) return false;
+      return true;
+    });
+
+    const panels = rawPanels.filter((p) => matchDate(p.timestamp));
+    const reviews = rawReviews.filter((r) => {
+      if (!matchDate(r.timestamp)) return false;
+      if (agentFilter && r.agent !== agentFilter) return false;
+      return true;
+    });
+
+    renderAll(sessions, delegations, panels, reviews);
+  }
+
+  function populateAgentFilter(sessions, delegations, reviews) {
+    const agents = new Set();
+    sessions.forEach((s) => agents.add(s.agent));
+    delegations.forEach((d) => agents.add(d.agent));
+    reviews.forEach((r) => agents.add(r.agent));
+    const select = document.getElementById('filter-agent');
+    if (!select) return;
+    // Keep the "All agents" option, remove old dynamic options
+    while (select.options.length > 1) select.remove(1);
+    Array.from(agents).sort().forEach((a) => {
+      const opt = document.createElement('option');
+      opt.value = a;
+      opt.textContent = a;
+      select.appendChild(opt);
+    });
+  }
+
+  function renderAll(sessions, delegations, panels, reviews) {
+    const allEmpty = sessions.length === 0 && delegations.length === 0 && panels.length === 0 && reviews.length === 0;
     if (allEmpty) {
       renderWelcomeBanner();
     } else {
       removeWelcomeBanner();
     }
 
-    renderKpis(sessions, delegations);
+    renderKpis(sessions, delegations, reviews);
     renderPipeline(delegations);
     renderAgentChart(sessions);
     renderTierChart(delegations);
@@ -1128,7 +1227,111 @@ const base = import.meta.env.BASE_URL;
     renderModelChart(sessions);
     renderExecutionLog(sessions);
     renderPanelChart(panels);
+    renderReviewsTable(reviews);
     renderSessionsTable(sessions);
+  }
+
+  // ── Reviews Table ─────────────────────────────────────────
+
+  function renderReviewsTable(reviews) {
+    const el = document.getElementById('reviews-table');
+    if (!el) return;
+
+    const sorted = reviews
+      .slice()
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, 20);
+
+    if (sorted.length === 0) {
+      el.innerHTML = emptyStateHtml('panels', 'No fast reviews yet', 'Single-reviewer quality gate results — with verdicts, issue counts, and escalation status — will be listed here.');
+      return;
+    }
+
+    el.innerHTML =
+      '<table class="sessions-table">' +
+      '<thead><tr>' +
+      '<th>Timestamp</th>' +
+      '<th>Agent</th>' +
+      '<th>Verdict</th>' +
+      '<th>Critical</th>' +
+      '<th>Major</th>' +
+      '<th>Minor</th>' +
+      '<th>Confidence</th>' +
+      '<th>Attempt</th>' +
+      '<th>Escalated</th>' +
+      '<th>Issue</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+      sorted
+        .map(
+          (r) =>
+            '<tr>' +
+            '<td>' + formatTime(r.timestamp) + '</td>' +
+            '<td class="td-agent">' + escapeHtml(r.agent || '') + '</td>' +
+            '<td><span class="outcome-badge outcome-badge--' + (r.verdict === 'pass' ? 'success' : 'failed') + '">' + r.verdict + '</span></td>' +
+            '<td class="td-num">' + (r.issues_critical ?? 0) + '</td>' +
+            '<td class="td-num">' + (r.issues_major ?? 0) + '</td>' +
+            '<td class="td-num">' + (r.issues_minor ?? 0) + '</td>' +
+            '<td class="td-num">' + (r.confidence || '\u2014') + '</td>' +
+            '<td class="td-num">' + (r.attempt ?? 1) + '</td>' +
+            '<td class="td-num">' + (r.escalated ? '\u26A0' : '\u2014') + '</td>' +
+            '<td class="td-issue">' + (r.linear_issue ? escapeHtml(r.linear_issue) : '\u2014') + '</td>' +
+            '</tr>'
+        )
+        .join('') +
+      '</tbody></table>';
+  }
+
+  // ── Export ─────────────────────────────────────────────────
+
+  function exportData() {
+    const data = {
+      exported_at: new Date().toISOString(),
+      sessions: rawSessions,
+      delegations: rawDelegations,
+      panels: rawPanels,
+      reviews: rawReviews,
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'opencastle-dashboard-' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function main() {
+    const [sessions, delegations, panels, reviews] = await Promise.all([
+      loadNdjson(base + 'data/sessions.ndjson'),
+      loadNdjson(base + 'data/delegations.ndjson'),
+      loadNdjson(base + 'data/panels.ndjson'),
+      loadNdjson(base + 'data/reviews.ndjson'),
+    ]);
+
+    rawSessions = sessions;
+    rawDelegations = delegations;
+    rawPanels = panels;
+    rawReviews = reviews;
+
+    populateAgentFilter(sessions, delegations, reviews);
+    renderAll(sessions, delegations, panels, reviews);
+
+    // ── Filter event listeners ────────────────────────────
+    document.getElementById('filter-date-from')?.addEventListener('change', applyFilters);
+    document.getElementById('filter-date-to')?.addEventListener('change', applyFilters);
+    document.getElementById('filter-agent')?.addEventListener('change', applyFilters);
+    document.getElementById('filter-outcome')?.addEventListener('change', applyFilters);
+    document.getElementById('filter-reset')?.addEventListener('click', () => {
+      document.getElementById('filter-date-from').value = '';
+      document.getElementById('filter-date-to').value = '';
+      document.getElementById('filter-agent').value = '';
+      document.getElementById('filter-outcome').value = '';
+      applyFilters();
+    });
+
+    // ── Export button ─────────────────────────────────────
+    document.getElementById('export-btn')?.addEventListener('click', exportData);
 
     // ── Sidebar Navigation ────────────────────────────────
     initSidebarNav();
