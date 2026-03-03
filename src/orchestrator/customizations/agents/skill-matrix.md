@@ -50,7 +50,9 @@ Agent file                  Skill Matrix                 Skill file
 | `api-layer` | | | API routes, validation, search architecture |
 | `data-pipeline` | | | ETL, scraping, data processing |
 | `testing` | | | Unit/integration tests, coverage, test planning |
-| `e2e-testing` | | | Browser automation, viewport testing, visual validation || `task-management` | | | Issue tracking, naming, priorities, workflow states |
+| `e2e-testing` | | | Browser automation, viewport testing, visual validation |
+| `task-management` | | | Issue tracking, naming, priorities, workflow states |
+
 ### Disciplines
 
 | Slot | Approach | Skill | Description |
