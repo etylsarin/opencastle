@@ -119,8 +119,8 @@ export default async function run({ args }: CliContext): Promise<void> {
         '    Install: npm install -g @anthropic-ai/claude-code\n' +
         '    Docs:    https://docs.anthropic.com/en/docs/claude-code',
       copilot:
-        '    Install: npm install -g @anthropic-ai/claude-code (or use VS Code)\n' +
-        '    The Copilot CLI is bundled with GitHub Copilot in VS Code.\n' +
+        '    Requires the Copilot CLI installed and authenticated:\n' +
+        '    https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n' +
         '    Docs:    https://docs.github.com/en/copilot',
       cursor:
         '    The Cursor agent CLI ships with the Cursor editor.\n' +

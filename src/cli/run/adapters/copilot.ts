@@ -1,11 +1,26 @@
 import { spawn } from 'node:child_process'
+import type { CopilotClient as CopilotClientType, CopilotSession, PermissionHandler } from '@github/copilot-sdk'
 import type { Task, ExecuteOptions, ExecuteResult } from '../../types.js'
 
 /** Adapter name */
 export const name = 'copilot'
 
 /**
+ * Lazy-initialized shared client instance.
+ * The client manages a single Copilot CLI server process; all task sessions
+ * multiplex over it via JSON-RPC.
+ */
+let clientPromise: Promise<CopilotClientType> | null = null
+
+/** Cached permission handler from the SDK module. */
+let cachedApproveAll: PermissionHandler | null = null
+
+/** Active sessions keyed by task id — used by `kill()` for timeout enforcement. */
+const activeSessions = new Map<string, CopilotSession>()
+
+/**
  * Check if the `copilot` CLI is available on the system PATH.
+ * The SDK communicates with the CLI in server mode, so it must be installed.
  */
 export async function isAvailable(): Promise<boolean> {
   return new Promise((resolve) => {
@@ -16,7 +31,33 @@ export async function isAvailable(): Promise<boolean> {
 }
 
 /**
- * Execute a task by invoking the Copilot CLI in autopilot mode.
+ * Get or create the shared CopilotClient.
+ * The client is started once and reused across all task executions.
+ */
+async function getClient(): Promise<CopilotClientType> {
+  if (!clientPromise) {
+    clientPromise = (async () => {
+      const { CopilotClient, approveAll } = await import('@github/copilot-sdk')
+      cachedApproveAll = approveAll
+      const client = new CopilotClient({
+        autoStart: false,
+        logLevel: 'error',
+      })
+      await client.start()
+      return client
+    })()
+  }
+  return clientPromise
+}
+
+/**
+ * Execute a task using the Copilot SDK.
+ *
+ * Each task gets its own session with:
+ *   - All tool permissions auto-approved (equivalent to `--allow-all-tools`)
+ *   - No `ask_user` tool (autonomous — equivalent to `--no-ask-user`)
+ *   - System message injected with the agent role
+ *   - Streaming enabled in verbose mode for live output
  */
 export async function execute(task: Task, options: ExecuteOptions = {}): Promise<ExecuteResult> {
   let prompt = `You are a ${task.agent}. ${task.prompt}`
@@ -25,73 +66,60 @@ export async function execute(task: Task, options: ExecuteOptions = {}): Promise
     prompt += `\n\nOnly modify files under: ${task.files.join(', ')}`
   }
 
-  const args = [
-    '-p',
-    prompt,
-    '--autopilot',
-    '--allow-all-tools',
-    '--no-ask-user',
-    '-s',
-    '--max-autopilot-continues',
-    '50',
-  ]
+  const client = await getClient()
 
-  return new Promise((resolve) => {
-    const proc = spawn('copilot', args, {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env },
-      cwd: process.cwd(),
-    })
-
-    let stdout = ''
-    let stderr = ''
-
-    proc.stdout.on('data', (chunk: Buffer) => {
-      stdout += chunk.toString()
-      if (options.verbose) {
-        process.stdout.write(chunk)
-      }
-    })
-
-    proc.stderr.on('data', (chunk: Buffer) => {
-      stderr += chunk.toString()
-      if (options.verbose) {
-        process.stderr.write(chunk)
-      }
-    })
-
-    proc.on('close', (code) => {
-      const output = [stdout, stderr].filter(Boolean).join('\n')
-      resolve({
-        success: code === 0,
-        output: output.slice(0, 10000), // Cap output size
-        exitCode: code ?? -1,
-      })
-    })
-
-    proc.on('error', (err) => {
-      resolve({
-        success: false,
-        output: `Failed to spawn copilot: ${err.message}`,
-        exitCode: -1,
-      })
-    })
-
-    // Store process ref for potential timeout kill
-    task._process = proc
+  const session = await client.createSession({
+    onPermissionRequest: cachedApproveAll!,
+    systemMessage: {
+      content: [
+        `You are a ${task.agent}.`,
+        'Work autonomously without asking questions.',
+        'Follow all instructions precisely.',
+      ].join(' '),
+    },
+    infiniteSessions: { enabled: false },
+    ...(options.verbose ? { streaming: true } : {}),
   })
+
+  activeSessions.set(task.id, session)
+
+  // Stream deltas to stdout in verbose mode
+  if (options.verbose) {
+    session.on('assistant.message_delta', (event: { data: { deltaContent: string } }) => {
+      process.stdout.write(event.data.deltaContent)
+    })
+  }
+
+  try {
+    const response = await session.sendAndWait({ prompt })
+    const output = response?.data?.content ?? ''
+
+    return {
+      success: true,
+      output: output.slice(0, 10_000),
+      exitCode: 0,
+    }
+  } catch (err: unknown) {
+    return {
+      success: false,
+      output: `Copilot SDK error: ${(err as Error).message}`,
+      exitCode: 1,
+    }
+  } finally {
+    activeSessions.delete(task.id)
+    await session.destroy().catch(() => {})
+  }
 }
 
 /**
- * Kill the process associated with a task (used by timeout enforcement).
+ * Abort and destroy the session associated with a task.
+ * Called by the executor when a task exceeds its timeout.
  */
 export function kill(task: Task): void {
-  if (task._process && !task._process.killed) {
-    task._process.kill('SIGTERM')
-    setTimeout(() => {
-      if (task._process && !task._process.killed) {
-        task._process.kill('SIGKILL')
-      }
-    }, 5000)
+  const session = activeSessions.get(task.id)
+  if (session) {
+    session.abort().catch(() => {})
+    session.destroy().catch(() => {})
+    activeSessions.delete(task.id)
   }
 }

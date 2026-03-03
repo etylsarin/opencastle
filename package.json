@@ -57,6 +57,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "@github/copilot-sdk": "^0.1.30",
     "yaml": "^2.8.2"
   }
 }
