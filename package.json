@@ -35,6 +35,7 @@
   "author": "Filip Mares",
   "scripts": {
     "cli:build": "tsc",
+    "test": "vitest run",
     "dashboard:dev": "astro dev --root src/dashboard --port 4300",
     "dashboard:build": "astro build --root src/dashboard",
     "dashboard:preview": "astro preview --root src/dashboard --port 4300",
@@ -51,6 +52,10 @@
     "@types/node": "^22.0.0",
     "astro": "^5.5.0",
     "playwright": "^1.58.2",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "yaml": "^2.8.2"
   }
 }

@@ -1,8 +1,6 @@
 ````markdown
 # Agent Performance Tracking
 
-> **Last Updated:** _(auto-updated by metrics-report prompt)_
-
 Tracks agent success rates across panel reviews and delegated tasks to inform model routing and panel reviewer selection.
 
 ## Data Sources
@@ -10,7 +8,7 @@ Tracks agent success rates across panel reviews and delegated tasks to inform mo
 Performance data is collected automatically via NDJSON session logs:
 - **Session data:** `.github/customizations/logs/sessions.ndjson` — appended by every agent after each session
 - **Delegation data:** `.github/customizations/logs/delegations.ndjson` — appended by the Team Lead after each delegation
-- **Full reporting:** Run the **metrics-report** prompt to generate a dashboard from all sources
+- **Dashboard:** Run `npx opencastle dashboard` to visualize agent performance
 
 ## Quick Queries
 

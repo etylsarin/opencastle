@@ -72,6 +72,10 @@ jobs:
         if: steps.bump.outputs.type != 'none'
         run: npm ci
 
+      - name: Type-check CLI
+        if: steps.bump.outputs.type != 'none'
+        run: npx tsc --noEmit
+
       - name: Build
         if: steps.bump.outputs.type != 'none'
         run: |

@@ -221,15 +221,17 @@ export async function detectRepoInfo(projectRoot: string): Promise<RepoInfo> {
     }
   }
 
-  // ── 3. Detect by config files ───────────────────────────────
-  await detectCategory(projectRoot, FRAMEWORKS, info, 'frameworks');
-  await detectCategory(projectRoot, DATABASES, info, 'databases');
-  await detectCategory(projectRoot, CMS_PLATFORMS, info, 'cms');
-  await detectCategory(projectRoot, DEPLOYMENT, info, 'deployment');
-  await detectCategory(projectRoot, TESTING, info, 'testing');
-  await detectCategory(projectRoot, CICD, info, 'cicd');
-  await detectCategory(projectRoot, STYLING, info, 'styling');
-  await detectCategory(projectRoot, AUTH, info, 'auth');
+  // ── 3. Detect by config files (parallel) ─────────────────────
+  await Promise.all([
+    detectCategory(projectRoot, FRAMEWORKS, info, 'frameworks'),
+    detectCategory(projectRoot, DATABASES, info, 'databases'),
+    detectCategory(projectRoot, CMS_PLATFORMS, info, 'cms'),
+    detectCategory(projectRoot, DEPLOYMENT, info, 'deployment'),
+    detectCategory(projectRoot, TESTING, info, 'testing'),
+    detectCategory(projectRoot, CICD, info, 'cicd'),
+    detectCategory(projectRoot, STYLING, info, 'styling'),
+    detectCategory(projectRoot, AUTH, info, 'auth'),
+  ]);
 
   // ── 4. Detect from package.json deps ────────────────────────
   await detectFromPackageJson(projectRoot, info);
@@ -241,12 +243,14 @@ export async function detectRepoInfo(projectRoot: string): Promise<RepoInfo> {
     '.claude/mcp.json',
     'mcp.json',
   ];
-  for (const p of mcpPaths) {
-    if (await fileExists(resolve(projectRoot, p))) {
-      info.mcpConfig = true;
-      info.configFiles.push(p);
-    }
-  }
+  await Promise.all(
+    mcpPaths.map(async (p) => {
+      if (await fileExists(resolve(projectRoot, p))) {
+        info.mcpConfig = true;
+        info.configFiles.push(p);
+      }
+    })
+  );
 
   // ── 6. Check for TypeScript ─────────────────────────────────
   const tsConfigPath = resolve(projectRoot, 'tsconfig.json');

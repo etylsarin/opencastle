@@ -32,7 +32,8 @@ Session Lifecycle:
 2. **Check for checkpoint** — If `.github/customizations/SESSION-CHECKPOINT.md` exists, read it. Resume from last known state instead of re-analyzing.
 3. **Check pending approvals** — If the checkpoint has a `## Pending Approvals` section, check for replies using the configured messaging provider's MCP tools (e.g., `conversations_replies` for Slack). Read `.opencastle.json` → `stack.teamTools` to determine the provider. If no messaging is configured, skip this step.
 4. **Check dead letter queue** — Scan `.github/customizations/AGENT-FAILURES.md` for pending failures related to the current scope.
-5. **Load domain skills** — Based on the task description, load the appropriate skills before writing code. Don't start coding without the relevant skill loaded.
+5. **Validate skill-matrix bindings** — Open `.github/customizations/agents/skill-matrix.md` and check whether the **Primary Stack** and **Tooling** tables have any filled-in rows (non-empty Technology/Skill columns). If all bindings are empty, **warn the user** that the bootstrap hasn't been run and capability slots will not resolve. Suggest running the *"Bootstrap Customizations"* prompt first. Do NOT silently continue with empty bindings.
+6. **Load domain skills** — Based on the task description, load the appropriate skills before writing code. Don't start coding without the relevant skill loaded.
 
 ### Template for Delegation Prompts
 
@@ -42,6 +43,7 @@ Include this reminder in every delegation:
 **Session Start:** Read `.github/customizations/LESSONS-LEARNED.md` before starting.
 Check `.github/customizations/SESSION-CHECKPOINT.md` for prior state and pending approvals.
 If pending approvals exist, check for replies via the messaging provider.
+Validate `.github/customizations/agents/skill-matrix.md` — warn if skill bindings are empty (bootstrap not run).
 Load relevant skills before writing code.
 ```
 
@@ -149,7 +151,7 @@ Include on-session-start and on-session-end actions in every delegation prompt. 
 
 ### For Workflow Templates
 
-Each workflow's **Compound phase** naturally serves as the on-session-end hook for that workflow type. The Compound phase steps should include session logging, lesson verification, and memory merge checks.
+Each workflow's **Delivery phase** naturally serves as the on-session-end hook for that workflow type. The Delivery phase steps should include session logging, lesson verification, and memory merge checks.
 
 ---
 

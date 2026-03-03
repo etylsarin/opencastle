@@ -12,7 +12,7 @@ Phase 2: Automated Checks     (sub-agent, inline)
 Phase 3: Manual Review        (background agent)
 Phase 4: Panel Review         (sub-agent, inline)
 Phase 5: Remediation          (sub-agent or background)
-Phase 6: Compound             (direct, Team Lead)
+Phase 6: Delivery             (direct, Team Lead)
 ```
 
 ---
@@ -143,7 +143,7 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 ---
 
-### Phase 6: Delivery (Compound)
+### Phase 6: Delivery
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >

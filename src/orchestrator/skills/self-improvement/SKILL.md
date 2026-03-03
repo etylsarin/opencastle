@@ -50,7 +50,7 @@ A lesson MUST be written when **any** of these triggers occur:
    echo '{"timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","agent":"Agent Name","model":"model-id","task":"Short description","outcome":"success","files_changed":N,"retries":0}' >> .github/customizations/logs/sessions.ndjson
    ```
 
-   This is **mandatory** — session logging fuels the metrics dashboard (`metrics-report` prompt).
+   This is **mandatory** — session logging fuels the observability dashboard (`npx opencastle dashboard`).
 
 ## How to Write a Lesson
 

@@ -1,5 +1,5 @@
 ---
-description: 'Data engineering expert for ETL pipelines, web crowlers, data processors, CLI tools, and CMS data import.'
+description: 'Data engineering expert for ETL pipelines, web crawlers, data processors, CLI tools, and CMS data import.'
 name: 'Data Expert'
 model: GPT-5.3-Codex
 tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages']
@@ -32,7 +32,7 @@ Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
 - Idempotent imports with `createOrReplace` and deterministic `_id`
 - Validate with Zod before importing — never import invalid data
 - Respect `robots.txt` and rate limit all scraping requests
-- Use the project's web crawling library for concurrent crowling (see the **data-pipeline** skill)
+- Use the project's web crawling library for concurrent crawling (see the **data-pipeline** skill)
 - Handle errors gracefully — skip bad records, don't halt pipeline
 - Preserve UTF-8 encoding for special characters and diacritics
 - Backup before bulk operations

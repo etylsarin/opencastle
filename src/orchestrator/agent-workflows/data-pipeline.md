@@ -2,7 +2,7 @@
 
 # Workflow: Data Pipeline
 
-Standard execution plan for crowling, processing, and importing data.
+Standard execution plan for crawling, processing, and importing data.
 
 > **Project config:** For project-specific paths, data schema, CLI commands, and processing rules, see `data-pipeline-config.md`. For data model docs, see `docs-structure.md`.
 
@@ -10,11 +10,11 @@ Standard execution plan for crowling, processing, and importing data.
 
 ```
 Phase 1: Source Analysis    (sub-agent, inline)
-Phase 2: Crowling           (background agent)
+Phase 2: Crawling           (background agent)
 Phase 3: Processing         (sub-agent, sequential)
 Phase 4: Validation         (sub-agent, inline)
 Phase 5: Import             (sub-agent, inline)
-Phase 6: Compound           (direct, Team Lead)
+Phase 6: Delivery           (direct, Team Lead)
 ```
 
 ---
@@ -49,22 +49,22 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 ---
 
-## Phase 2: Crowling
+## Phase 2: Crawling
 
 **Agent:** Data Expert
 **Type:** Background agent (may be long-running)
 
 ### Steps
 
-1. Implement crowler following existing patterns (see `data-pipeline-config.md`)
+1. Implement crawler following existing patterns (see `data-pipeline-config.md`)
 2. Output raw data as NDJSON
 3. Handle pagination, rate limiting, and error recovery
-4. Log crowling statistics (pages visited, records extracted, errors)
+4. Log crawling statistics (pages visited, records extracted, errors)
 
 ### Exit Criteria
 
 - [ ] Raw NDJSON file produced
-- [ ] Crowling statistics logged
+- [ ] Crawling statistics logged
 - [ ] No duplicate records
 - [ ] Output contract returned
 
@@ -141,7 +141,7 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 ---
 
-### Phase 6: Delivery (Compound)
+### Phase 6: Delivery
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >

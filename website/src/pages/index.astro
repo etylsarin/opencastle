@@ -81,12 +81,12 @@ const workflows = [
 ];
 
 const featureIcons: Record<string, string> = {
-  orchestrator: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>`,
-  agents: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
-  skills: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
-  workflows: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>`,
-  shield: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
-  brain: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>`,
+  orchestrator: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>`,
+  agents: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  skills: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+  workflows: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>`,
+  shield: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  brain: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>`,
 };
 
 const compatIcons: Record<string, string> = {
@@ -127,20 +127,44 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
       content="Open-source framework that turns GitHub Copilot, Cursor, Claude Code, and OpenCode into coordinated multi-agent development teams."
     />
     <meta name="theme-color" content="#0a0a0f" />
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.opencastle.dev/" />
+    <meta property="og:title" content="OpenCastle — Multi-Agent Orchestration for AI Coding Assistants" />
+    <meta property="og:description" content="Open-source framework that turns GitHub Copilot, Cursor, Claude Code, and OpenCode into coordinated multi-agent development teams." />
+    <meta property="og:image" content="https://www.opencastle.dev/og-image.png" />
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="OpenCastle — Multi-Agent Orchestration for AI Coding Assistants" />
+    <meta name="twitter:description" content="Open-source framework that turns GitHub Copilot, Cursor, Claude Code, and OpenCode into coordinated multi-agent development teams." />
+    <meta name="twitter:image" content="https://www.opencastle.dev/og-image.png" />
+    <!-- Canonical -->
+    <link rel="canonical" href="https://www.opencastle.dev/" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/favicon-180.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
   </head>
   <body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
     <!-- ==================== Header ==================== -->
     <header class="header">
       <div class="header__inner">
         <a href="#top" class="header__logo">
           <img src={logo.src} alt="OpenCastle" height="72" />
         </a>
-        <nav>
-          <ul class="header__nav">
+        <button
+          class="header__menu-toggle"
+          id="menu-toggle"
+          type="button"
+          aria-expanded="false"
+          aria-controls="main-nav"
+          aria-label="Toggle navigation menu"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <nav aria-label="Main navigation">
+          <ul class="header__nav" id="main-nav">
             <li>
               <a href="#features">Features</a>
             </li>
@@ -177,6 +201,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
     </header>
 
     <!-- ==================== Hero ==================== -->
+    <main id="main-content">
     <section class="hero" id="top">
       <div class="hero__content">
         <div class="hero__illustration">
@@ -757,8 +782,10 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
       </div>
     </section>
 
+    </main>
+
     <!-- ==================== Video Modal ==================== -->
-    <div class="video-modal" id="video-modal" aria-hidden="true">
+    <div class="video-modal" id="video-modal" role="dialog" aria-modal="true" aria-label="Demo video" aria-hidden="true">
       <div class="video-modal__backdrop" id="video-modal-backdrop"></div>
       <div class="video-modal__content">
         <button class="video-modal__close" id="video-modal-close" type="button" aria-label="Close video">
@@ -784,10 +811,14 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
       const closeBtn = document.getElementById('video-modal-close');
       const video = document.getElementById('demo-video') as HTMLVideoElement;
 
+      let previouslyFocused: HTMLElement | null = null;
+
       function openModal() {
+        previouslyFocused = document.activeElement as HTMLElement;
         modal!.setAttribute('aria-hidden', 'false');
         document.body.style.overflow = 'hidden';
         video.play().catch(() => {});
+        closeBtn!.focus();
       }
 
       function closeModal() {
@@ -795,6 +826,25 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
         document.body.style.overflow = '';
         video.pause();
         video.currentTime = 0;
+        previouslyFocused?.focus();
+      }
+
+      // Focus trap: keep Tab within the modal
+      function trapFocus(e: KeyboardEvent) {
+        if (modal!.getAttribute('aria-hidden') !== 'false') return;
+        if (e.key !== 'Tab') return;
+        const focusable = modal!.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
       }
 
       btn!.addEventListener('click', openModal);
@@ -804,6 +854,16 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
         if (e.key === 'Escape' && modal!.getAttribute('aria-hidden') === 'false') {
           closeModal();
         }
+        trapFocus(e);
+      });
+
+      // Mobile nav toggle
+      const menuToggle = document.getElementById('menu-toggle');
+      const mainNav = document.getElementById('main-nav');
+      menuToggle?.addEventListener('click', () => {
+        const expanded = menuToggle.getAttribute('aria-expanded') === 'true';
+        menuToggle.setAttribute('aria-expanded', String(!expanded));
+        mainNav?.classList.toggle('header__nav--open');
       });
     </script>
 

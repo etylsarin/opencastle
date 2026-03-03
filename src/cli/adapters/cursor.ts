@@ -5,6 +5,7 @@ import { copyDir, getOrchestratorRoot, removeDirIfExists, getPluginsRoot, getPlu
 import { scaffoldMcpConfig } from '../mcp.js'
 import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform, getIncludedPluginIds } from '../stack-config.js'
 import type { CopyResults, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
+import { splitFrontmatter, parseFrontmatterString } from './frontmatter.js'
 
 /**
  * Cursor adapter.
@@ -24,27 +25,6 @@ export const IDE_ID = 'cursor'
 export const IDE_LABEL = 'Cursor'
 
 // ─── Helpers ──────────────────────────────────────────────────────
-
-interface FrontmatterResult {
-  frontmatter: string
-  body: string
-}
-
-function stripFrontmatter(content: string): FrontmatterResult {
-  const m = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/)
-  return m
-    ? { frontmatter: m[1], body: m[2] }
-    : { frontmatter: '', body: content }
-}
-
-function parseFrontmatter(fm: string): Record<string, string> {
-  const result: Record<string, string> = {}
-  for (const line of fm.split('\n')) {
-    const m = line.match(/^(\w[\w-]*):\s*['"]?(.+?)['"]?\s*$/)
-    if (m) result[m[1]] = m[2]
-  }
-  return result
-}
 
 interface MdcOptions {
   description?: string
@@ -82,8 +62,8 @@ async function convertFile(
   { alwaysApply = false, descriptionFallback = '' }: ConvertFileOptions = {}
 ): Promise<string> {
   const content = await readFile(srcPath, 'utf8')
-  const { frontmatter, body } = stripFrontmatter(content)
-  const meta = parseFrontmatter(frontmatter)
+  const { frontmatter, body } = splitFrontmatter(content)
+  const meta = parseFrontmatterString(frontmatter)
 
   // Description: frontmatter > fallback > first heading
   let description = meta['description'] ?? descriptionFallback

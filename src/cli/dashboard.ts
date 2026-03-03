@@ -2,7 +2,7 @@ import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse, Server } from 'node:http'
 import { readFile, access } from 'node:fs/promises'
 import { resolve, join, extname } from 'node:path'
-import { exec } from 'node:child_process'
+import { execFile } from 'node:child_process'
 import type { CliContext } from './types.js'
 
 const MIME_TYPES: Record<string, string> = {
@@ -22,6 +22,7 @@ const DATA_FILES = [
   'sessions.ndjson',
   'delegations.ndjson',
   'panels.ndjson',
+  'reviews.ndjson',
 ]
 
 interface DashboardArgs {
@@ -57,7 +58,7 @@ function openUrl(url: string): void {
       : plat === 'win32'
         ? 'start'
         : 'xdg-open'
-  exec(`${cmd} ${url}`)
+  execFile(cmd, [url])
 }
 
 async function fileExists(filePath: string): Promise<boolean> {

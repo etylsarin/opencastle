@@ -71,6 +71,7 @@ MCP servers are auto-configured for your stack (Sanity, Supabase, Vercel, NX, Li
 | `opencastle eject` | Remove the dependency, keep all files |
 | `opencastle run` | Run a [task queue](#task-queue) autonomously |
 | `opencastle dashboard` | Open the observability dashboard |
+| `opencastle doctor` | Validate your setup and surface issues |
 
 Add `--dry-run` to any command to preview what it would change without writing files.
 
@@ -112,6 +113,32 @@ npx opencastle dashboard
 Visualizes real agent data from your project — sessions, success rates, model usage, execution logs, and panel reviews.
 
 Reads from the same NDJSON logs your agents already write. No setup needed.
+
+<br>
+
+## Doctor
+
+```bash
+npx opencastle doctor
+```
+
+Runs 11 health checks to validate your setup:
+
+| Check | What it verifies |
+|-------|------------------|
+| Manifest | `.opencastle.json` exists and contains valid version/IDE info |
+| Customizations | `.github/customizations/` directory exists |
+| Instruction files | `.github/instructions/` has `.md` files |
+| Agent definitions | `.agent.md` files present in customizations |
+| Skills directory | `.github/skills/` exists and is populated |
+| Skill matrix | All capability slots are resolved |
+| Observability logs | `sessions.ndjson`, `delegations.ndjson`, etc. exist |
+| IDE configs | Expected config files exist for each selected IDE |
+| MCP config | MCP JSON files present for each IDE |
+| MCP env vars | Required environment variables are set |
+| `.env` file | `.env` exists if MCP secrets are needed |
+
+Exits with code `1` if any check fails. Useful in CI or after upgrading.
 
 <br>
 
