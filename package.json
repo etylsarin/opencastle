@@ -49,6 +49,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.6",
+    "@astrojs/sitemap": "^3.7.0",
     "@types/node": "^22.0.0",
     "astro": "^5.5.0",
     "playwright": "^1.58.2",
