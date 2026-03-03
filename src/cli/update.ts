@@ -2,27 +2,9 @@ import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { readManifest, writeManifest } from './manifest.js'
 import { confirm, closePrompts, c } from './prompt.js'
-import { isLegacyStack, migrateStackConfig } from './types.js'
-import type { CliContext, IdeAdapter, IdeChoice } from './types.js'
-
-const ADAPTERS: Record<string, () => Promise<IdeAdapter>> = {
-  vscode: () => import('./adapters/vscode.js') as Promise<IdeAdapter>,
-  cursor: () => import('./adapters/cursor.js') as Promise<IdeAdapter>,
-  'claude-code': () =>
-    import('./adapters/claude-code.js') as Promise<IdeAdapter>,
-  opencode: () =>
-    import('./adapters/opencode.js') as Promise<IdeAdapter>,
-}
-
-const VALID_IDES = Object.keys(ADAPTERS)
-
-/** IDE display labels */
-const IDE_DISPLAY: Record<IdeChoice, string> = {
-  vscode: 'VS Code',
-  cursor: 'Cursor',
-  'claude-code': 'Claude Code',
-  opencode: 'OpenCode',
-}
+import { isLegacyStack, migrateStackConfig, IDE_LABELS } from './types.js'
+import { IDE_ADAPTERS, VALID_IDES } from './adapters/index.js'
+import type { CliContext, IdeChoice } from './types.js'
 
 export default async function update({
   pkgRoot,
@@ -65,7 +47,7 @@ export default async function update({
     return
   }
 
-  const ideNames = ides.map((id) => IDE_DISPLAY[id as IdeChoice] ?? id).join(', ')
+  const ideNames = ides.map((id) => IDE_LABELS[id as IdeChoice] ?? id).join(', ')
   console.log(
     `\n  🏰 ${c.bold('OpenCastle')} ${dryRun ? 'dry-run' : 'update'}: ${c.dim(`v${manifest.version}`)} → ${c.green(`v${pkg.version}`)}\n`
   )
@@ -98,7 +80,7 @@ export default async function update({
   const allManagedPaths = { framework: [] as string[], customizable: [] as string[] }
 
   for (const ide of ides) {
-    const adapter = await ADAPTERS[ide]()
+    const adapter = await IDE_ADAPTERS[ide]()
     const results = await adapter.update(pkgRoot, projectRoot, manifest.stack)
     totalCopied += results.copied.length
     totalCreated += results.created.length

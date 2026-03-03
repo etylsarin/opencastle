@@ -233,12 +233,6 @@ export interface RunOptions {
   help: boolean;
 }
 
-/** Parse result from YAML block parser. */
-export interface ParseResult {
-  value: unknown;
-  nextIndex: number;
-}
-
 /** Validation result. */
 export interface ValidationResult {
   valid: boolean;
