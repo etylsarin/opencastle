@@ -41,7 +41,7 @@ Agent file                  Skill Matrix                 Skill file
 | `database` | | | Schema, migrations, auth flow, roles |
 | `cms` | | | Document types, queries, schema management |
 | `deployment` | | | Hosting, cron jobs, env vars, caching, headers |
-| `codebase-tool` | | | Task running, building, linting, testing, code generation |
+| `codebase-tool` | NX | `nx-workspace` | Task running, building, linting, testing, code generation |
 
 ### Tooling
 
@@ -50,7 +50,8 @@ Agent file                  Skill Matrix                 Skill file
 | `api-layer` | | | API routes, validation, search architecture |
 | `data-pipeline` | | | ETL, scraping, data processing |
 | `testing` | | | Unit/integration tests, coverage, test planning |
-| `e2e-testing` | | | Browser automation, viewport testing, visual validation || `task-management` | | | Issue tracking, naming, priorities, workflow states |
+| `e2e-testing` | Chrome DevTools MCP | `browser-testing` | Browser automation, viewport testing, visual validation |
+| `task-management` | | | Issue tracking, naming, priorities, workflow states |
 ### Disciplines
 
 | Slot | Approach | Skill | Description |
