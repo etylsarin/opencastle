@@ -8,24 +8,9 @@ import { updateGitignore } from './gitignore.js'
 import { getRequiredMcpEnvVars } from './stack-config.js'
 import { TECH_PLUGINS, TEAM_PLUGINS } from '../orchestrator/plugins/index.js'
 import { detectRepoInfo, mergeStackIntoRepoInfo, formatRepoInfo } from './detect.js'
-import type { CliContext, IdeAdapter, IdeChoice, TechTool, TeamTool, StackConfig } from './types.js'
-
-const ADAPTERS: Record<string, () => Promise<IdeAdapter>> = {
-  vscode: () => import('./adapters/vscode.js') as Promise<IdeAdapter>,
-  cursor: () => import('./adapters/cursor.js') as Promise<IdeAdapter>,
-  'claude-code': () =>
-    import('./adapters/claude-code.js') as Promise<IdeAdapter>,
-  opencode: () =>
-    import('./adapters/opencode.js') as Promise<IdeAdapter>,
-}
-
-/** IDE display labels */
-const IDE_DISPLAY: Record<IdeChoice, string> = {
-  vscode: 'VS Code',
-  cursor: 'Cursor',
-  'claude-code': 'Claude Code',
-  opencode: 'OpenCode',
-}
+import { IDE_ADAPTERS } from './adapters/index.js'
+import { IDE_LABELS } from './types.js'
+import type { CliContext, IdeChoice, TechTool, TeamTool, StackConfig } from './types.js'
 
 export default async function init({ pkgRoot, args }: CliContext): Promise<void> {
   const projectRoot = process.cwd()
@@ -135,7 +120,7 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
   // ── Merge user choices into detected info ────────────────────
   const combinedRepoInfo = mergeStackIntoRepoInfo(repoInfo, stack)
 
-  const ideNames = ides.map((id) => IDE_DISPLAY[id as IdeChoice]).join(', ')
+  const ideNames = ides.map((id) => IDE_LABELS[id as IdeChoice]).join(', ')
   console.log(`\n  Installing for ${c.cyan(ideNames)}...`)
   if (techTools.length > 0) {
     console.log(`  Tech: ${c.green(techTools.join(', '))}`)
@@ -148,9 +133,9 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
   // ── Dry run ─────────────────────────────────────────────────────
   if (dryRun) {
     for (const ide of ides) {
-      const adapter = await ADAPTERS[ide]()
+      const adapter = await IDE_ADAPTERS[ide]()
       const managed = adapter.getManagedPaths()
-      console.log(`  ${c.dim(`[dry-run] ${IDE_DISPLAY[ide as IdeChoice]} files:`)}\n`)
+      console.log(`  ${c.dim(`[dry-run] ${IDE_LABELS[ide as IdeChoice]} files:`)}\n`)
       for (const p of managed.framework) {
         console.log(`    ${c.green('+')} ${p}`)
       }
@@ -197,7 +182,7 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
   const allManagedPaths = { framework: [] as string[], customizable: [] as string[] }
 
   for (const ide of ides) {
-    const adapter = await ADAPTERS[ide]()
+    const adapter = await IDE_ADAPTERS[ide]()
     const results = await adapter.install(pkgRoot, projectRoot, stack, combinedRepoInfo)
     totalCreated += results.created.length
     totalSkipped += results.skipped.length
@@ -228,13 +213,35 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
     console.log(`  ${c.dim('→')} Skipped ${totalSkipped} existing files`)
   }
 
-  // ── Env var notice ──────────────────────────────────────────────
+  // ── Env var notice + .env file generation ────────────────────
   const envVars = getRequiredMcpEnvVars(stack, combinedRepoInfo)
   if (envVars.length > 0) {
     console.log(`\n  ${c.yellow('⚠')}  Required environment variables for MCP servers:\n`)
     for (const { envVar, hint } of envVars) {
       console.log(`     ${c.bold(envVar)}`)
       console.log(`     ${c.dim('└')} ${c.dim(hint)}\n`)
+    }
+
+    // Offer to create .env if it doesn't exist
+    const envPath = resolve(projectRoot, '.env')
+    if (!dryRun && !existsSync(envPath)) {
+      const createEnv = await confirm('Create a .env file with placeholders for these variables?', true)
+      if (createEnv) {
+        const { writeFile: writeEnvFile } = await import('node:fs/promises')
+        const lines = envVars.map(({ envVar, hint }) => `# ${hint}\n${envVar}=\n`)
+        await writeEnvFile(envPath, lines.join('\n') + '\n')
+        console.log(`  ${c.green('✓')} Created .env with ${envVars.length} placeholder(s)`)
+        console.log(`  ${c.dim('→')} Fill in the values, then reload your IDE\n`)
+      }
+    } else if (!dryRun && existsSync(envPath)) {
+      // Check which vars are already in .env
+      const envContent = await readFile(envPath, 'utf8')
+      const missing = envVars.filter(({ envVar }) => !envContent.includes(envVar))
+      if (missing.length > 0) {
+        console.log(`  ${c.dim('→')} Your .env is missing: ${missing.map((m) => m.envVar).join(', ')}`)
+      } else {
+        console.log(`  ${c.green('✓')} All required variables found in .env`)
+      }
     }
   }
 
@@ -266,7 +273,7 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
   if (envVars.length > 0) {
     step++
     console.log(
-      `  ${step}. Set the environment variable${envVars.length > 1 ? 's' : ''} listed above`
+      `  ${step}. Set the environment variable${envVars.length > 1 ? 's' : ''} listed above (in .env or your shell)`
     )
   }
   step++

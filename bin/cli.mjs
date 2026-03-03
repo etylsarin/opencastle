@@ -23,6 +23,7 @@ const HELP = `
     eject       Remove dependency, keep all files standalone
     run         Process a task queue from a spec file autonomously
     dashboard   View agent observability dashboard in your browser
+    doctor      Validate your OpenCastle setup
 
   Options:
     --dry-run        Preview what a command would change without writing files
@@ -49,6 +50,7 @@ const commands = {
   eject: () => import('../dist/cli/eject.js'),
   run: () => import('../dist/cli/run.js'),
   dashboard: () => import('../dist/cli/dashboard.js'),
+  doctor: () => import('../dist/cli/doctor.js'),
 }
 
 if (!commands[command]) {

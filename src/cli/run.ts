@@ -114,9 +114,25 @@ export default async function run({ args }: CliContext): Promise<void> {
   const adapter = await getAdapter(spec.adapter)
   const available = await adapter.isAvailable()
   if (!available) {
+    const hints: Record<string, string> = {
+      'claude-code':
+        '    Install: npm install -g @anthropic-ai/claude-code\n' +
+        '    Docs:    https://docs.anthropic.com/en/docs/claude-code',
+      copilot:
+        '    Install: npm install -g @anthropic-ai/claude-code (or use VS Code)\n' +
+        '    The Copilot CLI is bundled with GitHub Copilot in VS Code.\n' +
+        '    Docs:    https://docs.github.com/en/copilot',
+      cursor:
+        '    The Cursor agent CLI ships with the Cursor editor.\n' +
+        '    Install Cursor from https://cursor.com and ensure the\n' +
+        '    "agent" command is on your PATH (Cursor > Install CLI).',
+    }
+    const cliName = spec.adapter === 'claude-code' ? 'claude' : spec.adapter
+    const hint = hints[spec.adapter] ?? ''
     console.error(
       `  ✗ Adapter "${spec.adapter}" is not available.\n` +
-        `    Make sure the "${spec.adapter === 'claude-code' ? 'claude' : spec.adapter}" CLI is installed and on your PATH.`
+        `    Make sure the "${cliName}" CLI is installed and on your PATH.\n` +
+        hint
     )
     process.exit(1)
   }
