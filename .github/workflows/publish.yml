@@ -76,6 +76,10 @@ jobs:
         if: steps.bump.outputs.type != 'none'
         run: npx tsc --noEmit
 
+      - name: Run tests
+        if: steps.bump.outputs.type != 'none'
+        run: npm test
+
       - name: Build
         if: steps.bump.outputs.type != 'none'
         run: |
