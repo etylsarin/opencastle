@@ -32,6 +32,9 @@ jobs:
       - name: Type-check CLI
         run: npx tsc --noEmit
 
+      - name: Run tests
+        run: npm test
+
       - name: Build website
         run: npm run website:build
 

@@ -8,7 +8,7 @@ import type { TaskSpec, ValidationResult } from '../types.js'
  */
 export function parseYaml(text: string): Record<string, unknown> {
   const result = yamlParse(text)
-  if (!result || typeof result !== 'object') {
+  if (!result || typeof result !== 'object' || Array.isArray(result)) {
     throw new Error('YAML must be a mapping at the top level')
   }
   return result as Record<string, unknown>

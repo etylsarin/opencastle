@@ -58,17 +58,11 @@ Load relevant skills before writing code.
 
 ### Actions
 
-1. **Run the Pre-Response Quality Gate** — This is the single exit gate. Verify ALL items from the checklist in `general.instructions.md` § Pre-Response Quality Gate:
-   - [ ] Lessons read at session start
-   - [ ] Lessons captured for any retries
-   - [ ] Discovered issues tracked (not ignored)
-   - [ ] Lint/type/test pass (no new errors)
-   - [ ] Session logged to `sessions.ndjson` (ALWAYS)
-   - [ ] Delegations logged (Team Lead only)
-   - [ ] Reviews/panels/disputes logged (if applicable)
-2. **Save checkpoint** (Team Lead only) — If work is incomplete, write `.github/customizations/SESSION-CHECKPOINT.md` with current state so the next session can resume. Load **session-checkpoints** skill for format.
-3. **Memory merge check** — If `LESSONS-LEARNED.md` has grown significantly (5+ new entries this session), flag for memory merge consideration.
-4. **Clean up** — Remove any temporary files created during the session (e.g., test fixtures, debug outputs).
+1. **Call Session Guard** (Team Lead only) — Delegate to the **Session Guard** agent with a session summary (delegations, retries, discoveries, files changed). Execute any fix commands it returns. This replaces the manual Pre-Response Quality Gate checklist — the guard runs it automatically with a fresh context window.
+2. **For specialist agents** (not Team Lead) — Run the Pre-Response Quality Gate checklist from `general.instructions.md` manually. Specialist agents don't have access to the Session Guard.
+3. **Save checkpoint** (Team Lead only) — If work is incomplete, write `.github/customizations/SESSION-CHECKPOINT.md` with current state so the next session can resume. Load **session-checkpoints** skill for format.
+4. **Memory merge check** — If `LESSONS-LEARNED.md` has grown significantly (5+ new entries this session), flag for memory merge consideration.
+5. **Clean up** — Remove any temporary files created during the session (e.g., test fixtures, debug outputs).
 
 ### Template for Delegation Prompts
 
@@ -79,6 +73,8 @@ Load relevant skills before writing code.
 - Track any discovered issues in KNOWN-ISSUES.md or a tracker ticket
 - Clean up temp files
 ```
+
+> **Note for Team Lead:** You do NOT use this template yourself. Instead, call the **Session Guard** agent (step 10 in your role). This template is only for specialist agents you delegate to.
 
 ---
 
@@ -115,8 +111,12 @@ Pre-Delegate:
 
 ### Actions
 
-0. **Fast review (mandatory)** — Run the `fast-review` skill against the agent's output. This is a **non-skippable gate**. See the fast-review skill for the full procedure (single reviewer sub-agent, automatic retry, escalation). Only after the fast review passes do you proceed to the remaining post-delegate actions below.
-1. **Verify output** — Read changed files. Check that changes stay within the agent's file partition.
+0. **Log the delegation NOW** — Append a record to `.github/customizations/logs/delegations.ndjson` immediately. Do this BEFORE review or verification — logging must not depend on review passing.
+   ```bash
+   echo '{"timestamp":"...","session_id":"<branch>","agent":"...","model":"...","tier":"...","mechanism":"sub-agent","outcome":"...","retries":0,"phase":N,"file_partition":["..."]}' >> .github/customizations/logs/delegations.ndjson
+   ```
+1. **Fast review (mandatory)** — Run the `fast-review` skill against the agent's output. This is a **non-skippable gate**. See the fast-review skill for the full procedure (single reviewer sub-agent, automatic retry, escalation). Only after the fast review passes do you proceed to the remaining post-delegate actions below.
+2. **Verify output** — Read changed files. Check that changes stay within the agent's file partition.
 2. **Run verification** — Execute appropriate checks: lint, type-check, tests, or visual inspection.
 3. **Check acceptance criteria** — Compare output against the tracker issue's acceptance criteria. Each criterion must be independently verified.
 4. **Discovered issues tracked** — Verify the agent followed the Discovered Issues Policy. If they found issues, check that they're in KNOWN-ISSUES.md or a new tracker ticket.
@@ -127,6 +127,7 @@ Pre-Delegate:
 
 ```
 Post-Delegate:
+☐ Delegation logged to delegations.ndjson (FIRST — before anything else)
 ☐ Changed files reviewed
 ☐ Files within partition
 ☐ Lint/test/build passes
