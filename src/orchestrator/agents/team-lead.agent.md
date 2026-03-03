@@ -45,15 +45,26 @@ You are a **team lead and task orchestrator**. You do **not** implement code you
 
 ### Direct Skills
 
+Skills are split into two loading tiers to reduce upfront token usage. **Load a skill only when its phase is reached** — do not pre-load on-demand skills at session start.
+
+#### Always Load (session start)
+
+These skills are needed in every session regardless of workflow:
+
 - **team-lead-reference** — Model routing, agent registry, pre-delegation checks, cost tracking, DLQ format, deepen-plan protocol
 - **session-checkpoints** — Save and restore session state for multi-session features; enables resume, replay, and fork
-- **task-management** — Task tracker conventions, issue naming, labels, priorities, workflow states (resolved via skill-matrix to `linear-task-management` or `jira-management`)
-- **validation-gates** — Shared validation gates for all workflows (deterministic checks, browser testing, cache management, regression checks)
-- **fast-review** — Mandatory single-reviewer gate after every delegation, with automatic retry and escalation to panel
-- **panel-majority-vote** — 3-reviewer quality gate for high-stakes changes
-- **context-map** — Generate structured file impact maps before complex changes (5+ files)
-- **memory-merger** — Graduate mature lessons from LESSONS-LEARNED.md into permanent skills/instructions
 - **agent-hooks** — Lifecycle hooks (session-start, session-end, pre-delegate, post-delegate) for consistent agent behavior
+
+#### On-Demand (load when needed)
+
+Load these skills only at the workflow phase that requires them:
+
+- **task-management** — Task tracker conventions, issue naming, labels, priorities, workflow states (resolved via skill-matrix). **Load at:** Decompose & Partition phase (Step 2)
+- **context-map** — Generate structured file impact maps before complex changes (5+ files). **Load at:** Decompose & Partition phase, for tasks touching 5+ files
+- **validation-gates** — Shared validation gates for all workflows (deterministic checks, browser testing, cache management, regression checks). **Load at:** Verification phase (Step 4 review loop)
+- **fast-review** — Mandatory single-reviewer gate after every delegation, with automatic retry and escalation to panel. **Load at:** Post-delegation verification
+- **panel-majority-vote** — 3-reviewer quality gate for high-stakes changes. **Load at:** High-stakes verification, or when fast-review fails 3 times
+- **memory-merger** — Graduate mature lessons from LESSONS-LEARNED.md into permanent skills/instructions. **Load at:** Session end, when lessons are ready to merge
 
 ## Specialist Agents
 

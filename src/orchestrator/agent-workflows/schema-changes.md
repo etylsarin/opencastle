@@ -14,7 +14,7 @@ Phase 2: Schema Implementation (sub-agent or background)
 Phase 3: Query Updates         (sub-agent, sequential)
 Phase 4: Page Integration      (sub-agent, sequential)
 Phase 5: Verification          (sub-agent, inline)
-Phase 6: Compound              (direct, Team Lead)
+Phase 6: Delivery              (direct, Team Lead)
 ```
 
 ---
@@ -159,7 +159,7 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 ---
 
-### Phase 6: Delivery (Compound)
+### Phase 6: Delivery
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >

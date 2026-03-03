@@ -11,7 +11,7 @@ Phase 1: Triage & Reproduce    (sub-agent, inline)
 Phase 2: Root Cause Analysis    (sub-agent, inline)
 Phase 3: Fix Implementation     (sub-agent or background)
 Phase 4: Verification           (sub-agent, inline)
-Phase 5: Compound               (direct, Team Lead)
+Phase 5: Delivery               (direct, Team Lead)
 ```
 
 ---
@@ -123,7 +123,7 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 ---
 
-### Phase 5: Delivery (Compound)
+### Phase 5: Delivery
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >

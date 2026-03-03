@@ -12,7 +12,7 @@ Phase 2: Test Coverage Gap       (sub-agent or background)
 Phase 3: Refactor Implementation (sub-agent or background)
 Phase 4: Verification            (sub-agent, inline)
 Phase 5: Panel Review            (sub-agent, for large refactors)
-Phase 6: Compound                (direct, Team Lead)
+Phase 6: Delivery                (direct, Team Lead)
 ```
 
 ---
@@ -137,7 +137,7 @@ The refactoring agent owns only the scoped files. No changes outside the partiti
 
 ---
 
-### Phase 6: Delivery (Compound)
+### Phase 6: Delivery
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >

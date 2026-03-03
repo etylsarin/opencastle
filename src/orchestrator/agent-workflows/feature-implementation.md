@@ -13,7 +13,7 @@ Phase 2: Foundation      (background agents, parallel)
 Phase 3: Integration     (sub-agent, sequential)
 Phase 4: Validation      (background agents, parallel)
 Phase 5: QA Gate         (sub-agent, inline)
-Phase 6: Compound        (direct, Team Lead)
+Phase 6: Delivery        (direct, Team Lead)
 ```
 
 ---
@@ -225,7 +225,7 @@ If there are no open questions, explicitly state: "No open questions — plan is
 
 ---
 
-### Phase 6: Delivery (Compound)
+### Phase 6: Delivery
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >
