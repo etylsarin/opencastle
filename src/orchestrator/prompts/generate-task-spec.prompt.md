@@ -56,7 +56,7 @@ Available values for the `agent` field:
 | Adapter | CLI binary | Notes |
 |---------|-----------|-------|
 | `claude-code` | `claude` | Default. JSON output, max-turns flag. |
-| `copilot` | `copilot` | Uses `--autopilot --allow-all-tools`. |
+| `copilot` | `copilot` | Uses the Copilot SDK for structured JSON-RPC sessions. |
 | `cursor` | `agent` | Uses `--force` for unattended file writes. |
 
 ---
