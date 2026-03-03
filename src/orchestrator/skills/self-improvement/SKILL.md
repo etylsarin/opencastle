@@ -3,7 +3,7 @@ name: self-improvement
 description: "Protocol for reading and updating the lessons-learned knowledge base. MUST be followed by ALL agents — read lessons before work, write lessons after retries. This makes the agent team self-improving across sessions."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Self-Improvement Protocol
 
@@ -44,7 +44,7 @@ A lesson MUST be written when **any** of these triggers occur:
 
 1. If you wrote any new lessons during execution, **update the Index by Category table** at the bottom of `.github/customizations/LESSONS-LEARNED.md` to include the new lesson IDs.
 
-2. **Log the session** — append one JSON line to `.github/customizations/logs/sessions.ndjson` with: `timestamp`, `agent`, `model`, `task`, `linear_issue`, `outcome` (success/partial/failed), `files_changed`, `retries`, `lessons_added`, `discoveries`. See `.github/customizations/logs/README.md` for the full schema.
+2. **Log the session** — append one JSON line to `.github/customizations/logs/sessions.ndjson` with: `timestamp`, `agent`, `model`, `task`, `tracker_issue`, `outcome` (success/partial/failed), `files_changed`, `retries`, `lessons_added`, `discoveries`. See `.github/customizations/logs/README.md` for the full schema.
 
    ```bash
    echo '{"timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","agent":"Agent Name","model":"model-id","task":"Short description","outcome":"success","files_changed":N,"retries":0}' >> .github/customizations/logs/sessions.ndjson
@@ -89,24 +89,25 @@ Add the lesson ID to the appropriate category row in the `## Index by Category` 
 If the lesson reveals a gap in existing instruction/skill files, **also update those files** to include the correct approach. This prevents the pitfall at the source level, not just as a retroactive note.
 
 Examples:
-- Lesson about Linear tool → update `task-management/SKILL.md`
-- Lesson about NX commands → update `nx-workspace/SKILL.md`
-- Lesson about Sanity queries → update `sanity-cms/SKILL.md`
-- Lesson about browser testing → update `browser-testing/SKILL.md`
+- Lesson about task tracker tools → update the skill mapped by the `task-management` slot in the skill matrix
+- Lesson about codebase-tool commands → update the skill mapped by the `codebase-tool` slot in the skill matrix
+- Lesson about CMS queries → update the skill mapped by the `cms` slot in the skill matrix
+- Lesson about browser testing → update the skill mapped by the `e2e-testing` slot in the skill matrix
 
 ## Categories
 
 | Category | Covers |
 |----------|--------|
-| `linear` | Linear MCP tools, issue management, workflow states |
+| `task-management` | Task tracker tools, issue management, workflow states |
+| `jira` | Jira MCP tools (Atlassian Rovo), issue management, workflows |
 | `mcp-tools` | Any MCP server tool quirks (deferred loading, parameters) |
-| `nx-commands` | NX CLI commands, task runner, caching |
+| `codebase-tool` | Task runner CLI commands, caching, build tools |
 | `terminal` | Shell commands, port management, process management |
-| `next-js` | Next.js App Router, build, dev server, SSR |
-| `sanity` | Sanity CMS, GROQ queries, schema deployment |
-| `supabase` | Supabase auth, migrations, RLS, SQL |
+| `framework` | App framework, build, dev server, SSR |
+| `cms` | CMS content queries, schema deployment |
+| `database` | Database auth, migrations, RLS, SQL |
 | `git` | Git operations, branching, merge conflicts |
-| `vercel` | Deployment, environment variables, edge config |
+| `deployment` | Deployment, environment variables, edge config |
 | `browser-testing` | E2E testing, screenshots, browser automation |
 | `general` | Anything that doesn't fit above |
 
@@ -130,7 +131,7 @@ Examples:
 
 - **Never skip reading lessons** before starting work — this is the #1 cause of repeated mistakes
 - **Never "fix it and move on"** without documenting — your fix dies with your session
-- **Never write vague lessons** like "Linear is tricky" — be specific about what fails and what works
+- **Never write vague lessons** like "the tracker is tricky" — be specific about what fails and what works
 - **Never duplicate existing lessons** — check the index first
 - **Never wait until the end of a session** to write lessons — write them immediately when the retry succeeds
 

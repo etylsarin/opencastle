@@ -2,10 +2,10 @@
 description: 'Copywriter for UI microcopy, marketing text, email templates, venue descriptions, error messages, and all user-facing text.'
 name: 'Copywriter'
 model: GPT-5 mini
-tools: ['search/codebase', 'edit/editFiles', 'web/fetch', 'search', 'read/problems', 'search/usages', 'sanity/get_schema', 'sanity/query_documents', 'sanity/get_document', 'sanity/patch_document_from_json', 'sanity/patch_document_from_markdown', 'sanity/list_datasets', 'sanity/list_projects', 'resend/send-email']
+tools: ['search/codebase', 'edit/editFiles', 'web/fetch', 'search', 'read/problems', 'search/usages']
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Copywriter
 

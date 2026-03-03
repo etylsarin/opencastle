@@ -3,7 +3,7 @@ name: panel-majority-vote
 description: "Run 3 isolated reviewer sub-agents against the same question and decide PASS/BLOCK by majority vote (2/3 wins). Use when deterministic verification is insufficient."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Skill: Panel majority vote (3 reviewers)
 
@@ -136,7 +136,7 @@ Each reviewer gets a weight based on 3 factors:
 
 ```text
 Reviewer 1 (Security Expert, reviewing auth): base 1 + domain 2 + confidence 1 = weight 4
-Reviewer 2 (Next.js Dev, reviewing auth):     base 1 + domain 0 + confidence 1 = weight 2
+Reviewer 2 (Frontend Dev, reviewing auth):    base 1 + domain 0 + confidence 1 = weight 2
 Reviewer 3 (Architect, reviewing auth):        base 1 + domain 1 + confidence 0 = weight 2
 ```
 

@@ -15,6 +15,6 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "include": ["src/cli/**/*.ts"],
-  "exclude": ["node_modules", "dist", "src/dashboard", "src/orchestrator"]
+  "include": ["src/cli/**/*.ts", "src/orchestrator/plugins/**/*.ts"],
+  "exclude": ["node_modules", "dist", "src/dashboard"]
 }

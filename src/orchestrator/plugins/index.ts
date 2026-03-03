@@ -1,0 +1,85 @@
+import type { PluginConfig } from './types.js';
+import { config as sanity } from './sanity/config.js';
+import { config as contentful } from './contentful/config.js';
+import { config as strapi } from './strapi/config.js';
+import { config as supabase } from './supabase/config.js';
+import { config as convex } from './convex/config.js';
+import { config as vercel } from './vercel/config.js';
+import { config as nx } from './nx/config.js';
+import { config as linear } from './linear/config.js';
+import { config as jira } from './jira/config.js';
+import { config as slack } from './slack/config.js';
+import { config as teams } from './teams/config.js';
+import { config as chromeDevtools } from './chrome-devtools/config.js';
+
+export type { PluginConfig, McpServerConfig, McpInput, EnvVarRequirement } from './types.js';
+
+/** All registered plugins, keyed by ID. */
+export const PLUGINS: Record<string, PluginConfig> = {
+  sanity,
+  contentful,
+  strapi,
+  supabase,
+  convex,
+  vercel,
+  nx,
+  'chrome-devtools': chromeDevtools,
+  linear,
+  jira,
+  slack,
+  teams,
+};
+
+/** Tech tool plugins only. */
+export const TECH_PLUGINS = Object.values(PLUGINS).filter(
+  (p) => p.category === 'tech'
+);
+
+/** Team tool plugins only. */
+export const TEAM_PLUGINS = Object.values(PLUGINS).filter(
+  (p) => p.category === 'team'
+);
+
+/** CMS plugins (subset of tech). */
+export const CMS_PLUGINS = TECH_PLUGINS.filter(
+  (p) => p.subCategory === 'cms'
+);
+
+/** Database plugins (subset of tech). */
+export const DB_PLUGINS = TECH_PLUGINS.filter(
+  (p) => p.subCategory === 'database'
+);
+
+/** Get a plugin by ID. */
+export function getPlugin(id: string): PluginConfig | undefined {
+  return PLUGINS[id];
+}
+
+/** Get all plugins in a category. */
+export function getPluginsByCategory(category: 'tech' | 'team'): PluginConfig[] {
+  return Object.values(PLUGINS).filter((p) => p.category === category);
+}
+
+/** Get all plugins in a sub-category. */
+export function getPluginsBySubCategory(
+  subCategory: PluginConfig['subCategory']
+): PluginConfig[] {
+  return Object.values(PLUGINS).filter((p) => p.subCategory === subCategory);
+}
+
+/**
+ * Get all skill names from selected plugins.
+ * Returns only non-null skill names for the given tool IDs.
+ */
+export function getSelectedSkillNames(toolIds: string[]): string[] {
+  return toolIds
+    .map((id) => PLUGINS[id]?.skillName)
+    .filter((s): s is string => s !== null);
+}
+
+/**
+ * All possible tool-specific skill names (used to compute exclusions).
+ */
+export const ALL_PLUGIN_SKILL_NAMES: string[] = Object.values(PLUGINS)
+  .map((p) => p.skillName)
+  .filter((s): s is string => s !== null);

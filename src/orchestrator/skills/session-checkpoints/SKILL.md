@@ -3,7 +3,7 @@ name: session-checkpoints
 description: "Protocol for saving and restoring session state across agent sessions. Enables replay, fork, and resume of interrupted work — inspired by Sandcastle Run Time Machine."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Skill: Session Checkpoints
 
@@ -21,7 +21,7 @@ Create a checkpoint:
 
 ## Checkpoint Format
 
-Create or update the file `docs/SESSION-CHECKPOINT.md` with this structure:
+Create or update the file `.github/customizations/SESSION-CHECKPOINT.md` with this structure:
 
 ```markdown
 # Session Checkpoint
@@ -29,7 +29,7 @@ Create or update the file `docs/SESSION-CHECKPOINT.md` with this structure:
 **Last Updated:** YYYY-MM-DD HH:MM
 **Feature:** Short feature name
 **Branch:** git branch name
-**Linear Issues:** TAS-XX, TAS-YY, TAS-ZZ
+**Tracker Issues:** TAS-XX, TAS-YY, TAS-ZZ
 
 ## Current Phase
 
@@ -37,21 +37,21 @@ Phase N of M — Brief description of what this phase does
 
 ## Completed Work
 
-| Task | Linear | Agent | Status | Files |
-|------|--------|-------|--------|-------|
+| Task | Tracker | Agent | Status | Files |
+|------|---------|-------|--------|-------|
 | Description | TAS-XX | Agent Name | ✅ Done | file1.ts, file2.ts |
 | Description | TAS-YY | Agent Name | ✅ Done | file3.ts |
 
 ## In Progress
 
-| Task | Linear | Agent | Status | Notes |
-|------|--------|-------|--------|-------|
+| Task | Tracker | Agent | Status | Notes |
+|------|---------|-------|--------|-------|
 | Description | TAS-ZZ | Agent Name | 🔄 In Progress | What's been done so far |
 
 ## Remaining Work
 
-| Task | Linear | Agent | Dependencies | Files |
-|------|--------|-------|-------------|-------|
+| Task | Tracker | Agent | Dependencies | Files |
+|------|---------|-------|-------------|-------|
 | Description | TAS-AA | Agent Name | TAS-ZZ | file4.ts, file5.ts |
 
 ## Pending Approvals
@@ -80,7 +80,7 @@ the row from this table — the approval was already resolved.
 
 Track each delegation to monitor budget and optimize future model assignments:
 
-| # | Agent | Linear | Model Tier | Est. Tokens | Duration | Status |
+| # | Agent | Tracker | Model Tier | Est. Tokens | Duration | Status |
 |---|-------|--------|------------|-------------|----------|--------|
 | 1 | Content Engineer | TAS-XX | Standard | ~20K | 8 min | ✅ Done |
 | 2 | DB Engineer | TAS-YY | Standard | ~25K | 12 min | ✅ Done |
@@ -93,7 +93,7 @@ Track each delegation to monitor budget and optimize future model assignments:
 ```
 Agent A: dir1/, dir2/
 Agent B: dir3/, dir4/
-Agent C: docs/
+Agent C: .github/customizations/
 ```
 
 ## Resume Instructions
@@ -101,7 +101,7 @@ Agent C: docs/
 Step-by-step instructions for a new session to pick up where this one left off:
 
 1. Check out branch `feat/xxx`
-2. Read Linear issues TAS-XX, TAS-YY for context
+2. Read tracker issues TAS-XX, TAS-YY for context
 3. Start Phase N+1: [specific instructions]
 ```
 
@@ -109,9 +109,9 @@ Step-by-step instructions for a new session to pick up where this one left off:
 
 When starting a new session:
 
-1. **Check for checkpoint** — Read `docs/SESSION-CHECKPOINT.md` if it exists
+1. **Check for checkpoint** — Read `.github/customizations/SESSION-CHECKPOINT.md` if it exists
 2. **Verify state** — Run `git status`, check branch, verify files match checkpoint
-3. **Check Linear** — List in-progress and todo issues for current feature
+3. **Check tracker** — List in-progress and todo issues for current feature
 4. **Follow resume instructions** — Execute the specific steps listed in the checkpoint
 5. **Update checkpoint** — After resuming, update the checkpoint with current progress
 
@@ -137,10 +137,10 @@ When a checkpoint reveals multiple possible paths forward, document them as fork
 
 ## Cleanup
 
-After a feature is fully complete (all Linear issues Done):
+After a feature is fully complete (all tracker issues Done):
 
-1. Archive the checkpoint content to the relevant Linear issue comments
-2. Delete `docs/SESSION-CHECKPOINT.md` to keep the workspace clean
+1. Archive the checkpoint content to the relevant tracker issue comments
+2. Delete `.github/customizations/SESSION-CHECKPOINT.md` to keep the workspace clean
 3. The next feature starts with a fresh checkpoint
 
 ## Integration with Team Lead
@@ -169,7 +169,7 @@ Add a `## Step Output Log` section to the checkpoint file:
 
 ### Step 1: [Short description]
 - **Agent:** [Agent Name]
-- **Linear:** TAS-XX
+- **Tracker:** TAS-XX
 - **Status:** ✅ Completed
 - **Duration:** ~X minutes
 - **Key Outputs:**
@@ -180,7 +180,7 @@ Add a `## Step Output Log` section to the checkpoint file:
 
 ### Step 2: [Short description]
 - **Agent:** [Agent Name]
-- **Linear:** TAS-YY
+- **Tracker:** TAS-YY
 - **Status:** ❌ Failed (attempt 1)
 - **Error:** [Specific error message or failure reason]
 - **Cached Context from Step 1:** [Reference what Step 1 produced]

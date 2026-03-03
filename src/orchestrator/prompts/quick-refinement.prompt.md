@@ -1,13 +1,13 @@
 ---
-description: 'Handle follow-up refinements after a roadmap task — bug fixes, UI tweaks, polish, and adjustments that are too small for Linear tracking.'
+description: 'Handle follow-up refinements after a roadmap task — bug fixes, UI tweaks, polish, and adjustments that are too small for issue tracking.'
 agent: Team Lead
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Follow-Up Refinement
 
-You are the Team Lead. Handle the follow-up refinement described below. This is a **post-task adjustment** — a bug fix, UI tweak, or polish item that came up after reviewing a completed roadmap task. It does NOT require Linear tracking.
+You are the Team Lead. Handle the follow-up refinement described below. This is a **post-task adjustment** — a bug fix, UI tweak, or polish item that came up after reviewing a completed roadmap task. It does NOT require issue tracking.
 
 ## Request
 
@@ -19,7 +19,7 @@ You are the Team Lead. Handle the follow-up refinement described below. This is 
 
 | Aspect | Roadmap Task | Follow-Up |
 |--------|-------------|-----------|
-| Linear issues | Required (hard gate) | Depends on scope (see triage) |
+| Tracker issues | Required (hard gate) | Depends on scope (see triage) |
 | Panel review | For high-stakes changes | Only if security/data-related |
 | Documentation updates | Roadmap + known issues + ADRs | Only if behavior changes significantly |
 | Scope | Multi-step feature | Focused fix or adjustment |
@@ -31,9 +31,9 @@ You are the Team Lead. Handle the follow-up refinement described below. This is 
 
 ### 1. Triage: Decide Tracking Level
 
-Before doing anything, decide whether this follow-up needs Linear tracking:
+Before doing anything, decide whether this follow-up needs issue tracking:
 
-**Create a Linear issue if ANY of these are true:**
+**Create a tracker issue if ANY of these are true:**
 - The change affects user-visible behavior (not just cosmetic)
 - It touches more than 2–3 files
 - It modifies shared library code (`libs/`)
@@ -41,13 +41,13 @@ Before doing anything, decide whether this follow-up needs Linear tracking:
 - It could introduce regressions in other features
 - You want a record for future reference (e.g., "why was this changed?")
 
-**Skip Linear if ALL of these are true:**
+**Skip tracking if ALL of these are true:**
 - Pure cosmetic/spacing/copy tweak
 - Isolated to a single component or page
 - No behavioral change
 - Trivial to verify visually
 
-If creating a Linear issue, use:
+If creating a tracker issue, use:
 - **Title**: `[Follow-up] Short description`
 - **Label**: agent name + `follow-up`
 - **Priority**: Low or Medium
@@ -59,11 +59,11 @@ Before touching any code:
 
 1. **Clarify scope** — Identify exactly which pages, components, or behaviors need to change
 2. **Find affected files** — Search the codebase for the relevant components, styles, queries, and tests
-3. **Check known issues** — Scan `docs/KNOWN-ISSUES.md` in case this is a documented limitation
+3. **Check known issues** — Scan `.github/customizations/KNOWN-ISSUES.md` in case this is a documented limitation
 4. **Read lessons learned** — Check `.github/customizations/LESSONS-LEARNED.md` for relevant pitfalls before starting
 5. **Assess complexity** — If the request turns out to be larger than expected (touches >5 files, needs a migration, or affects auth/security), escalate it:
    - Inform the user that this should be a tracked task
-   - Create a Linear issue (if not already created in triage) and switch to the `implement-feature` workflow
+   - Create a tracker issue (if not already created in triage) and switch to the `implement-feature` workflow
 
 ### 3. Plan the Fix
 
@@ -100,15 +100,15 @@ Delegate to the appropriate specialist agent(s). Since follow-ups are scoped and
 
 Every follow-up, no matter how small, must pass these checks:
 
-1. **Deterministic Checks** — `yarn nx run <project>:lint --fix`, `:test`, `:build` — all zero errors
+1. **Deterministic Checks** — run lint, test, and build for all affected projects (see the **codebase-tool** skill for commands) — all zero errors
 2. **Browser Testing** (MANDATORY for any visual change) — clear cache, start server, verify scenario + responsive + screenshot evidence
 3. **Regression Check** — if shared component/library modified, run tests for all consuming projects and browser-test at least one page per affected app
 
 ### 6. Delivery
 
-If triage determined this follow-up needs Linear tracking, follow the **Delivery Outcome** defined in `general.instructions.md` — commit, push, open PR (not merged), and link to Linear.
+If triage determined this follow-up needs tracker tracking, follow the **Delivery Outcome** defined in `general.instructions.md` — commit, push, open PR (not merged), and link to the tracker.
 
-If triage determined no Linear tracking is needed (pure cosmetic/isolated/trivial), commit the changes to the current working branch. A dedicated branch and PR are not required because the Team Lead will include these changes in the parent task's existing PR — the "every change goes through a PR" rule is still satisfied via the parent PR.
+If triage determined no tracker tracking is needed (pure cosmetic/isolated/trivial), commit the changes to the current working branch. A dedicated branch and PR are not required because the Team Lead will include these changes in the parent task's existing PR — the "every change goes through a PR" rule is still satisfied via the parent PR.
 
 ### 7. Escalation Triggers
 
@@ -128,12 +128,12 @@ When escalating, explain to the user what you found and why it needs proper trac
 The follow-up is complete when:
 
 - [ ] The specific request is resolved
-- [ ] Linear issue created and moved to Done (if triage determined tracking was needed)
+- [ ] Tracker issue created and moved to Done (if triage determined tracking was needed)
 - [ ] Lint, test, and build pass for all affected projects
-- [ ] **Dev server started with CLEAN cache** (`rm -rf .next && yarn nx reset` before serving)
+- [ ] **Dev server started with CLEAN cache** (clear framework + task runner caches before serving — see the **codebase-tool** skill)
 - [ ] **Visual changes verified in Chrome with screenshot taken as proof**
 - [ ] No regressions in adjacent functionality
 - [ ] Shared component changes tested across all consuming apps
-- [ ] Delivery Outcome completed if tracked (see `general.instructions.md`) — branch pushed, PR opened (not merged), Linear linked
+- [ ] Delivery Outcome completed if tracked (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
 - [ ] Lessons learned captured if any retries occurred
 - [ ] Known issues updated if a new limitation was discovered

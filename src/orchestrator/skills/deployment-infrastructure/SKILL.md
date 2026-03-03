@@ -3,7 +3,7 @@ name: deployment-infrastructure
 description: "Deployment architecture, environment variables, cron jobs, security headers, and caching patterns. Use when configuring deployments, managing environment variables, setting up cron jobs, or troubleshooting build/deployment issues."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Deployment Infrastructure
 
@@ -22,7 +22,7 @@ All deployment configuration is project-specific. See [deployment-config.md](../
 ## Release Process
 
 ### 1. Pre-Release Audit
-- Run `yarn nx affected -t lint,test,build` to verify all affected projects
+- Run lint, test, and build for all affected projects (see the **codebase-tool** skill for commands)
 - Review all changed files since last release (`git diff` against last tag/release)
 - Check for uncommitted work or unmerged branches
 - Verify no draft PRs are accidentally included

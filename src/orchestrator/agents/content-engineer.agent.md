@@ -2,10 +2,10 @@
 description: 'Content engineer for CMS schema design, content queries, content modeling, releases, and studio customization.'
 name: 'Content Engineer'
 model: Gemini 3.1 Pro (Preview)
-tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages', 'sanity/get_schema', 'sanity/get_sanity_rules', 'sanity/list_sanity_rules', 'sanity/query_documents', 'sanity/get_document', 'sanity/create_documents_from_json', 'sanity/create_documents_from_markdown', 'sanity/patch_document_from_json', 'sanity/patch_document_from_markdown', 'sanity/deploy_schema', 'sanity/publish_documents', 'sanity/unpublish_documents', 'sanity/discard_drafts', 'sanity/list_projects', 'sanity/list_datasets', 'sanity/list_workspace_schemas', 'sanity/list_embeddings_indices', 'sanity/search_docs', 'sanity/read_docs', 'sanity/semantic_search', 'sanity/migration_guide', 'sanity/create_version', 'sanity/generate_image', 'sanity/transform_image', 'sanity/add_cors_origin']
+tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages']
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Content Engineer
 
@@ -42,7 +42,7 @@ Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
 
 ## Out of Scope
 
-- Building React components that render CMS content
+- Building UI components that render CMS content
 - Creating database migrations for data that mirrors CMS content
 - Writing E2E tests for pages that consume CMS data
 - Deploying frontend applications

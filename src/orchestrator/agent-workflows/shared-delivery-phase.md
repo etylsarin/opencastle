@@ -1,4 +1,4 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Shared Delivery Phase
 
@@ -6,14 +6,14 @@ This phase is referenced by all workflow templates. It covers the final delivery
 
 ## Steps
 
-1. **Commit all changes** to the feature branch with Linear issue IDs in commit messages
+1. **Commit all changes** to the feature branch with tracker issue IDs in commit messages
 2. **Push the branch** to origin: `git push -u origin <branch-name>`
 3. **Open a PR** using `gh` CLI (always use `GH_PAGER=cat` to prevent pager issues):
    ```bash
    GH_PAGER=cat gh pr create --base main --title "TAS-XX: Short description" --body "Resolves TAS-XX"
    ```
 4. **Do NOT merge** — PRs are opened for human review only
-5. **Update Linear issues** with the PR URL for traceability
+5. **Update tracker issues** with the PR URL for traceability
 6. **Clean up session checkpoint** if one exists
 
 ## Branch & Delivery Strategy
@@ -28,8 +28,8 @@ The **Team Lead owns delivery**, not individual specialist agents:
 
 ## Exit Criteria
 
-- [ ] All changes committed with Linear issue IDs in messages
+- [ ] All changes committed with tracker issue IDs in messages
 - [ ] Branch pushed to origin
 - [ ] PR opened on GitHub (NOT merged)
-- [ ] Linear issues updated with PR URL
+- [ ] Tracker issues updated with PR URL
 - [ ] All project issues marked Done or Cancelled

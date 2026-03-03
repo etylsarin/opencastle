@@ -1,4 +1,4 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 ````skill
 ---
@@ -218,12 +218,12 @@ CONFIDENCE: low | medium | high
 
 ## Logging
 
-Append a JSON line to `customizations/logs/reviews.ndjson` after each fast review:
+Append a JSON line to `.github/customizations/logs/reviews.ndjson` after each fast review:
 
 ```json
 {
   "timestamp": "2026-02-28T14:30:00Z",
-  "linear_issue": "PRJ-42",
+  "tracker_issue": "PRJ-42",
   "agent": "Developer",
   "reviewer_model": "gpt-5-mini",
   "verdict": "pass",

@@ -3,7 +3,7 @@ name: testing-workflow
 description: "Comprehensive testing workflow including test planning, unit/integration/E2E testing patterns, coverage requirements, and common testing mistakes. Use when writing tests, planning test strategies, or validating feature completeness."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Testing Workflow
 
@@ -11,7 +11,7 @@ description: "Comprehensive testing workflow including test planning, unit/integ
 
 - Test implementations thoroughly before claiming completion.
 - Every feature must be validated through comprehensive testing covering happy paths, edge cases, error conditions, and user interactions.
-- **Mandatory**: Every feature implementation must be tested in the browser using Chrome DevTools MCP automation before marking as complete.
+- **Mandatory**: Every feature implementation must be tested in the browser using the project's E2E testing tool (resolved via the **e2e-testing** capability slot) before marking as complete.
 
 ## E2E Testing Context Management
 
@@ -22,11 +22,11 @@ description: "Comprehensive testing workflow including test planning, unit/integ
 2. **MAX 3 screenshots** per session.
 3. **Use `evaluate_script()` over `take_snapshot()`** — returns less data.
 4. **Reload between major test flows** to clear state.
-5. **Log results separately** — append to `docs/testing/E2E-RESULTS.md`.
+5. **Log results separately** — append to `.github/customizations/logs/e2e-results.md`.
 
 ### Suite Files
 
-See `project.instructions.md` for the full list of E2E test suite files.
+See `.github/customizations/project.instructions.md` for the full list of E2E test suite files.
 
 ## Pre-Implementation Test Plan
 
@@ -66,11 +66,11 @@ Before implementing any feature, create a plan covering:
 
 > **Detailed breakpoint definitions, resize commands, and per-breakpoint checklists:** See the **browser-testing** skill. The **validation-gates** skill (Gate 3) defines the mandatory testing protocol.
 
-**Anti-pattern:** Testing only at desktop (or only at the default browser width) and assuming responsive classes work. Tailwind classes can be incorrect — always verify visually at every breakpoint.
+**Anti-pattern:** Testing only at desktop (or only at the default browser width) and assuming responsive classes work. CSS utility classes can be incorrect — always verify visually at every breakpoint.
 
 ## Coverage Requirements
 
-### Unit Tests (Jest)
+### Unit Tests
 - **Minimum 95% coverage** for all new code.
 - All exported functions, React components, custom hooks.
 - Edge cases and error conditions. Input validation.
@@ -110,7 +110,7 @@ After completing any feature:
 
 1. Start dev server (see `project.instructions.md` for app/port details).
 2. Open browser to the dev URL.
-3. Test all critical user flows with Chrome DevTools MCP.
+3. Test all critical user flows with the project's E2E testing tool (see the **e2e-testing** skill).
 4. Test edge cases (empty results, max/min values, errors).
 5. Document results with screenshots.
 
@@ -128,9 +128,9 @@ After completing any feature:
 
 ## Commands
 
-```bash
-yarn nx run <project>:test                 # Run tests
-yarn nx run <project>:test --coverage      # With coverage
-yarn nx run <project>:test -u              # Update snapshots
-yarn nx affected -t test                   # Affected tests
-```
+Resolve exact test commands via the **codebase-tool** skill. Common tasks:
+
+- Run project tests
+- Run with coverage
+- Update snapshots
+- Run affected tests only

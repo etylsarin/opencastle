@@ -35,10 +35,11 @@ export async function writeManifest(
 /**
  * Create a fresh manifest object.
  */
-export function createManifest(version: string, ide: string): Manifest {
+export function createManifest(version: string, ide: string, ides?: string[]): Manifest {
   return {
     version,
     ide,
+    ides: ides ?? [ide],
     installedAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };

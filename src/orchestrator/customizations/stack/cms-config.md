@@ -19,7 +19,7 @@ Project-specific CMS details referenced by the corresponding CMS skill (e.g., `s
 
 ## Query Examples
 
-<!-- Provide representative query examples for the CMS query language (GROQ, GraphQL, etc.) -->
+<!-- Provide representative query examples for the CMS query language (e.g., GROQ, GraphQL) -->
 
 ## Key Files
 

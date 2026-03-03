@@ -4,20 +4,31 @@
 
 Project-specific documentation layout referenced by the `documentation-standards` skill.
 
+Documentation files live in the `.github/customizations/` directory alongside other project-specific configuration. Key documentation files:
+
+- `.github/customizations/KNOWN-ISSUES.md` — Tracked issues, limitations, and accepted risks
+- `.github/customizations/project/roadmap.md` — Project roadmap and feature status
+- `.github/customizations/project/decisions.md` — Architecture Decision Records
+- `.github/customizations/LESSONS-LEARNED.md` — Agent knowledge base of retries and workarounds
+
 ## Directory Tree
 
-<!-- Map your project's docs/ directory here -->
+<!-- Map your project's documentation directory here if one exists -->
 
 ```
-docs/
-├── README.md               — Documentation index
-└── ...                     — Add entries as docs are created
+.github/customizations/
+├── KNOWN-ISSUES.md            — Tracked issues and limitations
+├── LESSONS-LEARNED.md         — Agent knowledge base
+└── project/
+    ├── roadmap.md             — Feature roadmap
+    ├── decisions.md           — Architecture Decision Records
+    └── docs-structure.md      — This file
 ```
 
 ## Practices
 
 - **Check Known Issues** before starting any task
-- **Review Architecture** docs for context
+- **Review Architecture** decisions for context
 - **Update roadmap** after completing features
 - **Add new issues** with: Issue ID, Status, Severity, Evidence, Root Cause, Solution Options
 - **Archive** outdated docs rather than deleting

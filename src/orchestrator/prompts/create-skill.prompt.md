@@ -1,9 +1,9 @@
 ---
-description: 'Scaffold a new skill directory with proper frontmatter, structure, and content sections. Use when adding a new domain skill to the AI configuration.'
+description: 'Scaffold a new skill file with proper frontmatter, structure, and registration. Use when adding a new domain skill to the AI configuration.'
 agent: Team Lead
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Create Skill
 
@@ -15,27 +15,44 @@ Scaffold a new skill for the AI agent configuration. Skills encode domain-specif
 
 ---
 
+## Skill Types
+
+OpenCastle has two kinds of skills with different locations and registration paths:
+
+| Type | Location | Bound Via | Purpose |
+|------|----------|-----------|---------|
+| **Process skill** | `skills/<name>/SKILL.md` | Direct reference in agent files | Stack-agnostic methodology (testing workflow, self-improvement, validation gates) |
+| **Plugin skill** | `plugins/<plugin>/SKILL.md` | Capability slot in the skill matrix | Technology-specific knowledge (CMS queries, database patterns, deployment config) |
+
+> **Rule of thumb:** If the skill would need to be rewritten when switching technologies (e.g., Supabase → Convex), it belongs in a **plugin**. If it's useful regardless of stack, it's a **process skill**.
+
+---
+
 ## Workflow
 
-### Step 1: Determine Scope
+### Step 1: Classify the Skill
 
-Classify the skill:
+Determine the type:
 
-| Scope | Prefix | When to Use |
-|-------|--------|-------------|
-| **Global** | `global-` | Domain knowledge applicable to any project (React, testing, security) |
-| **Local** | `local-` | Project-specific conventions (Linear config, Sanity schema patterns, this project's API structure) |
+| Question | If Yes → | If No → |
+|----------|----------|---------|
+| Is this tied to a specific technology/tool? | Plugin skill | Process skill |
+| Would switching tech stacks invalidate this content? | Plugin skill | Process skill |
+| Does a plugin already exist for this tool in `plugins/`? | Add `SKILL.md` to existing plugin | Create new plugin or process skill |
 
 ### Step 2: Name the Skill
 
-- Format: `<scope>-<domain>` (e.g., `global-react-development`, `local-sanity-cms`)
-- Use kebab-case
-- Be specific enough to distinguish from other skills, broad enough to be reusable
-- Check existing skills in `.github/skills/` to avoid overlap
+- Use `kebab-case`
+- **Process skills:** descriptive domain name (e.g., `testing-workflow`, `context-map`, `security-hardening`)
+- **Plugin skills:** `skillName` field in the plugin's `config.ts` (e.g., `sanity-cms`, `supabase-database`, `nx-workspace`)
+- Check existing skills in `skills/` and `plugins/` to avoid overlap
 
 ### Step 3: Create the Skill File
 
-Create `.github/skills/<skill-name>/SKILL.md` with this structure:
+**Process skill:** Create `skills/<skill-name>/SKILL.md`
+**Plugin skill:** Create `plugins/<plugin-name>/SKILL.md`
+
+Use this template:
 
 ```markdown
 ````skill
@@ -44,15 +61,9 @@ name: <skill-name>
 description: "<One-line description of what the skill covers. Include key topics and when to use it.>"
 ---
 
-# Skill: <Display Name>
+# <Display Name>
 
 <1-2 sentence overview of the skill's purpose and scope.>
-
-## When to Use
-
-- <Trigger condition 1>
-- <Trigger condition 2>
-- <Trigger condition 3>
 
 ## Core Principles
 
@@ -68,11 +79,6 @@ description: "<One-line description of what the skill covers. Include key topics
 
 <More domain content.>
 
-## Checklist
-
-- [ ] <Verification item 1>
-- [ ] <Verification item 2>
-
 ## Anti-Patterns
 
 - **<Bad pattern>** — <Why it's bad and what to do instead>
@@ -82,24 +88,36 @@ description: "<One-line description of what the skill covers. Include key topics
 
 ### Step 4: Register the Skill
 
-1. **Add to the skill matrix** — Update `.github/customizations/agents/skill-matrix.md` with the new skill mapping
-2. **Add to relevant agents** — Update the `skills` section in each agent that should use this skill
-3. **Reference in instructions** — If the skill is loaded by default, add it to the appropriate `.github/instructions/` file
+Registration differs by type:
+
+#### Process Skill
+
+1. **Add to the skill matrix** — Add a row to the **Process Skills (Always Direct)** table in `.github/customizations/agents/skill-matrix.md`
+2. **Reference in agent files** — Add to the `Direct Skills` section of each agent that should use it
+3. **Optional: reference in instructions** — If the skill should be loaded by default, add it to the appropriate `.github/instructions/` file
+
+#### Plugin Skill
+
+1. **Set `skillName` in the plugin's `config.ts`** — This connects the skill to the plugin
+2. **Update the skill matrix** — Set the Skill column for the matching capability slot row in `.github/customizations/agents/skill-matrix.md`
+3. **No agent changes needed** — Agents resolve plugin skills through capability slots automatically
 
 ### Step 5: Validate
 
-- [ ] File created at `.github/skills/<name>/SKILL.md`
+- [ ] File created at the correct path (`skills/` or `plugins/`)
 - [ ] Frontmatter has `name` and `description` fields
 - [ ] Description is a single line (no line breaks)
 - [ ] Content follows the template structure
 - [ ] No overlap with existing skills
-- [ ] Skill matrix updated
-- [ ] At least one agent references the skill
+- [ ] Skill matrix updated (process skill table or capability slot binding)
+- [ ] For process skills: at least one agent references the skill directly
+- [ ] For plugin skills: `config.ts` `skillName` matches the `name` in frontmatter
 
 ## Quality Guidelines
 
 - **Be prescriptive** — Skills should give clear instructions, not vague advice. "Use `fetchPlaces()` from `libs/queries`" beats "use the query library"
-- **Include examples** — Code snippets, file path examples, and table references from the actual codebase
+- **Include examples** — Code snippets, file path examples, and table references
 - **Keep it scannable** — Use headings, tables, bullets, and code blocks. Agents need to find information fast
 - **Avoid duplication** — If a rule already exists in `.github/instructions/`, reference it instead of repeating it
+- **Stay stack-agnostic in process skills** — Never hardcode technology names; use capability slot references (e.g., "the **database** skill" not "Supabase")
 - **Size target** — 100-300 lines. Under 100 is probably too thin; over 300 should be split into multiple skills

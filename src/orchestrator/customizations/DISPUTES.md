@@ -33,7 +33,7 @@ Create a dispute record when **any** of these occur:
 |-------|-------|
 | **Date** | YYYY-MM-DD |
 | **Priority** | `critical` / `high` / `medium` / `low` |
-| **Linear Issue** | PRJ-XX |
+| **Tracker Issue** | PRJ-XX |
 | **Trigger** | `panel-3x-block` / `approach-conflict` / `criteria-conflict` / `architectural-ambiguity` / `external-dependency` |
 | **Implementing Agent** | Agent name |
 | **Reviewing Agent(s)** | Agent name(s) |
@@ -85,8 +85,8 @@ Which option the Team Lead recommends and why. Include specific next steps:
 #### Artifacts
 
 Links to evidence for human review:
-- Panel report: `customizations/logs/panel/[panel-key].md`
-- Review log entries: `customizations/logs/reviews.ndjson` (filter by issue)
+- Panel report: `.github/customizations/logs/panel/[panel-key].md`
+- Review log entries: `.github/customizations/logs/reviews.ndjson` (filter by issue)
 - Changed files: [list of files in the last attempt]
 - DLQ entry (if any): `DLQ-XXX`
 ```
@@ -113,7 +113,7 @@ Links to evidence for human review:
 │  Team Lead creates dispute record     │
 │  Status: pending                      │
 │  Logs to disputes.ndjson              │
-│  Links to Linear issue                │
+│  Links to tracker issue               │
 └──────────────┬───────────────────────┘
                │
                ▼
@@ -156,7 +156,7 @@ A dispute MAY reference a DLQ entry if the dispute escalated from a logged failu
 
 ## Index
 
-| ID | Date | Priority | Trigger | Linear Issue | Status |
+| ID | Date | Priority | Trigger | Tracker Issue | Status |
 |----|------|----------|---------|-------------|--------|
 
 ````

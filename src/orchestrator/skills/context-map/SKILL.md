@@ -3,7 +3,7 @@ name: context-map
 description: "Generate a structured file impact map before making changes. Identifies all files that will be affected, their relationships, and cascade effects — improving file partitioning for parallel work and reducing unexpected side effects."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Skill: Context Map
 
@@ -43,7 +43,7 @@ For each entry point, trace what depends on it:
 
 For each entry point, trace what it depends on:
 
-1. **Data sources** — which Sanity schemas, GROQ queries, or Supabase tables feed this code?
+1. **Data sources** — which CMS schemas, content queries, or database tables feed this code?
 2. **Shared utilities** — which `libs/` modules does it use?
 3. **Configuration** — which config files affect its behavior?
 
@@ -75,8 +75,8 @@ Produce a structured map in this format:
 ### Unaffected (explicitly safe)
 | Area | Why |
 |------|-----|
-| `supabase/migrations/` | No DB changes |
-| `libs/supabase-auth/` | No auth changes |
+| `db/migrations/` | No DB changes |
+| `libs/auth/` | No auth changes |
 | `apps/cms-studio/` | No schema changes |
 ```
 

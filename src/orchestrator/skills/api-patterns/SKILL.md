@@ -3,15 +3,15 @@ name: api-patterns
 description: "API design patterns for route handlers, Server Actions, Zod validation, and external API integration. Use when creating API routes, Server Actions, or integrating external services."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # API Patterns
 
-Generic API design patterns for Next.js App Router projects. For project-specific endpoints, actions, and external API inventory, see [api-config.md](../../customizations/stack/api-config.md).
+Generic API design patterns for server-rendered framework projects. For project-specific endpoints, actions, and external API inventory, see [api-config.md](../../customizations/stack/api-config.md).
 
 ## Architecture
 
-This project uses **Next.js App Router** API patterns:
+This project uses **App Router** API patterns (resolve the specific framework via the **framework** capability slot in the skill matrix):
 
 - **Server Actions** (preferred for mutations) — form submissions, data writes, auth operations
 - **Route Handlers** (`route.ts`) — analytics endpoints, autocomplete, external integrations
@@ -43,12 +43,12 @@ export async function GET(request: NextRequest) {
 
 ```typescript
 'use server';
-import { createServerClient } from '@libs/supabase-auth';
+import { createServerClient } from '@libs/auth';
 import { revalidatePath } from 'next/cache';
 
 export async function submitAction(formData: FormData) {
-  const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const client = await createServerClient();
+  const { data: { user } } = await client.auth.getUser();
   if (!user) return { error: 'Unauthorized' };
   // ... validate and process
   revalidatePath('/places');

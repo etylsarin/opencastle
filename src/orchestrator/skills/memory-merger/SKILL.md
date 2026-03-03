@@ -3,7 +3,7 @@ name: memory-merger
 description: "Protocol for graduating mature lessons from LESSONS-LEARNED.md into permanent instruction and skill files. Closes the self-improvement loop by codifying validated knowledge at the source level."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Skill: Memory Merger
 
@@ -35,7 +35,7 @@ Read `.github/customizations/LESSONS-LEARNED.md` and identify lessons that meet 
 | **High severity** | Marked `high` severity |
 | **Age** | Added more than 60 days ago and still relevant |
 | **Category concentration** | 5+ lessons in the same category → extract a pattern |
-| **Tool-specific** | Lesson about a specific MCP tool, NX command, or framework pattern |
+| **Tool-specific** | Lesson about a specific MCP tool, codebase-tool command, or framework pattern |
 
 ### Step 2: Map Lessons to Target Files
 
@@ -43,17 +43,17 @@ Each lesson has a natural home in the instruction/skill hierarchy:
 
 | Lesson Category | Target File |
 |----------------|-------------|
-| `linear` | `.github/skills/task-management/SKILL.md` |
+| `task-management` | The skill mapped by the `task-management` slot in the skill matrix |
 | `mcp-tools` | The corresponding agent file or skill that uses the tool |
-| `nx-commands` | `.github/skills/nx-workspace/SKILL.md` |
-| `sanity` | `.github/skills/sanity-cms/SKILL.md` |
-| `supabase` | `.github/skills/supabase-database/SKILL.md` |
-| `browser-testing` | `.github/skills/browser-testing/SKILL.md` |
+| `codebase-tool` | The skill mapped by the `codebase-tool` slot in the skill matrix |
+| `cms` | The skill mapped by the `cms` slot in the skill matrix |
+| `database` | The skill mapped by the `database` slot in the skill matrix |
+| `browser-testing` | The skill mapped by the `e2e-testing` slot in the skill matrix |
 | `git-workflow` | `.github/instructions/general.instructions.md` |
 | `deployment` | `.github/skills/deployment-infrastructure/SKILL.md` |
 | `delegation` | `.github/agents/team-lead.agent.md` or `.github/skills/team-lead-reference/SKILL.md` |
 | `testing` | `.github/skills/testing-workflow/SKILL.md` |
-| `react` / `nextjs` | Corresponding global skill file |
+| `ui-library` / `framework` | The skill mapped by the corresponding slot in the skill matrix |
 | Cross-cutting pattern | `.github/instructions/general.instructions.md` |
 
 ### Step 3: Draft the Merge

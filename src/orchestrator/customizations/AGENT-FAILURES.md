@@ -29,7 +29,7 @@ Add an entry when **any** of these occur:
 |-------|-------|
 | **Date** | YYYY-MM-DD |
 | **Agent** | Agent name |
-| **Linear Issue** | PREFIX-XX (if applicable) |
+| **Tracker Issue** | PREFIX-XX (if applicable) |
 | **Failure Type** | `verification-fail` / `tool-error` / `panel-block` / `timeout` / `scope-creep` |
 | **Attempts** | Number of attempts before logging |
 

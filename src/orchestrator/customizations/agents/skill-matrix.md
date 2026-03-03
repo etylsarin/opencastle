@@ -41,7 +41,7 @@ Agent file                  Skill Matrix                 Skill file
 | `database` | | | Schema, migrations, auth flow, roles |
 | `cms` | | | Document types, queries, schema management |
 | `deployment` | | | Hosting, cron jobs, env vars, caching, headers |
-| `monorepo` | | | Task running, caching, affected commands, generators |
+| `codebase-tool` | | | Task running, building, linting, testing, code generation |
 
 ### Tooling
 
@@ -50,8 +50,7 @@ Agent file                  Skill Matrix                 Skill file
 | `api-layer` | | | API routes, validation, search architecture |
 | `data-pipeline` | | | ETL, scraping, data processing |
 | `testing` | | | Unit/integration tests, coverage, test planning |
-| `e2e-testing` | | | Browser automation, viewport testing, visual validation |
-
+| `e2e-testing` | | | Browser automation, viewport testing, visual validation || `task-management` | | | Issue tracking, naming, priorities, workflow states |
 ### Disciplines
 
 | Slot | Approach | Skill | Description |
@@ -77,14 +76,14 @@ Each row shows which capability slots an agent needs (resolved through this matr
 | **Data Expert** | `data-pipeline` | — |
 | **DevOps Expert** | `deployment` | — |
 | **Performance Expert** | `performance` | — |
-| **Architect** | `monorepo` | `documentation-standards` |
+| **Architect** | `codebase-tool` | `documentation-standards` |
 | **Copywriter** | `cms` | `documentation-standards` |
 | **SEO Specialist** | `framework`, `cms`, `seo` | — |
 | **API Designer** | `api-layer`, `framework`, `security` | — |
-| **Release Manager** | `monorepo`, `deployment` | `validation-gates`, `documentation-standards` |
+| **Release Manager** | `codebase-tool`, `deployment` | `validation-gates`, `documentation-standards` |
 | **Documentation Writer** | — | `documentation-standards`, `code-commenting` |
 | **Researcher** | — | `context-map`, `self-improvement` |
-| **Team Lead** | — | `team-lead-reference`, `task-management`, `session-checkpoints`, `validation-gates`, `fast-review`, `panel-majority-vote`, `context-map`, `memory-merger`, `agent-hooks` |
+| **Team Lead** | `task-management` | `team-lead-reference`, `session-checkpoints`, `validation-gates`, `fast-review`, `panel-majority-vote`, `context-map`, `memory-merger`, `agent-hooks` |
 
 ¹ UI/UX Expert uses `e2e-testing` as a utility (viewport resize commands) — resolved through the matrix like other slots.
 
@@ -102,7 +101,7 @@ These are methodology/workflow skills — not tied to any technology. Referenced
 | `code-commenting` | Self-documenting code patterns, annotation tags |
 | `agent-hooks` | Agent lifecycle hooks (session-start, session-end, etc.) |
 | `agent-memory` | Agent expertise tracking, cross-session knowledge graph |
-| `task-management` | Linear board conventions, issue naming, priorities |
+| `task-management` | Issue tracking conventions, naming, priorities |
 | `team-lead-reference` | Team Lead orchestration reference, model routing |
 | `fast-review` | Mandatory single-reviewer gate after every delegation |
 | `validation-gates` | Shared validation gate definitions (lint, test, build) |
@@ -130,6 +129,12 @@ These are methodology/workflow skills — not tied to any technology. Referenced
 1. Create skill: `skills/vitest-workflow/SKILL.md`
 2. Update matrix: `testing` → `Vitest` / `vitest-workflow`
 3. **No agent files change** — Testing Expert still references the `testing` slot
+
+### Example: Linear → Jira
+
+1. Skill already exists: `skills/jira-management/SKILL.md`
+2. Update matrix: `task-management` → `Jira` / `jira-management`
+3. **No agent files change** — Team Lead still references the `task-management` slot
 
 ## Design Principles
 

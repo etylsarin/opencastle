@@ -3,7 +3,7 @@ name: agent-hooks
 description: "Lifecycle hooks for AI agent sessions — reusable actions that run at specific points (session start, session end, pre-delegation, post-delegation). Defines what to do at each lifecycle event so agents behave consistently."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Agent Lifecycle Hooks
 
@@ -29,8 +29,8 @@ Session Lifecycle:
 ### Actions
 
 1. **Read lessons learned** — Scan `.github/customizations/LESSONS-LEARNED.md` for entries relevant to the current task domain. Apply proactively.
-2. **Check for checkpoint** — If `docs/SESSION-CHECKPOINT.md` exists, read it. Resume from last known state instead of re-analyzing.
-3. **Check pending approvals** — If the checkpoint has a `## Pending Approvals` section, check for replies using the configured messaging provider's MCP tools (e.g., `conversations_replies` for Slack). Read `.opencastle.json` → `stack.notifications` to determine the provider. If no messaging is configured, skip this step.
+2. **Check for checkpoint** — If `.github/customizations/SESSION-CHECKPOINT.md` exists, read it. Resume from last known state instead of re-analyzing.
+3. **Check pending approvals** — If the checkpoint has a `## Pending Approvals` section, check for replies using the configured messaging provider's MCP tools (e.g., `conversations_replies` for Slack). Read `.opencastle.json` → `stack.teamTools` to determine the provider. If no messaging is configured, skip this step.
 4. **Check dead letter queue** — Scan `.github/customizations/AGENT-FAILURES.md` for pending failures related to the current scope.
 5. **Load domain skills** — Based on the task description, load the appropriate skills before writing code. Don't start coding without the relevant skill loaded.
 
@@ -40,7 +40,7 @@ Include this reminder in every delegation:
 
 ```
 **Session Start:** Read `.github/customizations/LESSONS-LEARNED.md` before starting.
-Check `docs/SESSION-CHECKPOINT.md` for prior state and pending approvals.
+Check `.github/customizations/SESSION-CHECKPOINT.md` for prior state and pending approvals.
 If pending approvals exist, check for replies via the messaging provider.
 Load relevant skills before writing code.
 ```
@@ -51,22 +51,31 @@ Load relevant skills before writing code.
 
 **When:** Before the agent yields control back to the user — every time, unconditionally.
 
-> **You MUST log every session.** No threshold, no exceptions, no "too small to log."
+> **⛔ HARD GATE — Run the Pre-Response Quality Gate checklist from `general.instructions.md` before responding.**
+> A session without log records is a failed session. A session without lessons captured after retries is a failed session.
 
 ### Actions
 
-1. **Log the session (MANDATORY)** — Append a JSON line to `.github/customizations/logs/sessions.ndjson` with: agent name, task summary, files changed, duration estimate, outcome (success/partial/failed), and lessons count. See `general.instructions.md` § Observability Logging for full rules.
-2. **Save checkpoint** (Team Lead only) — If work is incomplete, write `docs/SESSION-CHECKPOINT.md` with current state so the next session can resume. Load **session-checkpoints** skill for format.
-3. **Verify lessons captured** — If any retries occurred during the session, confirm that each retry resulted in a lesson entry in `LESSONS-LEARNED.md`.
-4. **Memory merge check** — If `LESSONS-LEARNED.md` has grown significantly (5+ new entries this session), flag for memory merge consideration.
-5. **Clean up** — Remove any temporary files created during the session (e.g., test fixtures, debug outputs).
+1. **Run the Pre-Response Quality Gate** — This is the single exit gate. Verify ALL items from the checklist in `general.instructions.md` § Pre-Response Quality Gate:
+   - [ ] Lessons read at session start
+   - [ ] Lessons captured for any retries
+   - [ ] Discovered issues tracked (not ignored)
+   - [ ] Lint/type/test pass (no new errors)
+   - [ ] Session logged to `sessions.ndjson` (ALWAYS)
+   - [ ] Delegations logged (Team Lead only)
+   - [ ] Reviews/panels/disputes logged (if applicable)
+2. **Save checkpoint** (Team Lead only) — If work is incomplete, write `.github/customizations/SESSION-CHECKPOINT.md` with current state so the next session can resume. Load **session-checkpoints** skill for format.
+3. **Memory merge check** — If `LESSONS-LEARNED.md` has grown significantly (5+ new entries this session), flag for memory merge consideration.
+4. **Clean up** — Remove any temporary files created during the session (e.g., test fixtures, debug outputs).
 
 ### Template for Delegation Prompts
 
 ```
-**Session End:** Log your session to `.github/customizations/logs/sessions.ndjson`.
-If you retried anything with a different approach that worked, add a lesson
-to `.github/customizations/LESSONS-LEARNED.md`. Clean up temp files.
+**Session End:** Run the Pre-Response Quality Gate from general.instructions.md:
+- Log your session to `.github/customizations/logs/sessions.ndjson` (Constitution rule #6)
+- If you retried anything with a different approach that worked, add a lesson to `.github/customizations/LESSONS-LEARNED.md`
+- Track any discovered issues in KNOWN-ISSUES.md or a tracker ticket
+- Clean up temp files
 ```
 
 ---
@@ -77,7 +86,7 @@ to `.github/customizations/LESSONS-LEARNED.md`. Clean up temp files.
 
 ### Actions
 
-1. **Linear issue exists** — Verify the task has a Linear issue. If not, create one first.
+1. **Tracker issue exists** — Verify the task has a tracker issue. If not, create one first.
 2. **File partition clean** — Confirm no overlap with other active agents' file ownership.
 3. **Dependencies verified** — All prerequisite tasks are marked Done with independent verification.
 4. **Prompt is specific** — Includes: objective, file paths, acceptance criteria, patterns to follow, self-improvement reminder.
@@ -88,7 +97,7 @@ to `.github/customizations/LESSONS-LEARNED.md`. Clean up temp files.
 
 ```
 Pre-Delegate:
-☐ Linear issue ID included
+☐ Tracker issue ID included
 ☐ File partition specified
 ☐ Dependencies are Done
 ☐ Prompt has file paths + acceptance criteria
@@ -107,10 +116,10 @@ Pre-Delegate:
 0. **Fast review (mandatory)** — Run the `fast-review` skill against the agent's output. This is a **non-skippable gate**. See the fast-review skill for the full procedure (single reviewer sub-agent, automatic retry, escalation). Only after the fast review passes do you proceed to the remaining post-delegate actions below.
 1. **Verify output** — Read changed files. Check that changes stay within the agent's file partition.
 2. **Run verification** — Execute appropriate checks: lint, type-check, tests, or visual inspection.
-3. **Check acceptance criteria** — Compare output against the Linear issue's acceptance criteria. Each criterion must be independently verified.
-4. **Discovered issues tracked** — Verify the agent followed the Discovered Issues Policy. If they found issues, check that they're in KNOWN-ISSUES.md or a new Linear ticket.
+3. **Check acceptance criteria** — Compare output against the tracker issue's acceptance criteria. Each criterion must be independently verified.
+4. **Discovered issues tracked** — Verify the agent followed the Discovered Issues Policy. If they found issues, check that they're in KNOWN-ISSUES.md or a new tracker ticket.
 5. **Lessons captured** — If the agent retried anything, verify a lesson was added to LESSONS-LEARNED.md.
-6. **Update Linear** — Move the issue to Done (if passing) or add failure notes and re-delegate (if failing).
+6. **Update tracker** — Move the issue to Done (if passing) or add failure notes and re-delegate (if failing).
 
 ### Quick Checklist
 

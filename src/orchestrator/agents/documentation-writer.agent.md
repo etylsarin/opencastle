@@ -5,7 +5,7 @@ model: GPT-5 mini
 tools: ['search/codebase', 'edit/editFiles', 'web/fetch', 'search', 'read/problems']
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Documentation Writer
 

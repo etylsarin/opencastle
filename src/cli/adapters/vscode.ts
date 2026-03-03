@@ -1,10 +1,10 @@
 import { resolve } from 'node:path'
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { copyDir, getOrchestratorRoot, removeDirIfExists } from '../copy.js'
+import { copyDir, getOrchestratorRoot, removeDirIfExists, getPluginsRoot, getPluginSkillEntries } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
-import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform } from '../stack-config.js'
-import type { CopyResults, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
+import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform, getIncludedPluginIds, getAgentTransform } from '../stack-config.js'
+import type { CopyResults, CopyDirOptions, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
 
 /**
  * VS Code / GitHub Copilot adapter.
@@ -69,16 +69,34 @@ export async function install(
 
     // Build filter based on directory type
     let filter: ((_name: string, _srcPath: string) => boolean) | undefined
+    let transform: CopyDirOptions['transform'] | undefined
     if (dir === 'skills') {
       filter = (name) => !excludedSkills.has(name)
     } else if (dir === 'agents') {
       filter = (name) => !excludedAgents.has(name)
+      transform = stack ? getAgentTransform(stack) : undefined
     }
 
-    const sub = await copyDir(srcDir, destDir, { filter })
+    const sub = await copyDir(srcDir, destDir, { filter, transform })
     results.copied.push(...sub.copied)
     results.skipped.push(...sub.skipped)
     results.created.push(...sub.created)
+  }
+
+  // Plugin skills → .github/skills/<plugin-id>/
+  const pluginsRoot = getPluginsRoot(pkgRoot)
+  const includedPlugins = stack ? getIncludedPluginIds(stack) : undefined
+  const pluginSkills = await getPluginSkillEntries(pluginsRoot, includedPlugins)
+  for (const { id, skillPath } of pluginSkills) {
+    const pluginDestDir = resolve(destRoot, 'skills', id)
+    await mkdir(pluginDestDir, { recursive: true })
+    const destPath = resolve(pluginDestDir, 'SKILL.md')
+    if (existsSync(destPath)) {
+      results.skipped.push(destPath)
+    } else {
+      await copyFile(skillPath, destPath)
+      results.created.push(destPath)
+    }
   }
 
   // Customization templates (scaffold once)
@@ -95,11 +113,11 @@ export async function install(
 
   // MCP server config → .vscode/mcp.json (scaffold once)
   const mcpResult = await scaffoldMcpConfig(
-    pkgRoot,
     projectRoot,
     '.vscode/mcp.json',
     stack,
-    repoInfo
+    repoInfo,
+    'vscode'
   )
   results[mcpResult.action].push(mcpResult.path)
 
@@ -139,16 +157,30 @@ export async function update(
     const destDir = resolve(destRoot, dir)
 
     let filter: ((_name: string, _srcPath: string) => boolean) | undefined
+    let transform: CopyDirOptions['transform'] | undefined
     if (dir === 'skills') {
       filter = (name) => !excludedSkills.has(name)
     } else if (dir === 'agents') {
       filter = (name) => !excludedAgents.has(name)
+      transform = stack ? getAgentTransform(stack) : undefined
     }
 
-    const sub = await copyDir(srcDir, destDir, { overwrite: true, filter })
+    const sub = await copyDir(srcDir, destDir, { overwrite: true, filter, transform })
     // All re-installed framework files count as "updated" (copied), not "created"
     results.copied.push(...sub.copied, ...sub.created)
     results.skipped.push(...sub.skipped)
+  }
+
+  // Plugin skills → .github/skills/<plugin-id>/ (overwrite)
+  const pluginsRoot = getPluginsRoot(pkgRoot)
+  const includedPlugins = stack ? getIncludedPluginIds(stack) : undefined
+  const pluginSkills = await getPluginSkillEntries(pluginsRoot, includedPlugins)
+  for (const { id, skillPath } of pluginSkills) {
+    const pluginDestDir = resolve(destRoot, 'skills', id)
+    await mkdir(pluginDestDir, { recursive: true })
+    const destPath = resolve(pluginDestDir, 'SKILL.md')
+    await copyFile(skillPath, destPath)
+    results.copied.push(destPath)
   }
 
   // Customizations are NEVER overwritten during update.

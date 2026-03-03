@@ -2,10 +2,10 @@
 description: 'Database engineer for schema design, migrations, security policies, performance optimization, and auth integration.'
 name: 'Database Engineer'
 model: Gemini 3.1 Pro (Preview)
-tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages', 'supabase/apply_migration', 'supabase/execute_sql', 'supabase/list_tables', 'supabase/list_migrations', 'supabase/list_extensions', 'supabase/get_logs', 'supabase/get_project', 'supabase/get_project_url', 'supabase/list_projects', 'supabase/search_docs', 'supabase/generate_typescript_types', 'supabase/get_advisors', 'supabase/create_branch', 'supabase/list_branches']
+tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages']
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Database Engineer
 
@@ -47,7 +47,7 @@ Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
 ## Out of Scope
 
 - Building API routes or Server Actions that use the new schema
-- Creating React components for data display
+- Creating UI components for data display
 - CMS schema changes
 - Deploying migrations to production (only development/preview)
 

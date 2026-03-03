@@ -3,7 +3,7 @@ name: validation-gates
 description: "Shared validation gates for all orchestration workflows — deterministic checks, browser testing, cache management, regression checks. Referenced by prompt templates to maintain single source of truth."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Validation Gates
 
@@ -11,13 +11,11 @@ Canonical reference for validation gates shared across all orchestration workflo
 
 ## Gate 1: Deterministic Checks
 
-Run for every affected NX project:
+Run for every affected project (resolve exact commands via the **codebase-tool** skill):
 
-```bash
-yarn nx run <project>:lint --fix
-yarn nx run <project>:test
-yarn nx run <project>:build
-```
+- **Lint** (with auto-fix)
+- **Test**
+- **Build**
 
 All must pass with zero errors. Run for **every** project that consumed modified files, not just the primary project.
 
@@ -43,18 +41,13 @@ The reviewer validates: acceptance criteria met, file partition respected, no re
 
 **Always clear before testing.** Testing stale code wastes time and produces false results.
 
-```bash
-rm -rf apps/<app>/.next
-yarn nx reset
-```
-
-Run these commands before starting the dev server for browser testing.
+Clear framework caches and task runner caches before starting the dev server for browser testing. See the **codebase-tool** skill for cache-clearing commands.
 
 ## Gate 3: Browser Testing (MANDATORY for UI Changes)
 
 > **HARD GATE:** A task with UI changes is NOT done until you have screenshots in Chrome proving the feature works. "The code looks correct" is not proof. "Tests pass" is not proof. Only a screenshot of the working UI in Chrome is proof.
 
-1. **Start the dev server** — `yarn nx run <app>:serve` — wait for it to be ready
+1. **Start the dev server** — use the project's serve command (see the **codebase-tool** skill) — wait for it to be ready
 2. **Navigate to affected pages** — Verify the new feature renders correctly
 3. **Verify SPECIFIC features** — Check every feature listed in the acceptance criteria. If the criteria say "icons, groups, and AND/OR toggle", you must see all three in the browser
 4. **Test interactions** — Click buttons, fill forms, toggle filters, submit data
@@ -92,7 +85,7 @@ Use this checklist for any orchestration workflow:
 
 - [ ] Lint, test, and build pass for all affected projects
 - [ ] **Fast review passed** (mandatory — load **fast-review** skill)
-- [ ] Dev server started with **clean cache** (`rm -rf .next && yarn nx reset`)
+- [ ] Dev server started with **clean cache** (clear framework + task runner caches — see the **codebase-tool** skill)
 - [ ] UI changes verified in Chrome with screenshots at all breakpoints
 - [ ] Every acceptance criteria item visually confirmed — not just "page loads"
 - [ ] No regressions in adjacent functionality

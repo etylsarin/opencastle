@@ -3,7 +3,7 @@ description: 'AI assistant optimization techniques for efficient context usage a
 applyTo: '**'
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # AI Assistant Optimization Instructions
 
@@ -74,7 +74,7 @@ Phase 4: Verify (tests, errors, lint)
 Sub-agents run in isolated context windows. Use this to your advantage:
 
 - **Offload exploration** — fire a sub-agent to research a broad question; only the concise result comes back, keeping your primary context clean
-- **Parallel research** — launch multiple sub-agents simultaneously for independent research tasks (e.g., "find all GROQ queries" + "list all components using X" at the same time)
+- **Parallel research** — launch multiple sub-agents simultaneously for independent research tasks (e.g., "find all CMS queries" + "list all components using X" at the same time)
 - **Detailed prompts save tokens** — a specific sub-agent prompt avoids the sub-agent doing its own exploratory searches, which would waste its context budget
 
 ### Trust Sub-Agent Results

@@ -1,0 +1,834 @@
+---
+import '../../styles/global.css';
+
+const title = 'Plugin Setup Guide — OpenCastle';
+const description = 'Configure MCP servers and tools for your AI coding agents. Each plugin provides an MCP integration, optional agent skills, and tool access.';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+  </head>
+  <body>
+    <main class="guide">
+      <a href="/" class="back-link">← Back to OpenCastle</a>
+
+      <h1>Plugin Setup Guide</h1>
+      <p class="subtitle">
+        Configure MCP servers and tools for your AI coding agents. Each plugin
+        provides an MCP integration, optional agent skills, and tool access.
+      </p>
+
+      <nav class="toc">
+        <h2>Contents</h2>
+        <ol>
+          <li><a href="#cms-plugins">CMS Plugins</a> — Sanity, Contentful, Strapi</li>
+          <li><a href="#database-plugins">Database Plugins</a> — Supabase, Convex</li>
+          <li><a href="#deployment">Deployment</a> — Vercel</li>
+          <li><a href="#monorepo">Monorepo</a> — NX</li>
+          <li><a href="#issue-trackers">Issue Trackers</a> — Linear, Jira</li>
+          <li><a href="#notifications">Notifications</a> — Slack, Microsoft Teams</li>
+        </ol>
+      </nav>
+
+      <hr />
+
+      <!-- ============================================================ -->
+      <!-- CMS Plugins                                                   -->
+      <!-- ============================================================ -->
+
+      <section id="cms-plugins">
+        <h2>CMS Plugins</h2>
+
+        <!-- Sanity -->
+        <section id="sanity">
+          <h3>Sanity</h3>
+          <p>GROQ queries, real-time collaboration.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Auth Type</th>
+                <th>MCP Package</th>
+                <th>Official Docs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code class="badge-oauth">OAuth</code></td>
+                <td>HTTP/OAuth</td>
+                <td><a href="https://www.sanity.io/docs" target="_blank" rel="noopener">sanity.io/docs</a></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <strong>OAuth:</strong> This plugin uses OAuth. The MCP server will open
+            a browser window for authentication when you first connect.
+          </div>
+          <h4>MCP Config</h4>
+          <pre><code>{`{
+  "servers": {
+    "Sanity": {
+      "type": "http",
+      "url": "https://mcp.sanity.io"
+    }
+  }
+}`}</code></pre>
+        </section>
+
+        <!-- Contentful -->
+        <section id="contentful">
+          <h3>Contentful</h3>
+          <p>GraphQL / REST API, structured content.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Auth Type</th>
+                <th>MCP Package</th>
+                <th>Official Docs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge-noauth">No auth</span></td>
+                <td><code>@contentful/mcp-server</code></td>
+                <td><a href="https://www.contentful.com/developers/docs/" target="_blank" rel="noopener">contentful.com/developers/docs</a></td>
+              </tr>
+            </tbody>
+          </table>
+          <h4>MCP Config</h4>
+          <pre><code>{`{
+  "servers": {
+    "Contentful": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@contentful/mcp-server"]
+    }
+  }
+}`}</code></pre>
+        </section>
+
+        <!-- Strapi -->
+        <section id="strapi">
+          <h3>Strapi</h3>
+          <p>Open-source headless CMS.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Auth Type</th>
+                <th>MCP Package</th>
+                <th>Official Docs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge-noauth">No auth</span></td>
+                <td><code>strapi-mcp</code></td>
+                <td><a href="https://docs.strapi.io/" target="_blank" rel="noopener">docs.strapi.io</a></td>
+              </tr>
+            </tbody>
+          </table>
+          <h4>MCP Config</h4>
+          <pre><code>{`{
+  "servers": {
+    "Strapi": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "strapi-mcp"]
+    }
+  }
+}`}</code></pre>
+        </section>
+      </section>
+
+      <hr />
+
+      <!-- ============================================================ -->
+      <!-- Database Plugins                                              -->
+      <!-- ============================================================ -->
+
+      <section id="database-plugins">
+        <h2>Database Plugins</h2>
+
+        <!-- Supabase -->
+        <section id="supabase">
+          <h3>Supabase</h3>
+          <p>Postgres + Auth + RLS + Edge Functions.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Auth Type</th>
+                <th>MCP Package</th>
+                <th>Official Docs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code class="badge-oauth">OAuth</code></td>
+                <td>HTTP/OAuth</td>
+                <td><a href="https://supabase.com/docs" target="_blank" rel="noopener">supabase.com/docs</a></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <strong>OAuth:</strong> This plugin uses OAuth. The MCP server will open
+            a browser window for authentication when you first connect.
+          </div>
+          <h4>MCP Config</h4>
+          <pre><code>{`{
+  "servers": {
+    "Supabase": {
+      "type": "http",
+      "url": "https://mcp.supabase.com/mcp"
+    }
+  }
+}`}</code></pre>
+        </section>
+
+        <!-- Convex -->
+        <section id="convex">
+          <h3>Convex</h3>
+          <p>Reactive backend with real-time sync.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Auth Type</th>
+                <th>MCP Package</th>
+                <th>Official Docs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge-noauth">No auth</span></td>
+                <td><code>convex</code></td>
+                <td><a href="https://docs.convex.dev/" target="_blank" rel="noopener">docs.convex.dev</a></td>
+              </tr>
+            </tbody>
+          </table>
+          <h4>MCP Config</h4>
+          <pre><code>{`{
+  "servers": {
+    "Convex": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "convex@latest", "mcp", "start"]
+    }
+  }
+}`}</code></pre>
+        </section>
+      </section>
+
+      <hr />
+
+      <!-- ============================================================ -->
+      <!-- Deployment                                                    -->
+      <!-- ============================================================ -->
+
+      <section id="deployment">
+        <h2>Deployment</h2>
+
+        <!-- Vercel -->
+        <section id="vercel">
+          <h3>Vercel</h3>
+          <p>Deployment and hosting platform.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Auth Type</th>
+                <th>MCP Package</th>
+                <th>Official Docs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code class="badge-oauth">OAuth</code></td>
+                <td>HTTP/OAuth</td>
+                <td><a href="https://vercel.com/docs" target="_blank" rel="noopener">vercel.com/docs</a></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <strong>OAuth:</strong> This plugin uses OAuth. The MCP server will open
+            a browser window for authentication when you first connect.
+          </div>
+          <h4>MCP Config</h4>
+          <pre><code>{`{
+  "servers": {
+    "Vercel": {
+      "type": "http",
+      "url": "https://mcp.vercel.com"
+    }
+  }
+}`}</code></pre>
+        </section>
+      </section>
+
+      <hr />
+
+      <!-- ============================================================ -->
+      <!-- Monorepo                                                      -->
+      <!-- ============================================================ -->
+
+      <section id="monorepo">
+        <h2>Monorepo</h2>
+
+        <!-- NX -->
+        <section id="nx">
+          <h3>NX</h3>
+          <p>Monorepo build system.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Auth Type</th>
+                <th>MCP Package</th>
+                <th>Official Docs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="badge-noauth">No auth</span></td>
+                <td>Bundled with <code>nx</code></td>
+                <td><a href="https://nx.dev/getting-started/intro" target="_blank" rel="noopener">nx.dev/getting-started</a></td>
+              </tr>
+            </tbody>
+          </table>
+          <h4>MCP Config</h4>
+          <pre><code>{`{
+  "servers": {
+    "NX": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["nx", "mcp"]
+    }
+  }
+}`}</code></pre>
+        </section>
+      </section>
+
+      <hr />
+
+      <!-- ============================================================ -->
+      <!-- Issue Trackers                                                -->
+      <!-- ============================================================ -->
+
+      <section id="issue-trackers">
+        <h2>Issue Trackers</h2>
+
+        <!-- Linear -->
+        <section id="linear">
+          <h3>Linear</h3>
+          <p>Issue tracking with MCP integration.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Auth Type</th>
+                <th>MCP Package</th>
+                <th>Official Docs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code class="badge-apikey">API Key</code></td>
+                <td><code>@mseep/linear-mcp</code></td>
+                <td><a href="https://linear.app/docs" target="_blank" rel="noopener">linear.app/docs</a></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout callout-warning">
+            <strong>Required env var:</strong> <code>LINEAR_API_KEY</code><br />
+            Create at linear.app → Settings → API → Personal API keys.
+            Add it to your <code>.env</code> file:
+            <pre><code>LINEAR_API_KEY="lin_api_your-key-here"</code></pre>
+          </div>
+          <p>
+            <a href="/guides/linear-setup" class="setup-link">📖 Detailed setup guide →</a>
+          </p>
+          <h4>MCP Config</h4>
+          <pre><code>{`{
+  "servers": {
+    "Linear": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@mseep/linear-mcp"],
+      "envFile": "\${workspaceFolder}/.env"
+    }
+  }
+}`}</code></pre>
+        </section>
+
+        <!-- Jira -->
+        <section id="jira">
+          <h3>Jira</h3>
+          <p>Atlassian issue tracking via Rovo MCP.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Auth Type</th>
+                <th>MCP Package</th>
+                <th>Official Docs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code class="badge-oauth">OAuth</code></td>
+                <td>HTTP/OAuth</td>
+                <td><a href="https://developer.atlassian.com/cloud/jira/platform/" target="_blank" rel="noopener">developer.atlassian.com</a></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <strong>OAuth:</strong> This plugin uses OAuth. The MCP server will open
+            a browser window for authentication when you first connect.
+          </div>
+          <h4>MCP Config</h4>
+          <pre><code>{`{
+  "servers": {
+    "Jira": {
+      "type": "http",
+      "url": "https://mcp.atlassian.com/v1/mcp"
+    }
+  }
+}`}</code></pre>
+        </section>
+      </section>
+
+      <hr />
+
+      <!-- ============================================================ -->
+      <!-- Notifications                                                 -->
+      <!-- ============================================================ -->
+
+      <section id="notifications">
+        <h2>Notifications</h2>
+
+        <!-- Slack -->
+        <section id="slack">
+          <h3>Slack</h3>
+          <p>
+            Connect the <a href="https://www.npmjs.com/package/@kazuph/mcp-slack" target="_blank" rel="noopener"><code>@kazuph/mcp-slack</code></a> MCP server so your AI agents can post progress updates,
+            request approvals, and read responses — all through Slack channels.
+          </p>
+          <table>
+            <thead>
+              <tr>
+                <th>Auth Type</th>
+                <th>MCP Package</th>
+                <th>Official Docs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code class="badge-apikey">API Key</code></td>
+                <td><code>@kazuph/mcp-slack</code></td>
+                <td><a href="https://api.slack.com/docs" target="_blank" rel="noopener">api.slack.com/docs</a></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="callout">
+            <strong>Why not the official Slack MCP server?</strong>
+            The official server (<code>mcp.slack.com</code>) requires OAuth, but VS Code
+            redirects to <code>http://127.0.0.1:&lt;port&gt;</code> which Slack rejects
+            because it requires HTTPS redirect URLs.
+            We use <code>@kazuph/mcp-slack</code> instead — it runs locally via stdio
+            and reads the bot token from <code>.env</code>, no OAuth needed.
+          </div>
+
+          <h4>1. Create a Slack App</h4>
+          <ol>
+            <li>
+              Go to <a href="https://api.slack.com/apps" target="_blank" rel="noopener">api.slack.com/apps</a>
+            </li>
+            <li>Click <strong>Create New App</strong> → <strong>From scratch</strong></li>
+            <li>
+              Name it something like <code>OpenCastle Agents</code> and select your workspace
+            </li>
+            <li>Click <strong>Create App</strong></li>
+            <li>
+              In the left sidebar, go to <strong>App Home</strong> and enable
+              <strong>"Allow users to send Slash commands and messages from the messages tab"</strong>
+              — this lets you DM the bot directly
+            </li>
+          </ol>
+
+          <h4>2. Configure Bot Token Scopes</h4>
+          <ol>
+            <li>In your Slack app settings, go to <strong>OAuth &amp; Permissions</strong></li>
+            <li>Scroll down to <strong>Bot Token Scopes</strong></li>
+            <li>Add the scopes listed below</li>
+          </ol>
+
+          <p><strong>Minimum (agent notifications)</strong></p>
+          <table>
+            <thead>
+              <tr><th>Scope</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>chat:write</code></td><td>Send messages and replies</td></tr>
+              <tr><td><code>channels:read</code></td><td>List channels</td></tr>
+              <tr><td><code>channels:history</code></td><td>Read messages in public channels</td></tr>
+              <tr><td><code>users:read</code></td><td>Look up user profiles</td></tr>
+            </tbody>
+          </table>
+
+          <p><strong>Recommended (full MCP server capabilities)</strong></p>
+          <table>
+            <thead>
+              <tr><th>Scope</th><th>Purpose</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><code>chat:write</code></td><td>Send messages</td></tr>
+              <tr><td><code>channels:read</code></td><td>List channels and metadata</td></tr>
+              <tr><td><code>channels:history</code></td><td>Read public channel history</td></tr>
+              <tr><td><code>channels:manage</code></td><td>Create/rename channels, set topics</td></tr>
+              <tr><td><code>groups:read</code></td><td>List private channels</td></tr>
+              <tr><td><code>groups:history</code></td><td>Read private channel history</td></tr>
+              <tr><td><code>mpim:read</code></td><td>List group DMs</td></tr>
+              <tr><td><code>mpim:history</code></td><td>Read group DM history</td></tr>
+              <tr><td><code>im:read</code></td><td>List direct message conversations</td></tr>
+              <tr><td><code>im:history</code></td><td>Read DM history</td></tr>
+              <tr><td><code>users:read</code></td><td>Read user profiles</td></tr>
+              <tr><td><code>users:read.email</code></td><td>Read user emails</td></tr>
+            </tbody>
+          </table>
+
+          <div class="callout">
+            <strong>Note:</strong> <code>channels:manage</code> is optional — only
+            needed if agents should create or rename channels. Bot tokens cannot
+            search messages; if you need search, use a user token (<code>xoxp-…</code>)
+            instead.
+          </div>
+
+          <h4>3. Get Your Bot Token</h4>
+          <ol>
+            <li>
+              Still in your Slack app settings, scroll to the top of the
+              <strong>OAuth &amp; Permissions</strong> page
+            </li>
+            <li>
+              Click <strong>Install to Workspace</strong> (or <strong>Reinstall to Workspace</strong>
+              if you've already installed it before adding scopes)
+            </li>
+            <li>Authorize the app when prompted</li>
+            <li>
+              Copy the <strong>Bot User OAuth Token</strong> (<code>xoxb-…</code>) that appears
+              at the top of the page
+            </li>
+          </ol>
+
+          <div class="callout callout-warning">
+            <strong>Security:</strong> Treat this token like a password. Store it in
+            your project's <code>.env</code> file (which should be in
+            <code>.gitignore</code>). Never commit it to source control.
+          </div>
+
+          <p>Add the token to your <code>.env</code> file:</p>
+          <pre><code>SLACK_MCP_XOXB_TOKEN="xoxb-your-token-here"</code></pre>
+
+          <h4>4. MCP Config</h4>
+
+          <p><strong>VS Code</strong> — ensure <code>.vscode/mcp.json</code> includes
+          (automatic if you ran <code>npx opencastle init</code> with Slack enabled):</p>
+          <pre><code>{`{
+  "servers": {
+    "Slack": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@kazuph/mcp-slack"],
+      "envFile": "\${workspaceFolder}/.env",
+      "env": {
+        "SLACK_MCP_ADD_MESSAGE_TOOL": "true"
+      }
+    }
+  }
+}`}</code></pre>
+
+          <div class="callout">
+            <strong>Note:</strong> The <code>SLACK_MCP_ADD_MESSAGE_TOOL</code> env var
+            enables the <code>conversations_add_message</code> tool, which is disabled
+            by default for safety. Set it to <code>true</code> to allow posting to all
+            channels, or to a comma-separated list of channel IDs to restrict posting.
+          </div>
+
+          <p><strong>Cursor</strong> — the Slack server appears from <code>.cursor/mcp.json</code>
+          (auto-generated by <code>npx opencastle init</code>). Open Cursor Settings → MCP → Enable.</p>
+
+          <p><strong>Claude Code</strong> — reads config from <code>.claude/mcp.json</code>
+          (auto-generated). Run <code>claude mcp list</code> to verify.</p>
+
+          <h4>5. Verify</h4>
+          <p>Ask your AI assistant:</p>
+          <blockquote>
+            "List my Slack channels using the Slack MCP tools"
+          </blockquote>
+          <p>
+            If it returns a list of channels, the connection is working.
+          </p>
+
+          <h4>Troubleshooting</h4>
+
+          <p><strong>"missing_scope" error</strong> — Go back to your Slack app's
+          OAuth &amp; Permissions → Bot Token Scopes, add the missing scope(s), then click
+          Reinstall to Workspace.</p>
+
+          <p><strong>"not_authed" / "invalid_auth"</strong> — Check that your <code>.env</code>
+          contains <code>SLACK_MCP_XOXB_TOKEN</code> with a valid <code>xoxb-…</code> token,
+          wrapped in quotes with no trailing whitespace.</p>
+
+          <p><strong>Bot can't see channels</strong> — Invite the bot to the channel:
+          <code>/invite @OpenCastle Agents</code>.</p>
+
+          <p><strong>Can't post messages</strong> — Ensure
+          <code>SLACK_MCP_ADD_MESSAGE_TOOL=true</code> is set in your MCP config's
+          <code>env</code> block.</p>
+
+          <p><strong>"Sending messages to this app has been turned off"</strong> — Go to
+          Slack app settings → App Home → enable "Allow users to send Slash commands
+          and messages from the messages tab".</p>
+        </section>
+
+        <!-- Microsoft Teams -->
+        <section id="microsoft-teams">
+          <h3>Microsoft Teams</h3>
+          <p>Agent notifications via Teams channels.</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Auth Type</th>
+                <th>MCP Package</th>
+                <th>Official Docs</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code class="badge-oauth">OAuth</code></td>
+                <td>HTTP/OAuth</td>
+                <td><a href="https://learn.microsoft.com/en-us/microsoftteams/" target="_blank" rel="noopener">learn.microsoft.com</a></td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <strong>OAuth:</strong> This plugin uses OAuth. The MCP server will open
+            a browser window for authentication when you first connect.
+          </div>
+          <h4>MCP Config</h4>
+          <pre><code>{`{
+  "servers": {
+    "Microsoft Teams": {
+      "type": "http",
+      "url": "https://agent365.svc.cloud.microsoft/agents/tenants/\${input:tenant_id}/servers/mcp_TeamsServer"
+    }
+  }
+}`}</code></pre>
+          <div class="callout">
+            <strong>Note:</strong> Replace <code>$&#123;input:tenant_id&#125;</code> with your
+            Microsoft 365 tenant ID. In VS Code, this will prompt you for the value
+            when the server starts.
+          </div>
+        </section>
+      </section>
+
+      <hr />
+      <p class="footer">
+        <a href="/">← Back to OpenCastle</a>
+      </p>
+    </main>
+
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0a0a0a;
+        color: #e0e0e0;
+        margin: 0;
+        padding: 0;
+        line-height: 1.7;
+      }
+
+      .guide {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 4rem;
+      }
+
+      .back-link {
+        color: #888;
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+      .back-link:hover {
+        color: #ccc;
+      }
+
+      h1 {
+        font-size: 2rem;
+        margin-top: 1.5rem;
+        color: #fff;
+      }
+
+      .subtitle {
+        color: #999;
+        font-size: 1.1rem;
+        margin-bottom: 2rem;
+      }
+
+      .toc {
+        background: #141414;
+        border: 1px solid #222;
+        border-radius: 8px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 2rem;
+      }
+      .toc h2 {
+        font-size: 1rem;
+        margin: 0 0 0.5rem;
+        color: #ccc;
+      }
+      .toc ol {
+        margin: 0;
+        padding-left: 1.2rem;
+      }
+      .toc li {
+        margin: 0.25rem 0;
+      }
+      .toc a {
+        color: #6ea8fe;
+        text-decoration: none;
+      }
+      .toc a:hover {
+        text-decoration: underline;
+      }
+
+      h2 {
+        font-size: 1.4rem;
+        margin-top: 2.5rem;
+        color: #fff;
+        border-bottom: 1px solid #222;
+        padding-bottom: 0.3rem;
+      }
+
+      h3 {
+        font-size: 1.1rem;
+        margin-top: 1.5rem;
+        color: #ddd;
+      }
+
+      h4 {
+        font-size: 0.95rem;
+        margin-top: 1rem;
+        color: #bbb;
+      }
+
+      code {
+        background: #1a1a2e;
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.9em;
+        color: #c9d1d9;
+      }
+
+      pre code {
+        display: block;
+        padding: 1rem;
+        overflow-x: auto;
+      }
+
+      pre {
+        background: #1a1a2e;
+        border: 1px solid #222;
+        border-radius: 8px;
+        margin: 0.75rem 0 1.5rem;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+      }
+      th, td {
+        text-align: left;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #222;
+      }
+      th {
+        background: #141414;
+        color: #ccc;
+      }
+
+      .callout {
+        background: #1a1a0a;
+        border: 1px solid #444400;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin: 1rem 0;
+        font-size: 0.95rem;
+      }
+
+      .callout-warning {
+        background: #1a0a0a;
+        border-color: #662200;
+      }
+
+      .callout pre {
+        background: #12121e;
+        border-color: #333;
+        margin-top: 0.5rem;
+        margin-bottom: 0;
+      }
+
+      /* Auth type badges */
+      .badge-oauth {
+        background: #1a1a0a;
+        border: 1px solid #444400;
+        color: #cccc66;
+      }
+
+      .badge-apikey {
+        background: #1a0a0a;
+        border: 1px solid #662200;
+        color: #cc8844;
+      }
+
+      .badge-noauth {
+        color: #666;
+        font-size: 0.9em;
+      }
+
+      .setup-link {
+        display: inline-block;
+        color: #6ea8fe;
+        font-weight: 600;
+        text-decoration: none;
+        margin: 0.25rem 0 0.5rem;
+      }
+      .setup-link:hover {
+        text-decoration: underline;
+      }
+
+      hr {
+        border: none;
+        border-top: 1px solid #222;
+        margin: 3rem 0 1.5rem;
+      }
+
+      .footer {
+        color: #666;
+        font-size: 0.9rem;
+      }
+      .footer a {
+        color: #888;
+        text-decoration: none;
+      }
+      .footer a:hover {
+        color: #ccc;
+      }
+
+      a {
+        color: #6ea8fe;
+      }
+    </style>
+  </body>
+</html>

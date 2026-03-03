@@ -2,10 +2,10 @@
 description: 'Release manager for pre-release verification, changelog generation, version management, regression checks, and release coordination.'
 name: 'Release Manager'
 model: GPT-5.3-Codex
-tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages', 'vercel/get_deployment', 'vercel/get_deployment_build_logs', 'vercel/get_runtime_logs', 'vercel/list_deployments', 'vercel/list_projects', 'nx-mcp-server/nx_project_details', 'nx-mcp-server/nx_workspace', 'nx-mcp-server/nx_workspace_path', 'slack/*']
+tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages']
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Release Manager
 
@@ -38,8 +38,8 @@ Load the **deployment-infrastructure** skill for the detailed release process st
 
 ## Guidelines
 
-- Review Linear board for Done issues that should be in the release
-- Cross-reference merged PRs with Linear issues for completeness
+- Review tracker board for Done issues that should be in the release
+- Cross-reference merged PRs with tracker issues for completeness
 - Never skip the regression check — "it's a small change" is when things break
 - Keep changelogs audience-appropriate (users care about features, not refactors)
 - Coordinate with DevOps Expert for deployment-specific concerns

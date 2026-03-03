@@ -3,7 +3,7 @@ description: 'Bootstrap the .github/customizations/ directory for a new project.
 agent: Researcher
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Bootstrap Project Customizations
 
@@ -69,7 +69,7 @@ The result is a single unified view of the project's tech stack:
 
 **Still verify:** `repoInfo` detects presence, not configuration details. You still need to read the actual config files for schemas, IDs, routes, etc.
 
-The skill matrix (`customizations/agents/skill-matrix.md`) will already have the `cms` and `database` rows pre-filled based on this selection. The appropriate task management skill (`task-management` for Linear, `jira-management` for Jira) and notifications skill (`slack-notifications` for Slack, `teams-notifications` for Teams) will already be installed. Verify they are correct and fill in any remaining empty rows.
+The skill matrix (`.github/customizations/agents/skill-matrix.md`) will already have the `cms` and `database` rows pre-filled based on this selection. The appropriate task management skill (`linear-task-management` for Linear, `jira-management` for Jira) and notifications skill (`slack-notifications` for Slack, `teams-notifications` for Teams) will already be installed. Verify they are correct and fill in any remaining empty rows.
 
 ## Workflow
 
@@ -112,7 +112,7 @@ For each detected technology, dig into the config:
 - **API**: Find route handlers, Server Actions, middleware, external API integrations
 - **Deployment**: Read deploy config, environment variables, cron jobs, security headers
 - **Testing**: Find test config, test suites, test utilities, coverage setup
-- **Docs**: Map the `docs/` directory tree (if it exists)
+- **Docs**: Map the project's documentation directory tree (if it exists)
 - **Task tracking**: Find team IDs, project IDs, workflow states (check Linear/Jira config or docs)
 
 ### Phase 2: Generate Customization Files
@@ -122,7 +122,7 @@ Create `.github/customizations/` and generate files based on what you discovered
 Files are organized into subdirectories by domain:
 
 ```
-customizations/
+.github/customizations/
 ├── README.md                  # Directory index
 ├── project.instructions.md    # High-level project context
 ├── LESSONS-LEARNED.md         # Knowledge base (retries, workarounds)
@@ -226,7 +226,7 @@ customizations/
 
 #### `project/` — Project Management Config
 
-14. **`project/docs-structure.md`** — If a `docs/` directory exists:
+14. **`project/docs-structure.md`** — If a documentation directory exists:
     - Full directory tree
     - Purpose of each document
     - Documentation conventions
@@ -259,7 +259,7 @@ For each file created, report:
 - Number of lines
 - Key sections included
 
-End with a summary of what was discovered, what was generated, and what (if anything) needs manual input (e.g., Linear team IDs that require API access to discover).
+End with a summary of what was discovered, what was generated, and what (if anything) needs manual input (e.g., tracker team IDs that require API access to discover).
 
 After your summary, suggest next steps:
 
@@ -267,10 +267,10 @@ After your summary, suggest next steps:
 
 Now that your project is configured, here's what you can do:
 
-1. **Review the generated files** — Scan `customizations/` for any `<!-- TODO: verify -->` comments and fill in missing values (e.g., Linear team IDs, Supabase project IDs)
+1. **Review the generated files** — Scan `.github/customizations/` for any `<!-- TODO: verify -->` comments and fill in missing values (e.g., tracker team IDs, Supabase project IDs)
 2. **Commit the customizations** — `git add .github/customizations/ && git commit -m "chore: bootstrap OpenCastle customizations"`
 3. **Implement a feature** — Use the **"Implement Feature"** prompt to have the Team Lead orchestrate a full feature build with task tracking, delegation, and verification
-4. **Fix a bug** — Use the **"Bug Fix"** prompt for structured triage, root cause analysis, and fix with Linear tracking
+4. **Fix a bug** — Use the **"Bug Fix"** prompt for structured triage, root cause analysis, and fix with tracker tracking
 5. **Brainstorm first** — Not sure how to approach something? Use the **"Brainstorm"** prompt to explore requirements and trade-offs before committing to a plan
 6. **Create a task spec** — Use the **"Generate Task Spec"** prompt to create `opencastle.tasks.yml` for autonomous overnight runs with `npx opencastle run` CLI command.
 

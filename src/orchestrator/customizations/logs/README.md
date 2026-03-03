@@ -126,7 +126,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
   "attempt": 1,
   "linear_issue": "PRJ-57",
   "artifacts_count": 14,
-  "report_path": "customizations/logs/panel/instruction-refactoring.md"
+  "report_path": ".github/customizations/logs/panel/instruction-refactoring.md"
 }
 ```
 

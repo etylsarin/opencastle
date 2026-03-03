@@ -1,10 +1,10 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Workflow: Database Migration
 
 Structured workflow for database schema changes, RLS policies, and data migrations.
 
-> **Project config:** For database-specific paths, schema details, and migration conventions, see the relevant database customization file (e.g., `supabase-config.md`).
+> **Project config:** For database-specific paths, schema details, and migration conventions, see the relevant database customization file in `customizations/stack/`.
 
 ## Phases
 
@@ -34,11 +34,11 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 1. Read current schema in the migrations directory (see database customization) to understand existing tables
 2. Check existing RLS policies using the database query tool
-3. Read `docs/PROJECT.md` for database architecture
-4. Check `docs/KNOWN-ISSUES.md` for database-related limitations
+3. Read `.github/customizations/project.instructions.md` for database architecture
+4. Check `.github/customizations/KNOWN-ISSUES.md` for database-related limitations
 5. Document the migration plan: tables affected, columns added/removed, RLS changes
 6. Write rollback strategy (how to reverse the migration)
-7. Create Linear issue with migration details and rollback plan
+7. Create tracker issue with migration details and rollback plan
 
 ### Exit Criteria
 
@@ -46,7 +46,7 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 - [ ] Migration plan documented
 - [ ] Rollback strategy defined
 - [ ] Impact on existing data assessed
-- [ ] Linear issue created with rollback plan
+- [ ] Tracker issue created with rollback plan
 
 ---
 
@@ -139,8 +139,8 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 3. Spot-check data using the database query tool
 4. Start dev server and verify end-to-end functionality
 5. **Security check:** If the migration touches auth or RLS, schedule panel review
-6. Document rollback procedure in Linear issue
-7. Move Linear issue to Done
+6. Document rollback procedure in tracker issue
+7. Move tracker issue to Done
 
 ### Exit Criteria
 
@@ -149,8 +149,8 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 - [ ] End-to-end flow works in browser
 - [ ] Panel review passed (if auth/RLS changes)
 - [ ] Rollback procedure documented
-- [ ] Linear issue moved to Done
-- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), Linear linked
+- [ ] Tracker issue moved to Done
+- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
 
 ---
 
@@ -158,4 +158,4 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >
-> Commit → Push → PR → Linear linkage. Team Lead owns delivery.
+> Commit → Push → PR → tracker linkage. Team Lead owns delivery.

@@ -77,3 +77,35 @@ export async function removeDirIfExists(dirPath: string): Promise<void> {
     await rm(dirPath, { recursive: true });
   }
 }
+
+/**
+ * Resolve the plugins source directory from the CLI package root.
+ */
+export function getPluginsRoot(pkgRoot: string): string {
+  return resolve(pkgRoot, 'src', 'orchestrator', 'plugins');
+}
+
+/**
+ * Scan plugin directories for SKILL.md files.
+ * Returns entries with plugin ID and skill file path.
+ */
+export async function getPluginSkillEntries(
+  pluginsRoot: string,
+  includedPluginIds?: Set<string>
+): Promise<Array<{ id: string; skillPath: string }>> {
+  if (!existsSync(pluginsRoot)) return [];
+
+  const entries = await readdir(pluginsRoot, { withFileTypes: true });
+  const results: Array<{ id: string; skillPath: string }> = [];
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    if (includedPluginIds && !includedPluginIds.has(entry.name)) continue;
+    const skillPath = resolve(pluginsRoot, entry.name, 'SKILL.md');
+    if (existsSync(skillPath)) {
+      results.push({ id: entry.name, skillPath });
+    }
+  }
+
+  return results;
+}

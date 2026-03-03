@@ -21,7 +21,7 @@ handoffs:
     prompt: 'Use the generate-task-spec prompt to create an opencastle.tasks.yml spec for autonomous overnight runs based on:'
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Researcher
 
@@ -87,7 +87,7 @@ Given a feature request, answer:
 Given a bug report, answer:
 - Where does the relevant code live? (entry points → data flow)
 - What does the git history show? (recent changes that might have caused it)
-- Are there related known issues in `docs/KNOWN-ISSUES.md`?
+- Are there related known issues in `.github/customizations/KNOWN-ISSUES.md`?
 - Are there related lessons in `.github/customizations/LESSONS-LEARNED.md`?
 - What test coverage exists for the affected area?
 
@@ -118,7 +118,7 @@ Given a file or module, answer:
 
 - Writing or editing code files
 - Running tests or builds
-- Creating Linear issues or updating the board
+- Creating tracker issues or updating the board
 - Making architectural decisions (present options, don't decide)
 
 ## Output Contract

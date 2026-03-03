@@ -29,7 +29,7 @@
 
 ---
 
-Works with **[GitHub Copilot](https://github.com/features/copilot)**, **[Cursor](https://www.cursor.com/)**, and **[Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview)**.
+Works with **[GitHub Copilot](https://github.com/features/copilot)**, **[Cursor](https://www.cursor.com/)**, **[Claude Code](https://docs.anthropic.com/en/docs/agents-and-tools/claude-code/overview)**, and **[OpenCode](https://opencode.ai/)**.
 
 One command sets up specialized agents that decompose tasks, work in parallel, and verify each other's output.
 
@@ -43,9 +43,9 @@ One command. Any repo. Any IDE.
 npx opencastle init
 ```
 
-The CLI asks about your IDE and stack. It installs agents, skills, and MCP servers tailored to your project.
+The CLI asks about your IDEs and stack. It installs agents, skills, and MCP servers tailored to your project.
 
-That's it. Start coding with your Team Lead agent.
+You can select multiple IDEs and tools — the output is adapted for each one.
 
 <br>
 
@@ -56,8 +56,9 @@ That's it. Start coding with your Team Lead agent.
 | **VS Code** | `.github/` — agents, skills, workflows, prompts |
 | **Cursor** | `.cursorrules` + `.cursor/rules/` |
 | **Claude Code** | `CLAUDE.md` + `.claude/` |
+| **OpenCode** | `AGENTS.md` + `.opencode/` + `opencode.json` |
 
-MCP servers are auto-configured for your stack (Sanity, Supabase, Linear, Slack, etc.).
+MCP servers are auto-configured for your stack (Sanity, Supabase, Vercel, NX, Linear, Slack, etc.) in each IDE’s native format.
 
 <br>
 

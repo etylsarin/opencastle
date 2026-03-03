@@ -3,7 +3,7 @@
 <!-- Populated by the `bootstrap-customizations` prompt.
      Rename this file to match your tracker: linear-config.md, jira-config.md, etc. -->
 
-Project-specific task tracker details referenced by the `task-management` skill.
+Project-specific task tracker details referenced by task management workflows.
 
 ## Workspace
 

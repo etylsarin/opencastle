@@ -1,9 +1,9 @@
 import { resolve, basename } from 'node:path'
 import { mkdir, writeFile, readdir, readFile, unlink, rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { copyDir, getOrchestratorRoot } from '../copy.js'
+import { copyDir, getOrchestratorRoot, getPluginsRoot, getPluginSkillEntries } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
-import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform } from '../stack-config.js'
+import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform, getIncludedPluginIds } from '../stack-config.js'
 import type { CopyResults, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
 
 /**
@@ -127,6 +127,19 @@ export async function install(
           `- **${entry.name}** (\`.claude/skills/${entry.name}.md\`): ${desc}`
         )
       }
+
+      // Plugin skills
+      const pluginsRoot = getPluginsRoot(pkgRoot)
+      const includedPlugins = stack ? getIncludedPluginIds(stack) : undefined
+      const pluginEntries = await getPluginSkillEntries(pluginsRoot, includedPlugins)
+      for (const { id, skillPath } of pluginEntries.sort((a, b) => a.id.localeCompare(b.id))) {
+        const pluginMeta = parseFrontmatterMeta(await readFile(skillPath, 'utf8'))
+        const pluginDesc = pluginMeta['description'] ?? ''
+        skillLines.push(
+          `- **${id}** (\`.claude/skills/${id}.md\`): ${pluginDesc}`
+        )
+      }
+
       sections.push(skillLines.join('\n'))
     }
 
@@ -175,6 +188,25 @@ export async function install(
         continue
       }
       const content = await readFile(skillFile, 'utf8')
+      await writeFile(destPath, stripFrontmatter(content) + '\n')
+      results.created.push(destPath)
+    }
+  }
+
+  // 3b. Plugin skills → .claude/skills/<plugin-id>.md
+  {
+    const pluginsRoot = getPluginsRoot(pkgRoot)
+    const includedPlugins = stack ? getIncludedPluginIds(stack) : undefined
+    const pluginEntries = await getPluginSkillEntries(pluginsRoot, includedPlugins)
+    const destSkills = resolve(claudeDir, 'skills')
+    await mkdir(destSkills, { recursive: true })
+    for (const { id, skillPath } of pluginEntries) {
+      const destPath = resolve(destSkills, `${id}.md`)
+      if (existsSync(destPath)) {
+        results.skipped.push(destPath)
+        continue
+      }
+      const content = await readFile(skillPath, 'utf8')
       await writeFile(destPath, stripFrontmatter(content) + '\n')
       results.created.push(destPath)
     }
@@ -231,11 +263,11 @@ export async function install(
 
   // 7. MCP server config → .claude/mcp.json (scaffold once)
   const mcpResult = await scaffoldMcpConfig(
-    pkgRoot,
     projectRoot,
     '.claude/mcp.json',
     stack,
-    repoInfo
+    repoInfo,
+    'claude-code'
   )
   results[mcpResult.action].push(mcpResult.path)
 

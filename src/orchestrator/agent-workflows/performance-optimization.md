@@ -1,4 +1,4 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
 # Workflow: Performance Optimization
 
@@ -31,7 +31,7 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 1. Build the affected app(s) with production config
 2. Run Lighthouse audit on key pages
-3. Measure bundle size (`yarn nx run <app>:build` output)
+3. Measure bundle size (production build output — see the **codebase-tool** skill for the build command)
 4. Record Core Web Vitals: LCP, FID/INP, CLS, TTFB
 5. Profile server-side rendering time
 6. Document baseline metrics
@@ -45,7 +45,7 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 - [ ] Baseline metrics recorded for all key pages
 - [ ] Bundle size documented
 - [ ] Lighthouse scores saved
-- [ ] Linear issue created with targets
+- [ ] Tracker issue created with targets
 
 ---
 
@@ -114,9 +114,9 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 - [ ] Metrics improved (or justified why not)
 - [ ] No visual regressions
 - [ ] No functional regressions
-- [ ] Results documented in Linear issue
+- [ ] Results documented in tracker issue
 - [ ] Roadmap updated
-- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), Linear linked
+- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
 
 ---
 
@@ -124,4 +124,4 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 > **See [shared-delivery-phase.md](shared-delivery-phase.md) for the standard delivery steps.**
 >
-> Commit → Push → PR → Linear linkage. Team Lead owns delivery.
+> Commit → Push → PR → tracker linkage. Team Lead owns delivery.
