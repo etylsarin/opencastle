@@ -56,7 +56,7 @@ const features = [
     icon: 'shield',
     title: 'Quality Gates',
     description:
-      'Mandatory fast review after every step, panel majority vote for high-stakes decisions, structured dispute escalation, deterministic lint/test/build checks, and browser testing at multiple breakpoints.',
+      'Validation gates — from secret scanning and blast radius checks to panel majority vote and final smoke tests. Sensitive files always get reviewed, even for 1-line changes.',
   },
   {
     icon: 'brain',
@@ -109,7 +109,7 @@ const integrationIcons: Record<string, string> = {
   contentful: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M21.875 16.361c-.043-.048-1.067-1.18-2.365-1.19-.68 0-1.288.283-1.815.858-.773.842-2.35 1.85-4.25 1.921-1.598.059-3.085-.548-4.423-1.805-1.644-1.544-2.155-4.016-1.302-6.297.834-2.23 2.752-3.616 5.131-3.707l.044-.004c.024-.003 2.302-.258 4.325 1.548.17.185 1.154 1.197 2.475 1.228.823.018 1.586-.336 2.27-1.055.602-.632.87-1.342.797-2.112-.154-1.61-1.806-2.876-2.03-3.04-.212-.184-1.878-1.578-4.476-2.294-2.52-.695-6.42-.853-10.685 2.349a7.31 7.31 0 0 0-.557.49c-.28.208-.523.462-.716.753a12.469 12.469 0 0 0-3.064 8.677c.207 6.283 5.265 9.293 5.646 9.51.262.17 2.906 1.81 6.495 1.809 2.106 0 4.538-.565 7.005-2.322.248-.138 1.714-1.012 2.103-2.52.23-.894.042-1.815-.562-2.737l-.046-.06zm-16.932 1.97c0-1.09.887-1.977 1.977-1.977s1.977.886 1.977 1.977c0 1.09-.887 1.977-1.977 1.977s-1.977-.887-1.977-1.977zm.139-13.657c.236-.275.451-.498.628-.67a1.965 1.965 0 0 1 1.088-.329c1.09 0 1.977.887 1.977 1.977S7.888 7.63 6.798 7.63s-1.977-.887-1.977-1.977c0-.356.096-.69.261-.978zM13.249.999c3.954 0 6.657 2.336 6.826 2.486l.043.034c.42.3 1.532 1.301 1.63 2.324.044.469-.126.898-.52 1.313-.477.5-.983.752-1.504.738-.964-.019-1.743-.887-1.76-.905l-.042-.044c-2.292-2.063-4.83-1.855-5.13-1.822a6.82 6.82 0 0 0-3.012.818 3 3 0 0 0-2.34-3.214C9.543 1.45 11.516.999 13.248.999zM3.884 6.34a3 3 0 0 0 2.914 2.31c.122 0 .24-.01.358-.024a7.336 7.336 0 0 0-.39.866c-.75 2.003-.59 4.14.359 5.854-.068-.005-.136-.01-.205-.01a2.999 2.999 0 0 0-2.967 2.6 10.075 10.075 0 0 1-1.7-5.288 11.43 11.43 0 0 1 1.63-6.309zM21.497 18.9c-.3 1.174-1.615 1.89-1.627 1.896l-.058.036c-6.287 4.499-12.137.667-12.382.502l-.036-.022a2.848 2.848 0 0 1-.034-.02 2.998 2.998 0 0 0 2.543-3.228c1.124.64 2.336.951 3.58.906 2.214-.083 4.057-1.264 4.962-2.25.327-.356.67-.53 1.048-.53h.005c.762.004 1.46.688 1.593.826.421.658.558 1.291.406 1.884z"/></svg>`,
   strapi: `<svg width="32" height="32" viewBox="3.5 6.3 14 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M8.73 7.28h7.83a.16.16 0 0 1 .16.16v7.83h-3.87v-3.71a.41.41 0 0 0-.313-.398l-.086-.012h-3.72V7.28zM8.23 7.53v3.87H4.553a.08.08 0 0 1-.057-.136L8.23 7.529zM8.48 11.65h3.87v3.87H8.64a.16.16 0 0 1-.16-.16v-3.71zM12.6 15.77h3.87l-3.734 3.734a.08.08 0 0 1-.136-.057V15.77z"/></svg>`,
   slack: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>`,
-  nx: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M11.987 14.138l-3.132 4.923-5.193-8.427-.012 8.822H0V4.544h3.691l5.149 8.186 3.14-4.249 3.14 4.249 5.15-8.186h3.69v15.456h-3.65l-.012-8.822-5.193 8.427-3.132-4.923z"/></svg>`,
+  nx: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="m11.987 14.138 -3.132 4.923 -5.193 -8.427 -0.012 8.822H0V4.544h3.691l5.247 8.833 0.005 -3.998 3.044 4.759zm0.601 -5.761c0.024 -0.048 0 -3.784 0.008 -3.833h-3.65c0.002 0.059 -0.005 3.776 -0.003 3.833h3.645zm5.634 4.134a2.061 2.061 0 0 0 -1.969 1.336 1.963 1.963 0 0 1 2.343 -0.739c0.396 0.161 0.917 0.422 1.33 0.283a2.1 2.1 0 0 0 -1.704 -0.88zm3.39 1.061c-0.375 -0.13 -0.8 -0.277 -1.109 -0.681 -0.06 -0.08 -0.116 -0.17 -0.176 -0.265a2.143 2.143 0 0 0 -0.533 -0.642c-0.294 -0.216 -0.68 -0.322 -1.18 -0.322a2.482 2.482 0 0 0 -2.294 1.536 2.325 2.325 0 0 1 4.002 0.388 0.75 0.75 0 0 0 0.836 0.334c0.493 -0.105 0.46 0.36 1.203 0.518v-0.133c-0.003 -0.446 -0.246 -0.55 -0.75 -0.733zm2.024 1.266a0.723 0.723 0 0 0 0.347 -0.638c-0.01 -2.957 -2.41 -5.487 -5.37 -5.487a5.364 5.364 0 0 0 -4.487 2.418c-0.01 -0.026 -1.522 -2.39 -1.538 -2.418H8.943l3.463 5.423 -3.379 5.32h3.54l1.54 -2.366 1.568 2.366h3.541l-3.21 -5.052a0.7 0.7 0 0 1 -0.084 -0.32 2.69 2.69 0 0 1 2.69 -2.691h0.001c1.488 0 1.736 0.89 2.057 1.308 0.634 0.826 1.9 0.464 1.9 1.541a0.707 0.707 0 0 0 1.066 0.596zm0.35 0.133c-0.173 0.372 -0.56 0.338 -0.755 0.639 -0.176 0.271 0.114 0.412 0.114 0.412s0.337 0.156 0.538 -0.311c0.104 -0.231 0.14 -0.488 0.103 -0.74z"/></svg>`,
 };
 
 const arrowIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.33 8h9.33M8.67 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -604,14 +604,23 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
           No code ships without verification.
         </h2>
         <p class="section__subtitle">
-          Multi-layered quality assurance — from automated lint checks to
-          panel reviews with three independent AI reviewers, with structured
-          dispute escalation when agents can't converge.
+          Multi-layered validation gates — from secret scanning to final smoke tests —
+          with structured dispute escalation when agents can't converge.
         </p>
         <div class="quality-grid">
           <div class="quality-card">
             <h3 class="quality-card__title">
-              <span style="opacity: 0.5">01</span> Deterministic Checks
+              <span style="opacity: 0.5">01</span> Secret Scanning
+            </h3>
+            <p class="quality-card__description">
+              Every diff is scanned for API keys, tokens, passwords, and
+              connection strings before any other gate runs. Leaked secrets
+              block immediately.
+            </p>
+          </div>
+          <div class="quality-card">
+            <h3 class="quality-card__title">
+              <span style="opacity: 0.5">02</span> Deterministic Checks
             </h3>
             <p class="quality-card__description">
               Lint, type-check, unit tests, and build verification run
@@ -620,7 +629,37 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
           </div>
           <div class="quality-card">
             <h3 class="quality-card__title">
-              <span style="opacity: 0.5">02</span> Panel Majority Vote
+              <span style="opacity: 0.5">03</span> Blast Radius &amp; Dependencies
+            </h3>
+            <p class="quality-card__description">
+              Scope analysis flags unexpectedly large diffs and sensitive file
+              changes. New npm packages are audited for vulnerabilities,
+              licenses, and bundle size.
+            </p>
+          </div>
+          <div class="quality-card">
+            <h3 class="quality-card__title">
+              <span style="opacity: 0.5">04</span> Fast Review
+            </h3>
+            <p class="quality-card__description">
+              A single reviewer sub-agent validates every delegation.
+              Sensitive files (auth, migrations, security headers) always
+              get reviewed — even for 1-line changes.
+            </p>
+          </div>
+          <div class="quality-card">
+            <h3 class="quality-card__title">
+              <span style="opacity: 0.5">05</span> Browser Testing
+            </h3>
+            <p class="quality-card__description">
+              Chrome DevTools MCP validates UI changes at your
+              project-defined responsive breakpoints. Screenshot evidence
+              is mandatory.
+            </p>
+          </div>
+          <div class="quality-card">
+            <h3 class="quality-card__title">
+              <span style="opacity: 0.5">06</span> Panel Majority Vote
             </h3>
             <p class="quality-card__description">
               Three isolated reviewer sub-agents evaluate high-stakes changes.
@@ -630,30 +669,22 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
           </div>
           <div class="quality-card">
             <h3 class="quality-card__title">
-              <span style="opacity: 0.5">03</span> Structured Disputes
+              <span style="opacity: 0.5">07</span> Final Smoke Test
+            </h3>
+            <p class="quality-card__description">
+              After all tasks are done, the complete feature is verified
+              end-to-end — catching integration issues that per-task
+              testing misses.
+            </p>
+          </div>
+          <div class="quality-card">
+            <h3 class="quality-card__title">
+              <span style="opacity: 0.5">08</span> Structured Disputes
             </h3>
             <p class="quality-card__description">
               When agents exhaust all automated resolution, formal dispute
               records package both perspectives and resolution options —
-              giving humans clear action items instead of raw failure logs.
-            </p>
-          </div>
-          <div class="quality-card">
-            <h3 class="quality-card__title">
-              <span style="opacity: 0.5">04</span> Browser Testing
-            </h3>
-            <p class="quality-card__description">
-              Chrome DevTools MCP validates UI changes at your
-              project-defined responsive breakpoints.
-            </p>
-          </div>
-          <div class="quality-card">
-            <h3 class="quality-card__title">
-              <span style="opacity: 0.5">05</span> Self-Review
-            </h3>
-            <p class="quality-card__description">
-              Every agent is asked: &ldquo;What edge cases am I missing? What test
-              coverage is incomplete? What assumptions could be wrong?&rdquo;
+              giving humans clear action items.
             </p>
           </div>
         </div>
@@ -668,7 +699,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
           A complete orchestration framework, out of the box.
         </h2>
         <p class="section__subtitle">
-          52K+ words of curated knowledge, and everything
+          69K+ words of curated knowledge, and everything
           you need to run a coordinated AI development team — from agent
           definitions to quality gates.
         </p>

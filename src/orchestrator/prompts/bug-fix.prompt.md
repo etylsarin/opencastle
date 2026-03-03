@@ -107,12 +107,17 @@ Delegate to the appropriate specialist agent via **sub-agent** (inline). For bug
 
 > Load the **validation-gates** skill for detailed steps on each gate.
 
-Every bug fix must pass ALL of these checks:
+Every bug fix must pass ALL applicable gates:
 
-1. **Deterministic Checks** — run lint, test, and build for all affected projects (see the **codebase-tool** skill for commands) — all zero errors
-2. **Bug-Specific Verification** (mandatory) — start dev server, reproduce original bug (should be gone), verify correct behavior, test edge cases, screenshot before/after, check both apps if shared code
-3. **Regression Check** — run tests for all projects consuming modified files, browser-test adjacent functionality
-4. **Panel Review** (only if needed) — use **panel-majority-vote** skill if fix touches auth/authorization, RLS, security headers/CSP, or sensitive data
+1. **Gate 1: Secret Scanning** — scan diff for API keys, tokens, passwords, connection strings — block immediately if found
+2. **Gate 2: Deterministic Checks** — run lint, test, and build for all affected projects (see the **codebase-tool** skill for commands) — all zero errors
+3. **Gate 3: Blast Radius Check** — verify the fix is minimal and scoped (bug fixes should be ≤100 lines, ≤3 files; escalate if larger)
+4. **Gate 4: Dependency Audit** (when `package.json` or lockfiles change) — vulnerability scan, license check, bundle size, duplicates
+5. **Gate 5: Fast Review** (MANDATORY) — single reviewer sub-agent validates the fix. No auto-PASS for sensitive files
+6. **Gate 6: Bug-Specific Verification** (MANDATORY) — start dev server, reproduce original bug (should be gone), verify correct behavior, test edge cases, screenshot before/after, check both apps if shared code
+7. **Gate 7: Browser Testing** (for UI-related bugs) — clear cache, start server, verify fix + responsive + screenshots
+8. **Gate 8: Regression Testing** — run tests for all projects consuming modified files, browser-test adjacent functionality
+9. **Gate 9: Panel Review** (only if needed) — use **panel-majority-vote** skill if fix touches auth/authorization, RLS, security headers/CSP, or sensitive data
 
 ### 6. Delivery
 

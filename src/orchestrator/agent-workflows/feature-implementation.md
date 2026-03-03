@@ -204,15 +204,22 @@ If there are no open questions, explicitly state: "No open questions — plan is
 3. Verify no files outside partitions were modified
 4. Check all tracker issue acceptance criteria
 5. Run panel review if high-stakes (security, DB, architecture)
-6. Move all issues to Done
-7. Update session checkpoint → delete checkpoint
-8. Update `.github/customizations/project/roadmap.md`
+6. **Final Smoke Test (Gate 10)** — verify the complete feature end-to-end:
+   - Full clean build of all affected projects (not incremental)
+   - End-to-end browser walkthrough of the complete user flow
+   - Verify all states: loading, empty, populated, error, partial
+   - Cross-task integration check (e.g., migration + component + page compose correctly)
+   - Final responsive sweep at all breakpoints (if UI changes)
+7. Move all issues to Done
+8. Update session checkpoint → delete checkpoint
+9. Update `.github/customizations/project/roadmap.md`
 
 ### Exit Criteria
 
 - [ ] All phases verified
 - [ ] All tracker issues Done
 - [ ] Full build passes
+- [ ] **Final smoke test passed** — complete user flow verified end-to-end
 - [ ] Roadmap updated
 - [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
 

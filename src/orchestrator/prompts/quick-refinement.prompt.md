@@ -98,11 +98,15 @@ Delegate to the appropriate specialist agent(s). Since follow-ups are scoped and
 
 > Load the **validation-gates** skill for detailed steps on each gate.
 
-Every follow-up, no matter how small, must pass these checks:
+Every follow-up, no matter how small, must pass these gates:
 
-1. **Deterministic Checks** — run lint, test, and build for all affected projects (see the **codebase-tool** skill for commands) — all zero errors
-2. **Browser Testing** (MANDATORY for any visual change) — clear cache, start server, verify scenario + responsive + screenshot evidence
-3. **Regression Check** — if shared component/library modified, run tests for all consuming projects and browser-test at least one page per affected app
+1. **Gate 1: Secret Scanning** — scan diff for API keys, tokens, passwords, connection strings — block immediately if found
+2. **Gate 2: Deterministic Checks** — run lint, test, and build for all affected projects (see the **codebase-tool** skill for commands) — all zero errors
+3. **Gate 3: Blast Radius Check** — verify scope matches the "small follow-up" expectation (≤100 lines, ≤3 files normal; if larger, escalate to `implement-feature` workflow)
+4. **Gate 4: Dependency Audit** (when `package.json` or lockfiles change) — vulnerability scan, license check, bundle size, duplicates
+5. **Gate 5: Fast Review** (MANDATORY) — single reviewer sub-agent validates the change. No auto-PASS for sensitive files
+6. **Gate 6: Browser Testing** (MANDATORY for any visual change) — clear cache, start server, verify scenario + responsive + screenshot evidence
+7. **Gate 7: Regression Testing** — if shared component/library modified, run tests for all consuming projects and browser-test at least one page per affected app
 
 ### 6. Delivery
 
