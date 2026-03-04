@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, writeFile, mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { detectRepoInfo, mergeStackIntoRepoInfo, formatRepoInfo } from './detect.js'
+import { detectRepoInfo, mergeStackIntoRepoInfo, formatRepoInfo, buildDetectedToolsSet } from './detect.js'
 import type { StackConfig, RepoInfo } from './types.js'
 
 // ── detectRepoInfo (filesystem-backed) ─────────────────────────
@@ -195,6 +195,138 @@ describe('detectRepoInfo', () => {
     expect(info.deployment).toContain('vercel')
     expect(info.language).toBe('typescript')
     expect(info.styling).toContain('tailwind')
+  })
+  it('detects tools from workspace package dependencies in NX monorepo', async () => {
+    await writeFile(join(tempDir, 'nx.json'), '{}')
+    await mkdir(join(tempDir, 'apps', 'web'), { recursive: true })
+    await writeFile(join(tempDir, 'apps', 'web', 'package.json'), JSON.stringify({
+      dependencies: { next: '^14.0.0', '@supabase/supabase-js': '^2.0.0' }
+    }))
+    await mkdir(join(tempDir, 'apps', 'studio'), { recursive: true })
+    await writeFile(join(tempDir, 'apps', 'studio', 'package.json'), JSON.stringify({
+      dependencies: { sanity: '^3.0.0' }
+    }))
+    const info = await detectRepoInfo(tempDir)
+    expect(info.monorepo).toBe('nx')
+    expect(info.frameworks).toContain('next')
+    expect(info.databases).toContain('supabase')
+    expect(info.cms).toContain('sanity')
+  })
+
+  it('detects config files in workspace package directories', async () => {
+    await writeFile(join(tempDir, 'nx.json'), '{}')
+    await mkdir(join(tempDir, 'apps', 'web'), { recursive: true })
+    await writeFile(join(tempDir, 'apps', 'web', 'next.config.mjs'), 'export default {}')
+    await mkdir(join(tempDir, 'apps', 'studio'), { recursive: true })
+    await writeFile(join(tempDir, 'apps', 'studio', 'sanity.config.ts'), 'export default {}')
+    const info = await detectRepoInfo(tempDir)
+    expect(info.frameworks).toContain('next')
+    expect(info.cms).toContain('sanity')
+  })
+
+  it('detects tools from pnpm workspace packages', async () => {
+    await writeFile(join(tempDir, 'pnpm-workspace.yaml'), 'packages:\n  - apps/*\n  - packages/*')
+    await writeFile(join(tempDir, 'pnpm-lock.yaml'), '')
+    await mkdir(join(tempDir, 'apps', 'web'), { recursive: true })
+    await writeFile(join(tempDir, 'apps', 'web', 'package.json'), JSON.stringify({
+      dependencies: { next: '^14.0.0' }
+    }))
+    const info = await detectRepoInfo(tempDir)
+    expect(info.frameworks).toContain('next')
+  })
+
+  it('does not duplicate tools found in both root and workspace packages', async () => {
+    await writeFile(join(tempDir, 'nx.json'), '{}')
+    await writeFile(join(tempDir, 'package.json'), JSON.stringify({
+      dependencies: { next: '^14.0.0' }
+    }))
+    await mkdir(join(tempDir, 'apps', 'web'), { recursive: true })
+    await writeFile(join(tempDir, 'apps', 'web', 'package.json'), JSON.stringify({
+      dependencies: { next: '^14.0.0' }
+    }))
+    const info = await detectRepoInfo(tempDir)
+    expect(info.frameworks?.filter(f => f === 'next')).toHaveLength(1)
+  })
+
+  it('detects a full monorepo stack (NX + Next.js + Sanity + Supabase + Vercel)', async () => {
+    // Root level
+    await writeFile(join(tempDir, 'nx.json'), '{}')
+    await writeFile(join(tempDir, 'vercel.json'), '{}')
+    await writeFile(join(tempDir, 'tsconfig.json'), '{}')
+    await writeFile(join(tempDir, 'pnpm-lock.yaml'), '')
+
+    // apps/web
+    await mkdir(join(tempDir, 'apps', 'web'), { recursive: true })
+    await writeFile(join(tempDir, 'apps', 'web', 'next.config.mjs'), 'export default {}')
+    await writeFile(join(tempDir, 'apps', 'web', 'package.json'), JSON.stringify({
+      dependencies: { next: '^14.0.0', '@supabase/supabase-js': '^2.0.0' },
+      devDependencies: { vitest: '^1.0.0' }
+    }))
+
+    // apps/studio
+    await mkdir(join(tempDir, 'apps', 'studio'), { recursive: true })
+    await writeFile(join(tempDir, 'apps', 'studio', 'sanity.config.ts'), 'export default {}')
+    await writeFile(join(tempDir, 'apps', 'studio', 'package.json'), JSON.stringify({
+      dependencies: { sanity: '^3.0.0' }
+    }))
+
+    // supabase dir at root
+    await mkdir(join(tempDir, 'supabase'), { recursive: true })
+    await writeFile(join(tempDir, 'supabase', 'config.toml'), '')
+
+    const info = await detectRepoInfo(tempDir)
+
+    expect(info.monorepo).toBe('nx')
+    expect(info.packageManager).toBe('pnpm')
+    expect(info.language).toBe('typescript')
+    expect(info.frameworks).toContain('next')
+    expect(info.databases).toContain('supabase')
+    expect(info.cms).toContain('sanity')
+    expect(info.deployment).toContain('vercel')
+    expect(info.testing).toContain('vitest')
+    expect(info.auth).toContain('supabase-auth')
+
+    // Verify buildDetectedToolsSet correctly maps all detected tools
+    const detected = buildDetectedToolsSet(info)
+    expect(detected.has('nx')).toBe(true)
+    expect(detected.has('nextjs')).toBe(true)
+    expect(detected.has('sanity')).toBe(true)
+    expect(detected.has('supabase')).toBe(true)
+    expect(detected.has('vercel')).toBe(true)
+    expect(detected.has('vitest')).toBe(true)
+  })
+})
+
+// ── buildDetectedToolsSet ──────────────────────────────────────
+
+describe('buildDetectedToolsSet', () => {
+  it('maps detection labels to plugin IDs', () => {
+    const set = buildDetectedToolsSet({
+      cms: ['sanity'],
+      databases: ['supabase'],
+      deployment: ['vercel'],
+      monorepo: 'nx',
+      frameworks: ['next'],
+      testing: ['vitest'],
+    })
+    expect(set.has('sanity')).toBe(true)
+    expect(set.has('supabase')).toBe(true)
+    expect(set.has('vercel')).toBe(true)
+    expect(set.has('nx')).toBe(true)
+    expect(set.has('nextjs')).toBe(true)
+    expect(set.has('vitest')).toBe(true)
+  })
+
+  it('handles empty repoInfo', () => {
+    const set = buildDetectedToolsSet({})
+    expect(set.size).toBe(0)
+  })
+
+  it('maps next to nextjs but leaves astro as-is', () => {
+    const set = buildDetectedToolsSet({ frameworks: ['next', 'astro'] })
+    expect(set.has('nextjs')).toBe(true)
+    expect(set.has('next')).toBe(false)
+    expect(set.has('astro')).toBe(true)
   })
 })
 

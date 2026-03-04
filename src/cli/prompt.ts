@@ -27,6 +27,31 @@ export const c = {
   magenta: (s: string) => `\x1B[35m${s}\x1B[0m`,
 };
 
+// ── Scrollable window helper ──────────────────────────────────────
+
+/**
+ * Compute which slice of options to render in a scrollable window.
+ * Keeps the cursor visible within the window.
+ */
+export function computeVisibleWindow(
+  cursor: number,
+  total: number,
+  maxVisible: number
+): { start: number; end: number } {
+  if (total <= maxVisible) return { start: 0, end: total };
+  let start = Math.max(0, cursor - maxVisible + 1);
+  let end = start + maxVisible;
+  if (end > total) {
+    end = total;
+    start = end - maxVisible;
+  }
+  if (cursor < start) {
+    start = cursor;
+    end = start + maxVisible;
+  }
+  return { start, end };
+}
+
 // ── Line-buffered readline ────────────────────────────────────────
 // readline.question() drops lines that arrived between calls because
 // it only listens for the NEXT 'line' event.  When piped input
@@ -114,14 +139,22 @@ export async function select(
 function renderOptions(
   options: SelectOption[],
   cursor: number,
-  initial: boolean
-): void {
-  // Move back up to overwrite previous render (skip on first draw)
-  if (!initial) {
-    stdout.write(moveUp(options.length));
+  lastRenderedLines: number,
+  maxVisible: number
+): number {
+  if (lastRenderedLines > 0) {
+    stdout.write(moveUp(lastRenderedLines));
   }
 
-  for (let i = 0; i < options.length; i++) {
+  const { start, end } = computeVisibleWindow(cursor, options.length, maxVisible);
+  let lines = 0;
+
+  if (start > 0) {
+    stdout.write(`${ERASE_LINE}\r    ${c.dim(`↑ ${start} more above`)}\n`);
+    lines++;
+  }
+
+  for (let i = start; i < end; i++) {
     const active = i === cursor;
     const marker = active ? '❯' : ' ';
     const hint = options[i].hint ? ` — ${options[i].hint}` : '';
@@ -129,7 +162,20 @@ function renderOptions(
       ? `\x1B[36m${options[i].label}\x1B[0m${hint}`
       : `${options[i].label}${hint}`;
     stdout.write(`${ERASE_LINE}\r    ${marker} ${label}\n`);
+    lines++;
   }
+
+  if (end < options.length) {
+    stdout.write(`${ERASE_LINE}\r    ${c.dim(`↓ ${options.length - end} more below`)}\n`);
+    lines++;
+  }
+
+  // Clear leftover lines from previous longer render
+  if (lines < lastRenderedLines) {
+    stdout.write(`${CSI}J`);
+  }
+
+  return lines;
 }
 
 function selectInteractive(
@@ -138,13 +184,15 @@ function selectInteractive(
 ): Promise<string> {
   return new Promise<string>((resolve) => {
     let cursor = 0;
+    const maxVisible = Math.max(3, Math.min(options.length, (process.stdout.rows || 24) - 4));
+    let lastRenderedLines = 0;
 
     // Pause the readline interface so raw mode can take over
     if (_rl) _rl.pause();
 
     stdout.write(`\n  ${message}\n\n`);
     stdout.write(HIDE_CURSOR);
-    renderOptions(options, cursor, true);
+    lastRenderedLines = renderOptions(options, cursor, 0, maxVisible);
 
     stdin.setRawMode(true);
     stdin.resume();
@@ -155,14 +203,14 @@ function selectInteractive(
       // Arrow up or k
       if (key === `${ESC}[A` || key === 'k') {
         cursor = (cursor - 1 + options.length) % options.length;
-        renderOptions(options, cursor, false);
+        lastRenderedLines = renderOptions(options, cursor, lastRenderedLines, maxVisible);
         return;
       }
 
       // Arrow down or j
       if (key === `${ESC}[B` || key === 'j') {
         cursor = (cursor + 1) % options.length;
-        renderOptions(options, cursor, false);
+        lastRenderedLines = renderOptions(options, cursor, lastRenderedLines, maxVisible);
         return;
       }
 
@@ -170,8 +218,9 @@ function selectInteractive(
       if (key === '\r' || key === '\n') {
         cleanup();
         // Re-render final state with the selected option highlighted
-        stdout.write(moveUp(options.length));
-        for (let i = 0; i < options.length; i++) {
+        const { start, end } = computeVisibleWindow(cursor, options.length, maxVisible);
+        stdout.write(moveUp(lastRenderedLines));
+        for (let i = start; i < end; i++) {
           const active = i === cursor;
           const hint = options[i].hint ? ` — ${options[i].hint}` : '';
           const label = active
@@ -180,6 +229,8 @@ function selectInteractive(
           const marker = active ? '✔' : ' ';
           stdout.write(`${ERASE_LINE}\r    ${marker} ${label}\n`);
         }
+        // Clear leftover lines from scrolled render
+        stdout.write(`${CSI}J`);
         stdout.write('\n');
         resolve(options[cursor].value);
         return;
@@ -276,13 +327,22 @@ function renderMultiselectOptions(
   options: SelectOption[],
   cursor: number,
   selected: Set<number>,
-  initial: boolean
-): void {
-  if (!initial) {
-    stdout.write(moveUp(options.length));
+  lastRenderedLines: number,
+  maxVisible: number
+): number {
+  if (lastRenderedLines > 0) {
+    stdout.write(moveUp(lastRenderedLines));
   }
 
-  for (let i = 0; i < options.length; i++) {
+  const { start, end } = computeVisibleWindow(cursor, options.length, maxVisible);
+  let lines = 0;
+
+  if (start > 0) {
+    stdout.write(`${ERASE_LINE}\r    ${c.dim(`↑ ${start} more above`)}\n`);
+    lines++;
+  }
+
+  for (let i = start; i < end; i++) {
     const active = i === cursor;
     const checked = selected.has(i);
     const checkbox = checked ? `\x1B[32m✔\x1B[0m` : ' ';
@@ -292,7 +352,20 @@ function renderMultiselectOptions(
       ? `\x1B[36m${options[i].label}\x1B[0m${hint}`
       : `${options[i].label}${hint}`;
     stdout.write(`${ERASE_LINE}\r    ${marker} [${checkbox}] ${label}\n`);
+    lines++;
   }
+
+  if (end < options.length) {
+    stdout.write(`${ERASE_LINE}\r    ${c.dim(`↓ ${options.length - end} more below`)}\n`);
+    lines++;
+  }
+
+  // Clear leftover lines from previous longer render
+  if (lines < lastRenderedLines) {
+    stdout.write(`${CSI}J`);
+  }
+
+  return lines;
 }
 
 function multiselectInteractive(
@@ -302,6 +375,8 @@ function multiselectInteractive(
   return new Promise<string[]>((resolve) => {
     let cursor = 0;
     const selected = new Set<number>();
+    const maxVisible = Math.max(3, Math.min(options.length, (process.stdout.rows || 24) - 4));
+    let lastRenderedLines = 0;
     // Pre-select options marked as selected
     for (let i = 0; i < options.length; i++) {
       if (options[i].selected) selected.add(i);
@@ -311,7 +386,7 @@ function multiselectInteractive(
 
     stdout.write(`\n  ${message} ${c.dim('(↑/↓ navigate, Space toggle, Enter confirm)')}\n\n`);
     stdout.write(HIDE_CURSOR);
-    renderMultiselectOptions(options, cursor, selected, true);
+    lastRenderedLines = renderMultiselectOptions(options, cursor, selected, 0, maxVisible);
 
     stdin.setRawMode(true);
     stdin.resume();
@@ -322,14 +397,14 @@ function multiselectInteractive(
       // Arrow up or k
       if (key === `${ESC}[A` || key === 'k') {
         cursor = (cursor - 1 + options.length) % options.length;
-        renderMultiselectOptions(options, cursor, selected, false);
+        lastRenderedLines = renderMultiselectOptions(options, cursor, selected, lastRenderedLines, maxVisible);
         return;
       }
 
       // Arrow down or j
       if (key === `${ESC}[B` || key === 'j') {
         cursor = (cursor + 1) % options.length;
-        renderMultiselectOptions(options, cursor, selected, false);
+        lastRenderedLines = renderMultiselectOptions(options, cursor, selected, lastRenderedLines, maxVisible);
         return;
       }
 
@@ -340,7 +415,7 @@ function multiselectInteractive(
         } else {
           selected.add(cursor);
         }
-        renderMultiselectOptions(options, cursor, selected, false);
+        lastRenderedLines = renderMultiselectOptions(options, cursor, selected, lastRenderedLines, maxVisible);
         return;
       }
 
@@ -348,8 +423,9 @@ function multiselectInteractive(
       if (key === '\r' || key === '\n') {
         cleanup();
         // Final render
-        stdout.write(moveUp(options.length));
-        for (let i = 0; i < options.length; i++) {
+        const { start, end } = computeVisibleWindow(cursor, options.length, maxVisible);
+        stdout.write(moveUp(lastRenderedLines));
+        for (let i = start; i < end; i++) {
           const checked = selected.has(i);
           const hint = options[i].hint ? ` ${c.dim('—')} ${c.dim(options[i].hint!)}` : '';
           const checkbox = checked ? `\x1B[32m✔\x1B[0m` : ' ';
@@ -358,6 +434,8 @@ function multiselectInteractive(
             : `\x1B[2m${options[i].label}${hint}\x1B[0m`;
           stdout.write(`${ERASE_LINE}\r      [${checkbox}] ${label}\n`);
         }
+        // Clear leftover lines from scrolled render
+        stdout.write(`${CSI}J`);
         stdout.write('\n');
         resolve(Array.from(selected).sort().map(i => options[i].value));
         return;
