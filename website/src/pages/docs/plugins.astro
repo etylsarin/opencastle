@@ -113,7 +113,7 @@ const categories = [
 
         <!-- ====== CMS Plugins ====== -->
         <section class="docs-category" id="cms-plugins" data-category>
-          <h2 class="docs-category__title">CMS Plugins</h2>
+          <h2 class="docs-hero__heading">CMS Plugins</h2>
 
           <div class="plugin-card" id="sanity">
             <h3 class="plugin-card__name"><Fragment set:html={icons.sanity} /> Sanity</h3>
@@ -190,7 +190,7 @@ const categories = [
 
         <!-- ====== Database Plugins ====== -->
         <section class="docs-category" id="database-plugins" data-category>
-          <h2 class="docs-category__title">Database Plugins</h2>
+          <h2 class="docs-hero__heading">Database Plugins</h2>
 
           <div class="plugin-card" id="supabase">
             <h3 class="plugin-card__name"><Fragment set:html={icons.supabase} /> Supabase</h3>
@@ -267,7 +267,7 @@ const categories = [
 
         <!-- ====== Framework Plugins ====== -->
         <section class="docs-category" id="framework-plugins" data-category>
-          <h2 class="docs-category__title">Framework Plugins</h2>
+          <h2 class="docs-hero__heading">Framework Plugins</h2>
 
           <div class="plugin-card" id="nextjs">
             <h3 class="plugin-card__name"><Fragment set:html={icons.nextjs} /> Next.js</h3>
@@ -317,7 +317,7 @@ const categories = [
 
         <!-- ====== Deployment ====== -->
         <section class="docs-category" id="deployment" data-category>
-          <h2 class="docs-category__title">Deployment</h2>
+          <h2 class="docs-hero__heading">Deployment</h2>
 
           <div class="plugin-card" id="vercel">
             <h3 class="plugin-card__name"><Fragment set:html={icons.vercel} /> Vercel</h3>
@@ -377,7 +377,7 @@ const categories = [
 
         <!-- ====== Codebase Tools ====== -->
         <section class="docs-category" id="codebase-tools" data-category>
-          <h2 class="docs-category__title">Codebase Tools</h2>
+          <h2 class="docs-hero__heading">Codebase Tools</h2>
 
           <div class="plugin-card" id="nx">
             <h3 class="plugin-card__name"><Fragment set:html={icons.nx} /> NX</h3>
@@ -422,7 +422,7 @@ const categories = [
 
         <!-- ====== Testing ====== -->
         <section class="docs-category" id="testing" data-category>
-          <h2 class="docs-category__title">Testing</h2>
+          <h2 class="docs-hero__heading">Testing</h2>
 
           <div class="plugin-card" id="vitest">
             <h3 class="plugin-card__name"><Fragment set:html={icons.vitest} /> Vitest</h3>
@@ -507,7 +507,7 @@ const categories = [
 
         <!-- ====== Issue Trackers ====== -->
         <section class="docs-category" id="issue-trackers" data-category>
-          <h2 class="docs-category__title">Issue Trackers</h2>
+          <h2 class="docs-hero__heading">Issue Trackers</h2>
 
           <div class="plugin-card" id="linear">
             <h3 class="plugin-card__name"><Fragment set:html={icons.linear} /> Linear</h3>
@@ -569,7 +569,7 @@ const categories = [
 
         <!-- ====== Notifications ====== -->
         <section class="docs-category" id="notifications" data-category>
-          <h2 class="docs-category__title">Notifications</h2>
+          <h2 class="docs-hero__heading">Notifications</h2>
 
           <div class="plugin-card" id="slack">
             <h3 class="plugin-card__name"><Fragment set:html={icons.slack} /> Slack</h3>
@@ -755,7 +755,7 @@ const categories = [
 
         <!-- ====== Design ====== -->
         <section class="docs-category" id="design" data-category>
-          <h2 class="docs-category__title">Design</h2>
+          <h2 class="docs-hero__heading">Design</h2>
 
           <div class="plugin-card" id="figma">
             <h3 class="plugin-card__name"><Fragment set:html={icons.figma} /> Figma</h3>
@@ -781,9 +781,7 @@ const categories = [
       "type": "stdio",
       "command": "npx",
       "args": ["-y", "@anthropic/figma-mcp@latest"],
-      "env": {
-        "FIGMA_ACCESS_TOKEN": "\${FIGMA_ACCESS_TOKEN}"
-      }
+      "envFile": "\${workspaceFolder}/.env"
     }
   }
 }`}</code></pre>
@@ -792,7 +790,7 @@ const categories = [
 
         <!-- ====== Email ====== -->
         <section class="docs-category" id="email" data-category>
-          <h2 class="docs-category__title">Email</h2>
+          <h2 class="docs-hero__heading">Email</h2>
 
           <div class="plugin-card" id="resend">
             <h3 class="plugin-card__name"><Fragment set:html={icons.resend} /> Resend</h3>
@@ -1029,7 +1027,7 @@ const categories = [
       .docs-category[hidden] {
         display: none;
       }
-      .docs-category__title {
+      .docs-hero__heading {
         font-size: 1.125rem;
         font-weight: 600;
         color: var(--text-primary);

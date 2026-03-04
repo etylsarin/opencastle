@@ -10,11 +10,10 @@
 
 <p align="center">
   <a href="https://github.com/etylsarin/opencastle/stargazers"><img src="https://img.shields.io/github/stars/etylsarin/opencastle?style=flat" alt="GitHub stars" /></a>
-  <a href="https://github.com/etylsarin/opencastle/actions/workflows/ci.yml"><img src="https://github.com/etylsarin/opencastle/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://www.npmjs.com/package/opencastle"><img src="https://img.shields.io/npm/v/opencastle.svg?v=1" alt="npm version" /></a>
+  <a href="https://github.com/etylsarin/opencastle/actions/workflows/ci.yml"><img src="https://github.com/etylsarin/opencastle/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/npm/l/opencastle.svg?v=1" alt="license" /></a>
   <a href="https://www.npmjs.com/package/opencastle"><img src="https://img.shields.io/npm/dm/opencastle.svg?v=1" alt="downloads" /></a>
-  <img src="https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript&amp;logoColor=white" alt="TypeScript" />
 </p>
 
 <p align="center">
@@ -23,12 +22,6 @@
   <a href="#quick-start">Quick Start</a> &middot;
   <a href="ARCHITECTURE.md">Architecture</a> &middot;
   <a href="#contributing">Contributing</a>
-</p>
-
-<p align="center">
-  <a href="https://www.opencastle.dev/opencastle-demo.mp4">
-    ▶️ Watch the demo (1 min)
-  </a>
 </p>
 
 ---
@@ -62,7 +55,7 @@ You can select multiple IDEs and tools — the output is adapted for each one.
 | **Claude Code** | `CLAUDE.md` + `.claude/` |
 | **OpenCode** | `AGENTS.md` + `.opencode/` + `opencode.json` |
 
-MCP servers are auto-configured for your stack (Sanity, Supabase, Prisma, Vercel, Netlify, NX, Turborepo, Playwright, Cypress, Vitest, Figma, Resend, Linear, Slack, etc.) in each IDE's native format.
+MCP servers are auto-configured for your stack in each IDE's native format.
 
 <br>
 
@@ -79,7 +72,7 @@ MCP servers are auto-configured for your stack (Sanity, Supabase, Prisma, Vercel
 
 Add `--dry-run` to any command to preview what it would change without writing files.
 
-📖 [Full CLI reference →](https://www.opencastle.dev/docs/cli)
+📖 [Full CLI documentation →](https://www.opencastle.dev/docs/cli)
 
 <br>
 
@@ -113,7 +106,7 @@ Visualizes real agent data from your project — sessions, success rates, model 
 
 Reads from the same NDJSON logs your agents already write. No setup needed.
 
-📖 [Dashboard documentation →](https://www.opencastle.dev/docs/cli#dashboard)
+📖 [Dashboard CLI documentation →](https://www.opencastle.dev/docs/cli#dashboard)
 
 <br>
 
@@ -123,9 +116,9 @@ Reads from the same NDJSON logs your agents already write. No setup needed.
 npx opencastle doctor
 ```
 
-Runs 11 health checks — manifest, configs, skills, observability logs, IDE settings, MCP setup, and environment variables. Exits with code `1` if any check fails. Useful in CI or after upgrading.
+Runs multiple health checks — manifest, configs, skills, observability logs, IDE settings, MCP setup, and environment variables. Useful in CI or after upgrading.
 
-📖 [See all health checks →](https://www.opencastle.dev/docs/cli#doctor)
+📖 [Doctor CLI documentation →](https://www.opencastle.dev/docs/cli#doctor)
 
 <br>
 
@@ -159,15 +152,13 @@ tasks:
     depends_on: [migrate-db, build-component]
 ```
 
-Use the **"Generate Task Spec"** prompt to create this file from a plain description. No YAML by hand.
+TIP: Use the **"Generate Task Spec"** prompt to create this file from a plain description. No YAML by hand.
 
-📖 [Full task queue reference →](https://www.opencastle.dev/docs/cli#task-queue)
+📖 [Task queue CLI documentation →](https://www.opencastle.dev/docs/cli#task-queue)
 
 <br>
 
 ## Architecture
-
-19 agents across 4 model tiers, coordinated by a Team Lead.
 
 See **[ARCHITECTURE.md](ARCHITECTURE.md)** for the full diagram, workflow templates, and quality gates.
 

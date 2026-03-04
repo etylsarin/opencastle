@@ -13,9 +13,7 @@ export const config: PluginConfig = {
     type: 'stdio',
     command: 'npx',
     args: ['-y', '@anthropic/figma-mcp@latest'],
-    env: {
-      FIGMA_ACCESS_TOKEN: '${FIGMA_ACCESS_TOKEN}',
-    },
+    envFile: '${workspaceFolder}/.env'
   },
   authType: 'env-token',
   envVars: [
