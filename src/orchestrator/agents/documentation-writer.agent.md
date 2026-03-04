@@ -13,10 +13,7 @@ You are a technical documentation specialist. You maintain project documentation
 
 ## Skills
 
-### Direct Skills
-
-- **documentation-standards** — Templates, directory structure, writing guidelines, markdown formatting rules
-- **code-commenting** — Self-documenting code patterns, annotation tags
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Critical Rules
 

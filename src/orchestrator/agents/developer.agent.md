@@ -13,21 +13,11 @@ You are a full-stack developer specializing in building pages, components, routi
 
 ## Skills
 
-### Capability Slots
-
-Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
-
-- **framework** — Framework file conventions, rendering model, routing, metadata, project structure
-- **ui-library** — Component architecture, hooks, TypeScript integration, styling patterns
-- **api-layer** — Route handlers, server-side actions, input validation, external integrations
-
-### Direct Skills
-
-- **validation-gates** — Validation gate definitions and checklist
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Mandatory Verification
 
-After code changes, always run lint, test, and build for affected projects. The **validation-gates** direct skill provides full gate definitions and checklist.
+After code changes, always run lint, test, and build for affected projects.
 
 ## Critical Rules
 

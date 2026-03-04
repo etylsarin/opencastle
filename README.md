@@ -9,13 +9,17 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/etylsarin/opencastle/stargazers"><img src="https://img.shields.io/github/stars/etylsarin/opencastle?style=flat" alt="GitHub stars" /></a>
+  <a href="https://github.com/etylsarin/opencastle/actions/workflows/ci.yml"><img src="https://github.com/etylsarin/opencastle/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="https://www.npmjs.com/package/opencastle"><img src="https://img.shields.io/npm/v/opencastle.svg?v=1" alt="npm version" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/npm/l/opencastle.svg?v=1" alt="license" /></a>
   <a href="https://www.npmjs.com/package/opencastle"><img src="https://img.shields.io/npm/dm/opencastle.svg?v=1" alt="downloads" /></a>
+  <img src="https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript&amp;logoColor=white" alt="TypeScript" />
 </p>
 
 <p align="center">
   <a href="https://www.opencastle.dev/">Website</a> &middot;
+  <a href="https://www.opencastle.dev/docs/">Docs</a> &middot;
   <a href="#quick-start">Quick Start</a> &middot;
   <a href="ARCHITECTURE.md">Architecture</a> &middot;
   <a href="#contributing">Contributing</a>
@@ -58,7 +62,7 @@ You can select multiple IDEs and tools — the output is adapted for each one.
 | **Claude Code** | `CLAUDE.md` + `.claude/` |
 | **OpenCode** | `AGENTS.md` + `.opencode/` + `opencode.json` |
 
-MCP servers are auto-configured for your stack (Sanity, Supabase, Vercel, NX, Linear, Slack, etc.) in each IDE’s native format.
+MCP servers are auto-configured for your stack (Sanity, Supabase, Prisma, Vercel, Netlify, NX, Turborepo, Playwright, Cypress, Vitest, Figma, Resend, Linear, Slack, etc.) in each IDE's native format.
 
 <br>
 
@@ -75,12 +79,7 @@ MCP servers are auto-configured for your stack (Sanity, Supabase, Vercel, NX, Li
 
 Add `--dry-run` to any command to preview what it would change without writing files.
 
-**Updating to a specific version:**
-
-```bash
-npx opencastle@latest update   # latest version
-npx opencastle@1.2.3 update    # pin to a specific version
-```
+📖 [Full CLI reference →](https://www.opencastle.dev/docs/cli)
 
 <br>
 
@@ -114,6 +113,8 @@ Visualizes real agent data from your project — sessions, success rates, model 
 
 Reads from the same NDJSON logs your agents already write. No setup needed.
 
+📖 [Dashboard documentation →](https://www.opencastle.dev/docs/cli#dashboard)
+
 <br>
 
 ## Doctor
@@ -122,23 +123,9 @@ Reads from the same NDJSON logs your agents already write. No setup needed.
 npx opencastle doctor
 ```
 
-Runs 11 health checks to validate your setup:
+Runs 11 health checks — manifest, configs, skills, observability logs, IDE settings, MCP setup, and environment variables. Exits with code `1` if any check fails. Useful in CI or after upgrading.
 
-| Check | What it verifies |
-|-------|------------------|
-| Manifest | `.opencastle.json` exists and contains valid version/IDE info |
-| Customizations | `.github/customizations/` directory exists |
-| Instruction files | `.github/instructions/` has `.md` files |
-| Agent definitions | `.agent.md` files present in customizations |
-| Skills directory | `.github/skills/` exists and is populated |
-| Skill matrix | All capability slots are resolved |
-| Observability logs | `sessions.ndjson`, `delegations.ndjson`, etc. exist |
-| IDE configs | Expected config files exist for each selected IDE |
-| MCP config | MCP JSON files present for each IDE |
-| MCP env vars | Required environment variables are set |
-| `.env` file | `.env` exists if MCP secrets are needed |
-
-Exits with code `1` if any check fails. Useful in CI or after upgrading.
+📖 [See all health checks →](https://www.opencastle.dev/docs/cli#doctor)
 
 <br>
 
@@ -174,57 +161,13 @@ tasks:
 
 Use the **"Generate Task Spec"** prompt to create this file from a plain description. No YAML by hand.
 
-<details>
-<summary>Adapters</summary>
-
-| Adapter | Status |
-|---------|--------|
-| `claude-code` | ✅ Supported |
-| `copilot` | ✅ Supported |
-| `cursor` | ✅ Supported |
-
-</details>
-
-<details>
-<summary>Full reference</summary>
-
-**Task fields**
-
-| Field | Required | Default | Description |
-|-------|----------|---------|-------------|
-| `id` | Yes | — | Unique identifier |
-| `prompt` | Yes | — | Instructions for the agent |
-| `agent` | No | `developer` | Specialist agent role |
-| `depends_on` | No | `[]` | Tasks that must complete first |
-| `files` | No | `[]` | File/directory scope |
-| `timeout` | No | `30m` | Max duration |
-
-**Top-level options**
-
-| Field | Default | Description |
-|-------|---------|-------------|
-| `name` | *(required)* | Run name |
-| `concurrency` | `1` | Max parallel tasks |
-| `on_failure` | `continue` | `continue` or `stop` |
-| `adapter` | `claude-code` | Agent runtime |
-
-**CLI flags**
-
-| Flag | Description |
-|------|-------------|
-| `-f <path>` | Task spec file |
-| `--dry-run` | Preview without running |
-| `-c <n>` | Max parallel tasks |
-| `-a <name>` | Override adapter |
-| `--verbose` | Full agent output |
-
-</details>
+📖 [Full task queue reference →](https://www.opencastle.dev/docs/cli#task-queue)
 
 <br>
 
 ## Architecture
 
-18 agents across 4 model tiers, coordinated by a Team Lead.
+19 agents across 4 model tiers, coordinated by a Team Lead.
 
 See **[ARCHITECTURE.md](ARCHITECTURE.md)** for the full diagram, workflow templates, and quality gates.
 

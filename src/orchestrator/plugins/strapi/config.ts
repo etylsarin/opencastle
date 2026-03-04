@@ -35,7 +35,7 @@ export const config: PluginConfig = {
       'strapi/get_entry', 'strapi/create_entry', 'strapi/update_entry',
     ],
   },
-  docsUrl: null,
+  docsUrl: 'https://www.opencastle.dev/docs/plugins#strapi',
   officialDocs: 'https://docs.strapi.io/',
   mcpPackage: 'strapi-mcp',
 };

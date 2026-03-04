@@ -31,9 +31,8 @@ export const config: PluginConfig = {
       'Teams/mcp_graph_teams_listChannelMessages',
     ],
   },
-  docsUrl: null,
+  docsUrl: 'https://www.opencastle.dev/docs/plugins#teams',
   officialDocs: 'https://learn.microsoft.com/en-us/microsoftteams/',
-  mcpPackage: null,
   mcpInputs: [
     {
       id: 'tenant_id',

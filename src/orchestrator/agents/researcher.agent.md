@@ -13,10 +13,7 @@ You are a codebase exploration specialist. Your job is to **find information, ma
 
 ## Skills
 
-### Direct Skills
-
-- **context-map** — File dependency mapping and change impact analysis
-- **self-improvement** — Lessons-learned protocol, retry documentation
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Critical Rules
 

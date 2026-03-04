@@ -19,11 +19,7 @@ You are an expert in frontend and backend performance optimization.
 
 ## Skills
 
-### Capability Slots
-
-Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
-
-- **performance** — Bundle size, code splitting, rendering, data fetching, image optimization, Core Web Vitals, profiling
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Guidelines
 

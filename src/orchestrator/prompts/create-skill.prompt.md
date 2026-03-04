@@ -21,7 +21,7 @@ OpenCastle has two kinds of skills with different locations and registration pat
 
 | Type | Location | Bound Via | Purpose |
 |------|----------|-----------|---------|
-| **Process skill** | `skills/<name>/SKILL.md` | Direct reference in agent files | Stack-agnostic methodology (testing workflow, self-improvement, validation gates) |
+| **Process skill** | `skills/<name>/SKILL.md` | `directSkills` in skill-matrix.json | Stack-agnostic methodology (testing workflow, self-improvement, validation gates) |
 | **Plugin skill** | `plugins/<plugin>/SKILL.md` | Capability slot in the skill matrix | Technology-specific knowledge (CMS queries, database patterns, deployment config) |
 
 > **Rule of thumb:** If the skill would need to be rewritten when switching technologies (e.g., Supabase → Convex), it belongs in a **plugin**. If it's useful regardless of stack, it's a **process skill**.
@@ -92,14 +92,13 @@ Registration differs by type:
 
 #### Process Skill
 
-1. **Add to the skill matrix** — Add a row to the **Process Skills (Always Direct)** table in `.github/customizations/agents/skill-matrix.md`
-2. **Reference in agent files** — Add to the `Direct Skills` section of each agent that should use it
-3. **Optional: reference in instructions** — If the skill should be loaded by default, add it to the appropriate `.github/instructions/` file
+1. **Add to the skill matrix** — Add the skill name to the `directSkills` array of each relevant agent in `.github/customizations/agents/skill-matrix.json`
+2. **Optional: reference in instructions** — If the skill should be loaded by default, add it to the appropriate `.github/instructions/` file
 
 #### Plugin Skill
 
 1. **Set `skillName` in the plugin's `config.ts`** — This connects the skill to the plugin
-2. **Update the skill matrix** — Set the Skill column for the matching capability slot row in `.github/customizations/agents/skill-matrix.md`
+2. **Update the skill matrix** — Add an entry to the matching capability slot's `entries` array in `.github/customizations/agents/skill-matrix.json`
 3. **No agent changes needed** — Agents resolve plugin skills through capability slots automatically
 
 ### Step 5: Validate
@@ -109,8 +108,8 @@ Registration differs by type:
 - [ ] Description is a single line (no line breaks)
 - [ ] Content follows the template structure
 - [ ] No overlap with existing skills
-- [ ] Skill matrix updated (process skill table or capability slot binding)
-- [ ] For process skills: at least one agent references the skill directly
+- [ ] Skill matrix updated (`directSkills` array or capability slot binding)
+- [ ] For process skills: at least one agent's `directSkills` array includes it in skill-matrix.json
 - [ ] For plugin skills: `config.ts` `skillName` matches the `name` in frontmatter
 
 ## Quality Guidelines

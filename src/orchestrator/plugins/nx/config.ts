@@ -4,7 +4,7 @@ export const config: PluginConfig = {
   id: 'nx',
   name: 'NX',
   category: 'tech',
-  subCategory: 'monorepo',
+  subCategory: 'codebase-tool',
   label: 'NX',
   hint: 'Monorepo build system',
   skillName: 'nx-workspace',
@@ -23,7 +23,6 @@ export const config: PluginConfig = {
     'performance-expert': ['nx-mcp-server/nx_project_details', 'nx-mcp-server/nx_workspace'],
     'release-manager': ['nx-mcp-server/nx_project_details', 'nx-mcp-server/nx_workspace', 'nx-mcp-server/nx_workspace_path'],
   },
-  docsUrl: null,
+  docsUrl: 'https://www.opencastle.dev/docs/plugins#nx',
   officialDocs: 'https://nx.dev/getting-started/intro',
-  mcpPackage: null,
 };

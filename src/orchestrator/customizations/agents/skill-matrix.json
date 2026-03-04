@@ -1,0 +1,106 @@
+{
+  "bindings": {
+    "framework": {
+      "entries": [],
+      "description": "SSR/SSG, routing, layouts, Server/Client Components"
+    },
+    "database": {
+      "entries": [],
+      "description": "Schema, migrations, auth flow, roles"
+    },
+    "cms": {
+      "entries": [],
+      "description": "Document types, queries, schema management"
+    },
+    "deployment": {
+      "entries": [],
+      "description": "Hosting, cron jobs, env vars, caching, headers"
+    },
+    "codebase-tool": {
+      "entries": [],
+      "description": "Task running, building, linting, testing, code generation"
+    },
+    "testing": {
+      "entries": [],
+      "description": "Unit testing frameworks, coverage, test planning"
+    },
+    "e2e-testing": {
+      "entries": [],
+      "description": "Browser automation, E2E testing, viewport testing, visual validation"
+    },
+    "task-management": {
+      "entries": [],
+      "description": "Issue tracking, naming, priorities, workflow states"
+    }
+  },
+  "agents": {
+    "Developer": {
+      "slots": ["framework"],
+      "directSkills": ["validation-gates", "code-commenting", "react-development", "api-patterns"]
+    },
+    "Database Engineer": {
+      "slots": ["database"],
+      "directSkills": ["validation-gates", "security-hardening"]
+    },
+    "UI/UX Expert": {
+      "slots": ["e2e-testing"],
+      "directSkills": ["validation-gates", "frontend-design", "accessibility-standards", "react-development"]
+    },
+    "Content Engineer": {
+      "slots": ["cms"],
+      "directSkills": ["validation-gates"]
+    },
+    "Testing Expert": {
+      "slots": ["e2e-testing", "testing"],
+      "directSkills": ["validation-gates", "testing-workflow"]
+    },
+    "Security Expert": {
+      "slots": ["database"],
+      "directSkills": ["validation-gates", "documentation-standards", "security-hardening"]
+    },
+    "Data Expert": {
+      "slots": [],
+      "directSkills": ["validation-gates", "data-engineering"]
+    },
+    "DevOps Expert": {
+      "slots": ["deployment"],
+      "directSkills": ["validation-gates", "documentation-standards"]
+    },
+    "Performance Expert": {
+      "slots": [],
+      "directSkills": ["validation-gates", "performance-optimization"]
+    },
+    "Architect": {
+      "slots": ["codebase-tool"],
+      "directSkills": ["documentation-standards"]
+    },
+    "Copywriter": {
+      "slots": ["cms"],
+      "directSkills": ["documentation-standards"]
+    },
+    "SEO Specialist": {
+      "slots": ["framework", "cms"],
+      "directSkills": ["validation-gates", "documentation-standards", "seo-patterns"]
+    },
+    "API Designer": {
+      "slots": ["framework"],
+      "directSkills": ["validation-gates", "documentation-standards", "api-patterns", "security-hardening"]
+    },
+    "Release Manager": {
+      "slots": ["codebase-tool", "deployment"],
+      "directSkills": ["validation-gates", "documentation-standards"]
+    },
+    "Documentation Writer": {
+      "slots": [],
+      "directSkills": ["documentation-standards", "code-commenting"]
+    },
+    "Researcher": {
+      "slots": [],
+      "directSkills": ["context-map", "self-improvement"]
+    },
+    "Team Lead": {
+      "slots": ["task-management"],
+      "directSkills": ["team-lead-reference", "session-checkpoints", "validation-gates", "fast-review", "panel-majority-vote", "context-map", "memory-merger", "agent-hooks", "decomposition", "orchestration-protocols"]
+    }
+  }
+}

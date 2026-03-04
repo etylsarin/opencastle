@@ -19,11 +19,7 @@ You are a DevOps expert specializing in deployments, CI/CD pipelines, cron jobs,
 
 ## Skills
 
-### Capability Slots
-
-Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
-
-- **deployment** — Hosting configuration, cron jobs, build process, environment variables, security headers, caching, middleware
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Guidelines
 

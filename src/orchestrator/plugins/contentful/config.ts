@@ -43,7 +43,7 @@ export const config: PluginConfig = {
       'contentful/update_entry', 'contentful/list_spaces', 'contentful/get_space',
     ],
   },
-  docsUrl: null,
+  docsUrl: 'https://www.opencastle.dev/docs/plugins#contentful',
   officialDocs: 'https://www.contentful.com/developers/docs/',
   mcpPackage: '@contentful/mcp-server',
 };

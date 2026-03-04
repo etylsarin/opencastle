@@ -27,7 +27,7 @@ export const config: PluginConfig = {
       'convex/envList', 'convex/envGet', 'convex/logs', 'convex/insights',
     ],
   },
-  docsUrl: null,
+  docsUrl: 'https://www.opencastle.dev/docs/plugins#convex',
   officialDocs: 'https://docs.convex.dev/',
   mcpPackage: 'convex',
 };

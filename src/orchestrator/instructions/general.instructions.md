@@ -34,7 +34,7 @@ applyTo: '**'
 
 ## Technology Standards
 
-Load the corresponding skill for detailed conventions before writing code in that domain. These are **not optional**. See `.github/customizations/agents/skill-matrix.md` for the full domain-to-skill mapping.
+Load the corresponding skill for detailed conventions before writing code in that domain. These are **not optional**. See `.github/customizations/agents/skill-matrix.json` for the full domain-to-skill mapping.
 
 | Domain | Skill |
 |--------|-------|

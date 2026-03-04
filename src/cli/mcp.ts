@@ -111,7 +111,7 @@ export async function scaffoldMcpConfig(
 
     for (const plugin of Object.values(PLUGINS)) {
       if (plugin.mcpServerKey && included.has(plugin.mcpServerKey)) {
-        servers[plugin.mcpServerKey] = plugin.mcpConfig as VsCodeServer;
+        servers[plugin.mcpServerKey] = plugin.mcpConfig! as VsCodeServer;
         if (plugin.mcpInputs) {
           inputs.push(...plugin.mcpInputs);
         }
@@ -180,4 +180,80 @@ export async function scaffoldMcpConfig(
   await writeFile(destPath, JSON.stringify(output, null, 2) + '\n');
 
   return { path: destPath, action: 'created' };
+}
+
+// ── MCP config rebuild for reconfigure ────────────────────────
+
+/**
+ * Returns the relative path to the MCP config file for a given IDE.
+ */
+function getMcpConfigRelPath(ide: IdeChoice): string {
+  switch (ide) {
+    case 'vscode':
+      return '.vscode/mcp.json';
+    case 'cursor':
+      return '.cursor/mcp.json';
+    case 'claude-code':
+      return '.claude/mcp.json';
+    case 'opencode':
+      return 'opencode.json';
+  }
+}
+
+/**
+ * Rebuild the MCP config for a specific IDE after a stack reconfigure.
+ *
+ * 1. Reads the existing MCP config
+ * 2. Removes all plugin-managed server entries
+ * 3. Preserves manually-added server entries
+ * 4. Re-scaffolds with the new stack selection
+ */
+export async function rebuildMcpConfig(
+  projectRoot: string,
+  ide: IdeChoice,
+  stack: StackConfig,
+  repoInfo?: RepoInfo
+): Promise<void> {
+  const destRelPath = getMcpConfigRelPath(ide);
+  const destPath = resolve(projectRoot, destRelPath);
+
+  if (!existsSync(destPath)) {
+    // No existing config — scaffold fresh
+    await scaffoldMcpConfig(projectRoot, destRelPath, stack, repoInfo, ide);
+    return;
+  }
+
+  // Read existing config and strip all plugin-managed servers
+  const existing = JSON.parse(await readFile(destPath, 'utf8')) as Record<string, unknown>;
+  const containerKey =
+    ide === 'opencode' ? 'mcp' : ide === 'vscode' ? 'servers' : 'mcpServers';
+
+  const existingServers = (existing[containerKey] ?? {}) as Record<string, unknown>;
+
+  // Get all known plugin server keys
+  const allPluginServerKeys = new Set(
+    Object.values(PLUGINS)
+      .filter((p) => p.mcpServerKey)
+      .map((p) => p.mcpServerKey!)
+  );
+
+  // Remove all plugin-managed servers (they'll be re-added by scaffoldMcpConfig)
+  for (const key of Object.keys(existingServers)) {
+    if (allPluginServerKeys.has(key)) {
+      delete existingServers[key];
+    }
+  }
+
+  // Remove plugin-managed inputs (VS Code only)
+  if (ide === 'vscode') {
+    delete existing.inputs;
+  }
+
+  existing[containerKey] = existingServers;
+
+  // Write the cleaned config (preserving manually-added servers)
+  await writeFile(destPath, JSON.stringify(existing, null, 2) + '\n');
+
+  // Re-scaffold: merges new plugin servers into the cleaned config
+  await scaffoldMcpConfig(projectRoot, destRelPath, stack, repoInfo, ide);
 }

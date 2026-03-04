@@ -11,6 +11,16 @@ import { config as jira } from './jira/config.js';
 import { config as slack } from './slack/config.js';
 import { config as teams } from './teams/config.js';
 import { config as chromeDevtools } from './chrome-devtools/config.js';
+import { config as netlify } from './netlify/config.js';
+import { config as turborepo } from './turborepo/config.js';
+import { config as prisma } from './prisma/config.js';
+import { config as cypress } from './cypress/config.js';
+import { config as playwright } from './playwright/config.js';
+import { config as vitest } from './vitest/config.js';
+import { config as figma } from './figma/config.js';
+import { config as resend } from './resend/config.js';
+import { config as nextjs } from './nextjs/config.js';
+import { config as astro } from './astro/config.js';
 
 export type { PluginConfig, McpServerConfig, McpInput, EnvVarRequirement } from './types.js';
 
@@ -24,6 +34,16 @@ export const PLUGINS: Record<string, PluginConfig> = {
   vercel,
   nx,
   'chrome-devtools': chromeDevtools,
+  netlify,
+  turborepo,
+  prisma,
+  cypress,
+  playwright,
+  vitest,
+  figma,
+  resend,
+  nextjs,
+  astro,
   linear,
   jira,
   slack,

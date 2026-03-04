@@ -13,7 +13,7 @@ export interface PluginConfig {
   category: 'tech' | 'team';
 
   /** Sub-category for grouping */
-  subCategory: 'cms' | 'database' | 'deployment' | 'monorepo' | 'tracker' | 'notifications' | 'testing';
+  subCategory: 'cms' | 'database' | 'deployment' | 'framework' | 'codebase-tool' | 'task-management' | 'notifications' | 'testing' | 'e2e-testing' | 'design' | 'email';
 
   /** Label shown in the `npx opencastle init` multiselect */
   label: string;
@@ -24,11 +24,11 @@ export interface PluginConfig {
   /** Skill directory name (matches the old skills/ dirname). null if no skill. */
   skillName: string | null;
 
-  /** MCP server key used in the generated MCP config. null if no MCP server. */
-  mcpServerKey: string | null;
+  /** MCP server key used in the generated MCP config. Omit if no MCP server. */
+  mcpServerKey?: string;
 
-  /** Raw MCP server config */
-  mcpConfig: McpServerConfig;
+  /** Raw MCP server config (required when mcpServerKey is set) */
+  mcpConfig?: McpServerConfig;
 
   /** Authentication type */
   authType: 'oauth' | 'env-token' | 'none';
@@ -46,8 +46,8 @@ export interface PluginConfig {
   /** Official product documentation URL */
   officialDocs: string;
 
-  /** NPM package for the MCP server (null for HTTP/OAuth servers) */
-  mcpPackage: string | null;
+  /** NPM package for the MCP server (omit for HTTP/OAuth servers or plugins without MCP) */
+  mcpPackage?: string;
 
   /** Whether this plugin should be preselected in the init prompt */
   preselected?: boolean;
