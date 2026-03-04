@@ -200,6 +200,12 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
   manifest.repoInfo = combinedRepoInfo
   await writeManifest(projectRoot, manifest)
 
+  // ── Ensure .env is gitignored when MCP env vars are needed ────
+  const envVars = getRequiredMcpEnvVars(stack, combinedRepoInfo)
+  if (envVars.length > 0 && !allManagedPaths.framework.includes('.env')) {
+    allManagedPaths.framework.push('.env')
+  }
+
   // ── Update .gitignore ───────────────────────────────────────────
   const gitignoreResult = await updateGitignore(projectRoot, allManagedPaths)
 
@@ -215,7 +221,6 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
   }
 
   // ── Env var notice + .env file generation ────────────────────
-  const envVars = getRequiredMcpEnvVars(stack, combinedRepoInfo)
   if (envVars.length > 0) {
     console.log(`\n  ${c.yellow('⚠')}  Required environment variables for MCP servers:\n`)
     for (const { envVar, hint } of envVars) {

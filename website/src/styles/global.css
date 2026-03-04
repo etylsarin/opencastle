@@ -199,6 +199,7 @@ img {
   font-weight: 700;
   font-size: 1.125rem;
   color: var(--text-primary);
+  flex-shrink: 0;
 }
 
 .header__logo img {
@@ -209,7 +210,7 @@ img {
 .header__nav {
   display: none;
   align-items: center;
-  gap: 32px;
+  gap: 24px;
   list-style: none;
 }
 
@@ -239,42 +240,16 @@ img {
   cursor: pointer;
   padding: 8px;
   -webkit-tap-highlight-color: transparent;
+  order: 10;
+  margin-left: auto;
 }
 
 .header__menu-toggle:hover {
   color: var(--text-primary);
 }
 
-@media (min-width: 768px) {
-  .header__nav {
-    display: flex;
-  }
-  .header__menu-toggle {
-    display: none;
-  }
-  .header__nav--open {
-    position: static;
-    flex-direction: row;
-    background: none;
-    border: none;
-    padding: 0;
-    gap: 32px;
-  }
-}
-
-.header__nav a {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition: color var(--transition-fast);
-}
-
-.header__nav a:hover {
-  color: var(--text-primary);
-}
-
 .header__cta {
-  display: inline-flex;
+  display: none;
   align-items: center;
   gap: 6px;
   padding: 8px 16px;
@@ -291,6 +266,37 @@ img {
 .header__cta:hover {
   background: rgba(255, 255, 255, 0.12);
   border-color: rgba(255, 255, 255, 0.12);
+  color: var(--text-primary);
+}
+
+@media (min-width: 1024px) {
+  .header__nav {
+    display: flex;
+  }
+  .header__menu-toggle {
+    display: none;
+  }
+  .header__nav--open {
+    position: static;
+    flex-direction: row;
+    background: none;
+    border: none;
+    padding: 0;
+    gap: 24px;
+  }
+  .header__cta {
+    display: inline-flex;
+  }
+}
+
+.header__nav a {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color var(--transition-fast);
+}
+
+.header__nav a:hover {
   color: var(--text-primary);
 }
 
@@ -389,6 +395,12 @@ img {
   margin-bottom: 48px;
 }
 
+@media (max-width: 639px) {
+  .btn.hero__dashboard-link {
+    display: none;
+  }
+}
+
 /* ---------- Buttons ---------- */
 .btn {
   display: inline-flex;
@@ -397,6 +409,9 @@ img {
   padding: 12px 24px;
   font-size: 0.9375rem;
   font-weight: 600;
+  font-family: inherit;
+  line-height: 1.4;
+  box-sizing: border-box;
   border-radius: 10px;
   cursor: pointer;
   transition: all var(--transition-fast);

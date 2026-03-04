@@ -56,6 +56,12 @@ const pages = [
               Quick Start
             </a>
           </li>
+          <li>
+            <a class="docs-sidebar__link" href="#demo-video">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Demo Video
+            </a>
+          </li>
         </ul>
 
         <div class="docs-sidebar__divider"></div>
@@ -103,6 +109,23 @@ const pages = [
                 <p class="quickstart__desc">Open your IDE and talk to the Team Lead agent. It orchestrates the rest.</p>
               </div>
             </div>
+          </div>
+        </section>
+
+        <!-- Demo Video -->
+        <section class="demo-video-section" id="demo-video">
+          <h3 class="demo-video-section__heading">See it in action</h3>
+          <div class="demo-video-section__wrapper">
+            <video
+              class="demo-video-section__player"
+              controls
+              playsinline
+              preload="metadata"
+              webkit-playsinline
+            >
+              <source src="/opencastle-demo.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
         </section>
 
@@ -355,6 +378,32 @@ const pages = [
         color: var(--text-secondary);
         font-size: .9rem;
         line-height: 1.5;
+      }
+
+      /* ── Demo Video ── */
+      .demo-video-section {
+        margin-bottom: 3rem;
+        scroll-margin-top: 72px;
+      }
+      .demo-video-section__heading {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--text-accent);
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        margin-bottom: 1rem;
+      }
+      .demo-video-section__wrapper {
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid var(--border-primary);
+        background: #000;
+      }
+      .demo-video-section__player {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 12px;
       }
 
       /* ── Doc cards grid ── */
