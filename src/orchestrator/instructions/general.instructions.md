@@ -181,35 +181,39 @@ Append one JSON line per task using `echo '...' >> <file>`. When the Team Lead w
 echo '{"timestamp":"2026-03-01T14:00:00Z","agent":"Developer","model":"claude-opus-4-6","task":"Fix login redirect bug","outcome":"success","duration_min":15,"files_changed":3,"retries":0,"lessons_added":[],"discoveries":[]}' >> .github/customizations/logs/sessions.ndjson
 ```
 
-**Delegation record** (Team Lead only, after each delegation):
+**Delegation record** (Team Lead only, **immediately after each delegation — not at session end**):
 ```bash
 echo '{"timestamp":"2026-03-01T14:00:00Z","session_id":"feat/prj-57","agent":"Developer","model":"gpt-5.3-codex","tier":"fast","mechanism":"sub-agent","linear_issue":"PRJ-57","outcome":"success","retries":0,"phase":2,"file_partition":["src/components/"]}' >> .github/customizations/logs/delegations.ndjson
 ```
+Verify: `tail -1 .github/customizations/logs/delegations.ndjson`
 
-**Fast review record** (Team Lead, after each fast review):
+**Fast review record** (Team Lead, **immediately after each fast review**):
 ```bash
 echo '{"timestamp":"2026-03-01T14:30:00Z","linear_issue":"PRJ-42","agent":"Developer","reviewer_model":"gpt-5-mini","verdict":"pass","attempt":1,"issues_critical":0,"issues_major":0,"issues_minor":2,"confidence":"high","escalated":false,"duration_sec":45}' >> .github/customizations/logs/reviews.ndjson
 ```
+Verify: `tail -1 .github/customizations/logs/reviews.ndjson`
 
-**Panel record** (after each panel majority vote):
+**Panel record** (Panel runner, **immediately after each panel majority vote**):
 ```bash
 echo '{"timestamp":"2026-03-01T15:00:00Z","panel_key":"auth-review","verdict":"pass","pass_count":2,"block_count":1,"must_fix":0,"should_fix":3,"reviewer_model":"claude-opus-4-6","weighted":false,"attempt":1,"linear_issue":"PRJ-42","artifacts_count":5}' >> .github/customizations/logs/panels.ndjson
 ```
+Verify: `tail -1 .github/customizations/logs/panels.ndjson`
 
-**Dispute record** (Team Lead, after each dispute):
+**Dispute record** (Team Lead, **immediately after each dispute**):
 ```bash
 echo '{"timestamp":"2026-03-01T16:00:00Z","dispute_id":"DSP-001","linear_issue":"PRJ-42","priority":"high","trigger":"panel-3x-block","implementing_agent":"Developer","reviewing_agents":["Reviewer","Panel (3x)"],"total_attempts":6,"est_tokens_spent":120000,"status":"pending","resolution_option_chosen":null,"resolved_at":null}' >> .github/customizations/logs/disputes.ndjson
 ```
+Verify: `tail -1 .github/customizations/logs/disputes.ndjson`
 
 ### Pre-Response Logging Checklist
 
 **STOP before responding to the user.** Verify each applicable item:
 
 - [ ] **Session logged** — `sessions.ndjson` has a new line for this session (ALWAYS required)
-- [ ] **Delegations logged** — `delegations.ndjson` has a line for each delegation (Team Lead only)
-- [ ] **Reviews logged** — `reviews.ndjson` has a line for each fast review performed (if any)
-- [ ] **Panels logged** — `panels.ndjson` has a line for each panel review performed (if any)
-- [ ] **Disputes logged** — `disputes.ndjson` has a line for each dispute created (if any)
+- [ ] **Delegations logged** — `delegations.ndjson` has a line for **each** delegation (Team Lead only). Count delegations → count records → must match
+- [ ] **Reviews logged** — `reviews.ndjson` has a line for **each** fast review performed. Count reviews → count records → must match
+- [ ] **Panels logged** — `panels.ndjson` has a line for **each** panel review performed. Count panels → count records → must match
+- [ ] **Disputes logged** — `disputes.ndjson` has a line for **each** dispute created. Count disputes → count records → must match
 
 If ANY required log is missing, append it NOW before responding.
 

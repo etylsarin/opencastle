@@ -236,6 +236,11 @@ export async function detectRepoInfo(projectRoot: string): Promise<RepoInfo> {
   // ── 4. Detect from package.json deps ────────────────────────
   await detectFromPackageJson(projectRoot, info);
 
+  // ── 4b. Scan workspace packages in monorepos ────────────────
+  if (info.monorepo) {
+    await scanWorkspacePackages(projectRoot, info);
+  }
+
   // ── 5. Detect MCP config ────────────────────────────────────
   const mcpPaths = [
     '.vscode/mcp.json',
@@ -400,6 +405,145 @@ async function scanForPattern(root: string, pattern: RegExp): Promise<boolean> {
   }
 
   return false;
+}
+
+/**
+ * Scan workspace package directories in monorepos for additional tooling.
+ * Checks both package.json dependencies and config files in each workspace package.
+ */
+async function scanWorkspacePackages(projectRoot: string, info: RepoInfoInternal): Promise<void> {
+  const packageDirs = await resolveWorkspacePackageDirs(projectRoot);
+
+  for (const pkgDir of packageDirs) {
+    await detectFromPackageJson(pkgDir, info);
+    await Promise.all([
+      detectCategory(pkgDir, FRAMEWORKS, info, 'frameworks'),
+      detectCategory(pkgDir, DATABASES, info, 'databases'),
+      detectCategory(pkgDir, CMS_PLATFORMS, info, 'cms'),
+      detectCategory(pkgDir, DEPLOYMENT, info, 'deployment'),
+      detectCategory(pkgDir, TESTING, info, 'testing'),
+      detectCategory(pkgDir, CICD, info, 'cicd'),
+      detectCategory(pkgDir, STYLING, info, 'styling'),
+      detectCategory(pkgDir, AUTH, info, 'auth'),
+    ]);
+  }
+}
+
+/**
+ * Resolve workspace package directories.
+ * Tries pnpm-workspace.yaml first, then falls back to scanning common directories.
+ */
+async function resolveWorkspacePackageDirs(projectRoot: string): Promise<string[]> {
+  const dirs: string[] = [];
+
+  // Try pnpm-workspace.yaml first
+  const pnpmWorkspacePath = resolve(projectRoot, 'pnpm-workspace.yaml');
+  if (await fileExists(pnpmWorkspacePath)) {
+    try {
+      const content = await readFile(pnpmWorkspacePath, 'utf8');
+      const globs = parsePnpmWorkspaceGlobs(content);
+      for (const glob of globs) {
+        const resolved = await expandGlobDirs(projectRoot, glob);
+        dirs.push(...resolved);
+      }
+    } catch {
+      // Fall through to common directory scan
+    }
+  }
+
+  // Fall back to common directories if nothing found
+  if (dirs.length === 0) {
+    const commonDirs = ['apps', 'packages', 'libs'];
+    for (const dir of commonDirs) {
+      const dirPath = resolve(projectRoot, dir);
+      if (await dirExists(dirPath)) {
+        try {
+          const entries = await readdir(dirPath, { withFileTypes: true });
+          for (const entry of entries) {
+            if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+              dirs.push(resolve(dirPath, entry.name));
+            }
+          }
+        } catch {
+          // Skip unreadable directories
+        }
+      }
+    }
+  }
+
+  return dirs;
+}
+
+/**
+ * Parse pnpm-workspace.yaml to extract package glob patterns.
+ * Simple line parser — no YAML library needed.
+ */
+function parsePnpmWorkspaceGlobs(content: string): string[] {
+  const globs: string[] = [];
+  const lines = content.split('\n');
+  let inPackages = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed === 'packages:') {
+      inPackages = true;
+      continue;
+    }
+    if (inPackages) {
+      // Stop at next top-level key
+      if (trimmed && !trimmed.startsWith('-') && !trimmed.startsWith('#')) {
+        break;
+      }
+      const match = trimmed.match(/^-\s+['"]?([^'"]+?)['"]?\s*$/);
+      if (match) {
+        globs.push(match[1]);
+      }
+    }
+  }
+
+  return globs;
+}
+
+/**
+ * Expand a glob pattern like 'apps/*' into actual directories.
+ * Only supports simple patterns ending in /* (single-level wildcard).
+ */
+async function expandGlobDirs(root: string, glob: string): Promise<string[]> {
+  const dirs: string[] = [];
+  // Strip trailing /* or /** and resolve the parent directory
+  const cleaned = glob.replace(/\/\*\*?$/, '').replace(/\/$/, '');
+  const parentDir = resolve(root, cleaned);
+
+  if (await dirExists(parentDir)) {
+    try {
+      const entries = await readdir(parentDir, { withFileTypes: true });
+      for (const entry of entries) {
+        if (entry.isDirectory() && !entry.name.startsWith('.') && entry.name !== 'node_modules') {
+          dirs.push(resolve(parentDir, entry.name));
+        }
+      }
+    } catch {
+      // Skip unreadable directories
+    }
+  }
+
+  return dirs;
+}
+
+/**
+ * Build a Set of detected tool plugin IDs from RepoInfo.
+ * Maps detection labels to plugin IDs (e.g., 'next' → 'nextjs').
+ * Includes all categories: cms, databases, deployment, testing, monorepo, frameworks.
+ */
+export function buildDetectedToolsSet(repoInfo: RepoInfo): Set<string> {
+  return new Set([
+    ...(repoInfo.cms ?? []),
+    ...(repoInfo.databases ?? []),
+    ...(repoInfo.deployment ?? []),
+    ...(repoInfo.testing ?? []),
+    ...(repoInfo.monorepo ? [repoInfo.monorepo] : []),
+    ...((repoInfo.frameworks ?? []).map(f => f === 'next' ? 'nextjs' : f)),
+  ]);
 }
 
 /**

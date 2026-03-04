@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<title>OpenCastle OG Card</title>
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 1280px;
+    height: 640px;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background: #0a0a0f;
+    color: #f0f0f5;
+    position: relative;
+  }
+
+  /* ---- Dot grid pattern ---- */
+  .dot-grid {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ---- Top radial glow ---- */
+  .glow {
+    position: absolute;
+    top: -120px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 520px;
+    background: radial-gradient(ellipse 900px 420px at 50% 40%,
+      rgba(99, 102, 241, 0.18) 0%,
+      rgba(167, 139, 250, 0.08) 40%,
+      transparent 70%
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ---- Outer border glow ---- */
+  .border-glow {
+    position: absolute;
+    inset: 0;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 0;
+    pointer-events: none;
+    z-index: 5;
+  }
+  .border-glow::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 15%;
+    right: 15%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.4), rgba(99, 102, 241, 0.5), rgba(167, 139, 250, 0.4), transparent);
+  }
+
+  /* ---- Main content ---- */
+  .container {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 56px 80px 48px;
+  }
+
+  /* ---- Logo ---- */
+  .logo-img {
+    width: 420px;
+    height: auto;
+    margin-bottom: 20px;
+  }
+
+  /* ---- Tagline ---- */
+  .tagline {
+    font-size: 22px;
+    font-weight: 400;
+    color: #8a8a9a;
+    line-height: 1.4;
+    text-align: center;
+    max-width: 620px;
+    margin-bottom: 40px;
+    letter-spacing: -0.2px;
+  }
+
+  /* ---- Badges row ---- */
+  .badges {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 36px;
+  }
+  .badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 18px;
+    border-radius: 100px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 14px;
+    font-weight: 500;
+    color: #c8c8d4;
+    letter-spacing: 0.1px;
+  }
+  .badge-icon {
+    font-size: 15px;
+    opacity: 0.7;
+  }
+  .badge-accent {
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.1) 0%, rgba(99, 102, 241, 0.06) 100%);
+    border-color: rgba(167, 139, 250, 0.2);
+  }
+
+  /* ---- IDE row ---- */
+  .ides {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: #5a5a6e;
+    font-weight: 400;
+    letter-spacing: 0.3px;
+    margin-bottom: 0;
+  }
+  .ide-sep {
+    color: #3a3a4a;
+    font-size: 11px;
+  }
+
+  /* ---- Bottom URL ---- */
+  .url {
+    position: absolute;
+    bottom: 32px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 14px;
+    font-weight: 500;
+    color: #5a5a6e;
+    letter-spacing: 0.5px;
+    z-index: 3;
+  }
+
+  /* ---- Decorative corner accents ---- */
+  .corner {
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    z-index: 3;
+    pointer-events: none;
+  }
+  .corner--tl {
+    top: 24px; left: 24px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    border-left: 1px solid rgba(255,255,255,0.08);
+  }
+  .corner--tr {
+    top: 24px; right: 24px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    border-right: 1px solid rgba(255,255,255,0.08);
+  }
+  .corner--bl {
+    bottom: 24px; left: 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    border-left: 1px solid rgba(255,255,255,0.08);
+  }
+  .corner--br {
+    bottom: 24px; right: 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    border-right: 1px solid rgba(255,255,255,0.08);
+  }
+</style>
+</head>
+<body>
+
+  <!-- Background layers -->
+  <div class="dot-grid"></div>
+  <div class="glow"></div>
+  <div class="border-glow"></div>
+
+  <!-- Corner accents -->
+  <div class="corner corner--tl"></div>
+  <div class="corner corner--tr"></div>
+  <div class="corner corner--bl"></div>
+  <div class="corner corner--br"></div>
+
+  <!-- Content -->
+  <div class="container">
+    <img class="logo-img" src="{{LOGO_DATA_URI}}" alt="OpenCastle" />
+
+    <p class="tagline">Turn your AI coding assistant into a multi-agent team</p>
+
+    <div class="badges">
+      <div class="badge badge-accent">
+        <span class="badge-icon">⚡</span> 19 Agents
+      </div>
+      <div class="badge">
+        <span class="badge-icon">🖥</span> 4 IDEs
+      </div>
+      <div class="badge">
+        <span class="badge-icon">⚖</span> MIT License
+      </div>
+    </div>
+
+    <div class="ides">
+      GitHub Copilot
+      <span class="ide-sep">·</span>
+      Cursor
+      <span class="ide-sep">·</span>
+      Claude Code
+      <span class="ide-sep">·</span>
+      OpenCode
+    </div>
+  </div>
+
+  <div class="url">opencastle.dev</div>
+
+</body>
+</html>

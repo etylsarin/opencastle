@@ -111,11 +111,12 @@ Pre-Delegate:
 
 ### Actions
 
-0. **Log the delegation NOW** — Append a record to `.github/customizations/logs/delegations.ndjson` immediately. Do this BEFORE review or verification — logging must not depend on review passing.
+0. **Log the delegation** — Append a record to `.github/customizations/logs/delegations.ndjson` **before** proceeding to review or verification.
    ```bash
-   echo '{"timestamp":"...","session_id":"<branch>","agent":"...","model":"...","tier":"...","mechanism":"sub-agent","outcome":"...","retries":0,"phase":N,"file_partition":["..."]}' >> .github/customizations/logs/delegations.ndjson
+   echo '{"timestamp":"...","session_id":"<branch>","agent":"...","model":"...","tier":"...","mechanism":"sub-agent","linear_issue":"<issue-or-N/A>","outcome":"...","retries":0,"phase":N,"file_partition":["..."]}' >> .github/customizations/logs/delegations.ndjson
    ```
-1. **Fast review (mandatory)** — Run the `fast-review` skill against the agent's output. This is a **non-skippable gate**. See the fast-review skill for the full procedure (single reviewer sub-agent, automatic retry, escalation). Only after the fast review passes do you proceed to the remaining post-delegate actions below.
+   Verify: `tail -1 .github/customizations/logs/delegations.ndjson`
+1. **Fast review (mandatory)** — Run the `fast-review` skill against the agent's output. This is a **non-skippable gate**. See the fast-review skill for the full procedure (single reviewer sub-agent, automatic retry, escalation). Log the review to `reviews.ndjson` immediately after. Only after the fast review passes do you proceed to the remaining post-delegate actions below.
 2. **Verify output** — Read changed files. Check that changes stay within the agent's file partition.
 2. **Run verification** — Execute appropriate checks: lint, type-check, tests, or visual inspection.
 3. **Check acceptance criteria** — Compare output against the tracker issue's acceptance criteria. Each criterion must be independently verified.
@@ -127,11 +128,12 @@ Pre-Delegate:
 
 ```
 Post-Delegate:
-☐ Delegation logged to delegations.ndjson (FIRST — before anything else)
+☐ Delegation logged to delegations.ndjson (before review — verify with tail -1)
 ☐ Changed files reviewed
 ☐ Files within partition
 ☐ Lint/test/build passes
 ☐ Fast review PASS (mandatory — load fast-review skill)
+☐ Review logged to reviews.ndjson (verify with tail -1)
 ☐ Acceptance criteria met
 ☐ Discovered issues tracked (not ignored)
 ☐ Lessons captured (if retries occurred)

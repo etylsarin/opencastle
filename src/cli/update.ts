@@ -7,7 +7,7 @@ import { TECH_PLUGINS, TEAM_PLUGINS } from '../orchestrator/plugins/index.js'
 import { IDE_ADAPTERS, VALID_IDES } from './adapters/index.js'
 import { getRequiredMcpEnvVars, updateSkillMatrixFile } from './stack-config.js'
 import { rebuildMcpConfig } from './mcp.js'
-import { detectRepoInfo, mergeStackIntoRepoInfo } from './detect.js'
+import { detectRepoInfo, mergeStackIntoRepoInfo, buildDetectedToolsSet } from './detect.js'
 import type { CliContext, IdeChoice, TechTool, TeamTool, StackConfig } from './types.js'
 
 export default async function update({
@@ -75,13 +75,7 @@ export default async function update({
   let removedTools: string[] = []
 
   if (wantsReconfigure) {
-    const detectedTools = new Set([
-      ...(repoInfo.cms ?? []),
-      ...(repoInfo.databases ?? []),
-      ...(repoInfo.deployment ?? []),
-      ...(repoInfo.monorepo ? [repoInfo.monorepo] : []),
-      ...((repoInfo.frameworks ?? []).map((f) => (f === 'next' ? 'nextjs' : f))),
-    ])
+    const detectedTools = buildDetectedToolsSet(repoInfo)
 
     const currentTech = new Set(oldStack?.techTools ?? [])
     const currentTeam = new Set(oldStack?.teamTools ?? [])

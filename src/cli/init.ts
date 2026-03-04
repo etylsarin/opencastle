@@ -7,7 +7,7 @@ import { removeDirIfExists } from './copy.js'
 import { updateGitignore } from './gitignore.js'
 import { getRequiredMcpEnvVars } from './stack-config.js'
 import { TECH_PLUGINS, TEAM_PLUGINS } from '../orchestrator/plugins/index.js'
-import { detectRepoInfo, mergeStackIntoRepoInfo, formatRepoInfo } from './detect.js'
+import { detectRepoInfo, mergeStackIntoRepoInfo, formatRepoInfo, buildDetectedToolsSet } from './detect.js'
 import { IDE_ADAPTERS } from './adapters/index.js'
 import { IDE_LABELS } from './types.js'
 import type { CliContext, IdeChoice, TechTool, TeamTool, StackConfig } from './types.js'
@@ -83,13 +83,7 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
 
   // ── Tech Tools (multiselect, 0-N) ──────────────────────────────
   // Pre-select tools already detected in the repo
-  const detectedTools = new Set([
-    ...(repoInfo.cms ?? []),
-    ...(repoInfo.databases ?? []),
-    ...(repoInfo.deployment ?? []),
-    ...(repoInfo.monorepo ? [repoInfo.monorepo] : []),
-    ...((repoInfo.frameworks ?? []).map(f => f === 'next' ? 'nextjs' : f)),
-  ])
+  const detectedTools = buildDetectedToolsSet(repoInfo)
 
   console.log(`  ${c.bold('── Tech Tools ────────────────────────────────')}`)
   const techTools = await multiselect('Which tools does your project use?',
