@@ -32,15 +32,7 @@ When reviewing plans or proposals, **challenge assumptions before implementing**
 
 ## Skills
 
-### Capability Slots
-
-Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
-
-- **monorepo** — Monorepo commands, task caching, affected builds, code generation, project graph
-
-### Direct Skills
-
-- **documentation-standards** — ADR format, documentation templates
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Architecture Decision Records (ADRs)
 

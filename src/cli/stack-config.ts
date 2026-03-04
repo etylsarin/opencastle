@@ -1,3 +1,6 @@
+import { resolve } from 'node:path';
+import { readFile, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import type { TechTool, TeamTool, StackConfig, CopyDirOptions, RepoInfo } from './types.js';
 import {
   PLUGINS,
@@ -15,7 +18,7 @@ import type { PluginConfig } from '../orchestrator/plugins/types.js';
 interface ToolInfo {
   tech: string;
   skill: string | null;
-  mcpServer: string | null;
+  mcpServer?: string;
 }
 
 /** All tech-tool metadata — derived from plugin configs. */
@@ -135,6 +138,23 @@ export function getRequiredMcpEnvVars(stack: StackConfig, repoInfo?: RepoInfo): 
 
 // ── Customization file transforms ─────────────────────────────
 
+// ── Skill matrix JSON types ────────────────────────────────────
+
+export interface SkillMatrixEntry {
+  name: string;
+  skill: string;
+}
+
+export interface SkillMatrixSlot {
+  entries: SkillMatrixEntry[];
+  description: string;
+}
+
+export interface SkillMatrixData {
+  bindings: Record<string, SkillMatrixSlot>;
+  agents: Record<string, { slots: string[]; directSkills: string[] }>;
+}
+
 /**
  * Return a transform callback that pre-populates customization files
  * based on the user's stack selection.
@@ -145,45 +165,11 @@ export function getCustomizationsTransform(
   stack: StackConfig
 ): NonNullable<CopyDirOptions['transform']> {
   return (content: string, srcPath: string) => {
-    if (srcPath.endsWith('skill-matrix.md')) {
-      return transformSkillMatrix(content, stack);
+    if (srcPath.endsWith('skill-matrix.json')) {
+      return updateSkillMatrixContent(content, stack);
     }
     return content;
   };
-}
-
-/**
- * Fill in the `database` and `cms` rows in the skill matrix
- * based on the user's stack selection.
- */
-function transformSkillMatrix(content: string, stack: StackConfig): string {
-  let result = content;
-
-  // Find first selected DB tool
-  const db = stack.techTools.find((t) => (DB_TOOLS as readonly string[]).includes(t));
-  if (db) {
-    const info = TECH_TOOL_INFO[db as TechTool];
-    if (info?.skill) {
-      result = result.replace(
-        /(\| `database`\s*\|)\s*\|(\s*\|)/,
-        `$1 ${info.tech} | \`${info.skill}\` $2`
-      );
-    }
-  }
-
-  // Find first selected CMS tool
-  const cms = stack.techTools.find((t) => (CMS_TOOLS as readonly string[]).includes(t));
-  if (cms) {
-    const info = TECH_TOOL_INFO[cms as TechTool];
-    if (info?.skill) {
-      result = result.replace(
-        /(\| `cms`\s*\|)\s*\|(\s*\|)/,
-        `$1 ${info.tech} | \`${info.skill}\` $2`
-      );
-    }
-  }
-
-  return result;
 }
 
 // ── Agent tool injection ──────────────────────────────────────
@@ -252,4 +238,91 @@ export function getAgentTransform(
 
     return `---\n${newFrontmatter}\n---\n${body}`;
   };
+}
+
+// ── Skill matrix update ─────────────────────────────────────────
+
+/** Mapping from plugin subCategory to skill matrix slot name. */
+const SUBCATEGORY_TO_SLOT: Record<string, string> = {
+  database: 'database',
+  cms: 'cms',
+  deployment: 'deployment',
+  framework: 'framework',
+  'codebase-tool': 'codebase-tool',
+  'task-management': 'task-management',
+  testing: 'testing',
+  'e2e-testing': 'e2e-testing',
+};
+
+/**
+ * Get the filesystem path to the skill matrix file for a given IDE.
+ */
+function getSkillMatrixPath(projectRoot: string, ide: string): string {
+  const relativePath = 'customizations/agents/skill-matrix.json';
+  switch (ide) {
+    case 'vscode':
+      return resolve(projectRoot, '.github', relativePath);
+    case 'cursor':
+      return resolve(projectRoot, '.cursor', 'rules', relativePath);
+    case 'claude-code':
+      return resolve(projectRoot, '.claude', relativePath);
+    case 'opencode':
+      return resolve(projectRoot, '.opencode', relativePath);
+    default:
+      return '';
+  }
+}
+
+/**
+ * Update the skill matrix file in-place for a specific IDE.
+ * Updates slot entries based on the user's current stack selections.
+ * Returns true if the file was updated, false if unchanged or missing.
+ */
+export async function updateSkillMatrixFile(
+  projectRoot: string,
+  ide: string,
+  stack: StackConfig
+): Promise<boolean> {
+  const matrixPath = getSkillMatrixPath(projectRoot, ide);
+  if (!matrixPath || !existsSync(matrixPath)) return false;
+
+  const content = await readFile(matrixPath, 'utf8');
+  const updated = updateSkillMatrixContent(content, stack);
+  if (updated !== content) {
+    await writeFile(matrixPath, updated);
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Update skill matrix JSON content based on stack selections.
+ * Pure function — sets slot entries for all plugin-mapped subcategories.
+ * Supports multiple plugins per slot (e.g. multiple databases).
+ */
+export function updateSkillMatrixContent(content: string, stack: StackConfig): string {
+  const data: SkillMatrixData = JSON.parse(content);
+  const allTools = [...stack.techTools, ...stack.teamTools] as string[];
+
+  for (const [subCategory, slotName] of Object.entries(SUBCATEGORY_TO_SLOT)) {
+    // Find ALL selected tools matching this subcategory (not just the first)
+    const matchingTools = allTools.filter((toolId) => {
+      const plugin = PLUGINS[toolId];
+      return plugin?.subCategory === subCategory;
+    });
+
+    const entries: SkillMatrixEntry[] = matchingTools
+      .map((toolId) => {
+        const plugin = PLUGINS[toolId];
+        if (!plugin?.skillName) return null;
+        return { name: plugin.name, skill: plugin.skillName };
+      })
+      .filter((e): e is SkillMatrixEntry => e !== null);
+
+    if (data.bindings[slotName]) {
+      data.bindings[slotName].entries = entries;
+    }
+  }
+
+  return JSON.stringify(data, null, 2) + '\n';
 }

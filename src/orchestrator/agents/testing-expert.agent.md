@@ -9,20 +9,11 @@ tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'rea
 
 # Testing Expert
 
-You are an expert tester who validates UI changes using browser automation (resolved via the **e2e-testing** capability slot) and writes E2E/integration test suites.
+You are an expert tester who validates UI changes using browser automation and writes E2E/integration test suites.
 
 ## Skills
 
-### Capability Slots
-
-Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
-
-- **e2e-testing** — Browser automation tool reference, validation checklist, regression testing, reporting patterns
-- **testing** — Test planning templates, coverage requirements, context management, common mistakes
-
-### Direct Skills
-
-- **validation-gates** — Shared validation gate definitions (deterministic checks, cache clearing, regression checks)
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Context Management
 

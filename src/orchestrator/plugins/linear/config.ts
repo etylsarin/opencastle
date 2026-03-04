@@ -4,7 +4,7 @@ export const config: PluginConfig = {
   id: 'linear',
   name: 'Linear',
   category: 'team',
-  subCategory: 'tracker',
+  subCategory: 'task-management',
   label: 'Linear',
   hint: 'Issue tracking with MCP integration',
   skillName: 'linear-task-management',
@@ -28,7 +28,7 @@ export const config: PluginConfig = {
       'linear/list_teams', 'linear/list_projects', 'linear/get_issue', 'linear/search_issues',
     ],
   },
-  docsUrl: '/guides/linear-setup',
+  docsUrl: 'https://www.opencastle.dev/guides/linear-setup',
   officialDocs: 'https://linear.app/docs',
   mcpPackage: '@mseep/linear-mcp',
 };

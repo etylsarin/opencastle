@@ -1,0 +1,1141 @@
+/**
+ * Tests for the init command — validates that all IDE adapters generate
+ * correct files based on stack selections (tech tools, team tools, IDEs).
+ *
+ * Tests the dynamic parts:
+ *   - Excluded agents (no CMS → no content-engineer, no DB → no database-engineer)
+ *   - Excluded skills (only selected plugin skills are installed)
+ *   - Plugin skills (SKILL.md from plugin dirs)
+ *   - MCP config generation per IDE format
+ *   - Agent tool injection from plugin agentToolMap
+ *   - Skill matrix transform (database/cms rows filled)
+ *   - Gitignore block generation
+ *   - Single-file root documents (CLAUDE.md, AGENTS.md)
+ *   - Cursor .mdc conversion
+ */
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { mkdtemp, readFile, readdir, rm, mkdir, writeFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
+import { existsSync } from 'node:fs'
+import type { StackConfig, RepoInfo } from './types.js'
+import { updateGitignore } from './gitignore.js'
+import {
+  getExcludedSkills,
+  getExcludedAgents,
+  getIncludedMcpServers,
+  getRequiredMcpEnvVars,
+  getAgentToolInjections,
+  getCustomizationsTransform,
+} from './stack-config.js'
+import { ALL_PLUGIN_SKILL_NAMES } from '../orchestrator/plugins/index.js'
+import { IDE_ADAPTERS } from './adapters/index.js'
+
+// ── Helpers ────────────────────────────────────────────────────
+
+/** The real package root — tests run against the actual source tree. */
+const PKG_ROOT = resolve(import.meta.dirname, '../..')
+
+/** Read a JSON file from disk. */
+async function readJson<T = unknown>(path: string): Promise<T> {
+  return JSON.parse(await readFile(path, 'utf8')) as T
+}
+
+/** Recursively list all files in a directory (relative paths). */
+async function listFilesRecursive(dir: string, prefix = ''): Promise<string[]> {
+  if (!existsSync(dir)) return []
+  const entries = await readdir(dir, { withFileTypes: true })
+  const files: string[] = []
+  for (const entry of entries) {
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name
+    if (entry.isDirectory()) {
+      files.push(...await listFilesRecursive(join(dir, entry.name), rel))
+    } else {
+      files.push(rel)
+    }
+  }
+  return files.sort()
+}
+
+// ── Stack fixtures ─────────────────────────────────────────────
+
+const STACK_EMPTY: StackConfig = {
+  ides: ['vscode'],
+  techTools: [],
+  teamTools: [],
+}
+
+const STACK_SANITY_LINEAR: StackConfig = {
+  ides: ['vscode'],
+  techTools: ['sanity'],
+  teamTools: ['linear'],
+}
+
+const STACK_SUPABASE_SLACK: StackConfig = {
+  ides: ['vscode'],
+  techTools: ['supabase'],
+  teamTools: ['slack'],
+}
+
+const STACK_FULL: StackConfig = {
+  ides: ['vscode', 'cursor', 'claude-code', 'opencode'],
+  techTools: ['sanity', 'supabase', 'vercel'],
+  teamTools: ['linear', 'slack'],
+}
+
+const EMPTY_REPO_INFO: RepoInfo = {}
+
+// ═══════════════════════════════════════════════════════════════
+// § 1  Stack Config Logic (pure functions — no filesystem)
+// ═══════════════════════════════════════════════════════════════
+
+describe('stack-config: getExcludedAgents', () => {
+  it('excludes content-engineer when no CMS tool is selected', () => {
+    const excluded = getExcludedAgents(STACK_EMPTY)
+    expect(excluded.has('content-engineer.agent.md')).toBe(true)
+    expect(excluded.has('database-engineer.agent.md')).toBe(true)
+  })
+
+  it('includes content-engineer when a CMS tool is selected', () => {
+    const excluded = getExcludedAgents(STACK_SANITY_LINEAR)
+    expect(excluded.has('content-engineer.agent.md')).toBe(false)
+    // No DB selected → database-engineer still excluded
+    expect(excluded.has('database-engineer.agent.md')).toBe(true)
+  })
+
+  it('includes database-engineer when a DB tool is selected', () => {
+    const excluded = getExcludedAgents(STACK_SUPABASE_SLACK)
+    expect(excluded.has('database-engineer.agent.md')).toBe(false)
+    // No CMS selected → content-engineer still excluded
+    expect(excluded.has('content-engineer.agent.md')).toBe(true)
+  })
+
+  it('includes both when CMS and DB are selected', () => {
+    const excluded = getExcludedAgents(STACK_FULL)
+    expect(excluded.has('content-engineer.agent.md')).toBe(false)
+    expect(excluded.has('database-engineer.agent.md')).toBe(false)
+  })
+})
+
+describe('stack-config: getExcludedSkills', () => {
+  it('excludes all plugin skills when nothing is selected', () => {
+    const excluded = getExcludedSkills(STACK_EMPTY)
+    // Every plugin-specific skill should be excluded
+    for (const skill of ALL_PLUGIN_SKILL_NAMES) {
+      expect(excluded.has(skill)).toBe(true)
+    }
+  })
+
+  it('includes only selected plugin skills', () => {
+    const excluded = getExcludedSkills(STACK_SANITY_LINEAR)
+    expect(excluded.has('sanity-cms')).toBe(false)
+    expect(excluded.has('linear-task-management')).toBe(false)
+    // Unselected skills should still be excluded
+    expect(excluded.has('supabase-database')).toBe(true)
+    expect(excluded.has('slack-notifications')).toBe(true)
+    expect(excluded.has('vercel-deployment')).toBe(true)
+  })
+})
+
+describe('stack-config: getIncludedMcpServers', () => {
+  it('returns empty set when nothing selected', () => {
+    const servers = getIncludedMcpServers(STACK_EMPTY)
+    expect(servers.size).toBe(0)
+  })
+
+  it('includes servers for selected tech and team tools', () => {
+    const servers = getIncludedMcpServers(STACK_SANITY_LINEAR)
+    expect(servers.has('Sanity')).toBe(true)
+    expect(servers.has('Linear')).toBe(true)
+    expect(servers.has('Supabase')).toBe(false)
+  })
+
+  it('auto-includes Vercel when detected in deployment', () => {
+    const repoInfo: RepoInfo = { deployment: ['vercel'] }
+    const servers = getIncludedMcpServers(STACK_EMPTY, repoInfo)
+    expect(servers.has('Vercel')).toBe(true)
+  })
+
+  it('auto-includes NX when monorepo detected and not in stack', () => {
+    const repoInfo: RepoInfo = { monorepo: 'nx' }
+    const servers = getIncludedMcpServers(STACK_EMPTY, repoInfo)
+    expect(servers.has('Nx')).toBe(true)
+  })
+})
+
+describe('stack-config: getRequiredMcpEnvVars', () => {
+  it('returns empty when no tools need env vars', () => {
+    // Sanity uses OAuth (no env vars), so only Linear needs one
+    const vars = getRequiredMcpEnvVars({
+      ides: ['vscode'],
+      techTools: ['sanity'],
+      teamTools: [],
+    })
+    expect(vars).toHaveLength(0)
+  })
+
+  it('returns LINEAR_API_KEY when linear is selected', () => {
+    const vars = getRequiredMcpEnvVars(STACK_SANITY_LINEAR)
+    expect(vars).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ envVar: 'LINEAR_API_KEY' }),
+      ])
+    )
+  })
+
+  it('returns SLACK_MCP_XOXB_TOKEN when slack is selected', () => {
+    const vars = getRequiredMcpEnvVars(STACK_SUPABASE_SLACK)
+    expect(vars).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ envVar: 'SLACK_MCP_XOXB_TOKEN' }),
+      ])
+    )
+  })
+})
+
+describe('stack-config: getAgentToolInjections', () => {
+  it('returns empty map when no tools selected', () => {
+    const injections = getAgentToolInjections(STACK_EMPTY)
+    expect(injections.size).toBe(0)
+  })
+
+  it('injects sanity tools into content-engineer when sanity selected', () => {
+    const injections = getAgentToolInjections(STACK_SANITY_LINEAR)
+    const contentTools = injections.get('content-engineer')
+    expect(contentTools).toBeDefined()
+    expect(contentTools).toContain('sanity/get_schema')
+    expect(contentTools).toContain('sanity/query_documents')
+  })
+
+  it('injects linear tools into team-lead when linear selected', () => {
+    const injections = getAgentToolInjections(STACK_SANITY_LINEAR)
+    const teamLeadTools = injections.get('team-lead')
+    expect(teamLeadTools).toBeDefined()
+    expect(teamLeadTools).toContain('linear/create_issue')
+    expect(teamLeadTools).toContain('linear/list_issues')
+  })
+
+  it('injects supabase tools into database-engineer when supabase selected', () => {
+    const injections = getAgentToolInjections(STACK_SUPABASE_SLACK)
+    const dbTools = injections.get('database-engineer')
+    expect(dbTools).toBeDefined()
+    expect(dbTools).toContain('supabase/apply_migration')
+    expect(dbTools).toContain('supabase/execute_sql')
+  })
+
+  it('aggregates tools from multiple plugins per agent', () => {
+    const injections = getAgentToolInjections(STACK_FULL)
+    const teamLeadTools = injections.get('team-lead')!
+    // Linear + Slack tools on team-lead
+    expect(teamLeadTools).toContain('linear/create_issue')
+    expect(teamLeadTools).toContain('slack/*')
+  })
+})
+
+describe('stack-config: getCustomizationsTransform', () => {
+  const emptyMatrix = JSON.stringify({
+    bindings: {
+      database: { entries: [], description: 'Schema' },
+      cms: { entries: [], description: 'CMS' },
+    },
+    agents: {},
+  }, null, 2) + '\n'
+
+  it('fills database slot in skill-matrix.json when DB tool is selected', () => {
+    const transform = getCustomizationsTransform(STACK_SUPABASE_SLACK)
+    const result = transform(emptyMatrix, 'skill-matrix.json')
+    expect(result).toContain('Supabase')
+    expect(result).toContain('supabase-database')
+  })
+
+  it('fills CMS slot in skill-matrix.json when CMS tool is selected', () => {
+    const transform = getCustomizationsTransform(STACK_SANITY_LINEAR)
+    const result = transform(emptyMatrix, 'skill-matrix.json')
+    expect(result).toContain('Sanity')
+    expect(result).toContain('sanity-cms')
+  })
+
+  it('leaves slots empty when no DB or CMS selected', () => {
+    const transform = getCustomizationsTransform(STACK_EMPTY)
+    const result = transform(emptyMatrix, 'skill-matrix.json')
+    const data = JSON.parse(result as string)
+    expect(data.bindings.database.entries).toEqual([])
+    expect(data.bindings.cms.entries).toEqual([])
+  })
+
+  it('passes through non-skill-matrix files unchanged', () => {
+    const transform = getCustomizationsTransform(STACK_FULL)
+    const input = '# Some other file\nContent here'
+    const result = transform(input, 'something-else.md')
+    expect(result).toBe(input)
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════
+// § 2  Gitignore Generation
+// ═══════════════════════════════════════════════════════════════
+
+describe('gitignore generation', () => {
+  let tempDir: string
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'opencastle-init-test-'))
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true })
+  })
+
+  it('creates .gitignore with framework paths ignored and customizable un-ignored', async () => {
+    const managed = {
+      framework: ['.github/copilot-instructions.md', '.github/agents/'],
+      customizable: ['.github/customizations/', '.vscode/mcp.json'],
+    }
+
+    await updateGitignore(tempDir, managed)
+    const content = await readFile(join(tempDir, '.gitignore'), 'utf8')
+
+    // Framework paths should be ignored
+    expect(content).toContain('.github/copilot-instructions.md')
+    expect(content).toContain('.github/agents/')
+    // Customizable paths should be un-ignored
+    expect(content).toContain('!.github/customizations/')
+    expect(content).toContain('!.vscode/mcp.json')
+    // Markers should be present
+    expect(content).toContain('# >>> OpenCastle managed (do not edit) >>>')
+    expect(content).toContain('# <<< OpenCastle managed <<<')
+  })
+
+  it('replaces existing block on re-init', async () => {
+    const managed1 = {
+      framework: ['.github/agents/'],
+      customizable: ['.vscode/mcp.json'],
+    }
+    await updateGitignore(tempDir, managed1)
+
+    const managed2 = {
+      framework: ['.github/agents/', '.github/skills/'],
+      customizable: ['.vscode/mcp.json', '.github/customizations/'],
+    }
+    const result = await updateGitignore(tempDir, managed2)
+    expect(result).toBe('updated')
+
+    const content = await readFile(join(tempDir, '.gitignore'), 'utf8')
+    expect(content).toContain('.github/skills/')
+    expect(content).toContain('!.github/customizations/')
+    // Only one managed block
+    const startCount = (content.match(/>>> OpenCastle managed/g) ?? []).length
+    expect(startCount).toBe(1)
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════
+// § 3  VS Code Adapter — Full Install Validation
+// ═══════════════════════════════════════════════════════════════
+
+describe('VS Code adapter install', () => {
+  let tempDir: string
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'opencastle-vscode-test-'))
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true })
+  })
+
+  it('creates all expected framework directories', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const githubDir = join(tempDir, '.github')
+    expect(existsSync(join(githubDir, 'copilot-instructions.md'))).toBe(true)
+    expect(existsSync(join(githubDir, 'agents'))).toBe(true)
+    expect(existsSync(join(githubDir, 'instructions'))).toBe(true)
+    expect(existsSync(join(githubDir, 'skills'))).toBe(true)
+    expect(existsSync(join(githubDir, 'agent-workflows'))).toBe(true)
+    expect(existsSync(join(githubDir, 'prompts'))).toBe(true)
+    expect(existsSync(join(githubDir, 'customizations'))).toBe(true)
+    expect(existsSync(join(tempDir, '.vscode', 'mcp.json'))).toBe(true)
+  })
+
+  it('excludes content-engineer and database-engineer agents when no CMS/DB', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const agentsDir = join(tempDir, '.github', 'agents')
+    const agents = await readdir(agentsDir)
+
+    expect(agents).not.toContain('content-engineer.agent.md')
+    expect(agents).not.toContain('database-engineer.agent.md')
+    // Others should still be present
+    expect(agents).toContain('developer.agent.md')
+    expect(agents).toContain('team-lead.agent.md')
+    expect(agents).toContain('architect.agent.md')
+  })
+
+  it('includes content-engineer when CMS tool is selected', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    const agents = await readdir(join(tempDir, '.github', 'agents'))
+    expect(agents).toContain('content-engineer.agent.md')
+    expect(agents).not.toContain('database-engineer.agent.md')
+  })
+
+  it('includes database-engineer when DB tool is selected', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SUPABASE_SLACK, EMPTY_REPO_INFO)
+
+    const agents = await readdir(join(tempDir, '.github', 'agents'))
+    expect(agents).toContain('database-engineer.agent.md')
+    expect(agents).not.toContain('content-engineer.agent.md')
+  })
+
+  it('excludes unselected plugin skills from skills directory', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    const skillsDir = join(tempDir, '.github', 'skills')
+    const skills = await readdir(skillsDir)
+
+    // Selected plugin skills should be present
+    expect(skills).toContain('sanity')
+    expect(skills).toContain('linear')
+    // Unselected plugin skills should NOT be present
+    expect(skills).not.toContain('supabase')
+    expect(skills).not.toContain('slack')
+    expect(skills).not.toContain('vercel')
+
+    // Core skills (non-plugin) should always be present
+    expect(skills).toContain('accessibility-standards')
+    expect(skills).toContain('self-improvement')
+    expect(skills).toContain('testing-workflow')
+  })
+
+  it('excludes unselected core skills that map to plugins', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const skills = await readdir(join(tempDir, '.github', 'skills'))
+    // Plugin-linked skill directories should be absent if tool not selected
+    // (The core skills directory names don't match plugin IDs — they're separate)
+    // But plugin SKILL.md dirs should not exist
+    expect(skills).not.toContain('sanity')
+    expect(skills).not.toContain('linear')
+    expect(skills).not.toContain('supabase')
+  })
+
+  it('injects plugin tools into agent frontmatter', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    // Read content-engineer agent — should have sanity tools injected
+    const contentEngineer = await readFile(
+      join(tempDir, '.github', 'agents', 'content-engineer.agent.md'),
+      'utf8'
+    )
+    expect(contentEngineer).toContain("'sanity/get_schema'")
+    expect(contentEngineer).toContain("'sanity/query_documents'")
+    expect(contentEngineer).toContain("'sanity/deploy_schema'")
+
+    // Read team-lead agent — should have linear tools injected
+    const teamLead = await readFile(
+      join(tempDir, '.github', 'agents', 'team-lead.agent.md'),
+      'utf8'
+    )
+    expect(teamLead).toContain("'linear/create_issue'")
+    expect(teamLead).toContain("'linear/list_issues'")
+    expect(teamLead).toContain("'linear/update_issue'")
+  })
+
+  it('does NOT inject tools when no plugins selected', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const teamLead = await readFile(
+      join(tempDir, '.github', 'agents', 'team-lead.agent.md'),
+      'utf8'
+    )
+    expect(teamLead).not.toContain('linear/')
+    expect(teamLead).not.toContain('sanity/')
+    expect(teamLead).not.toContain('supabase/')
+  })
+
+  it('generates VS Code MCP config with correct format (servers + inputs)', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    const mcpConfig = await readJson<Record<string, unknown>>(
+      join(tempDir, '.vscode', 'mcp.json')
+    )
+
+    // VS Code format uses "servers" key
+    expect(mcpConfig).toHaveProperty('servers')
+    const servers = mcpConfig.servers as Record<string, unknown>
+    expect(servers).toHaveProperty('Sanity')
+    expect(servers).toHaveProperty('Linear')
+
+    // Sanity uses HTTP
+    const sanityServer = servers.Sanity as Record<string, unknown>
+    expect(sanityServer.type).toBe('http')
+    expect(sanityServer.url).toBe('https://mcp.sanity.io')
+
+    // Linear uses stdio
+    const linearServer = servers.Linear as Record<string, unknown>
+    expect(linearServer.type).toBe('stdio')
+    expect(linearServer.command).toBe('npx')
+    expect(linearServer.args).toContain('-y')
+    expect(linearServer.args).toContain('@mseep/linear-mcp')
+  })
+
+  it('generates empty MCP config when no tools selected', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const mcpConfig = await readJson<Record<string, unknown>>(
+      join(tempDir, '.vscode', 'mcp.json')
+    )
+    expect(mcpConfig).toHaveProperty('servers')
+    const servers = mcpConfig.servers as Record<string, unknown>
+    expect(Object.keys(servers)).toHaveLength(0)
+  })
+
+  it('fills skill-matrix.json with selected DB and CMS', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_FULL, EMPTY_REPO_INFO)
+
+    const skillMatrix = await readFile(
+      join(tempDir, '.github', 'customizations', 'agents', 'skill-matrix.json'),
+      'utf8'
+    )
+    const data = JSON.parse(skillMatrix)
+    expect(data.bindings.database.entries).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'Supabase', skill: 'supabase-database' })])
+    )
+    expect(data.bindings.cms.entries).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'Sanity', skill: 'sanity-cms' })])
+    )
+  })
+
+  it('leaves skill-matrix.json database/cms slots empty when none selected', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const skillMatrix = await readFile(
+      join(tempDir, '.github', 'customizations', 'agents', 'skill-matrix.json'),
+      'utf8'
+    )
+    const data = JSON.parse(skillMatrix)
+    expect(data.bindings.database.entries).toEqual([])
+    expect(data.bindings.cms.entries).toEqual([])
+  })
+
+  it('getManagedPaths returns expected structure', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    const paths = adapter.getManagedPaths()
+
+    expect(paths.framework).toContain('.github/copilot-instructions.md')
+    expect(paths.framework).toContain('.github/agents/')
+    expect(paths.framework).toContain('.github/instructions/')
+    expect(paths.framework).toContain('.github/skills/')
+    expect(paths.framework).toContain('.github/agent-workflows/')
+    expect(paths.framework).toContain('.github/prompts/')
+
+    expect(paths.customizable).toContain('.github/customizations/')
+    expect(paths.customizable).toContain('.vscode/mcp.json')
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════
+// § 4  Cursor Adapter — .mdc Conversion & Format Validation
+// ═══════════════════════════════════════════════════════════════
+
+describe('Cursor adapter install', () => {
+  let tempDir: string
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'opencastle-cursor-test-'))
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true })
+  })
+
+  it('creates .cursorrules with intro text', async () => {
+    const adapter = await IDE_ADAPTERS['cursor']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const content = await readFile(join(tempDir, '.cursorrules'), 'utf8')
+    expect(content).toContain('# Project Instructions')
+    expect(content).toContain('.cursor/rules/')
+  })
+
+  it('converts instruction files to .mdc with alwaysApply: true', async () => {
+    const adapter = await IDE_ADAPTERS['cursor']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const rulesDir = join(tempDir, '.cursor', 'rules')
+    const generalMdc = await readFile(join(rulesDir, 'general.mdc'), 'utf8')
+
+    // Should have .mdc frontmatter
+    expect(generalMdc).toMatch(/^---\n/)
+    expect(generalMdc).toContain('alwaysApply: true')
+    // Should still contain the original body content
+    expect(generalMdc).toContain('Coding Standards')
+  })
+
+  it('converts agent files to .mdc in agents/ subdirectory', async () => {
+    const adapter = await IDE_ADAPTERS['cursor']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const agentsDir = join(tempDir, '.cursor', 'rules', 'agents')
+    const agents = await readdir(agentsDir)
+
+    // .agent.md → .mdc
+    expect(agents).toContain('developer.mdc')
+    expect(agents).toContain('team-lead.mdc')
+    expect(agents).not.toContain('content-engineer.mdc') // no CMS
+    expect(agents).not.toContain('database-engineer.mdc') // no DB
+
+    // Validate .mdc structure
+    const devAgent = await readFile(join(agentsDir, 'developer.mdc'), 'utf8')
+    expect(devAgent).toMatch(/^---\n/)
+    expect(devAgent).toContain('description:')
+  })
+
+  it('includes content-engineer.mdc when CMS selected', async () => {
+    const adapter = await IDE_ADAPTERS['cursor']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    const agents = await readdir(join(tempDir, '.cursor', 'rules', 'agents'))
+    expect(agents).toContain('content-engineer.mdc')
+  })
+
+  it('converts skills to .mdc in skills/ subdirectory', async () => {
+    const adapter = await IDE_ADAPTERS['cursor']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    const skillsDir = join(tempDir, '.cursor', 'rules', 'skills')
+    const skills = await readdir(skillsDir)
+
+    // Core skills should be present
+    expect(skills).toContain('self-improvement.mdc')
+    expect(skills).toContain('testing-workflow.mdc')
+
+    // Selected plugin skills as .mdc
+    expect(skills).toContain('sanity.mdc')
+    expect(skills).toContain('linear.mdc')
+
+    // Unselected plugin skills should not be present
+    expect(skills).not.toContain('supabase.mdc')
+    expect(skills).not.toContain('slack.mdc')
+  })
+
+  it('generates Cursor MCP config with mcpServers format', async () => {
+    const adapter = await IDE_ADAPTERS['cursor']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    const mcpConfig = await readJson<Record<string, unknown>>(
+      join(tempDir, '.cursor', 'mcp.json')
+    )
+
+    // Cursor format uses "mcpServers" key (not "servers")
+    expect(mcpConfig).toHaveProperty('mcpServers')
+    expect(mcpConfig).not.toHaveProperty('servers')
+
+    const servers = mcpConfig.mcpServers as Record<string, Record<string, unknown>>
+
+    // HTTP servers get url only (no type field)
+    expect(servers.Sanity).toBeDefined()
+    expect(servers.Sanity.url).toBe('https://mcp.sanity.io')
+    expect(servers.Sanity).not.toHaveProperty('type')
+
+    // stdio servers get command + args (no type field)
+    expect(servers.Linear).toBeDefined()
+    expect(servers.Linear.command).toBe('npx')
+    expect(servers.Linear.args).toContain('@mseep/linear-mcp')
+    expect(servers.Linear).not.toHaveProperty('type')
+  })
+
+  it('getManagedPaths returns expected Cursor paths', async () => {
+    const adapter = await IDE_ADAPTERS['cursor']()
+    const paths = adapter.getManagedPaths()
+
+    expect(paths.framework).toContain('.cursorrules')
+    expect(paths.framework).toContain('.cursor/rules/agents/')
+    expect(paths.framework).toContain('.cursor/rules/skills/')
+    expect(paths.framework).toContain('.cursor/rules/general.mdc')
+    expect(paths.framework).toContain('.cursor/rules/ai-optimization.mdc')
+
+    expect(paths.customizable).toContain('.cursor/rules/customizations/')
+    expect(paths.customizable).toContain('.cursor/mcp.json')
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════
+// § 5  Claude Code Adapter — Single-File Root Document
+// ═══════════════════════════════════════════════════════════════
+
+describe('Claude Code adapter install', () => {
+  let tempDir: string
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'opencastle-claude-test-'))
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true })
+  })
+
+  it('creates CLAUDE.md with embedded instructions', async () => {
+    const adapter = await IDE_ADAPTERS['claude-code']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    expect(existsSync(join(tempDir, 'CLAUDE.md'))).toBe(true)
+
+    const content = await readFile(join(tempDir, 'CLAUDE.md'), 'utf8')
+    // Should contain merged instruction content
+    expect(content).toContain('# Project Instructions')
+    expect(content).toContain('Coding Standards')
+    expect(content).toContain('.claude/skills/')
+    expect(content).toContain('.claude/agents/')
+  })
+
+  it('CLAUDE.md lists all non-excluded agents', async () => {
+    const adapter = await IDE_ADAPTERS['claude-code']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const content = await readFile(join(tempDir, 'CLAUDE.md'), 'utf8')
+    expect(content).toContain('## Agent Definitions')
+    expect(content).toContain('**Developer**')
+    expect(content).toContain('**Team Lead**')
+    // Should NOT list excluded agents
+    expect(content).not.toContain('**Content Engineer**')
+    expect(content).not.toContain('**Database Engineer**')
+  })
+
+  it('CLAUDE.md includes content engineer when CMS selected', async () => {
+    const adapter = await IDE_ADAPTERS['claude-code']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    const content = await readFile(join(tempDir, 'CLAUDE.md'), 'utf8')
+    expect(content).toContain('**Content Engineer**')
+    expect(content).not.toContain('**Database Engineer**')
+  })
+
+  it('CLAUDE.md lists available skills (including selected plugins)', async () => {
+    const adapter = await IDE_ADAPTERS['claude-code']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    const content = await readFile(join(tempDir, 'CLAUDE.md'), 'utf8')
+    expect(content).toContain('## Available Skills')
+    expect(content).toContain('**self-improvement**')
+    expect(content).toContain('**sanity**')
+    expect(content).toContain('**linear**')
+    // Unselected plugin skills should NOT appear in skill index
+    expect(content).not.toMatch(/\*\*supabase\*\*/)
+  })
+
+  it('strips frontmatter from agent files in .claude/agents/', async () => {
+    const adapter = await IDE_ADAPTERS['claude-code']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const agentsDir = join(tempDir, '.claude', 'agents')
+    const agents = await readdir(agentsDir)
+    expect(agents).toContain('developer.agent.md')
+    expect(agents).not.toContain('content-engineer.agent.md')
+    expect(agents).not.toContain('database-engineer.agent.md')
+
+    const devAgent = await readFile(join(agentsDir, 'developer.agent.md'), 'utf8')
+    // Should NOT start with frontmatter
+    expect(devAgent).not.toMatch(/^---\n/)
+    // Should contain the body content (starts with comment or heading)
+    expect(devAgent).toContain('Developer')
+  })
+
+  it('creates skills as flat .md files stripped of frontmatter', async () => {
+    const adapter = await IDE_ADAPTERS['claude-code']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    const skillsDir = join(tempDir, '.claude', 'skills')
+    const skills = await readdir(skillsDir)
+
+    expect(skills).toContain('self-improvement.md')
+    expect(skills).toContain('sanity.md')
+    expect(skills).toContain('linear.md')
+    expect(skills).not.toContain('supabase.md')
+
+    // Verify frontmatter is stripped
+    const skillContent = await readFile(join(skillsDir, 'self-improvement.md'), 'utf8')
+    expect(skillContent).not.toMatch(/^---\n/)
+  })
+
+  it('generates Claude Code MCP config with mcpServers format', async () => {
+    const adapter = await IDE_ADAPTERS['claude-code']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    const mcpConfig = await readJson<Record<string, unknown>>(
+      join(tempDir, '.claude', 'mcp.json')
+    )
+    expect(mcpConfig).toHaveProperty('mcpServers')
+    expect(mcpConfig).not.toHaveProperty('servers')
+  })
+
+  it('creates prompts in .claude/commands/', async () => {
+    const adapter = await IDE_ADAPTERS['claude-code']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const commandsDir = join(tempDir, '.claude', 'commands')
+    expect(existsSync(commandsDir)).toBe(true)
+    const commands = await readdir(commandsDir)
+    // Should have prompt files
+    expect(commands.length).toBeGreaterThan(0)
+    // All should be .md files
+    expect(commands.every((f) => f.endsWith('.md'))).toBe(true)
+  })
+
+  it('creates workflows as commands with workflow- prefix', async () => {
+    const adapter = await IDE_ADAPTERS['claude-code']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const commandsDir = join(tempDir, '.claude', 'commands')
+    const commands = await readdir(commandsDir)
+    // Workflow files should have the "workflow-" prefix
+    const workflows = commands.filter((f) => f.startsWith('workflow-'))
+    expect(workflows.length).toBeGreaterThan(0)
+  })
+
+  it('getManagedPaths includes CLAUDE.md and .claude dirs', async () => {
+    const adapter = await IDE_ADAPTERS['claude-code']()
+    const paths = adapter.getManagedPaths()
+
+    expect(paths.framework).toContain('CLAUDE.md')
+    expect(paths.framework).toContain('.claude/agents/')
+    expect(paths.framework).toContain('.claude/skills/')
+    expect(paths.framework).toContain('.claude/commands/')
+
+    expect(paths.customizable).toContain('.claude/customizations/')
+    expect(paths.customizable).toContain('.claude/mcp.json')
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════
+// § 6  OpenCode Adapter — Single-File Root Document
+// ═══════════════════════════════════════════════════════════════
+
+describe('OpenCode adapter install', () => {
+  let tempDir: string
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'opencastle-opencode-test-'))
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true })
+  })
+
+  it('creates AGENTS.md with embedded instructions', async () => {
+    const adapter = await IDE_ADAPTERS['opencode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    expect(existsSync(join(tempDir, 'AGENTS.md'))).toBe(true)
+
+    const content = await readFile(join(tempDir, 'AGENTS.md'), 'utf8')
+    expect(content).toContain('# Project Instructions')
+    expect(content).toContain('.opencode/skills/')
+    expect(content).toContain('.opencode/agents/')
+  })
+
+  it('creates files in .opencode/ directory structure', async () => {
+    const adapter = await IDE_ADAPTERS['opencode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    expect(existsSync(join(tempDir, '.opencode', 'agents'))).toBe(true)
+    expect(existsSync(join(tempDir, '.opencode', 'skills'))).toBe(true)
+    expect(existsSync(join(tempDir, '.opencode', 'prompts'))).toBe(true)
+    expect(existsSync(join(tempDir, '.opencode', 'workflows'))).toBe(true)
+    expect(existsSync(join(tempDir, '.opencode', 'customizations'))).toBe(true)
+  })
+
+  it('generates OpenCode MCP config with mcp format', async () => {
+    const adapter = await IDE_ADAPTERS['opencode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+    const mcpConfig = await readJson<Record<string, unknown>>(
+      join(tempDir, 'opencode.json')
+    )
+
+    // OpenCode format uses "mcp" key
+    expect(mcpConfig).toHaveProperty('mcp')
+    expect(mcpConfig).not.toHaveProperty('servers')
+    expect(mcpConfig).not.toHaveProperty('mcpServers')
+
+    const mcp = mcpConfig.mcp as Record<string, Record<string, unknown>>
+
+    // HTTP servers → type: 'remote'
+    expect(mcp.Sanity).toBeDefined()
+    expect(mcp.Sanity.type).toBe('remote')
+    expect(mcp.Sanity.url).toBe('https://mcp.sanity.io')
+
+    // stdio servers → type: 'local', command as array
+    expect(mcp.Linear).toBeDefined()
+    expect(mcp.Linear.type).toBe('local')
+    expect(mcp.Linear.command).toEqual(['npx', '-y', '@mseep/linear-mcp'])
+  })
+
+  it('workflows do NOT have prefix in opencode adapter', async () => {
+    const adapter = await IDE_ADAPTERS['opencode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const wfDir = join(tempDir, '.opencode', 'workflows')
+    if (existsSync(wfDir)) {
+      const workflows = await readdir(wfDir)
+      // OpenCode config has workflowPrefix: '' — no prefix
+      const prefixed = workflows.filter((f) => f.startsWith('workflow-'))
+      expect(prefixed).toHaveLength(0)
+    }
+  })
+
+  it('getManagedPaths includes AGENTS.md and .opencode dirs', async () => {
+    const adapter = await IDE_ADAPTERS['opencode']()
+    const paths = adapter.getManagedPaths()
+
+    expect(paths.framework).toContain('AGENTS.md')
+    expect(paths.framework).toContain('.opencode/agents/')
+    expect(paths.framework).toContain('.opencode/skills/')
+    expect(paths.framework).toContain('.opencode/prompts/')
+    expect(paths.framework).toContain('.opencode/workflows/')
+
+    expect(paths.customizable).toContain('.opencode/customizations/')
+    expect(paths.customizable).toContain('opencode.json')
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════
+// § 7  Cross-Adapter MCP Format Consistency
+// ═══════════════════════════════════════════════════════════════
+
+describe('MCP config format per IDE', () => {
+  let tempDir: string
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'opencastle-mcp-test-'))
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true })
+  })
+
+  const stack = STACK_SANITY_LINEAR
+
+  it('all IDEs include the same MCP servers (same tools = same servers)', async () => {
+    const serversByIde: Record<string, string[]> = {}
+
+    for (const ideId of ['vscode', 'cursor', 'claude-code', 'opencode'] as const) {
+      const dir = await mkdtemp(join(tmpdir(), `opencastle-mcp-${ideId}-`))
+      try {
+        const adapter = await IDE_ADAPTERS[ideId]()
+        await adapter.install(PKG_ROOT, dir, stack, EMPTY_REPO_INFO)
+
+        const paths: Record<string, string> = {
+          vscode: join(dir, '.vscode', 'mcp.json'),
+          cursor: join(dir, '.cursor', 'mcp.json'),
+          'claude-code': join(dir, '.claude', 'mcp.json'),
+          opencode: join(dir, 'opencode.json'),
+        }
+
+        const config = await readJson<Record<string, unknown>>(paths[ideId])
+        const containerKey =
+          ideId === 'opencode' ? 'mcp' :
+          ideId === 'vscode' ? 'servers' :
+          'mcpServers'
+
+        const servers = config[containerKey] as Record<string, unknown>
+        serversByIde[ideId] = Object.keys(servers).sort()
+      } finally {
+        await rm(dir, { recursive: true, force: true })
+      }
+    }
+
+    // All IDEs should have the same server names
+    const vsCodeServers = serversByIde['vscode']
+    expect(serversByIde['cursor']).toEqual(vsCodeServers)
+    expect(serversByIde['claude-code']).toEqual(vsCodeServers)
+    expect(serversByIde['opencode']).toEqual(vsCodeServers)
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════
+// § 8  Cross-Adapter Agent/Skill Parity
+// ═══════════════════════════════════════════════════════════════
+
+describe('agent and skill parity across adapters', () => {
+  let tempDir: string
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'opencastle-parity-test-'))
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true })
+  })
+
+  it('all IDEs install the same number of agents for a given stack', async () => {
+    const agentCountByIde: Record<string, number> = {}
+
+    for (const ideId of ['vscode', 'cursor', 'claude-code', 'opencode'] as const) {
+      const dir = await mkdtemp(join(tmpdir(), `opencastle-parity-${ideId}-`))
+      try {
+        const adapter = await IDE_ADAPTERS[ideId]()
+        await adapter.install(PKG_ROOT, dir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+
+        const agentPaths: Record<string, string> = {
+          vscode: join(dir, '.github', 'agents'),
+          cursor: join(dir, '.cursor', 'rules', 'agents'),
+          'claude-code': join(dir, '.claude', 'agents'),
+          opencode: join(dir, '.opencode', 'agents'),
+        }
+
+        const agents = await readdir(agentPaths[ideId])
+        agentCountByIde[ideId] = agents.length
+      } finally {
+        await rm(dir, { recursive: true, force: true })
+      }
+    }
+
+    // All IDEs should have the same agent count
+    const vscodeCount = agentCountByIde['vscode']
+    expect(agentCountByIde['cursor']).toBe(vscodeCount)
+    expect(agentCountByIde['claude-code']).toBe(vscodeCount)
+    expect(agentCountByIde['opencode']).toBe(vscodeCount)
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════
+// § 9  Idempotency — Re-install Does Not Duplicate
+// ═══════════════════════════════════════════════════════════════
+
+describe('install idempotency', () => {
+  let tempDir: string
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'opencastle-idempotent-test-'))
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true })
+  })
+
+  it('second install skips already-existing files (scaffold-once semantics)', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+
+    // First install
+    const firstResult = await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+    expect(firstResult.created.length).toBeGreaterThan(0)
+
+    // Second install — same stack
+    const secondResult = await adapter.install(PKG_ROOT, tempDir, STACK_SANITY_LINEAR, EMPTY_REPO_INFO)
+    // Created files should now be skipped
+    expect(secondResult.created.length).toBe(0)
+    expect(secondResult.skipped.length).toBeGreaterThan(0)
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════
+// § 10  Full Stack — Complex Configuration
+// ═══════════════════════════════════════════════════════════════
+
+describe('full stack configuration', () => {
+  let tempDir: string
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'opencastle-fullstack-test-'))
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true })
+  })
+
+  it('installs with sanity + supabase + vercel + linear + slack', async () => {
+    const stack: StackConfig = {
+      ides: ['vscode'],
+      techTools: ['sanity', 'supabase', 'vercel'],
+      teamTools: ['linear', 'slack'],
+    }
+
+    const adapter = await IDE_ADAPTERS['vscode']()
+    const result = await adapter.install(PKG_ROOT, tempDir, stack, EMPTY_REPO_INFO)
+
+    expect(result.created.length).toBeGreaterThan(0)
+
+    // Both conditional agents should be included
+    const agents = await readdir(join(tempDir, '.github', 'agents'))
+    expect(agents).toContain('content-engineer.agent.md')
+    expect(agents).toContain('database-engineer.agent.md')
+
+    // All 5 plugin skills should be installed
+    const skills = await readdir(join(tempDir, '.github', 'skills'))
+    expect(skills).toContain('sanity')
+    expect(skills).toContain('supabase')
+    expect(skills).toContain('vercel')
+    expect(skills).toContain('linear')
+    expect(skills).toContain('slack')
+
+    // MCP config should have all 5 servers
+    const mcpConfig = await readJson<Record<string, unknown>>(
+      join(tempDir, '.vscode', 'mcp.json')
+    )
+    const servers = mcpConfig.servers as Record<string, unknown>
+    expect(Object.keys(servers).sort()).toEqual(
+      ['Linear', 'Sanity', 'Slack', 'Supabase', 'Vercel'].sort()
+    )
+
+    // Agent tool injection — content-engineer should have sanity tools
+    const ceContent = await readFile(
+      join(tempDir, '.github', 'agents', 'content-engineer.agent.md'),
+      'utf8'
+    )
+    expect(ceContent).toContain("'sanity/get_schema'")
+
+    // Agent tool injection — database-engineer should have supabase tools
+    const deContent = await readFile(
+      join(tempDir, '.github', 'agents', 'database-engineer.agent.md'),
+      'utf8'
+    )
+    expect(deContent).toContain("'supabase/apply_migration'")
+
+    // Skill matrix should be filled
+    const skillMatrix = await readFile(
+      join(tempDir, '.github', 'customizations', 'agents', 'skill-matrix.json'),
+      'utf8'
+    )
+    const matrixData = JSON.parse(skillMatrix)
+    expect(matrixData.bindings.database.entries).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'Supabase', skill: 'supabase-database' })])
+    )
+    expect(matrixData.bindings.cms.entries).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'Sanity', skill: 'sanity-cms' })])
+    )
+  })
+
+  it('auto-detected vercel in repoInfo adds Vercel MCP server without explicit selection', async () => {
+    const stack: StackConfig = {
+      ides: ['vscode'],
+      techTools: ['sanity'],
+      teamTools: [],
+    }
+    const repoInfo: RepoInfo = { deployment: ['vercel'] }
+
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, stack, repoInfo)
+
+    const mcpConfig = await readJson<Record<string, unknown>>(
+      join(tempDir, '.vscode', 'mcp.json')
+    )
+    const servers = mcpConfig.servers as Record<string, unknown>
+    expect(servers).toHaveProperty('Vercel')
+    expect(servers).toHaveProperty('Sanity')
+  })
+})

@@ -25,7 +25,8 @@ Skills reference these files with relative links like `../../customizations/stac
 | File | Purpose |
 |------|---------|
 | `agent-registry.md` | Specialist agents with model tier assignments and scope examples |
-| `skill-matrix.md` | Maps capability slots to concrete skill names per agent role |
+| `skill-matrix.json` | Maps capability slots to concrete skill names per agent role (machine-readable) |
+| `skill-matrix.md` | Documentation companion explaining the skill matrix concept |
 
 ### `stack/` — Tech stack config
 

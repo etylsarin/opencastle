@@ -1,0 +1,463 @@
+---
+import '../../styles/global.css';
+
+const title = 'Docs — OpenCastle';
+const description = 'OpenCastle documentation. CLI reference, plugin setup guides, and everything you need to configure your AI agent team.';
+
+const pages = [
+  {
+    href: '/docs/cli',
+    title: 'CLI Reference',
+    description: 'Complete reference for every opencastle command — init, update, eject, run, dashboard, and doctor.',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
+    sidebarIcon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
+    badge: '6 commands',
+  },
+  {
+    href: '/docs/plugins',
+    title: 'Plugin Setup Guide',
+    description: 'Configure plugins for your AI coding agents. Each plugin bundles skills, optional MCP server configs, and agent tool mappings.',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>`,
+    sidebarIcon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>`,
+    badge: '23 plugins',
+  },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+  </head>
+  <body>
+    <header class="docs-header">
+      <div class="docs-header__inner">
+        <div class="docs-header__brand">
+          <a href="/" class="docs-header__back" title="Back to OpenCastle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </a>
+          <img class="docs-header__icon" src="/icon-192.png" alt="OpenCastle" width="28" height="28" />
+          <h1 class="docs-header__title">Docs</h1>
+        </div>
+      </div>
+    </header>
+
+    <div class="docs-layout">
+      <!-- Sidebar Navigation -->
+      <nav class="docs-sidebar">
+        <ul class="docs-sidebar__list">
+          <li>
+            <a class="docs-sidebar__link docs-sidebar__link--active" href="#quick-start">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Quick Start
+            </a>
+          </li>
+        </ul>
+
+        <div class="docs-sidebar__divider"></div>
+        <p class="docs-sidebar__label">Pages</p>
+        <ul class="docs-sidebar__list">
+          {pages.map((page) => (
+            <li>
+              <a class="docs-sidebar__link" href={page.href}>
+                <Fragment set:html={page.sidebarIcon} />
+                {page.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <main class="docs-main">
+        <section class="docs-hero">
+          <h2 class="docs-hero__heading">OpenCastle Documentation</h2>
+          <p class="docs-hero__sub">Everything you need to install, configure, and run your AI agent team.</p>
+        </section>
+
+        <!-- Quick start -->
+        <section class="quickstart" id="quick-start">
+          <h3 class="quickstart__heading">Quick Start</h3>
+          <div class="quickstart__steps">
+            <div class="quickstart__step">
+              <span class="quickstart__num">1</span>
+              <div>
+                <p class="quickstart__label">Install</p>
+                <code class="quickstart__code">npx opencastle init</code>
+              </div>
+            </div>
+            <div class="quickstart__step">
+              <span class="quickstart__num">2</span>
+              <div>
+                <p class="quickstart__label">Select your stack</p>
+                <p class="quickstart__desc">Pick your IDE, frameworks, database, and team tools in the interactive wizard.</p>
+              </div>
+            </div>
+            <div class="quickstart__step">
+              <span class="quickstart__num">3</span>
+              <div>
+                <p class="quickstart__label">Start building</p>
+                <p class="quickstart__desc">Open your IDE and talk to the Team Lead agent. It orchestrates the rest.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Doc pages grid -->
+        <section class="docs-grid">
+          {pages.map((page) => (
+            <a href={page.href} class="doc-card">
+              <div class="doc-card__icon" set:html={page.icon} />
+              <div class="doc-card__body">
+                <div class="doc-card__header">
+                  <h3 class="doc-card__title">{page.title}</h3>
+                  <span class="doc-card__badge">{page.badge}</span>
+                </div>
+                <p class="doc-card__desc">{page.description}</p>
+              </div>
+              <svg class="doc-card__arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+          ))}
+        </section>
+
+        <p class="docs-footer">
+          <a href="/">← Back to OpenCastle</a>
+        </p>
+      </main>
+    </div>
+
+    <style>
+      :root {
+        --bg-primary: #0a0a0f;
+        --bg-secondary: #111118;
+        --bg-tertiary: #1a1a24;
+        --border-primary: #1e1e2e;
+        --border-secondary: #2a2a3a;
+        --border-color: rgba(255, 255, 255, 0.06);
+        --text-primary: #e2e2e8;
+        --text-secondary: #8888a0;
+        --text-tertiary: #55556a;
+        --text-accent: #a78bfa;
+        --accent-glow: rgba(167, 139, 250, .12);
+        --max-width: 1280px;
+        --transition-fast: .15s ease;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
+
+      /* ── Header ── */
+      .docs-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(10, 10, 15, .85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border-primary);
+        height: 56px;
+      }
+      .docs-header__inner {
+        max-width: var(--max-width);
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+      .docs-header__brand {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+      }
+      .docs-header__back {
+        color: var(--text-secondary);
+        display: flex;
+        transition: color .15s;
+      }
+      .docs-header__back:hover { color: var(--text-accent); }
+      .docs-header__icon { border-radius: 6px; }
+      .docs-header__title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        letter-spacing: -.01em;
+      }
+
+      /* ── Layout ── */
+      .docs-layout {
+        display: flex;
+        max-width: var(--max-width);
+        margin: 0 auto;
+        position: relative;
+      }
+
+      /* ── Sidebar ── */
+      .docs-sidebar {
+        position: sticky;
+        top: 56px;
+        height: calc(100vh - 56px);
+        width: 180px;
+        flex-shrink: 0;
+        padding: 24px 0 24px 24px;
+        overflow-y: auto;
+        display: none;
+      }
+      @media (min-width: 1024px) {
+        .docs-sidebar { display: block; }
+      }
+      .docs-sidebar__list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .docs-sidebar__link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 8px 14px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--text-tertiary);
+        text-decoration: none;
+        border-radius: 8px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        transition: color var(--transition-fast), background var(--transition-fast);
+        text-align: left;
+        font-family: inherit;
+        line-height: 1.4;
+      }
+      .docs-sidebar__link:hover {
+        color: var(--text-secondary);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .docs-sidebar__link--active {
+        color: var(--text-accent);
+        background: rgba(167, 139, 250, 0.08);
+        font-weight: 600;
+      }
+      .docs-sidebar__link svg {
+        flex-shrink: 0;
+        opacity: 0.7;
+      }
+      .docs-sidebar__link--active svg {
+        opacity: 1;
+      }
+      .docs-sidebar__divider {
+        height: 1px;
+        background: var(--border-color);
+        margin: 16px 14px 12px 14px;
+      }
+      .docs-sidebar__label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 0 14px 4px;
+      }
+
+      /* ── Main ── */
+      .docs-main {
+        flex: 1;
+        min-width: 0;
+        max-width: 860px;
+        padding: 32px 24px 64px;
+      }
+
+      /* ── Hero ── */
+      .docs-hero {
+        margin-bottom: 2.5rem;
+      }
+      .docs-hero__heading {
+        font-size: 1.75rem;
+        font-weight: 700;
+        letter-spacing: -.02em;
+        margin-bottom: .5rem;
+      }
+      .docs-hero__sub {
+        color: var(--text-secondary);
+        font-size: 1.05rem;
+        line-height: 1.6;
+      }
+
+      /* ── Quick Start ── */
+      .quickstart {
+        margin-bottom: 3rem;
+        padding: 1.75rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 12px;
+        scroll-margin-top: 72px;
+      }
+      .quickstart__heading {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-accent);
+        margin-bottom: 1.25rem;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        font-size: .8rem;
+      }
+      .quickstart__steps {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+      }
+      .quickstart__step {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+      .quickstart__num {
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--accent-glow);
+        color: var(--text-accent);
+        border: 1px solid rgba(167, 139, 250, .25);
+        border-radius: 50%;
+        font-size: .8rem;
+        font-weight: 700;
+      }
+      .quickstart__label {
+        font-weight: 600;
+        font-size: .95rem;
+        margin-bottom: .15rem;
+      }
+      .quickstart__code {
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+        font-size: .85rem;
+        color: var(--text-accent);
+        background: var(--bg-tertiary);
+        padding: .2rem .5rem;
+        border-radius: 5px;
+        border: 1px solid var(--border-secondary);
+      }
+      .quickstart__desc {
+        color: var(--text-secondary);
+        font-size: .9rem;
+        line-height: 1.5;
+      }
+
+      /* ── Doc cards grid ── */
+      .docs-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 3rem;
+      }
+      .doc-card {
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+        padding: 1.5rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 12px;
+        text-decoration: none;
+        color: inherit;
+        transition: border-color .2s, background .2s, transform .15s;
+      }
+      .doc-card:hover {
+        border-color: var(--text-accent);
+        background: var(--bg-tertiary);
+        transform: translateY(-1px);
+      }
+      .doc-card__icon {
+        flex-shrink: 0;
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--accent-glow);
+        border: 1px solid rgba(167, 139, 250, .2);
+        border-radius: 10px;
+        color: var(--text-accent);
+      }
+      .doc-card__body {
+        flex: 1;
+        min-width: 0;
+      }
+      .doc-card__header {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        margin-bottom: .35rem;
+      }
+      .doc-card__title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        letter-spacing: -.01em;
+      }
+      .doc-card__badge {
+        font-size: .7rem;
+        font-weight: 600;
+        color: var(--text-accent);
+        background: var(--accent-glow);
+        border: 1px solid rgba(167, 139, 250, .2);
+        padding: .15rem .5rem;
+        border-radius: 100px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        white-space: nowrap;
+      }
+      .doc-card__desc {
+        color: var(--text-secondary);
+        font-size: .9rem;
+        line-height: 1.5;
+      }
+      .doc-card__arrow {
+        flex-shrink: 0;
+        color: var(--text-secondary);
+        transition: color .2s, transform .2s;
+      }
+      .doc-card:hover .doc-card__arrow {
+        color: var(--text-accent);
+        transform: translateX(3px);
+      }
+
+      /* ── Footer ── */
+      .docs-footer {
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: .85rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-primary);
+      }
+      .docs-footer a {
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: color .15s;
+      }
+      .docs-footer a:hover { color: var(--text-accent); }
+
+      /* ── Responsive ── */
+      @media (max-width: 640px) {
+        .docs-hero__heading { font-size: 1.4rem; }
+        .doc-card { padding: 1.25rem; gap: 1rem; }
+        .doc-card__icon { width: 40px; height: 40px; }
+        .doc-card__arrow { display: none; }
+        .quickstart { padding: 1.25rem; }
+      }
+    </style>
+  </body>
+</html>

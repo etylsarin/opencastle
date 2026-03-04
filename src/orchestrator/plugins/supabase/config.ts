@@ -28,7 +28,6 @@ export const config: PluginConfig = {
       'supabase/list_migrations', 'supabase/get_project',
     ],
   },
-  docsUrl: null,
+  docsUrl: 'https://www.opencastle.dev/docs/plugins#supabase',
   officialDocs: 'https://supabase.com/docs',
-  mcpPackage: null,
 };

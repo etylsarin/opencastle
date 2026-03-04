@@ -19,11 +19,7 @@ You are a content engineer specializing in CMS schema design, content queries, c
 
 ## Skills
 
-### Capability Slots
-
-Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
-
-- **cms** — Document types, query patterns, schema management, content modeling, search module architecture
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Guidelines
 

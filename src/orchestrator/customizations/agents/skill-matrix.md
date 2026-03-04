@@ -1,149 +1,86 @@
-````markdown
 # Skill Matrix
 
-Maps abstract technology capabilities to concrete skill implementations. Agents reference **capability slots** instead of hardcoded technology skills — when the stack changes, update the bindings here and all agents automatically resolve to the correct skill.
+Maps abstract technology capabilities to concrete skill implementations. The matrix distinguishes two types of skills:
 
-**Process/methodology skills** (session checkpoints, validation gates, self-improvement, etc.) are referenced directly in agent files — they don't go through the matrix.
+- **Binding slots** — Plugin-driven, technology-specific skills resolved at runtime (e.g., `database` → `supabase-database`). These change when the tech stack changes.
+- **Core skills** — Hardcoded, stack-agnostic skills referenced directly in agent files (e.g., `validation-gates`, `security-hardening`, `performance-optimization`). These are always available regardless of plugins.
+
+## Data File
+
+The machine-readable bindings are in [`skill-matrix.json`](skill-matrix.json). The CLI (`opencastle init` and `opencastle update`) reads and writes this file directly. Agents should read the JSON to resolve capability slots.
 
 ## How It Works
 
 ```
-Agent file                  Skill Matrix                 Skill file
+Agent file                  skill-matrix.json            Skill file
 ┌──────────────┐           ┌──────────────┐           ┌──────────────┐
-│ Developer    │           │ framework:   │           │ nextjs-      │
-│  needs:      │──lookup──▶│  nextjs      │──load────▶│ patterns     │
-│  framework   │           │              │           │              │
-│  ui-library  │           │ ui-library:  │           │ react-       │
-│  api-layer   │           │  react       │──load────▶│ development  │
-│              │           │              │           │              │
-│              │           │ api-layer:   │           │ api-         │
-│              │           │  nextjs-api  │──load────▶│ patterns     │
-│              │           │              │           │              │
+│ Developer    │           │ "framework": │           │ nextjs-      │
+│  needs:      │──lookup──▶│  entries: [  │──load────▶│ framework    │
+│  framework   │           │   {name,     │           │              │
+│              │           │    skill}    │           │              │
+│              │           │  ]           │           │              │
 └──────────────┘           └──────────────┘           └──────────────┘
 ```
 
 1. **Agents** declare which capability slots they need (e.g., `framework`, `database`)
-2. **This matrix** maps each slot to the current technology and its skill file
-3. **When delegating**, resolve slots through this matrix to load the correct skill
-4. **To switch tech**, update only the binding row — no agent files change
+2. **`skill-matrix.json`** maps each slot to one or more technologies and their skill files
+3. **When delegating**, resolve slots through the JSON to load the correct skill(s)
+4. **To switch tech**, update only the binding entries — no agent files change
 
-## Stack Bindings
+## Multiple Technologies Per Slot
 
-<!-- Populated by the `bootstrap-customizations` prompt based on detected technologies. -->
+A slot can have multiple entries. For example, a project using both Supabase and Prisma:
 
-### Primary Stack
+```json
+"database": {
+  "entries": [
+    { "name": "Supabase", "skill": "supabase-database" },
+    { "name": "Prisma", "skill": "prisma-database" }
+  ],
+  "description": "Schema, migrations, auth flow, roles"
+}
+```
 
-| Slot | Technology | Skill | Description |
-|------|-----------|-------|-------------|
-| `language` | | _(general.instructions.md)_ | Primary programming language, type system |
-| `ui-library` | | | Component architecture, hooks, state, styling |
-| `framework` | | | SSR/SSG, routing, layouts, Server/Client Components |
-| `database` | | | Schema, migrations, auth flow, roles |
-| `cms` | | | Document types, queries, schema management |
-| `deployment` | | | Hosting, cron jobs, env vars, caching, headers |
-| `codebase-tool` | | | Task running, building, linting, testing, code generation |
-
-### Tooling
-
-| Slot | Technology | Skill | Description |
-|------|-----------|-------|-------------|
-| `api-layer` | | | API routes, validation, search architecture |
-| `data-pipeline` | | | ETL, scraping, data processing |
-| `testing` | | | Unit/integration tests, coverage, test planning |
-| `e2e-testing` | | | Browser automation, viewport testing, visual validation |
-| `task-management` | | | Issue tracking, naming, priorities, workflow states |
-
-### Disciplines
-
-| Slot | Approach | Skill | Description |
-|------|---------|-------|-------------|
-| `performance` | | `performance-optimization` | Bundle size, rendering, caching, profiling |
-| `security` | | `security-hardening` | Auth, headers, input validation, vulnerability mgmt |
-| `accessibility` | WCAG 2.2 Level AA | `accessibility-standards` | Keyboard nav, screen readers, contrast, semantics |
-| `design-system` | | `frontend-design` | Design thinking, typography, color, motion, layout |
-| `seo` | | `seo-patterns` | Technical SEO patterns for meta tags, JSON-LD, sitemaps, URL strategy |
-
-## Agent Capability Matrix
-
-Each row shows which capability slots an agent needs (resolved through this matrix) and which process skills it uses directly.
-
-| Agent | Capability Slots | Direct Skills |
-|-------|-----------------|---------------|
-| **Developer** | `framework`, `ui-library`, `api-layer` | `validation-gates` |
-| **Database Engineer** | `database`, `security` | — |
-| **UI/UX Expert** | `design-system`, `ui-library`, `accessibility` | `e2e-testing`¹ |
-| **Content Engineer** | `cms` | — |
-| **Testing Expert** | `e2e-testing`, `testing` | `validation-gates` |
-| **Security Expert** | `security`, `database` | — |
-| **Data Expert** | `data-pipeline` | — |
-| **DevOps Expert** | `deployment` | — |
-| **Performance Expert** | `performance` | — |
-| **Architect** | `codebase-tool` | `documentation-standards` |
-| **Copywriter** | `cms` | `documentation-standards` |
-| **SEO Specialist** | `framework`, `cms`, `seo` | — |
-| **API Designer** | `api-layer`, `framework`, `security` | — |
-| **Release Manager** | `codebase-tool`, `deployment` | `validation-gates`, `documentation-standards` |
-| **Documentation Writer** | — | `documentation-standards`, `code-commenting` |
-| **Researcher** | — | `context-map`, `self-improvement` |
-| **Team Lead** | `task-management` | `team-lead-reference`, `session-checkpoints`, `validation-gates`, `fast-review`, `panel-majority-vote`, `context-map`, `memory-merger`, `agent-hooks` |
-
-¹ UI/UX Expert uses `e2e-testing` as a utility (viewport resize commands) — resolved through the matrix like other slots.
-
-## Process Skills (Always Direct)
-
-These are methodology/workflow skills — not tied to any technology. Referenced directly in agent files, never through capability slots.
-
-| Skill | Purpose |
-|-------|---------|
-| `self-improvement` | Lessons-learned protocol, retry documentation |
-| `session-checkpoints` | Session state saving, resuming, forking |
-| `context-map` | File impact mapping before complex changes |
-| `panel-majority-vote` | 3-reviewer quality gate (PASS/BLOCK) |
-| `memory-merger` | Graduate lessons into permanent skills/instructions |
-| `code-commenting` | Self-documenting code patterns, annotation tags |
-| `agent-hooks` | Agent lifecycle hooks (session-start, session-end, etc.) |
-| `agent-memory` | Agent expertise tracking, cross-session knowledge graph |
-| `task-management` | Issue tracking conventions, naming, priorities |
-| `team-lead-reference` | Team Lead orchestration reference, model routing |
-| `fast-review` | Mandatory single-reviewer gate after every delegation |
-| `validation-gates` | Shared validation gate definitions (lint, test, build) |
-| `documentation-standards` | Documentation templates, formatting rules |
+When resolving, load **all** skills listed in the slot's entries.
 
 ## Switching Technologies
 
-### Example: Supabase → Convex
+### Example: Migrate to a new plugin (Supabase → Azure)
 
-1. Create a new skill: `skills/convex-database/SKILL.md`
-2. Update this matrix: `database` row → Technology: `Convex`, Skill: `convex-database`
+1. Create (or install) the Azure plugin: `plugins/azure/SKILL.md` + `plugins/azure/config.ts`
+2. Update `skill-matrix.json`: replace the database entries
 3. Update `project.instructions.md` to reflect the new tech stack
 4. **No agent files change** — Database Engineer, Security Expert still reference the `database` slot
 
-### Example: React → Svelte + Next.js → SvelteKit
+### Example: Migrate to an existing plugin (Linear → Jira)
 
-1. Create skills: `skills/svelte-development/SKILL.md`, `skills/sveltekit-patterns/SKILL.md`
-2. Update matrix: `ui-library` → `Svelte` / `svelte-development`
-3. Update matrix: `framework` → `SvelteKit` / `sveltekit-patterns`
-4. Update `project.instructions.md` and `general.instructions.md`
-5. **No agent files change** — Developer, UI/UX Expert still reference `framework` and `ui-library` slots
-
-### Example: Jest → Vitest
-
-1. Create skill: `skills/vitest-workflow/SKILL.md`
-2. Update matrix: `testing` → `Vitest` / `vitest-workflow`
-3. **No agent files change** — Testing Expert still references the `testing` slot
-
-### Example: Linear → Jira
-
-1. Skill already exists: `skills/jira-management/SKILL.md`
-2. Update matrix: `task-management` → `Jira` / `jira-management`
+1. Plugin already exists: `plugins/jira/SKILL.md`
+2. Update `skill-matrix.json`: replace the `task-management` entries
 3. **No agent files change** — Team Lead still references the `task-management` slot
+
+### Example: Add a second plugin
+
+1. Update `skill-matrix.json`: add another entry to the `framework` slot
+2. Both framework skills will be loaded when agents resolve the `framework` slot
+
+## Missing Plugin or Empty Slot
+
+When resolving a capability slot, two failure cases can occur:
+
+1. **Empty slot** — The slot's `entries` array is empty (no plugin installed for that technology). Example: an agent needs `database` but no database plugin was selected during `opencastle init`.
+2. **Missing plugin** — The slot references a skill name (e.g., `"skill": "convex-database"`) but no matching plugin `SKILL.md` file exists on disk.
+
+In both cases, **tell the user** that the capability is unavailable and why:
+
+- *"The `database` slot has no entries in `skill-matrix.json`. Install a database plugin (e.g., `supabase`, `prisma`) via `opencastle update`, or add entries manually."*
+- *"The `database` slot references skill `convex-database`, but no matching plugin was found. Install the Convex plugin or run `opencastle update` to fix the binding."*
+
+**Do NOT silently skip the slot or proceed without the skill.** The agent should surface the gap clearly so the user can resolve it.
 
 ## Design Principles
 
-1. **Single source of truth** — Technology choices live here, not scattered across agent files
+1. **Single source of truth** — All skill assignments (slots and direct) live in `skill-matrix.json`, not in agent files
 2. **Agents are stack-agnostic** — They describe *what* they need, not *which* tool they use
-3. **Swap without rewriting** — Changing one matrix row updates every agent that uses that slot
-4. **Process skills are stable** — Methodology doesn't change with technology; direct references are fine
-5. **Capability slots are composable** — Agents can combine any slots (e.g., Security Expert needs both `security` + `database`)
-
-````
+3. **Swap without rewriting** — Changing entries updates every agent that uses that slot
+4. **Process skills are stable** — Methodology doesn't change with technology; direct skill references in the matrix are fine
+5. **Capability slots are composable** — Agents can combine slots and direct skills freely (e.g., Security Expert uses the `database` slot + `security-hardening` direct skill)

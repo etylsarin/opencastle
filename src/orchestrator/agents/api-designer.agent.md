@@ -20,17 +20,7 @@ You are an API designer specializing in route architecture, endpoint conventions
 
 ## Skills
 
-### Capability Slots
-
-Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
-
-- **api-layer** — Route handler patterns, server-side actions, validation libraries, search API architecture
-- **framework** — Framework routing conventions, middleware, request lifecycle
-- **security** — Input validation, authentication, authorization, rate limiting
-
-## API Design Principles
-
-Load the **api-patterns** skill for comprehensive API design guidelines covering route architecture, request/response schemas, error handling, pagination, versioning, and rate limiting.
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Guidelines
 

@@ -13,11 +13,7 @@ You are an expert in building ETL pipelines, web scrapers, data processors, and 
 
 ## Skills
 
-### Capability Slots
-
-Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
-
-- **data-pipeline** — Pipeline architecture, scraper patterns, data format, enrichment workflows, CLI commands, quality standards
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Critical Rules
 
@@ -32,7 +28,7 @@ Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
 - Idempotent imports with `createOrReplace` and deterministic `_id`
 - Validate with Zod before importing — never import invalid data
 - Respect `robots.txt` and rate limit all scraping requests
-- Use the project's web crawling library for concurrent crawling (see the **data-pipeline** skill)
+- Use the project's web crawling library for concurrent crawling (see the **data-engineering** skill)
 - Handle errors gracefully — skip bad records, don't halt pipeline
 - Preserve UTF-8 encoding for special characters and diacritics
 - Backup before bulk operations

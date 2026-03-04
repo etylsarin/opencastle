@@ -20,15 +20,7 @@ You are a copywriter specializing in user-facing text for web applications — U
 
 ## Skills
 
-### Capability Slots
-
-Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
-
-- **cms** — Content model structure, document types, and field schemas for venue descriptions
-
-### Direct Skills
-
-- **documentation-standards** — Writing guidelines and formatting rules
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Text Categories
 

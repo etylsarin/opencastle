@@ -39,17 +39,24 @@ async function checkCustomizations(projectRoot: string): Promise<CheckResult> {
 }
 
 async function checkSkillMatrix(projectRoot: string): Promise<CheckResult> {
-  const path = resolve(projectRoot, '.github', 'customizations', 'agents', 'skill-matrix.md');
+  const path = resolve(projectRoot, '.github', 'customizations', 'agents', 'skill-matrix.json');
   if (!existsSync(path)) {
-    return { ok: false, label: 'Skill matrix', detail: 'File not found at .github/customizations/agents/skill-matrix.md' };
+    return { ok: false, label: 'Skill matrix', detail: 'File not found at .github/customizations/agents/skill-matrix.json' };
   }
   const content = await readFile(path, 'utf8');
-  // Look for empty capability slots (pattern: | `domain` | | |)
-  const emptySlots = content.match(/\| `\w+`\s*\|\s*\|\s*\|/g);
-  if (emptySlots && emptySlots.length > 0) {
-    return { ok: true, label: 'Skill matrix', detail: `${emptySlots.length} unresolved capability slot(s)`, warning: true };
+  try {
+    const data = JSON.parse(content);
+    const bindings = data.bindings ?? {};
+    const emptySlots = Object.entries(bindings).filter(
+      ([, slot]) => !Array.isArray((slot as { entries?: unknown[] }).entries) || ((slot as { entries: unknown[] }).entries).length === 0
+    );
+    if (emptySlots.length > 0) {
+      return { ok: true, label: 'Skill matrix', detail: `${emptySlots.length} unresolved capability slot(s)`, warning: true };
+    }
+    return { ok: true, label: 'Skill matrix', detail: 'All capability slots populated' };
+  } catch {
+    return { ok: false, label: 'Skill matrix', detail: 'Invalid JSON in skill-matrix.json' };
   }
-  return { ok: true, label: 'Skill matrix', detail: 'All capability slots populated' };
 }
 
 async function checkInstructions(projectRoot: string): Promise<CheckResult> {

@@ -4,7 +4,7 @@ export const config: PluginConfig = {
   id: 'jira',
   name: 'Jira',
   category: 'team',
-  subCategory: 'tracker',
+  subCategory: 'task-management',
   label: 'Jira',
   hint: 'Atlassian issue tracking via Rovo MCP',
   skillName: 'jira-management',
@@ -24,7 +24,6 @@ export const config: PluginConfig = {
       'Jira/getAccessibleAtlassianResources',
     ],
   },
-  docsUrl: null,
+  docsUrl: 'https://www.opencastle.dev/docs/plugins#jira',
   officialDocs: 'https://developer.atlassian.com/cloud/jira/platform/',
-  mcpPackage: null,
 };

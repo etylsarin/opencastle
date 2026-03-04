@@ -1,0 +1,1186 @@
+---
+import '../../styles/global.css';
+
+const title = 'CLI Reference — OpenCastle';
+const description = 'Complete reference for every opencastle CLI command. Install, configure, run agents, view dashboards, and validate your setup.';
+
+/* ---------- Sidebar category icons ---------- */
+const categoryIcons: Record<string, string> = {
+  setup: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>`,
+  lifecycle: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
+  runtime: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>`,
+  diagnostics: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>`,
+};
+
+const categories = [
+  { id: 'setup', label: 'Setup', icon: categoryIcons.setup },
+  { id: 'lifecycle', label: 'Lifecycle', icon: categoryIcons.lifecycle },
+  { id: 'runtime', label: 'Runtime', icon: categoryIcons.runtime },
+  { id: 'diagnostics', label: 'Diagnostics', icon: categoryIcons.diagnostics },
+];
+
+/* ---------- Command data ---------- */
+const commands = [
+  {
+    id: 'init',
+    category: 'setup',
+    name: 'init',
+    summary: 'Set up OpenCastle in your project',
+    description: 'Interactive setup wizard that scans your repository, detects your tech stack, and generates all configuration files — agent definitions, skills, instruction files, MCP configs, and IDE-specific settings.',
+    usage: 'npx opencastle init [options]',
+    options: [
+      { flag: '--dry-run', desc: 'Preview what files would be created without writing anything' },
+      { flag: '--help, -h', desc: 'Show help' },
+    ],
+    details: [
+      { heading: 'What it does', content: `<ol>
+        <li><strong>Scans your repo</strong> — detects frameworks (Next.js, Astro), databases (Supabase, Prisma), monorepo tools (NX, Turborepo), deployment targets, and more</li>
+        <li><strong>Prompts for IDEs</strong> — select VS Code, Cursor, Claude Code, and/or OpenCode</li>
+        <li><strong>Prompts for tech & team tools</strong> — pick from 23 plugins (CMS, database, testing, notifications, etc.)</li>
+        <li><strong>Generates files</strong> — instruction files, agent definitions, skills, MCP configs, skill matrix, and <code>.opencastle.json</code> manifest</li>
+        <li><strong>Updates .gitignore</strong> — adds entries for framework-managed files</li>
+        <li><strong>Creates .env template</strong> — if any selected plugins require API keys, offers to create a <code>.env</code> with placeholders</li>
+      </ol>` },
+      { heading: 'Re-initialization', content: `<p>Running <code>init</code> again on an existing installation will prompt you to re-initialize. It cleans up old framework files before writing new ones, but preserves your customization files.</p>` },
+    ],
+    examples: [
+      { cmd: 'npx opencastle init', desc: 'Interactive setup' },
+      { cmd: 'npx opencastle init --dry-run', desc: 'Preview without writing files' },
+    ],
+  },
+  {
+    id: 'update',
+    category: 'lifecycle',
+    name: 'update',
+    summary: 'Update framework files while preserving customizations',
+    description: 'Upgrades OpenCastle framework files to the latest version. Your customization files — agent prompts, lessons learned, known issues — are never touched. Also supports reconfiguring your tech stack without a full re-init.',
+    usage: 'npx opencastle update [options]',
+    options: [
+      { flag: '--dry-run', desc: 'Preview changes without writing files' },
+      { flag: '--force', desc: 'Force update even if versions match' },
+      { flag: '--reconfigure', desc: 'Change tech/team tool selections without waiting for a version bump' },
+      { flag: '--help, -h', desc: 'Show help' },
+    ],
+    details: [
+      { heading: 'How updates work', content: `<ul>
+        <li><strong>Framework files</strong> (instructions, agent definitions, skills, workflow templates) are overwritten with the latest versions</li>
+        <li><strong>Customization files</strong> (lessons learned, known issues, project config, session logs) are preserved</li>
+        <li><strong>Skill matrix</strong> is updated when stack changes — new plugin skills are added, removed plugins are cleaned up</li>
+        <li><strong>MCP configs</strong> are rebuilt when the tool selection changes</li>
+      </ul>` },
+      { heading: 'Reconfigure mode', content: `<p>Use <code>--reconfigure</code> to add or remove tools without waiting for a new OpenCastle release. This re-shows the tech/team tool selection prompts and updates skill matrix + MCP configs accordingly.</p>` },
+    ],
+    examples: [
+      { cmd: 'npx opencastle update', desc: 'Update to latest version' },
+      { cmd: 'npx opencastle update --reconfigure', desc: 'Change stack selections' },
+      { cmd: 'npx opencastle update --dry-run', desc: 'Preview what would change' },
+      { cmd: 'npx opencastle update --force', desc: 'Re-apply even if already up to date' },
+    ],
+  },
+  {
+    id: 'eject',
+    category: 'lifecycle',
+    name: 'eject',
+    summary: 'Remove dependency, keep all files standalone',
+    description: 'Removes the OpenCastle manifest (<code>.opencastle.json</code>) while keeping all generated files in place. After ejecting, the files become standalone and you can uninstall the opencastle package.',
+    usage: 'npx opencastle eject [options]',
+    options: [
+      { flag: '--dry-run', desc: 'Preview without removing the manifest' },
+      { flag: '--help, -h', desc: 'Show help' },
+    ],
+    details: [
+      { heading: 'What stays', content: `<ul>
+        <li>All instruction files (<code>.github/instructions/</code>)</li>
+        <li>All agent definitions and skills</li>
+        <li>All customization files</li>
+        <li>All MCP configs</li>
+        <li>All IDE-specific configs</li>
+      </ul>` },
+      { heading: 'What gets removed', content: `<ul>
+        <li><code>.opencastle.json</code> — the manifest file that tracks what OpenCastle manages</li>
+      </ul>
+      <p>After ejecting, <code>update</code> and <code>doctor</code> will no longer work since they depend on the manifest. You own the files outright.</p>` },
+    ],
+    examples: [
+      { cmd: 'npx opencastle eject', desc: 'Eject and keep all files' },
+      { cmd: 'npx opencastle eject --dry-run', desc: 'Preview the eject process' },
+    ],
+  },
+  {
+    id: 'run',
+    category: 'runtime',
+    name: 'run',
+    summary: 'Process a task queue from a spec file autonomously',
+    description: 'Reads a YAML task specification file, builds an execution plan with dependency-aware phases, and delegates each task to an AI agent CLI. Tasks in the same phase run in parallel up to the concurrency limit.',
+    usage: 'npx opencastle run [options]',
+    options: [
+      { flag: '--file, -f <path>', desc: 'Task spec file (default: opencastle.tasks.yml)' },
+      { flag: '--dry-run', desc: 'Show execution plan without running tasks' },
+      { flag: '--concurrency, -c <n>', desc: 'Override max parallel tasks' },
+      { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude-code, copilot, cursor)' },
+      { flag: '--report-dir <path>', desc: 'Where to write run reports (default: .opencastle/runs)' },
+      { flag: '--verbose', desc: 'Show full agent output' },
+      { flag: '--help, -h', desc: 'Show help' },
+    ],
+    details: [
+      { heading: 'Task spec format', content: `<p>The task spec is a YAML file (<code>opencastle.tasks.yml</code> by default) that defines:</p>
+      <ul>
+        <li><code>name</code> — run name for reports</li>
+        <li><code>adapter</code> — which AI CLI to use (<code>claude-code</code>, <code>copilot</code>, <code>cursor</code>)</li>
+        <li><code>concurrency</code> — max parallel tasks (default: 3)</li>
+        <li><code>tasks</code> — array of task objects with <code>id</code>, <code>prompt</code>, <code>dependsOn</code>, <code>timeout</code>, etc.</li>
+      </ul>` },
+      { heading: 'Execution model', content: `<ul>
+        <li><strong>Phase-based:</strong> Tasks are sorted into phases by dependency graph. Tasks in the same phase run in parallel.</li>
+        <li><strong>Adapter-based:</strong> Each task is executed by the configured AI agent CLI (Claude Code, GitHub Copilot, Cursor).</li>
+        <li><strong>Reporting:</strong> Results are written to the report directory as JSON for post-run analysis.</li>
+      </ul>` },
+      { heading: 'Adapters', content: `<p>The <code>--adapter</code> flag selects which AI CLI to delegate work to:</p>
+      <table class="plugin-table">
+        <thead><tr><th>Adapter</th><th>CLI Required</th><th>Install</th></tr></thead>
+        <tbody>
+          <tr><td><code>claude-code</code></td><td><code>claude</code></td><td><code>npm i -g @anthropic-ai/claude-code</code></td></tr>
+          <tr><td><code>copilot</code></td><td><code>copilot</code></td><td>Ships with GitHub Copilot CLI</td></tr>
+          <tr><td><code>cursor</code></td><td><code>cursor</code></td><td>Ships with Cursor editor (Install CLI from menu)</td></tr>
+        </tbody>
+      </table>` },
+    ],
+    examples: [
+      { cmd: 'npx opencastle run', desc: 'Run the default task spec' },
+      { cmd: 'npx opencastle run -f tasks/migration.yml', desc: 'Run a specific task file' },
+      { cmd: 'npx opencastle run --dry-run', desc: 'Preview execution plan' },
+      { cmd: 'npx opencastle run -c 5 -a claude-code', desc: 'Run with 5 parallel tasks using Claude Code' },
+      { cmd: 'npx opencastle run --verbose', desc: 'Show full agent output during execution' },
+    ],
+  },
+  {
+    id: 'dashboard',
+    category: 'runtime',
+    name: 'dashboard',
+    summary: 'View agent observability dashboard in your browser',
+    description: 'Starts a local HTTP server that serves the OpenCastle dashboard — a visual overview of agent sessions, delegations, reviews, and panel votes from your project\'s NDJSON log files.',
+    usage: 'npx opencastle dashboard [options]',
+    options: [
+      { flag: '--port <number>', desc: 'Port to listen on (default: 4300, auto-increments if busy)' },
+      { flag: '--no-open', desc: 'Don\'t auto-open the browser' },
+      { flag: '--seed', desc: 'Show demo data instead of project logs' },
+      { flag: '--help, -h', desc: 'Show help' },
+    ],
+    details: [
+      { heading: 'Data sources', content: `<p>The dashboard reads NDJSON log files from <code>.github/customizations/logs/</code>:</p>
+      <ul>
+        <li><code>sessions.ndjson</code> — agent session records (task, outcome, duration, files changed)</li>
+        <li><code>delegations.ndjson</code> — Team Lead delegation records (agent, model, mechanism)</li>
+        <li><code>reviews.ndjson</code> — fast review results (verdict, issues found)</li>
+        <li><code>panels.ndjson</code> — panel majority vote results (pass/block count)</li>
+      </ul>
+      <p>If no log files exist, the dashboard shows empty charts. Use <code>--seed</code> to preview with demo data.</p>` },
+      { heading: 'Auto-port', content: `<p>If port 4300 is already in use, the dashboard automatically tries the next port (4301, 4302, etc.) up to 10 attempts.</p>` },
+    ],
+    examples: [
+      { cmd: 'npx opencastle dashboard', desc: 'Start dashboard and open browser' },
+      { cmd: 'npx opencastle dashboard --seed', desc: 'Preview with demo data' },
+      { cmd: 'npx opencastle dashboard --port 8080', desc: 'Start on a custom port' },
+      { cmd: 'npx opencastle dashboard --no-open', desc: 'Start without opening browser' },
+    ],
+  },
+  {
+    id: 'doctor',
+    category: 'diagnostics',
+    name: 'doctor',
+    summary: 'Validate your OpenCastle setup',
+    description: 'Runs a comprehensive health check on your OpenCastle installation. Verifies the manifest, instruction files, agent definitions, skills, logs, IDE configs, MCP configs, and environment variables.',
+    usage: 'npx opencastle doctor',
+    options: [
+      { flag: '--help, -h', desc: 'Show help' },
+    ],
+    details: [],
+    examples: [
+      { cmd: 'npx opencastle doctor', desc: 'Run all health checks' },
+    ],
+  },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="docs-header">
+      <div class="docs-header__inner">
+        <div class="docs-header__brand">
+          <a href="/docs" class="docs-header__back" title="Back to Docs">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </a>
+          <img class="docs-header__icon" src="/icon-192.png" alt="OpenCastle" width="28" height="28" />
+          <h1 class="docs-header__title">CLI Reference</h1>
+        </div>
+        <div class="docs-header__actions">
+          <span class="docs-header__count" id="cmd-count">6 commands</span>
+        </div>
+      </div>
+    </header>
+
+    <div class="docs-layout">
+      <!-- Sidebar Navigation -->
+      <nav class="docs-sidebar" id="docs-sidebar">
+        <ul class="docs-sidebar__list">
+          <li>
+            <button class="docs-sidebar__link docs-sidebar__link--active" data-section="all">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              All
+            </button>
+          </li>
+          {categories.map(cat => (
+            <li>
+              <button class="docs-sidebar__link" data-section={cat.id}>
+                <Fragment set:html={cat.icon} />
+                {cat.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <div class="docs-sidebar__divider"></div>
+        <p class="docs-sidebar__label">Commands</p>
+        <ul class="docs-sidebar__list">
+          {commands.map(cmd => (
+            <li>
+              <a class="docs-sidebar__link docs-sidebar__cmd" href={`#${cmd.id}`} data-cmd={cmd.id}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                {cmd.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <main class="docs-main">
+        <p class="docs-subtitle">
+          All commands are run via <code>npx opencastle &lt;command&gt;</code>.
+          Every command supports <code>--help</code> for quick reference.
+        </p>
+
+        <div class="usage-block">
+          <pre><code>{`npx opencastle <command> [options]
+
+Commands:
+  init        Set up OpenCastle in your project
+  update      Update framework files (preserves customizations)
+  eject       Remove dependency, keep all files standalone
+  run         Process a task queue from a spec file autonomously
+  dashboard   View agent observability dashboard in your browser
+  doctor      Validate your OpenCastle setup
+
+Global options:
+  --help, -h       Show help
+  --version, -v    Show version number`}</code></pre>
+        </div>
+
+        <!-- Setup -->
+        <section class="docs-category" id="setup" data-category>
+          <h2 class="docs-category__title">Setup</h2>
+          {commands.filter(c => c.category === 'setup').map(cmd => (
+            <div class="plugin-card" id={cmd.id}>
+              <h3 class="plugin-card__name">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                opencastle {cmd.name}
+              </h3>
+              <p class="plugin-card__desc">{cmd.summary}</p>
+              <Fragment set:html={cmd.description} />
+              <h4>Usage</h4>
+              <pre><code>{cmd.usage}</code></pre>
+              <h4>Options</h4>
+              <table class="plugin-table">
+                <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+                <tbody>
+                  {cmd.options.map(opt => (
+                    <tr><td><code>{opt.flag}</code></td><td>{opt.desc}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+              {cmd.details.map(d => (
+                <>
+                  <h4>{d.heading}</h4>
+                  <Fragment set:html={d.content} />
+                </>
+              ))}
+              {cmd.examples.length > 0 && (
+                <>
+                  <h4>Examples</h4>
+                  {cmd.examples.map(ex => (
+                    <div class="example-block">
+                      <pre><code>{ex.cmd}</code></pre>
+                      <p class="example-desc">{ex.desc}</p>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          ))}
+        </section>
+
+        <!-- Lifecycle -->
+        <section class="docs-category" id="lifecycle" data-category>
+          <h2 class="docs-category__title">Lifecycle</h2>
+          {commands.filter(c => c.category === 'lifecycle').map(cmd => (
+            <div class="plugin-card" id={cmd.id}>
+              <h3 class="plugin-card__name">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                opencastle {cmd.name}
+              </h3>
+              <p class="plugin-card__desc">{cmd.summary}</p>
+              <Fragment set:html={cmd.description} />
+              <h4>Usage</h4>
+              <pre><code>{cmd.usage}</code></pre>
+              <h4>Options</h4>
+              <table class="plugin-table">
+                <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+                <tbody>
+                  {cmd.options.map(opt => (
+                    <tr><td><code>{opt.flag}</code></td><td>{opt.desc}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+              {cmd.details.map(d => (
+                <>
+                  <h4>{d.heading}</h4>
+                  <Fragment set:html={d.content} />
+                </>
+              ))}
+              {cmd.examples.length > 0 && (
+                <>
+                  <h4>Examples</h4>
+                  {cmd.examples.map(ex => (
+                    <div class="example-block">
+                      <pre><code>{ex.cmd}</code></pre>
+                      <p class="example-desc">{ex.desc}</p>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          ))}
+        </section>
+
+        <!-- Runtime -->
+        <section class="docs-category" id="runtime" data-category>
+          <h2 class="docs-category__title">Runtime</h2>
+          {commands.filter(c => c.category === 'runtime').map(cmd => (
+            <div class="plugin-card" id={cmd.id}>
+              <h3 class="plugin-card__name">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                opencastle {cmd.name}
+              </h3>
+              <p class="plugin-card__desc">{cmd.summary}</p>
+              <Fragment set:html={cmd.description} />
+              <h4>Usage</h4>
+              <pre><code>{cmd.usage}</code></pre>
+              <h4>Options</h4>
+              <table class="plugin-table">
+                <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+                <tbody>
+                  {cmd.options.map(opt => (
+                    <tr><td><code>{opt.flag}</code></td><td>{opt.desc}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+              {cmd.details.map(d => (
+                <>
+                  <h4>{d.heading}</h4>
+                  <Fragment set:html={d.content} />
+                </>
+              ))}
+              {cmd.examples.length > 0 && (
+                <>
+                  <h4>Examples</h4>
+                  {cmd.examples.map(ex => (
+                    <div class="example-block">
+                      <pre><code>{ex.cmd}</code></pre>
+                      <p class="example-desc">{ex.desc}</p>
+                    </div>
+                  ))}
+                </>
+              )}
+            </div>
+          ))}
+        </section>
+
+        <!-- Diagnostics -->
+        <section class="docs-category" id="diagnostics" data-category>
+          <h2 class="docs-category__title">Diagnostics</h2>
+          {commands.filter(c => c.category === 'diagnostics').map(cmd => (
+            <div class="plugin-card" id={cmd.id}>
+              <h3 class="plugin-card__name">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                opencastle {cmd.name}
+              </h3>
+              <p class="plugin-card__desc">{cmd.summary}</p>
+              <Fragment set:html={cmd.description} />
+              <h4>Usage</h4>
+              <pre><code>{cmd.usage}</code></pre>
+              <h4>Options</h4>
+              <table class="plugin-table">
+                <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+                <tbody>
+                  {cmd.options.map(opt => (
+                    <tr><td><code>{opt.flag}</code></td><td>{opt.desc}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+              {cmd.details.map(d => (
+                <>
+                  <h4>{d.heading}</h4>
+                  <Fragment set:html={d.content} />
+                </>
+              ))}
+              {cmd.examples.length > 0 && (
+                <>
+                  <h4>Examples</h4>
+                  {cmd.examples.map(ex => (
+                    <div class="example-block">
+                      <pre><code>{ex.cmd}</code></pre>
+                      <p class="example-desc">{ex.desc}</p>
+                    </div>
+                  ))}
+                </>
+              )}
+              {cmd.id === 'doctor' && (
+                <>
+                  <h4>Exit codes</h4>
+                  <div class="exit-codes">
+                    <div class="exit-code"><span class="exit-code__num exit-code--pass">0</span><span>All checks passed (may have warnings)</span></div>
+                    <div class="exit-code"><span class="exit-code__num exit-code--fail">1</span><span>One or more checks failed</span></div>
+                  </div>
+                </>
+              )}
+            </div>
+          ))}
+        </section>
+
+        <p class="docs-footer">
+          <a href="/docs">← Docs</a>
+          <span class="docs-footer__sep">·</span>
+          <a href="/docs/plugins">Plugins</a>
+        </p>
+      </main>
+    </div>
+
+    <style>
+      /* ── Design tokens (matching dashboard) ── */
+      :root {
+        --bg-primary: #0a0a0f;
+        --bg-secondary: #111118;
+        --bg-tertiary: #1a1a24;
+        --bg-card: rgba(255, 255, 255, 0.03);
+        --text-primary: #f0f0f5;
+        --text-secondary: #8a8a9a;
+        --text-tertiary: #5a5a6e;
+        --text-accent: #a78bfa;
+        --border-color: rgba(255, 255, 255, 0.06);
+        --gradient-glow: radial-gradient(ellipse 800px 400px at 50% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+        --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        --max-width: 1280px;
+      }
+
+      /* ── Reset ── */
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { font-size: 16px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-primary);
+        color: var(--text-primary);
+        line-height: 1.6;
+        overflow-x: hidden;
+        min-height: 100vh;
+      }
+
+      /* ── Header ── */
+      .docs-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(10, 10, 15, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border-color);
+      }
+      .docs-header__inner {
+        max-width: var(--max-width);
+        margin: 0 auto;
+        padding: 0 24px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .docs-header__brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .docs-header__back {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: color var(--transition-fast), background var(--transition-fast);
+      }
+      .docs-header__back:hover {
+        color: var(--text-primary);
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .docs-header__icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        object-fit: contain;
+      }
+      .docs-header__title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      .docs-header__count {
+        font-size: 0.75rem;
+        font-weight: 500;
+        color: var(--text-tertiary);
+        background: var(--bg-tertiary);
+        padding: 4px 10px;
+        border-radius: 20px;
+        letter-spacing: 0.02em;
+      }
+
+      /* ── Layout ── */
+      .docs-layout {
+        display: flex;
+        max-width: var(--max-width);
+        margin: 0 auto;
+        position: relative;
+      }
+
+      /* ── Sidebar ── */
+      .docs-sidebar {
+        position: sticky;
+        top: 56px;
+        height: calc(100vh - 56px);
+        width: 180px;
+        flex-shrink: 0;
+        padding: 24px 0 24px 24px;
+        overflow-y: auto;
+        display: none;
+      }
+      @media (min-width: 1024px) {
+        .docs-sidebar { display: block; }
+      }
+      .docs-sidebar__list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .docs-sidebar__link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 8px 14px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--text-tertiary);
+        text-decoration: none;
+        border-radius: 8px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        transition: color var(--transition-fast), background var(--transition-fast);
+        text-align: left;
+        font-family: inherit;
+        line-height: 1.4;
+      }
+      .docs-sidebar__link:hover {
+        color: var(--text-secondary);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .docs-sidebar__link--active {
+        color: var(--text-accent);
+        background: rgba(167, 139, 250, 0.08);
+        font-weight: 600;
+      }
+      .docs-sidebar__link svg {
+        flex-shrink: 0;
+        opacity: 0.7;
+      }
+      .docs-sidebar__link--active svg {
+        opacity: 1;
+      }
+      .docs-sidebar__cmd {
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+        font-size: 0.75rem;
+      }
+      .docs-sidebar__divider {
+        height: 1px;
+        background: var(--border-color);
+        margin: 16px 14px 12px 14px;
+      }
+      .docs-sidebar__label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 0 14px 4px;
+      }
+
+      /* ── Main ── */
+      .docs-main {
+        flex: 1;
+        min-width: 0;
+        max-width: 860px;
+        padding: 32px 24px 64px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        position: relative;
+      }
+      .docs-main::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        height: 600px;
+        background: var(--gradient-glow);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .docs-main > * {
+        position: relative;
+        z-index: 1;
+      }
+      .docs-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.9375rem;
+        margin-bottom: 24px;
+        line-height: 1.6;
+      }
+
+      /* ── Usage block ── */
+      .usage-block {
+        margin-bottom: 32px;
+      }
+      .usage-block pre {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+      }
+
+      /* ── Category sections ── */
+      .docs-category {
+        scroll-margin-top: 72px;
+        margin-bottom: 20px;
+      }
+      .docs-category[hidden] {
+        display: none;
+      }
+      .docs-category__title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+      }
+
+      /* ── Command card ── */
+      .plugin-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 16px;
+        transition: border-color var(--transition-fast);
+        scroll-margin-top: 72px;
+      }
+      .plugin-card:hover {
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+      .plugin-card__name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+      }
+      .plugin-card__name svg {
+        flex-shrink: 0;
+        color: var(--text-accent);
+      }
+      .plugin-card__desc {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        margin-bottom: 12px;
+        line-height: 1.5;
+      }
+      .plugin-card__desc a {
+        color: var(--text-accent);
+      }
+
+      /* ── Plugin table (scoped for template-rendered tables) ── */
+      .plugin-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+        font-size: 0.8125rem;
+      }
+      .plugin-table th,
+      .plugin-table td {
+        text-align: left;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .plugin-table th {
+        background: none;
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid rgba(167, 139, 250, .15);
+      }
+      .plugin-table td {
+        color: var(--text-secondary);
+      }
+      .plugin-table tr:last-child td {
+        border-bottom: none;
+      }
+      .plugin-table a {
+        color: var(--text-accent);
+        text-decoration: none;
+      }
+      .plugin-table a:hover {
+        text-decoration: underline;
+      }
+
+      /* ── Tables inside set:html content ── */
+      .plugin-card :global(table) {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+        font-size: 0.8125rem;
+      }
+      .plugin-card :global(th),
+      .plugin-card :global(td) {
+        text-align: left;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .plugin-card :global(th) {
+        background: none;
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid rgba(167, 139, 250, .15);
+      }
+      .plugin-card :global(td) {
+        color: var(--text-secondary);
+      }
+      .plugin-card :global(tr:last-child td) {
+        border-bottom: none;
+      }
+      .plugin-card :global(table a) {
+        color: var(--text-accent);
+        text-decoration: none;
+      }
+      .plugin-card :global(table a:hover) {
+        text-decoration: underline;
+      }
+      .plugin-card :global(td code),
+      .plugin-card :global(th code) {
+        font-size: 0.75rem;
+      }
+
+      /* ── Exit codes ── */
+      .exit-codes {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin: 12px 0;
+      }
+      .exit-code {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+      }
+      .exit-code__num {
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.8rem;
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      }
+      .exit-code--pass {
+        background: rgba(74, 222, 128, .1);
+        color: #4ade80;
+        border: 1px solid rgba(74, 222, 128, .2);
+      }
+      .exit-code--fail {
+        background: rgba(248, 113, 113, .1);
+        color: #f87171;
+        border: 1px solid rgba(248, 113, 113, .2);
+      }
+
+      /* ── Headings inside cards ── */
+      .plugin-card h4 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-top: 16px;
+        margin-bottom: 8px;
+      }
+
+      /* ── Lists inside cards (injected via set:html) ── */
+      .plugin-card :global(ul),
+      .plugin-card :global(ol) {
+        margin: 8px 0;
+        padding-left: 0;
+        list-style: none;
+      }
+      .plugin-card :global(li) {
+        position: relative;
+        padding: 6px 0 6px 20px;
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .plugin-card :global(li:last-child) {
+        border-bottom: none;
+      }
+      .plugin-card :global(li::before) {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 14px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(167, 139, 250, .4);
+      }
+      .plugin-card :global(ol li) {
+        counter-increment: step;
+      }
+      .plugin-card :global(ol) {
+        counter-reset: step;
+      }
+      .plugin-card :global(ol li::before) {
+        content: counter(step);
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(167, 139, 250, .12);
+        color: var(--text-accent);
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        top: 9px;
+      }
+      .plugin-card :global(li strong) {
+        color: var(--text-primary);
+      }
+      .plugin-card :global(li code) {
+        font-size: 0.75rem;
+      }
+      .plugin-card :global(p) {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin: 8px 0;
+      }
+      .plugin-card :global(p strong) {
+        color: var(--text-primary);
+      }
+      .plugin-card :global(p code) {
+        font-size: 0.75rem;
+      }
+      .plugin-card :global(td strong) {
+        color: var(--text-primary);
+      }
+
+      /* ── Code blocks ── */
+      code {
+        background: var(--bg-tertiary);
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.8125rem;
+        color: #c9d1d9;
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      }
+      pre {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin: 8px 0 16px;
+        overflow-x: auto;
+      }
+      pre code {
+        display: block;
+        padding: 16px;
+        background: none;
+        font-size: 0.8125rem;
+        line-height: 1.5;
+      }
+
+      /* ── Lists inside cards ── */
+      .plugin-card ol,
+      .plugin-card ul {
+        margin: 8px 0;
+        padding-left: 1.5rem;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        line-height: 1.7;
+      }
+      .plugin-card li {
+        margin: 4px 0;
+      }
+      .plugin-card li strong {
+        color: var(--text-primary);
+      }
+      .plugin-card p {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin: 8px 0;
+      }
+      .plugin-card p strong {
+        color: var(--text-primary);
+      }
+
+      /* ── Example blocks ── */
+      .example-block {
+        margin-bottom: 12px;
+      }
+      .example-block pre {
+        margin-bottom: 4px;
+      }
+      .example-desc {
+        font-size: 0.8125rem;
+        color: var(--text-tertiary);
+        font-style: italic;
+        margin: 0 0 0 4px;
+      }
+
+      /* ── Misc ── */
+      .docs-footer {
+        margin-top: 48px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-color);
+        font-size: 0.875rem;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .docs-footer a {
+        color: var(--text-secondary);
+        text-decoration: none;
+      }
+      .docs-footer a:hover {
+        color: var(--text-primary);
+      }
+      .docs-footer__sep {
+        color: var(--text-tertiary);
+      }
+      a {
+        color: var(--text-accent);
+      }
+
+      /* ── Mobile sidebar toggle ── */
+      .docs-mobile-toggle {
+        display: none;
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 60;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 1px solid var(--border-color);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+        transition: background var(--transition-fast);
+      }
+      .docs-mobile-toggle:hover {
+        background: var(--bg-tertiary);
+      }
+      @media (max-width: 1023px) {
+        .docs-mobile-toggle { display: flex; }
+        .docs-sidebar--open {
+          display: block;
+          position: fixed;
+          top: 56px;
+          left: 0;
+          width: 220px;
+          height: calc(100vh - 56px);
+          background: var(--bg-secondary);
+          border-right: 1px solid var(--border-color);
+          z-index: 55;
+          padding: 16px;
+        }
+      }
+    </style>
+
+    <!-- Mobile sidebar toggle -->
+    <button class="docs-mobile-toggle" id="mobile-toggle" type="button" aria-label="Toggle navigation">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+
+    <script>
+      // ── Sidebar navigation: show/hide categories ──
+      const sidebar = document.getElementById('docs-sidebar');
+      const catLinks = sidebar?.querySelectorAll('[data-section]');
+      const sections = document.querySelectorAll('[data-category]');
+      const mobileToggle = document.getElementById('mobile-toggle');
+      const usageBlock = document.querySelector('.usage-block');
+
+      function setActiveSection(sectionId: string) {
+        // Update active category link
+        catLinks?.forEach(link => {
+          link.classList.toggle('docs-sidebar__link--active',
+            link.getAttribute('data-section') === sectionId);
+        });
+
+        // Show/hide sections
+        if (sectionId === 'all') {
+          sections.forEach(s => s.removeAttribute('hidden'));
+          usageBlock?.removeAttribute('hidden');
+        } else {
+          usageBlock?.setAttribute('hidden', '');
+          sections.forEach(s => {
+            if (s.id === sectionId) {
+              s.removeAttribute('hidden');
+            } else {
+              s.setAttribute('hidden', '');
+            }
+          });
+          const target = document.getElementById(sectionId);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+
+        // Close mobile sidebar
+        sidebar?.classList.remove('docs-sidebar--open');
+
+        // Update URL hash
+        history.replaceState(null, '', sectionId === 'all' ? location.pathname : `#${sectionId}`);
+
+        // Update command count
+        const countEl = document.getElementById('cmd-count');
+        if (countEl) {
+          if (sectionId === 'all') {
+            countEl.textContent = '6 commands';
+          } else {
+            const visible = document.querySelectorAll(`#${sectionId} .plugin-card`);
+            countEl.textContent = `${visible.length} command${visible.length !== 1 ? 's' : ''}`;
+          }
+        }
+      }
+
+      // Category button click handlers
+      catLinks?.forEach(link => {
+        link.addEventListener('click', () => {
+          const section = link.getAttribute('data-section');
+          if (section) setActiveSection(section);
+        });
+      });
+
+      // Command anchor click — show all, scroll to command
+      const cmdLinks = sidebar?.querySelectorAll('[data-cmd]');
+      cmdLinks?.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          // Show all sections so the command card is visible
+          sections.forEach(s => s.removeAttribute('hidden'));
+          usageBlock?.removeAttribute('hidden');
+          catLinks?.forEach(l => {
+            l.classList.toggle('docs-sidebar__link--active',
+              l.getAttribute('data-section') === 'all');
+          });
+
+          const cmdId = link.getAttribute('data-cmd');
+          if (cmdId) {
+            const target = document.getElementById(cmdId);
+            if (target) {
+              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            history.replaceState(null, '', `#${cmdId}`);
+          }
+
+          sidebar?.classList.remove('docs-sidebar--open');
+        });
+      });
+
+      // Mobile toggle
+      mobileToggle?.addEventListener('click', () => {
+        sidebar?.classList.toggle('docs-sidebar--open');
+      });
+
+      // Close mobile sidebar on outside click
+      document.addEventListener('click', (e) => {
+        if (sidebar?.classList.contains('docs-sidebar--open') &&
+            !sidebar.contains(e.target as Node) &&
+            e.target !== mobileToggle) {
+          sidebar.classList.remove('docs-sidebar--open');
+        }
+      });
+
+      // Restore from URL hash on load
+      const hash = location.hash.replace('#', '');
+      if (hash) {
+        const target = document.getElementById(hash);
+        if (target) {
+          // Check if it's a category or a command
+          if (target.hasAttribute('data-category')) {
+            setActiveSection(hash);
+          } else {
+            // It's a command — scroll to it
+            requestAnimationFrame(() => {
+              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          }
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -20,17 +20,7 @@ You are a release manager responsible for pre-release verification, changelog ge
 
 ## Skills
 
-### Capability Slots
-
-Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
-
-- **monorepo** — Affected commands, project dependencies, task execution across projects
-- **deployment** — Deployment status, build logs, rollback procedures
-
-### Direct Skills
-
-- **validation-gates** — Full verification gate definitions (lint, test, build, browser checks)
-- **documentation-standards** — Changelog format, release notes structure
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Release Process
 

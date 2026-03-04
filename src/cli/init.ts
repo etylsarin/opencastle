@@ -88,6 +88,7 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
     ...(repoInfo.databases ?? []),
     ...(repoInfo.deployment ?? []),
     ...(repoInfo.monorepo ? [repoInfo.monorepo] : []),
+    ...((repoInfo.frameworks ?? []).map(f => f === 'next' ? 'nextjs' : f)),
   ])
 
   console.log(`  ${c.bold('── Tech Tools ────────────────────────────────')}`)
@@ -248,7 +249,7 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
   // ── OAuth setup guides ────────────────────────────────────────
   if (teamTools.includes('slack')) {
     console.log(`  ${c.cyan('📖')} Slack MCP requires a Slack App with a bot token.`)
-    console.log(`     Setup guide: ${c.cyan('https://www.opencastle.dev/guides/plugins#slack')}\n`)
+    console.log(`     Setup guide: ${c.cyan('https://www.opencastle.dev/docs/plugins#slack')}\n`)
   }
 
   console.log(`\n  ${c.bold('Next steps:')}`)

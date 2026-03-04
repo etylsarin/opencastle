@@ -20,12 +20,7 @@ You are a database engineer specializing in schema design, migrations, row-level
 
 ## Skills
 
-### Capability Slots
-
-Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
-
-- **database** — Schema design, migrations, RLS policies, auth flow, role system, performance patterns
-- **security** — Security architecture, vulnerability management (database-specific concerns)
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Guidelines
 

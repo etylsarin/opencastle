@@ -53,7 +53,7 @@ Each lesson has a natural home in the instruction/skill hierarchy:
 | `deployment` | `.github/skills/deployment-infrastructure/SKILL.md` |
 | `delegation` | `.github/agents/team-lead.agent.md` or `.github/skills/team-lead-reference/SKILL.md` |
 | `testing` | `.github/skills/testing-workflow/SKILL.md` |
-| `ui-library` / `framework` | The skill mapped by the corresponding slot in the skill matrix |
+| `ui` / `framework` | The skill mapped by the `framework` slot or the `react-development` direct skill |
 | Cross-cutting pattern | `.github/instructions/general.instructions.md` |
 
 ### Step 3: Draft the Merge

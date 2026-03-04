@@ -1,10 +1,14 @@
 import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import { readManifest, writeManifest } from './manifest.js'
-import { confirm, closePrompts, c } from './prompt.js'
+import { multiselect, confirm, closePrompts, c } from './prompt.js'
 import { isLegacyStack, migrateStackConfig, IDE_LABELS } from './types.js'
+import { TECH_PLUGINS, TEAM_PLUGINS } from '../orchestrator/plugins/index.js'
 import { IDE_ADAPTERS, VALID_IDES } from './adapters/index.js'
-import type { CliContext, IdeChoice } from './types.js'
+import { getRequiredMcpEnvVars, updateSkillMatrixFile } from './stack-config.js'
+import { rebuildMcpConfig } from './mcp.js'
+import { detectRepoInfo, mergeStackIntoRepoInfo } from './detect.js'
+import type { CliContext, IdeChoice, TechTool, TeamTool, StackConfig } from './types.js'
 
 export default async function update({
   pkgRoot,
@@ -41,47 +45,193 @@ export default async function update({
   ) as { version: string }
 
   const dryRun = args.includes('--dry-run')
+  const forceFlag = args.includes('--force')
+  const reconfigureFlag = args.includes('--reconfigure')
 
-  if (manifest.version === pkg.version && !args.includes('--force') && !dryRun) {
+  const hasVersionUpdate = manifest.version !== pkg.version || forceFlag
+  let wantsReconfigure = reconfigureFlag
+
+  // If no version update and no --reconfigure, offer reconfigure option
+  if (!hasVersionUpdate && !wantsReconfigure && !dryRun) {
     console.log(`  Already up to date (v${pkg.version}).`)
+    wantsReconfigure = await confirm(
+      'Would you like to change your stack selections?',
+      false
+    )
+    if (!wantsReconfigure) {
+      closePrompts()
+      return
+    }
+  }
+
+  // ── Detect repo info ────────────────────────────────────────────
+  const repoInfo = await detectRepoInfo(projectRoot)
+
+  // ── Reconfigure stack if requested ──────────────────────────────
+  const oldStack = manifest.stack
+  let newStack: StackConfig | undefined = manifest.stack
+  let stackChanged = false
+  let addedTools: string[] = []
+  let removedTools: string[] = []
+
+  if (wantsReconfigure) {
+    const detectedTools = new Set([
+      ...(repoInfo.cms ?? []),
+      ...(repoInfo.databases ?? []),
+      ...(repoInfo.deployment ?? []),
+      ...(repoInfo.monorepo ? [repoInfo.monorepo] : []),
+      ...((repoInfo.frameworks ?? []).map((f) => (f === 'next' ? 'nextjs' : f))),
+    ])
+
+    const currentTech = new Set(oldStack?.techTools ?? [])
+    const currentTeam = new Set(oldStack?.teamTools ?? [])
+
+    console.log(`\n  ${c.bold('── Tech Tools ────────────────────────────────')}`)
+    const techTools = await multiselect(
+      'Which tools does your project use?',
+      TECH_PLUGINS.map((p) => ({
+        label: p.label,
+        hint: p.hint,
+        value: p.id,
+        selected: oldStack
+          ? currentTech.has(p.id as TechTool)
+          : p.preselected || detectedTools.has(p.id),
+      }))
+    )
+
+    console.log(`  ${c.bold('── Team Tools ────────────────────────────────')}`)
+    const teamTools = await multiselect(
+      'Which team tools do you use?',
+      TEAM_PLUGINS.map((p) => ({
+        label: p.label,
+        hint: p.hint,
+        value: p.id,
+        selected: oldStack
+          ? currentTeam.has(p.id as TeamTool)
+          : !!p.preselected,
+      }))
+    )
+
+    newStack = {
+      ides: ides as IdeChoice[],
+      techTools: techTools as TechTool[],
+      teamTools: teamTools as TeamTool[],
+    }
+
+    // Compute diff
+    const newTechSet = new Set(techTools)
+    const newTeamSet = new Set(teamTools)
+    const techChanged = !sameSet(currentTech as Set<string>, newTechSet)
+    const teamChanged = !sameSet(currentTeam as Set<string>, newTeamSet)
+    stackChanged = techChanged || teamChanged
+
+    if (stackChanged) {
+      const oldAll: string[] = [
+        ...(oldStack?.techTools ?? []),
+        ...(oldStack?.teamTools ?? []),
+      ]
+      const newAll: string[] = [...techTools, ...teamTools]
+      addedTools = newAll.filter((t) => !oldAll.includes(t))
+      removedTools = oldAll.filter((t) => !newAll.includes(t))
+    }
+  }
+
+  // Nothing to do?
+  if (!hasVersionUpdate && !stackChanged) {
+    console.log(`  No changes to apply.`)
+    closePrompts()
     return
   }
 
-  const ideNames = ides.map((id) => IDE_LABELS[id as IdeChoice] ?? id).join(', ')
-  console.log(
-    `\n  🏰 ${c.bold('OpenCastle')} ${dryRun ? 'dry-run' : 'update'}: ${c.dim(`v${manifest.version}`)} → ${c.green(`v${pkg.version}`)}\n`
-  )
-  console.log(`  IDEs: ${c.cyan(ideNames)}`)
-  console.log(`  ${c.dim('Framework files will be overwritten.')}`)
-  console.log(`  ${c.dim('Customization files will be preserved.')}\n`)
+  // ── Summary ─────────────────────────────────────────────────────
+  const ideNames = ides
+    .map((id) => IDE_LABELS[id as IdeChoice] ?? id)
+    .join(', ')
 
+  if (hasVersionUpdate) {
+    console.log(
+      `\n  🏰 ${c.bold('OpenCastle')} ${dryRun ? 'dry-run' : 'update'}: ${c.dim(`v${manifest.version}`)} → ${c.green(`v${pkg.version}`)}\n`
+    )
+  } else {
+    console.log(
+      `\n  🏰 ${c.bold('OpenCastle')} ${dryRun ? 'dry-run' : 'reconfigure'} ${c.dim(`v${pkg.version}`)}\n`
+    )
+  }
+
+  console.log(`  IDEs: ${c.cyan(ideNames)}`)
+
+  if (stackChanged) {
+    if (addedTools.length > 0) {
+      console.log(`  ${c.green('+')} Adding: ${addedTools.join(', ')}`)
+    }
+    if (removedTools.length > 0) {
+      console.log(`  ${c.red('−')} Removing: ${removedTools.join(', ')}`)
+    }
+  } else if (newStack) {
+    if (newStack.techTools.length > 0) {
+      console.log(`  Tech: ${c.green(newStack.techTools.join(', '))}`)
+    }
+    if (newStack.teamTools.length > 0) {
+      console.log(`  Team: ${c.green(newStack.teamTools.join(', '))}`)
+    }
+  }
+
+  if (hasVersionUpdate) {
+    console.log(`  ${c.dim('Framework files will be overwritten.')}`)
+    console.log(`  ${c.dim('Customization files will be preserved.')}`)
+  }
+  console.log()
+
+  // ── Dry run ─────────────────────────────────────────────────────
   if (dryRun) {
     console.log(`  ${c.dim('[dry-run]')} Framework files that would be updated:\n`)
     for (const p of manifest.managedPaths?.framework ?? []) {
       console.log(`    ${c.yellow('↻')} ${p}`)
     }
-    console.log(`\n  ${c.dim('[dry-run]')} Customization files that would be preserved:\n`)
+    console.log(
+      `\n  ${c.dim('[dry-run]')} Customization files that would be preserved:\n`
+    )
     for (const p of manifest.managedPaths?.customizable ?? []) {
       console.log(`    ${c.green('✓')} ${p}`)
     }
+    if (stackChanged) {
+      console.log()
+      if (addedTools.length > 0) {
+        console.log(
+          `  ${c.dim('[dry-run]')} Skills to add: ${addedTools.join(', ')}`
+        )
+      }
+      if (removedTools.length > 0) {
+        console.log(
+          `  ${c.dim('[dry-run]')} Skills to remove: ${removedTools.join(', ')}`
+        )
+      }
+      console.log(`  ${c.dim('[dry-run]')} Skill matrix would be updated`)
+      console.log(`  ${c.dim('[dry-run]')} MCP config would be rebuilt`)
+    }
     console.log(`\n  ${c.dim('No files were written.')}\n`)
+    closePrompts()
     return
   }
 
-  const proceed = await confirm('Proceed with update?')
+  const proceed = await confirm('Proceed?')
   if (!proceed) {
     console.log('  Aborted.')
+    closePrompts()
     return
   }
 
-  // Update each IDE
+  // ── Update each IDE ─────────────────────────────────────────────
   let totalCopied = 0
   let totalCreated = 0
-  const allManagedPaths = { framework: [] as string[], customizable: [] as string[] }
+  const allManagedPaths = {
+    framework: [] as string[],
+    customizable: [] as string[],
+  }
 
   for (const ide of ides) {
     const adapter = await IDE_ADAPTERS[ide]()
-    const results = await adapter.update(pkgRoot, projectRoot, manifest.stack)
+    const results = await adapter.update(pkgRoot, projectRoot, newStack)
     totalCopied += results.copied.length
     totalCreated += results.created.length
 
@@ -90,23 +240,72 @@ export default async function update({
     allManagedPaths.customizable.push(...managed.customizable)
   }
 
-  // Refresh repo research on update
-  const { detectRepoInfo, mergeStackIntoRepoInfo } = await import('./detect.js')
-  const repoInfo = await detectRepoInfo(projectRoot)
+  // ── Handle stack changes ────────────────────────────────────────
+  if (stackChanged && newStack) {
+    // Update skill matrix for each IDE
+    for (const ide of ides) {
+      await updateSkillMatrixFile(projectRoot, ide, newStack)
+    }
 
-  // Update manifest
-  manifest.version = pkg.version
+    // Rebuild MCP configs for each IDE
+    for (const ide of ides) {
+      await rebuildMcpConfig(projectRoot, ide as IdeChoice, newStack, repoInfo)
+    }
+  }
+
+  // ── Update manifest ─────────────────────────────────────────────
+  if (hasVersionUpdate) manifest.version = pkg.version
   manifest.ides = ides
   manifest.updatedAt = new Date().toISOString()
   manifest.managedPaths = allManagedPaths
-  manifest.repoInfo = manifest.stack
-    ? mergeStackIntoRepoInfo(repoInfo, manifest.stack)
+  if (newStack) manifest.stack = newStack
+  manifest.repoInfo = newStack
+    ? mergeStackIntoRepoInfo(repoInfo, newStack)
     : repoInfo
   await writeManifest(projectRoot, manifest)
 
-  console.log(`\n  ${c.green('✓')} Updated ${c.bold(String(totalCopied))} framework files`)
+  // ── Results ─────────────────────────────────────────────────────
+  console.log(
+    `\n  ${c.green('✓')} Updated ${c.bold(String(totalCopied))} framework files`
+  )
   if (totalCreated > 0) {
-    console.log(`  ${c.green('+')} Created ${c.bold(String(totalCreated))} new files`)
+    console.log(
+      `  ${c.green('+')} Created ${c.bold(String(totalCreated))} new files`
+    )
+  }
+  if (stackChanged) {
+    console.log(`  ${c.green('✓')} Updated skill matrix`)
+    console.log(`  ${c.green('✓')} Rebuilt MCP config`)
+  }
+
+  // ── Env var notice for new tools ────────────────────────────────
+  if (stackChanged && newStack) {
+    const envVars = getRequiredMcpEnvVars(newStack, repoInfo)
+    if (envVars.length > 0) {
+      const oldEnvVars = oldStack
+        ? new Set(
+            getRequiredMcpEnvVars(oldStack, repoInfo).map((e) => e.envVar)
+          )
+        : new Set<string>()
+      const newEnvVars = envVars.filter((e) => !oldEnvVars.has(e.envVar))
+      if (newEnvVars.length > 0) {
+        console.log(`\n  ${c.yellow('⚠')}  New environment variables needed:\n`)
+        for (const { envVar, hint } of newEnvVars) {
+          console.log(`     ${c.bold(envVar)}`)
+          console.log(`     ${c.dim('└')} ${c.dim(hint)}\n`)
+        }
+      }
+    }
+
+    // Setup guides for newly added tools
+    if (addedTools.includes('slack')) {
+      console.log(
+        `  ${c.cyan('📖')} Slack MCP requires a Slack App with a bot token.`
+      )
+      console.log(
+        `     Setup guide: ${c.cyan('https://www.opencastle.dev/docs/plugins#slack')}\n`
+      )
+    }
   }
 
   // ── Reload window message ─────────────────────────────────────
@@ -127,4 +326,12 @@ export default async function update({
   console.log()
 
   closePrompts()
+}
+
+function sameSet(a: Set<string>, b: Set<string>): boolean {
+  if (a.size !== b.size) return false
+  for (const item of a) {
+    if (!b.has(item)) return false
+  }
+  return true
 }

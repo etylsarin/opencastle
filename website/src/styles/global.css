@@ -832,7 +832,7 @@ img {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 20px 24px;
+  padding: 12px 24px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;

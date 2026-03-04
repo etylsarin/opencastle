@@ -29,7 +29,7 @@ export const config: PluginConfig = {
     'team-lead': ['slack/*'],
     'release-manager': ['slack/*'],
   },
-  docsUrl: '/guides/plugins#slack',
+  docsUrl: 'https://www.opencastle.dev/docs/plugins#slack',
   officialDocs: 'https://api.slack.com/docs',
   mcpPackage: '@kazuph/mcp-slack',
 };

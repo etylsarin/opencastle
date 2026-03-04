@@ -38,7 +38,6 @@ export const config: PluginConfig = {
       'sanity/list_projects',
     ],
   },
-  docsUrl: null,
+  docsUrl: 'https://www.opencastle.dev/docs/plugins#sanity',
   officialDocs: 'https://www.sanity.io/docs',
-  mcpPackage: null,
 };

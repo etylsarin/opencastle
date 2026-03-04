@@ -10,6 +10,7 @@ const agents = [
   { name: 'Team Lead', tier: 'premium' },
   { name: 'Architect', tier: 'premium' },
   { name: 'Security Expert', tier: 'premium' },
+  { name: 'Session Guard', tier: 'premium' },
   { name: 'Developer', tier: 'standard' },
   { name: 'UI/UX Expert', tier: 'standard' },
   { name: 'Content Engineer', tier: 'standard' },
@@ -110,6 +111,14 @@ const integrationIcons: Record<string, string> = {
   strapi: `<svg width="32" height="32" viewBox="3.5 6.3 14 14" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M8.73 7.28h7.83a.16.16 0 0 1 .16.16v7.83h-3.87v-3.71a.41.41 0 0 0-.313-.398l-.086-.012h-3.72V7.28zM8.23 7.53v3.87H4.553a.08.08 0 0 1-.057-.136L8.23 7.529zM8.48 11.65h3.87v3.87H8.64a.16.16 0 0 1-.16-.16v-3.71zM12.6 15.77h3.87l-3.734 3.734a.08.08 0 0 1-.136-.057V15.77z"/></svg>`,
   slack: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>`,
   nx: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="m11.987 14.138 -3.132 4.923 -5.193 -8.427 -0.012 8.822H0V4.544h3.691l5.247 8.833 0.005 -3.998 3.044 4.759zm0.601 -5.761c0.024 -0.048 0 -3.784 0.008 -3.833h-3.65c0.002 0.059 -0.005 3.776 -0.003 3.833h3.645zm5.634 4.134a2.061 2.061 0 0 0 -1.969 1.336 1.963 1.963 0 0 1 2.343 -0.739c0.396 0.161 0.917 0.422 1.33 0.283a2.1 2.1 0 0 0 -1.704 -0.88zm3.39 1.061c-0.375 -0.13 -0.8 -0.277 -1.109 -0.681 -0.06 -0.08 -0.116 -0.17 -0.176 -0.265a2.143 2.143 0 0 0 -0.533 -0.642c-0.294 -0.216 -0.68 -0.322 -1.18 -0.322a2.482 2.482 0 0 0 -2.294 1.536 2.325 2.325 0 0 1 4.002 0.388 0.75 0.75 0 0 0 0.836 0.334c0.493 -0.105 0.46 0.36 1.203 0.518v-0.133c-0.003 -0.446 -0.246 -0.55 -0.75 -0.733zm2.024 1.266a0.723 0.723 0 0 0 0.347 -0.638c-0.01 -2.957 -2.41 -5.487 -5.37 -5.487a5.364 5.364 0 0 0 -4.487 2.418c-0.01 -0.026 -1.522 -2.39 -1.538 -2.418H8.943l3.463 5.423 -3.379 5.32h3.54l1.54 -2.366 1.568 2.366h3.541l-3.21 -5.052a0.7 0.7 0 0 1 -0.084 -0.32 2.69 2.69 0 0 1 2.69 -2.691h0.001c1.488 0 1.736 0.89 2.057 1.308 0.634 0.826 1.9 0.464 1.9 1.541a0.707 0.707 0 0 0 1.066 0.596zm0.35 0.133c-0.173 0.372 -0.56 0.338 -0.755 0.639 -0.176 0.271 0.114 0.412 0.114 0.412s0.337 0.156 0.538 -0.311c0.104 -0.231 0.14 -0.488 0.103 -0.74z"/></svg>`,
+  netlify: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M6.49 19.04h-.23L5.13 17.9v-.23l1.73-1.71h1.2l.15.15v1.2L6.5 19.04ZM5.13 6.31V6.1l1.13-1.13h.23L8.2 6.68v1.2l-.15.15h-1.2L5.13 6.31Zm9.96 9.09h-1.65l-.14-.13v-3.83c0-.68-.27-1.2-1.1-1.23-.42 0-.9 0-1.43.02l-.07.08v4.96l-.14.14H8.9l-.13-.14V8.73l.13-.14h3.7a2.6 2.6 0 0 1 2.61 2.6v4.08l-.13.14Zm-8.37-2.44H.14L0 12.82v-1.64l.14-.14h6.58l.14.14v1.64l-.14.14Zm17.14 0h-6.58l-.14-.14v-1.64l.14-.14h6.58l.14.14v1.64l-.14.14ZM11.05 6.55V1.64l.14-.14h1.65l.14.14v4.9l-.14.14h-1.65l-.14-.13Zm0 15.81v-4.9l.14-.14h1.65l.14.13v4.91l-.14.14h-1.65l-.14-.14Z"/></svg>`,
+  turborepo: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M11.9906 4.1957c-4.2998 0-7.7981 3.501-7.7981 7.8043s3.4983 7.8043 7.7981 7.8043c4.2999 0 7.7982-3.501 7.7982-7.8043s-3.4983-7.8043-7.7982-7.8043m0 11.843c-2.229 0-4.0356-1.8079-4.0356-4.0387s1.8065-4.0387 4.0356-4.0387S16.0262 9.7692 16.0262 12s-1.8065 4.0388-4.0356 4.0388m.6534-13.1249V0C18.9726.3386 24 5.5822 24 12s-5.0274 11.66-11.356 12v-2.9139c4.7167-.3372 8.4516-4.2814 8.4516-9.0861s-3.735-8.749-8.4516-9.0861M5.113 17.9586c-1.2502-1.4446-2.0562-3.2845-2.2-5.3046H0c.151 2.8266 1.2808 5.3917 3.051 7.3668l2.0606-2.0622zM11.3372 24v-2.9139c-2.02-.1439-3.8584-.949-5.3019-2.2018l-2.0606 2.0623c1.975 1.773 4.538 2.9022 7.361 3.0534z"/></svg>`,
+  prisma: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M21.8068 18.2848L13.5528.7565c-.207-.4382-.639-.7273-1.1286-.7541-.5023-.0293-.9523.213-1.2062.6253L2.266 15.1271c-.2773.4518-.2718 1.0091.0158 1.4555l4.3759 6.7786c.2608.4046.7127.6388 1.1823.6388.1332 0 .267-.0188.3987-.0577l12.7019-3.7568c.3891-.1151.7072-.3904.8737-.7553s.1633-.7828-.0075-1.1454zm-1.8481.7519L9.1814 22.2242c-.3292.0975-.6448-.1873-.5756-.5194l3.8501-18.4386c.072-.3448.5486-.3996.699-.0803l7.1288 15.138c.1344.2856-.019.6224-.325.7128z"/></svg>`,
+  cypress: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M11.998.0195c-.8642 0-1.6816.1101-2.1445.1934v.002C4.1731 1.2283 0 6.1368 0 12.0018c0 1.1265.1573 2.2328.4648 3.3028.0387.1453.0915.2993.1368.4473 1.607 4.865 6.2245 8.226 11.3925 8.2285.0651 0 .2518-.0003.502-.0118.8564-.0353 1.6228-.5734 1.9512-1.369l.4736-1.1544L20.4258 8.043H18.621l-2.3164 5.871-2.334-5.871h-1.9082l3.2734 8.0117c-.8115 1.9702-1.6252 3.9395-2.4355 5.9101-.0808.1945-.2655.3284-.4727.336-.144.005-.285.0098-.4316.0098-4.5848 0-8.6672-3.0695-9.9277-7.4649a10.3058 10.3058 0 0 1-.3985-2.8437c0-5.0887 3.6521-9.3404 8.6035-10.164.2214-.037.8885-.1446 1.7246-.1446 4.4166 0 8.269 2.732 9.7305 6.8476.0558.144.0977.293.1465.4395.299.9746.4531 1.9887.4531 3.0215 0 4.5696-2.9413 8.5326-7.3164 9.8613l.4863 1.5996c5.085-1.546 8.4995-6.1518 8.502-11.459 0-1.5491-.2983-2.8706-.6504-3.8926-.0432-.1212-.0873-.2422-.1309-.3633h-.002C21.4577 3.0954 17.0444.0195 11.998.0195ZM8.4336 7.8906c-1.1999 0-2.1747.3852-2.9805 1.1758-.8007.7856-1.205 1.7736-1.205 2.9356 0 1.1544.4068 2.1368 1.205 2.9199.8058.7906 1.7806 1.1738 2.9805 1.1738 1.705 0 3.1556-.955 3.7871-2.4883l.0332-.082-1.6289-.5547c-.168.4563-.7552 1.4883-2.1914 1.4883-.6745 0-1.2437-.2344-1.6934-.6992-.4572-.4699-.6875-1.0632-.6875-1.7578 0-.6998.2253-1.2809.6875-1.7735.4522-.4648 1.019-.7012 1.6934-.7012 1.438 0 2.0238 1.0815 2.1934 1.4883l1.627-.5527-.0333-.084c-.629-1.5358-2.082-2.4883-3.7871-2.4883Z"/></svg>`,
+  playwright: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M23.996 7.462c-.056.837-.257 2.135-.716 3.85c-.995 3.715-4.27 10.874-10.42 9.227c-6.15-1.65-5.407-9.487-4.412-13.201c.46-1.716.934-2.94 1.305-3.694c.42-.853.846-.289 1.815.523c.684.573 2.41 1.791 5.011 2.488s4.706.506 5.583.352c1.245-.219 1.897-.494 1.834.455m-9.807 3.863s-.127-1.819-1.773-2.286c-1.644-.467-2.613 1.04-2.613 1.04Zm4.058 4.539l-7.769-2.172s.446 2.306 3.338 3.153c2.862.836 4.43-.98 4.43-.981Zm2.701-2.51s-.13-1.818-1.773-2.286c-1.644-.469-2.612 1.038-2.612 1.038ZM8.57 18.23c-4.749 1.279-7.261-4.224-8.021-7.08C.197 9.831.044 8.832.003 8.188c-.047-.73.455-.52 1.415-.354c.677.118 2.3.261 4.308-.28a11.3 11.3 0 0 0 2.41-.956q-.087.295-.17.61c-.433 1.618-.827 4.055-.632 6.426c-1.976.732-2.267 2.423-2.267 2.423l2.524-.715c.227 1.002.6 1.987 1.15 2.838zm-4.188-6.298c1.265-.333 1.363-1.631 1.363-1.631l-3.374.888s.745 1.076 2.01.743Z"/></svg>`,
+  vitest: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M11.545 23.3a.613.613 0 0 1-.895.197L.252 15.936A.61.61 0 0 1 0 15.439V6.325c0-.502.569-.792.975-.497l6.358 4.624c.594.433 1.432.25 1.793-.39L14.393.7a.62.62 0 0 1 .535-.314h8.455a.613.613 0 0 1 .537.916z"/></svg>`,
+  figma: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M15.852 8.981h-4.588V0h4.588c2.476 0 4.49 2.014 4.49 4.49s-2.014 4.491-4.49 4.491zM12.735 7.51h3.117c1.665 0 3.019-1.355 3.019-3.019s-1.355-3.019-3.019-3.019h-3.117V7.51zm0 1.471H8.148c-2.476 0-4.49-2.014-4.49-4.49S5.672 0 8.148 0h4.588v8.981zm-4.587-7.51c-1.665 0-3.019 1.355-3.019 3.019s1.354 3.02 3.019 3.02h3.117V1.471H8.148zm4.587 15.019H8.148c-2.476 0-4.49-2.014-4.49-4.49s2.014-4.49 4.49-4.49h4.588v8.98zM8.148 8.981c-1.665 0-3.019 1.355-3.019 3.019s1.355 3.019 3.019 3.019h3.117V8.981H8.148zM8.172 24c-2.489 0-4.515-2.014-4.515-4.49s2.014-4.49 4.49-4.49h4.588v4.441c0 2.503-2.047 4.539-4.563 4.539zm-.024-7.51a3.023 3.023 0 0 0-3.019 3.019c0 1.665 1.365 3.019 3.044 3.019 1.705 0 3.093-1.376 3.093-3.068v-2.97H8.148zm7.704 0h-.098c-2.476 0-4.49-2.014-4.49-4.49s2.014-4.49 4.49-4.49h.098c2.476 0 4.49 2.014 4.49 4.49s-2.014 4.49-4.49 4.49zm-.097-7.509c-1.665 0-3.019 1.355-3.019 3.019s1.355 3.019 3.019 3.019h.098c1.665 0 3.019-1.355 3.019-3.019s-1.355-3.019-3.019-3.019h-.098z"/></svg>`,
+  resend: `<svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M14.679 0c4.648 0 7.413 2.765 7.413 6.434s-2.765 6.434-7.413 6.434H12.33L24 24h-8.245l-8.88-8.44c-.636-.588-.93-1.273-.93-1.86 0-.831.587-1.565 1.713-1.883l4.574-1.224c1.737-.465 2.936-1.81 2.936-3.572 0-2.153-1.761-3.4-3.939-3.4H0V0z"/></svg>`,
 };
 
 const arrowIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3.33 8h9.33M8.67 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
@@ -165,6 +174,9 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
         </button>
         <nav aria-label="Main navigation">
           <ul class="header__nav" id="main-nav">
+            <li>
+              <a href="/docs/">Docs</a>
+            </li>
             <li>
               <a href="#features">Features</a>
             </li>
@@ -332,7 +344,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
         <p class="section__subtitle">
           Run <code>npx opencastle init</code> and follow the guided onboarding.
           Select your IDEs, tech tools, and team tools.
-          The CLI installs only the skills and MCP servers you need.
+          The CLI installs only the plugins you need.
         </p>
         <div class="code-block">
           <div class="code-block__header">
@@ -345,7 +357,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
 <span class="code-folder">$ npx opencastle init</span>
 
 <span class="code-comment"># Select your IDEs:        VS Code / Cursor / Claude Code / OpenCode</span>
-<span class="code-comment"># Select Tech Tools:       Sanity / Contentful / Strapi / Supabase / Convex / Vercel / NX</span>
+<span class="code-comment"># Select Tech Tools:       Sanity / Supabase / Prisma / Vercel / Netlify / NX / Turborepo / ...</span>
 <span class="code-comment"># Select Team Tools:       Linear / Jira / Slack / Teams</span>
 
 <span class="code-comment"># Other commands</span>
@@ -494,12 +506,12 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
       <div class="container">
         <span class="section__label">Pre-Configured Integrations</span>
         <h2 class="section__title">
-          MCP servers, ready to connect.
+          Plugins for your entire stack.
         </h2>
         <p class="section__subtitle">
-          OpenCastle ships with 12 Model Context Protocol server configs.
-          Choose your stack during onboarding — the CLI includes only the
-          servers you need. Agents get direct tool access, no manual wiring.
+          OpenCastle ships with 20+ plugins — each bundling skills, MCP
+          server configs, and agent tool mappings for popular tools and services.
+          Choose your stack during onboarding and the CLI wires everything up.
         </p>
         <div class="integrations-grid">
           <div class="integration-card">
@@ -584,6 +596,62 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
             <div class="integration-card__info">
               <span class="integration-card__name">Chrome DevTools</span>
               <span class="integration-card__desc">Browser testing &amp; visual validation</span>
+            </div>
+          </div>
+          <div class="integration-card">
+            <Fragment set:html={integrationIcons.netlify} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Netlify</span>
+              <span class="integration-card__desc">Deployment &amp; serverless functions</span>
+            </div>
+          </div>
+          <div class="integration-card">
+            <Fragment set:html={integrationIcons.turborepo} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Turborepo</span>
+              <span class="integration-card__desc">Monorepo build system &amp; caching</span>
+            </div>
+          </div>
+          <div class="integration-card">
+            <Fragment set:html={integrationIcons.prisma} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Prisma</span>
+              <span class="integration-card__desc">Type-safe ORM &amp; migrations</span>
+            </div>
+          </div>
+          <div class="integration-card">
+            <Fragment set:html={integrationIcons.cypress} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Cypress</span>
+              <span class="integration-card__desc">E2E &amp; component testing</span>
+            </div>
+          </div>
+          <div class="integration-card">
+            <Fragment set:html={integrationIcons.playwright} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Playwright</span>
+              <span class="integration-card__desc">Cross-browser E2E testing</span>
+            </div>
+          </div>
+          <div class="integration-card">
+            <Fragment set:html={integrationIcons.vitest} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Vitest</span>
+              <span class="integration-card__desc">Vite-native unit testing</span>
+            </div>
+          </div>
+          <div class="integration-card">
+            <Fragment set:html={integrationIcons.figma} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Figma</span>
+              <span class="integration-card__desc">Design tokens &amp; component specs</span>
+            </div>
+          </div>
+          <div class="integration-card">
+            <Fragment set:html={integrationIcons.resend} />
+            <div class="integration-card__info">
+              <span class="integration-card__name">Resend</span>
+              <span class="integration-card__desc">Transactional email &amp; React templates</span>
             </div>
           </div>
         </div>
@@ -730,11 +798,11 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
         </p>
         <div class="stats-row" style="margin-top: 32px">
           <div class="stat">
-            <div class="stat__value">18</div>
+            <div class="stat__value">19</div>
             <div class="stat__label">Specialist Agents</div>
           </div>
           <div class="stat">
-            <div class="stat__value">34</div>
+            <div class="stat__value">45</div>
             <div class="stat__label">On-Demand Skills</div>
           </div>
           <div class="stat">
@@ -874,6 +942,9 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
           MIT License · Filip Mares · 2026
         </span>
         <ul class="footer__links">
+          <li>
+            <a href="/docs/">Docs</a>
+          </li>
           <li>
             <a
               href="https://github.com/etylsarin/opencastle"

@@ -69,7 +69,7 @@ The result is a single unified view of the project's tech stack:
 
 **Still verify:** `repoInfo` detects presence, not configuration details. You still need to read the actual config files for schemas, IDs, routes, etc.
 
-The skill matrix (`.github/customizations/agents/skill-matrix.md`) will already have the `cms` and `database` rows pre-filled based on this selection. The appropriate task management skill (`linear-task-management` for Linear, `jira-management` for Jira) and notifications skill (`slack-notifications` for Slack, `teams-notifications` for Teams) will already be installed. Verify they are correct and fill in any remaining empty rows.
+The skill matrix (`.github/customizations/agents/skill-matrix.json`) will already have the `cms` and `database` binding entries pre-filled based on this selection. The appropriate task management skill (`linear-task-management` for Linear, `jira-management` for Jira) and notifications skill (`slack-notifications` for Slack, `teams-notifications` for Teams) will already be installed. Verify they are correct and fill in any remaining empty bindings.
 
 ## Workflow
 
@@ -130,6 +130,7 @@ Files are organized into subdirectories by domain:
 ├── AGENT-PERFORMANCE.md       # Agent success tracking & log query recipes
 ├── agents/                    # Agent framework config
 │   ├── agent-registry.md
+│   ├── skill-matrix.json
 │   └── skill-matrix.md
 ├── stack/                     # Tech stack config
 │   ├── api-config.md
@@ -173,9 +174,10 @@ Files are organized into subdirectories by domain:
    - Scope descriptions
    - File partition examples
 
-7. **`agents/skill-matrix.md`** — If `.github/skills/` exists with skill definitions:
-   - Map of capability slots to skill names per agent role
-   - Which agents load which skills
+7. **`agents/skill-matrix.json`** — If `.github/skills/` exists with skill definitions:
+   - Capability slot bindings and `directSkills` per agent role (in JSON format)
+   - Which agents load which skills (slots for plugin skills, directSkills for process skills)
+   - Note: `skill-matrix.md` is a companion documentation file — the JSON is the source of truth
 
 #### `stack/` — Tech Stack Config (create only for detected technologies)
 

@@ -7,7 +7,7 @@ export const config: PluginConfig = {
   subCategory: 'deployment',
   label: 'Vercel',
   hint: 'Deployment and hosting platform',
-  skillName: null,
+  skillName: 'vercel-deployment',
   mcpServerKey: 'Vercel',
   mcpConfig: {
     type: 'http',
@@ -27,7 +27,6 @@ export const config: PluginConfig = {
       'vercel/get_runtime_logs', 'vercel/list_deployments', 'vercel/list_projects',
     ],
   },
-  docsUrl: null,
+  docsUrl: 'https://www.opencastle.dev/docs/plugins#vercel',
   officialDocs: 'https://vercel.com/docs',
-  mcpPackage: null,
 };

@@ -20,16 +20,7 @@ You are an SEO specialist focused on technical SEO implementation — meta tags,
 
 ## Skills
 
-### Capability Slots
-
-Resolve via [skill-matrix.md](.github/customizations/agents/skill-matrix.md).
-
-- **framework** — Framework metadata API, routing conventions, rendering model (SSR/SSG/ISR)
-- **cms** — Content model structure for generating structured data from venue documents
-
-## Technical SEO Areas
-
-Load the **seo-patterns** skill for comprehensive technical SEO guidelines covering meta tags, structured data, sitemaps, URL strategy, and rendering.
+Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
 
 ## Guidelines
 
