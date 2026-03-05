@@ -1,8 +1,9 @@
 ---
-description: 'Codebase exploration specialist for deep research, pattern discovery, git archaeology, and context gathering before implementation. Economy-tier agent optimized for search-heavy tasks.'
+description: 'Codebase exploration specialist for deep research, pattern discovery, git archaeology, and context gathering before implementation. Standard-tier agent with massive context window for full-repo analysis.'
 name: 'Researcher'
-model: GPT-5 mini
+model: Gemini 3.1 Pro (Preview)
 tools: ['search/codebase', 'search/textSearch', 'search/fileSearch', 'search/usages', 'read/readFile', 'search/listDirectory', 'web/fetch', 'execute/runInTerminal', 'read/terminalLastCommand']
+user-invocable: false
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

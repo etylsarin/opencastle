@@ -148,7 +148,9 @@ If task tracker MCP tools are not available in the current session, do NOT block
 
 1. **Document planned issues** in your output with the title, description, and acceptance criteria you would have used
 2. **Proceed with implementation** — the work is still valuable without a ticket number
-3. **Use `TAS-PENDING` as a placeholder** in commit messages and PR descriptions
+3. **Placeholder value for `tracker_issue`:**
+   - **No tracker configured** (no `task-management` slot bound in `skill-matrix.json`) → use `"N/A"`
+   - **Tracker configured but tools unavailable** → use the project prefix + `PENDING` (e.g., `"TAS-PENDING"`)
 4. **Ask the user** to create the issues manually if tracking is critical for the task
 5. After implementation, update commit messages and PR descriptions when issue IDs become available
 
@@ -183,25 +185,27 @@ echo '{"timestamp":"2026-03-01T14:00:00Z","agent":"Developer","model":"claude-op
 
 **Delegation record** (Team Lead only, **immediately after each delegation — not at session end**):
 ```bash
-echo '{"timestamp":"2026-03-01T14:00:00Z","session_id":"feat/prj-57","agent":"Developer","model":"gpt-5.3-codex","tier":"fast","mechanism":"sub-agent","linear_issue":"PRJ-57","outcome":"success","retries":0,"phase":2,"file_partition":["src/components/"]}' >> .github/customizations/logs/delegations.ndjson
+echo '{"timestamp":"2026-03-01T14:00:00Z","session_id":"feat/prj-57","agent":"Developer","model":"gemini-3.1-pro","tier":"standard","mechanism":"sub-agent","tracker_issue":"PRJ-57","outcome":"success","retries":0,"phase":2,"file_partition":["src/components/"]}' >> .github/customizations/logs/delegations.ndjson
 ```
 Verify: `tail -1 .github/customizations/logs/delegations.ndjson`
 
+> **`model` and `tier` must reflect the delegated agent's assignment from the agent registry** — not the Team Lead's own model.
+
 **Fast review record** (Team Lead, **immediately after each fast review**):
 ```bash
-echo '{"timestamp":"2026-03-01T14:30:00Z","linear_issue":"PRJ-42","agent":"Developer","reviewer_model":"gpt-5-mini","verdict":"pass","attempt":1,"issues_critical":0,"issues_major":0,"issues_minor":2,"confidence":"high","escalated":false,"duration_sec":45}' >> .github/customizations/logs/reviews.ndjson
+echo '{"timestamp":"2026-03-01T14:30:00Z","tracker_issue":"PRJ-42","agent":"Developer","reviewer_model":"gpt-5-mini","verdict":"pass","attempt":1,"issues_critical":0,"issues_major":0,"issues_minor":2,"confidence":"high","escalated":false,"duration_sec":45}' >> .github/customizations/logs/reviews.ndjson
 ```
 Verify: `tail -1 .github/customizations/logs/reviews.ndjson`
 
 **Panel record** (Panel runner, **immediately after each panel majority vote**):
 ```bash
-echo '{"timestamp":"2026-03-01T15:00:00Z","panel_key":"auth-review","verdict":"pass","pass_count":2,"block_count":1,"must_fix":0,"should_fix":3,"reviewer_model":"claude-opus-4-6","weighted":false,"attempt":1,"linear_issue":"PRJ-42","artifacts_count":5}' >> .github/customizations/logs/panels.ndjson
+echo '{"timestamp":"2026-03-01T15:00:00Z","panel_key":"auth-review","verdict":"pass","pass_count":2,"block_count":1,"must_fix":0,"should_fix":3,"reviewer_model":"claude-opus-4-6","weighted":false,"attempt":1,"tracker_issue":"PRJ-42","artifacts_count":5}' >> .github/customizations/logs/panels.ndjson
 ```
 Verify: `tail -1 .github/customizations/logs/panels.ndjson`
 
 **Dispute record** (Team Lead, **immediately after each dispute**):
 ```bash
-echo '{"timestamp":"2026-03-01T16:00:00Z","dispute_id":"DSP-001","linear_issue":"PRJ-42","priority":"high","trigger":"panel-3x-block","implementing_agent":"Developer","reviewing_agents":["Reviewer","Panel (3x)"],"total_attempts":6,"est_tokens_spent":120000,"status":"pending","resolution_option_chosen":null,"resolved_at":null}' >> .github/customizations/logs/disputes.ndjson
+echo '{"timestamp":"2026-03-01T16:00:00Z","dispute_id":"DSP-001","tracker_issue":"PRJ-42","priority":"high","trigger":"panel-3x-block","implementing_agent":"Developer","reviewing_agents":["Reviewer","Panel (3x)"],"total_attempts":6,"est_tokens_spent":120000,"status":"pending","resolution_option_chosen":null,"resolved_at":null}' >> .github/customizations/logs/disputes.ndjson
 ```
 Verify: `tail -1 .github/customizations/logs/disputes.ndjson`
 
@@ -231,7 +235,13 @@ If ANY required log is missing, append it NOW before responding.
 **Every agent must learn from mistakes and share knowledge.** This prevents the same pitfalls from being repeated across sessions.
 
 1. **Before starting work:** Read `.github/customizations/LESSONS-LEARNED.md` — apply relevant lessons proactively. This is NOT optional.
-2. **During execution:** If you retry a command/tool with a different approach and it works, **immediately** add a lesson entry to `.github/customizations/LESSONS-LEARNED.md`
+2. **During execution:** If any of these triggers occur, **immediately** add a lesson entry to `.github/customizations/LESSONS-LEARNED.md`:
+   - Retry with different approach that works
+   - Tool call fails unexpectedly (discover correct parameter format)
+   - Workaround needed for platform limitation
+   - Docs are misleading (reality differs from documentation)
+   - Configuration surprise (default behavior differs from expectation)
+   - Error message is unhelpful (real cause was something else)
 3. **Update source files:** If the lesson reveals a gap in instruction/skill files, update those files too
 4. **Update instructions:** Proactively suggest updates to `.github/instructions/` or `.github/skills/` files when:
    - The user had to intervene or correct the agent's approach

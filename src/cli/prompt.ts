@@ -229,8 +229,11 @@ function selectInteractive(
           const marker = active ? '✔' : ' ';
           stdout.write(`${ERASE_LINE}\r    ${marker} ${label}\n`);
         }
-        // Clear leftover lines from scrolled render
-        stdout.write(`${CSI}J`);
+        // Clear leftover lines only when final render has fewer lines
+        const finalLines = end - start;
+        if (finalLines < lastRenderedLines) {
+          stdout.write(`${CSI}J`);
+        }
         stdout.write('\n');
         resolve(options[cursor].value);
         return;
@@ -246,6 +249,7 @@ function selectInteractive(
 
     function cleanup(): void {
       stdin.removeListener('data', onData);
+      stdin.pause();
       stdin.setRawMode(false);
       stdout.write(SHOW_CURSOR);
       // Resume readline for subsequent confirm() calls
@@ -434,8 +438,11 @@ function multiselectInteractive(
             : `\x1B[2m${options[i].label}${hint}\x1B[0m`;
           stdout.write(`${ERASE_LINE}\r      [${checkbox}] ${label}\n`);
         }
-        // Clear leftover lines from scrolled render
-        stdout.write(`${CSI}J`);
+        // Clear leftover lines only when final render has fewer lines
+        const finalLines = end - start;
+        if (finalLines < lastRenderedLines) {
+          stdout.write(`${CSI}J`);
+        }
         stdout.write('\n');
         resolve(Array.from(selected).sort().map(i => options[i].value));
         return;
@@ -451,6 +458,7 @@ function multiselectInteractive(
 
     function cleanup(): void {
       stdin.removeListener('data', onData);
+      stdin.pause();
       stdin.setRawMode(false);
       stdout.write(SHOW_CURSOR);
       if (_rl) _rl.resume();

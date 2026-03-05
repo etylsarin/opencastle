@@ -8,24 +8,24 @@ const DEMO_URL = 'https://www.opencastle.dev/dashboard';
 
 const agents = [
   { name: 'Team Lead', tier: 'premium' },
-  { name: 'Architect', tier: 'premium' },
-  { name: 'Security Expert', tier: 'premium' },
-  { name: 'Session Guard', tier: 'premium' },
-  { name: 'Developer', tier: 'standard' },
-  { name: 'UI/UX Expert', tier: 'standard' },
+  { name: 'Developer', tier: 'quality' },
+  { name: 'UI/UX Expert', tier: 'quality' },
+  { name: 'Security Expert', tier: 'quality' },
+  { name: 'Architect', tier: 'quality' },
   { name: 'Content Engineer', tier: 'standard' },
   { name: 'Database Engineer', tier: 'standard' },
   { name: 'Performance Expert', tier: 'standard' },
   { name: 'API Designer', tier: 'standard' },
-  { name: 'Testing Expert', tier: 'utility' },
-  { name: 'Data Expert', tier: 'utility' },
-  { name: 'DevOps Expert', tier: 'utility' },
-  { name: 'Release Manager', tier: 'utility' },
+  { name: 'Researcher', tier: 'standard' },
+  { name: 'Testing Expert', tier: 'fast' },
+  { name: 'Data Expert', tier: 'fast' },
+  { name: 'DevOps Expert', tier: 'fast' },
+  { name: 'Release Manager', tier: 'fast' },
   { name: 'Documentation Writer', tier: 'economy' },
-  { name: 'Researcher', tier: 'economy' },
   { name: 'Reviewer', tier: 'economy' },
   { name: 'Copywriter', tier: 'economy' },
   { name: 'SEO Specialist', tier: 'economy' },
+  { name: 'Session Guard', tier: 'economy' },
 ];
 
 const features = [
@@ -306,7 +306,16 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
             </div>
             <div class="tier-card__model">Claude Opus 4.6</div>
             <div class="tier-card__use">
-              Architecture, security, orchestration
+              Orchestration
+            </div>
+          </div>
+          <div class="tier-card">
+            <div class="tier-card__tier tier-card__tier--quality">
+              Quality
+            </div>
+            <div class="tier-card__model">Claude Sonnet 4.6</div>
+            <div class="tier-card__use">
+              Coding, UI, security, architecture
             </div>
           </div>
           <div class="tier-card">
@@ -315,14 +324,14 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
             </div>
             <div class="tier-card__model">Gemini 3.1 Pro</div>
             <div class="tier-card__use">
-              Features, schemas, UI
+              Analysis, schemas, exploration
             </div>
           </div>
           <div class="tier-card">
-            <div class="tier-card__tier tier-card__tier--utility">Utility</div>
+            <div class="tier-card__tier tier-card__tier--fast">Fast</div>
             <div class="tier-card__model">GPT-5.3-Codex</div>
             <div class="tier-card__use">
-              Testing, pipelines, deploy
+              Testing, pipelines, terminal
             </div>
           </div>
           <div class="tier-card">
@@ -330,7 +339,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
               Economy
             </div>
             <div class="tier-card__model">GPT-5 mini</div>
-            <div class="tier-card__use">Documentation, SEO</div>
+            <div class="tier-card__use">Docs, reviews, SEO</div>
           </div>
         </div>
       </div>

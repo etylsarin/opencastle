@@ -1,8 +1,9 @@
 ---
 description: 'Software architect for strategic architecture decisions, roadmap planning, ADRs, system design, and technology evaluation.'
 name: 'Architect'
-model: Claude Opus 4.6
+model: Claude Sonnet 4.6
 tools: ['search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'search', 'search/usages', 'execute/runInTerminal', 'execute/getTerminalOutput', 'read/terminalLastCommand']
+user-invocable: false
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

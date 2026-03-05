@@ -86,7 +86,7 @@ Add `--dry-run` to any command to preview what it would change without writing f
 
 **Quality gates.** Fast review after every step. Panel majority vote for high-stakes changes. Lint, test, build checks.
 
-**Cost-aware routing.** Picks the right model tier (Premium → Economy) based on task complexity.
+**Cost-aware routing.** Picks the right model tier (Premium → Quality → Standard → Fast → Economy) based on task complexity.
 
 **Self-improving.** Agents capture lessons and graduate them into permanent instructions.
 

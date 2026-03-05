@@ -3,6 +3,7 @@ description: "DevOps expert for deployments, CI/CD integration, cron jobs, secur
 name: "DevOps Expert"
 model: GPT-5.3-Codex
 tools: ["search/changes", "search/codebase", "edit/editFiles", "web/fetch", "vscode/getProjectSetupInfo", "vscode/installExtension", "vscode/newWorkspace", "vscode/runCommand", "read/problems", "execute/getTerminalOutput", "execute/runInTerminal", "read/terminalLastCommand", "read/terminalSelection", "search", "execute/testFailure", "search/usages"]
+user-invocable: false
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

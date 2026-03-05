@@ -1,7 +1,8 @@
 ---
 description: 'Lightweight compliance agent called by Team Lead as its final action. Verifies observability logs, lessons, and quality gates — then provides ready-to-run fix commands for any gaps.'
 name: 'Session Guard'
-model: Claude Opus 4.6
+model: GPT-5 mini
+user-invocable: false
 tools: [read/readFile, search/textSearch, search/fileSearch, execute/runInTerminal, execute/getTerminalOutput, read/terminalLastCommand]
 ---
 
@@ -35,7 +36,7 @@ For each delegation in the session summary, verify a matching record exists in `
 
 **Fix command template:**
 ```bash
-echo '{"timestamp":"<ISO>","session_id":"<branch>","agent":"<name>","model":"<model>","tier":"<tier>","mechanism":"<sub-agent|background>","outcome":"<success|failure>","retries":0,"phase":N,"file_partition":["<paths>"]}' >> .github/customizations/logs/delegations.ndjson
+(Fill in values from the session summary — see the Team Lead agent file for the canonical JSON schema)
 ```
 
 Also verify each delegation record includes `session_id` (branch name). Records missing `session_id` should be flagged.

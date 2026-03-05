@@ -48,8 +48,8 @@ Load on-demand skills **only when their phase is reached** — not upfront.
 | Skill | Load at |
 |-------|---------|
 | **team-lead-reference** | Session start (always) — model routing, agent registry, pre-delegation checks, cost tracking, DLQ, deepen-plan |
-| **session-checkpoints** | Session start (always) — save/restore state across sessions |
-| **agent-hooks** | Session start (always) — lifecycle hooks (start, end, pre/post-delegate) |
+| **session-checkpoints** | On Session Resume, or when saving checkpoints — not always |
+| **agent-hooks** | Step 3 — delegation prompt templates for specialist agents |
 | **task-management** | Step 2 — tracker conventions, issue naming, labels, priorities |
 | **decomposition** | Step 2–3 — dependency resolution, delegation spec templates, prompt examples |
 | **orchestration-protocols** | Step 4+ — steering, background agents, parallel research, health-checks, escalation |
@@ -84,6 +84,8 @@ Delegate via `runSubagent` (inline) or background sessions.
 | **Reviewer** | Code review, acceptance criteria verification | Review implementation against acceptance criteria. Report PASS or BLOCK. |
 | **Session Guard** | End-of-session compliance | Called as your last action before every response. |
 
+> **⚠️ Always reference agents by their exact `name` when delegating.** Write "Use the Developer agent to..." or "Use the Researcher agent to..." in your delegation prompt. This ensures VS Code routes the sub-agent to the correct custom agent with its assigned model and tools. If you don't name the agent, the sub-agent inherits the Team Lead's Premium model — wasting expensive requests on Economy/Standard tasks.
+
 ## Delegation
 
 ### Sub-Agents (Inline) — `runSubagent`
@@ -95,13 +97,15 @@ Synchronous — blocks until result. Use when:
 - You need to review/validate output before continuing
 - Small, well-scoped implementation (<5 min)
 
-Call with a detailed prompt including objective, file paths, acceptance criteria, and what to return in the result.
+When calling `runSubagent`, always specify which custom agent to use by name: *"Use the **[Agent Name]** agent to [task]."* This routes the sub-agent to the named agent's model and tools instead of inheriting the Team Lead's Premium model. Include objective, file paths, acceptance criteria, and what to return in the result.
 
 **After each sub-agent returns**, log the delegation record before doing anything else (before review, before verification):
 ```bash
-echo '{"timestamp":"<ISO-NOW>","session_id":"<branch>","agent":"<name>","model":"<model>","tier":"<tier>","mechanism":"sub-agent","linear_issue":"<issue-or-N/A>","outcome":"<success|partial|failed>","retries":0,"phase":<N>,"file_partition":["<paths>"]}' >> .github/customizations/logs/delegations.ndjson
+echo '{"timestamp":"<ISO-NOW>","session_id":"<branch>","agent":"<name>","model":"<model>","tier":"<tier>","mechanism":"sub-agent","tracker_issue":"<issue-or-N/A>","outcome":"<success|partial|failed>","retries":0,"phase":<N>,"file_partition":["<paths>"]}' >> .github/customizations/logs/delegations.ndjson
 ```
 Verify: `tail -1 .github/customizations/logs/delegations.ndjson`
+
+> **`model` and `tier` must come from the agent registry** — not the Team Lead's own model. Look up the agent in [agent-registry.md](../customizations/agents/agent-registry.md) and use their assigned model and tier. For example, delegating to Developer → `"model":"claude-sonnet-4-6","tier":"quality"`, not the Team Lead's `claude-opus-4-6`.
 
 ### Background Agents — Delegate Session
 
@@ -115,9 +119,11 @@ Spawn via: Delegate Session → Background → Select agent → Enter prompt wit
 
 **After spawning**, log the delegation record before spawning another agent or doing any other work:
 ```bash
-echo '{"timestamp":"<ISO-NOW>","session_id":"<branch>","agent":"<name>","model":"<model>","tier":"<tier>","mechanism":"background","linear_issue":"<issue-or-N/A>","outcome":"pending","retries":0,"phase":<N>,"file_partition":["<paths>"]}' >> .github/customizations/logs/delegations.ndjson
+echo '{"timestamp":"<ISO-NOW>","session_id":"<branch>","agent":"<name>","model":"<model>","tier":"<tier>","mechanism":"background","tracker_issue":"<issue-or-N/A>","outcome":"pending","retries":0,"phase":<N>,"file_partition":["<paths>"]}' >> .github/customizations/logs/delegations.ndjson
 ```
 Verify: `tail -1 .github/customizations/logs/delegations.ndjson`
+
+> **`model` and `tier` must come from the agent registry** — see note in Sub-Agents section above.
 
 **Rule of thumb:** Sub-agents for the critical path. Background agents for parallel work off the critical path.
 
@@ -132,9 +138,10 @@ Parallel agents must never touch the same files. Map file/directory ownership be
 | **Economy** | GPT-5 mini | ~5K–15K | 2–5 min |
 | **Fast** | GPT-5.3-Codex | ~10K–40K | 5–15 min |
 | **Standard** | Gemini 3.1 Pro | ~15K–50K | 8–20 min |
+| **Quality** | Claude Sonnet 4.6 | ~30K–80K | 10–25 min |
 | **Premium** | Claude Opus 4.6 | ~50K–150K | 15–30 min |
 
-**Quick reference:** Premium for security/architecture, Standard for features/schemas, Fast for tests/data, Economy for docs.
+**Quick reference:** Premium for orchestration, Quality for coding/UI/security/architecture, Standard for analysis/schemas/cost-sensitive, Fast for tests/data/terminal, Economy for docs.
 
 - Target 5–7 delegations per session. At 8 → warn. At 9 → checkpoint. At 10+ → STOP and save state.
 - Max 3 delegation attempts per task. After 3 failures → Dead Letter Queue + Architect.
@@ -197,7 +204,7 @@ For complex tasks (score 5+), load the **decomposition** skill for the Delegatio
 ```
 For each task:
   1. Move issue → In Progress
-  2. Delegate to specialist agent
+  2. Delegate to specialist agent by name (e.g., "Use the Developer agent to...")
   3. Log delegation to delegations.ndjson (immediately — verify with `tail -1`)
   4. Monitor for drift (load orchestration-protocols skill)
   5. Verify output:
@@ -272,3 +279,4 @@ See [shared-delivery-phase.md](../agent-workflows/shared-delivery-phase.md) for 
 14. Read `LESSONS-LEARNED.md` before delegating — include relevant lessons in prompts
 15. Panel BLOCK = fix request, not stop signal — extract MUST-FIX items and re-delegate immediately
 16. Failed delegations → DLQ. Unresolvable conflicts → Disputes. Different files, different purposes.
+17. Always name the target agent explicitly — "Use the [Agent Name] agent to..." ensures correct model routing

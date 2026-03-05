@@ -43,7 +43,7 @@ const TIERS: Array<{ name: string; weight: number }> = [
 
 const _MECHANISMS = ['sub-agent', 'background'];
 
-const LINEAR_ISSUES = Array.from({ length: 30 }, (_, i) => `TAS-${i + 30}`);
+const TRACKER_ISSUES = Array.from({ length: 30 }, (_, i) => `TAS-${i + 30}`);
 
 const FILE_PARTITIONS = [
   ['libs/ui-kit/'],
@@ -160,7 +160,7 @@ interface SessionRecord {
   agent: string;
   model: string;
   task: string;
-  linear_issue: string;
+  tracker_issue: string;
   outcome: string;
   duration_min: number;
   files_changed: number;
@@ -172,7 +172,7 @@ interface SessionRecord {
 function generateSessions(count: number): SessionRecord[] {
   const records: SessionRecord[] = [];
   for (let i = 0; i < count; i++) {
-    const issue = rng.pick(LINEAR_ISSUES);
+    const issue = rng.pick(TRACKER_ISSUES);
     const outcomeRoll = rng.next();
     const outcome = outcomeRoll < 0.7 ? 'success' : outcomeRoll < 0.9 ? 'partial' : 'failed';
     const retries = outcome === 'failed' ? rng.int(1, 3) : outcome === 'partial' ? rng.int(0, 2) : rng.int(0, 1);
@@ -184,7 +184,7 @@ function generateSessions(count: number): SessionRecord[] {
       agent: rng.pick(AGENTS),
       model: rng.pick(MODELS),
       task: `${issue}: ${rng.pick(TASK_DESCRIPTIONS)}`,
-      linear_issue: issue,
+      tracker_issue: issue,
       outcome,
       duration_min: rng.int(5, 45),
       files_changed: rng.int(1, 15),
@@ -205,7 +205,7 @@ interface DelegationRecord {
   model: string;
   tier: string;
   mechanism: string;
-  linear_issue: string;
+  tracker_issue: string;
   outcome: string;
   retries: number;
   phase: number;
@@ -215,7 +215,7 @@ interface DelegationRecord {
 function generateDelegations(count: number): DelegationRecord[] {
   const records: DelegationRecord[] = [];
   for (let i = 0; i < count; i++) {
-    const issue = rng.pick(LINEAR_ISSUES);
+    const issue = rng.pick(TRACKER_ISSUES);
     const outcomeRoll = rng.next();
     const outcome = outcomeRoll < 0.75 ? 'success' : outcomeRoll < 0.9 ? 'partial' : 'failed';
 
@@ -226,7 +226,7 @@ function generateDelegations(count: number): DelegationRecord[] {
       model: rng.pick(MODELS),
       tier: rng.weighted(TIERS),
       mechanism: rng.next() < 0.6 ? 'sub-agent' : 'background',
-      linear_issue: issue,
+      tracker_issue: issue,
       outcome,
       retries: outcome === 'failed' ? rng.int(1, 2) : rng.int(0, 1),
       phase: rng.int(1, 4),
@@ -249,7 +249,7 @@ interface PanelRecord {
   reviewer_model: string;
   weighted: boolean;
   attempt: number;
-  linear_issue: string;
+  tracker_issue: string;
   artifacts_count: number;
   report_path: string;
 }
@@ -261,7 +261,7 @@ function generatePanels(count: number): PanelRecord[] {
     const isPass = rng.next() < 0.75;
     const passCount = isPass ? rng.int(2, 3) : rng.int(0, 1);
     const blockCount = 3 - passCount;
-    const issue = rng.pick(LINEAR_ISSUES);
+    const issue = rng.pick(TRACKER_ISSUES);
 
     records.push({
       timestamp: generateTimestamp(i, count, START_DATE, END_DATE),
@@ -274,7 +274,7 @@ function generatePanels(count: number): PanelRecord[] {
       reviewer_model: rng.pick(MODELS),
       weighted: rng.next() > 0.7,
       attempt: isPass ? 1 : rng.int(1, 3),
-      linear_issue: issue,
+      tracker_issue: issue,
       artifacts_count: rng.int(3, 20),
       report_path: `docs/ai-agents/panel/${panelKey}.md`,
     });

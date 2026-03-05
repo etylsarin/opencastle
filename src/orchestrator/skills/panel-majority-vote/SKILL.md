@@ -84,7 +84,7 @@ The isolated runner subagent must:
 
 7. Log the panel result
   - Append a JSON line to `.github/customizations/logs/panels.ndjson` with the panel record schema (see `.github/customizations/logs/README.md`).
-  - Include: `timestamp`, `panel_key`, `verdict`, `pass_count`, `block_count`, `must_fix`, `should_fix`, `reviewer_model`, `weighted`, `attempt`, `linear_issue`, `artifacts_count`, `report_path`.
+  - Include: `timestamp`, `panel_key`, `verdict`, `pass_count`, `block_count`, `must_fix`, `should_fix`, `reviewer_model`, `weighted`, `attempt`, `tracker_issue`, `artifacts_count`, `report_path`.
   - Example:
     ```bash
     echo '{"timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","panel_key":"instruction-refactoring","verdict":"pass","pass_count":3,"block_count":0,"must_fix":0,"should_fix":5,"reviewer_model":"claude-opus-4-6","weighted":false,"attempt":1,"artifacts_count":14,"report_path":".github/customizations/logs/panel/instruction-refactoring.md"}' >> .github/customizations/logs/panels.ndjson
@@ -99,9 +99,9 @@ Finally: ensure whatever produced the claim being verified links the consolidate
 ## Model Selection for Reviewers
 
 Choose reviewer models based on the domain being reviewed:
-- **Security, architecture, complex logic** → Premium (Claude Opus 4.6) for all 3 reviewers
+- **Security, architecture, complex logic** → Quality (Claude Sonnet 4.6) for all 3 reviewers
 - **Feature implementation, UI, queries** → Standard (Gemini 3.1 Pro) for all 3 reviewers
-- **Mixed-domain review** → Use Premium for at least 1 reviewer, Standard for the other 2
+- **Mixed-domain review** → Use Quality for at least 1 reviewer, Standard for the other 2
 
 All 3 reviewers should use the same model to ensure comparable verdicts. Mixing models can lead to inconsistent review depth and confusing disagreements.
 

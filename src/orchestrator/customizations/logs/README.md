@@ -20,7 +20,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
   "agent": "Developer",
   "model": "gpt-5.3-codex",
   "task": "PRJ-57: Fix header component",
-  "linear_issue": "PRJ-57",
+  "tracker_issue": "PRJ-57",
   "outcome": "success",
   "duration_min": 12,
   "files_changed": 5,
@@ -36,7 +36,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 | `agent` | `string` | Yes | Agent name from the registry |
 | `model` | `string` | Yes | Model used (e.g., `claude-opus-4-6`, `gpt-5.3-codex`) |
 | `task` | `string` | Yes | Short description of the task performed |
-| `linear_issue` | `string` | No | Issue ID if applicable (e.g., `PRJ-57`) |
+| `tracker_issue` | `string` | No | Issue ID if applicable (e.g., `PRJ-57`) |
 | `outcome` | `string` | Yes | `success`, `partial`, `failed` |
 | `duration_min` | `number` | No | Estimated session duration in minutes |
 | `files_changed` | `number` | No | Number of files created/modified |
@@ -54,7 +54,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
   "model": "gpt-5.3-codex",
   "tier": "fast",
   "mechanism": "sub-agent",
-  "linear_issue": "PRJ-57",
+  "tracker_issue": "PRJ-57",
   "outcome": "success",
   "retries": 0,
   "phase": 2,
@@ -68,9 +68,9 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 | `session_id` | `string` | Yes | Branch name or feature identifier |
 | `agent` | `string` | Yes | Agent name delegated to |
 | `model` | `string` | Yes | Model used |
-| `tier` | `string` | Yes | `economy`, `fast`, `standard`, `premium` |
+| `tier` | `string` | Yes | `economy`, `fast`, `standard`, `quality`, `premium` |
 | `mechanism` | `string` | Yes | `sub-agent` or `background` |
-| `linear_issue` | `string` | No | Issue ID |
+| `tracker_issue` | `string` | No | Issue ID |
 | `outcome` | `string` | Yes | `success`, `partial`, `failed`, `redirected` |
 | `retries` | `number` | No | Times re-delegated |
 | `phase` | `number` | No | Execution phase number |
@@ -81,7 +81,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 ```json
 {
   "timestamp": "2026-02-28T14:30:00Z",
-  "linear_issue": "PRJ-42",
+  "tracker_issue": "PRJ-42",
   "agent": "Developer",
   "reviewer_model": "gpt-5-mini",
   "verdict": "pass",
@@ -98,7 +98,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `timestamp` | `string` | Yes | ISO 8601 datetime (YYYY-MM-DDTHH:MM:SSZ) |
-| `linear_issue` | `string` | No | Issue ID if applicable |
+| `tracker_issue` | `string` | No | Issue ID if applicable |
 | `agent` | `string` | Yes | Agent whose output was reviewed |
 | `reviewer_model` | `string` | Yes | Model used for the reviewer (e.g., `gpt-5-mini`) |
 | `verdict` | `string` | Yes | `pass` or `fail` |
@@ -124,7 +124,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
   "reviewer_model": "claude-opus-4-6",
   "weighted": false,
   "attempt": 1,
-  "linear_issue": "PRJ-57",
+  "tracker_issue": "PRJ-57",
   "artifacts_count": 14,
   "report_path": ".github/customizations/logs/panel/instruction-refactoring.md"
 }
@@ -142,7 +142,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 | `reviewer_model` | `string` | Yes | Model used for reviewers |
 | `weighted` | `boolean` | Yes | Whether performance-weighted voting was applied |
 | `attempt` | `number` | Yes | Attempt number (1 = first try) |
-| `linear_issue` | `string` | No | Issue ID if applicable |
+| `tracker_issue` | `string` | No | Issue ID if applicable |
 | `artifacts_count` | `number` | No | Number of artifacts reviewed |
 | `report_path` | `string` | No | Path to the full panel report |
 
@@ -152,7 +152,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 {
   "timestamp": "2026-02-28T16:00:00Z",
   "dispute_id": "DSP-001",
-  "linear_issue": "PRJ-42",
+  "tracker_issue": "PRJ-42",
   "priority": "high",
   "trigger": "panel-3x-block",
   "implementing_agent": "Developer",
@@ -169,7 +169,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 |-------|------|----------|-------------|
 | `timestamp` | `string` | Yes | ISO 8601 datetime when dispute was created |
 | `dispute_id` | `string` | Yes | Dispute ID (e.g., `DSP-001`) |
-| `linear_issue` | `string` | No | Issue ID if applicable |
+| `tracker_issue` | `string` | No | Issue ID if applicable |
 | `priority` | `string` | Yes | `critical`, `high`, `medium`, `low` |
 | `trigger` | `string` | Yes | `panel-3x-block`, `approach-conflict`, `criteria-conflict`, `architectural-ambiguity`, `external-dependency` |
 | `implementing_agent` | `string` | Yes | Agent that attempted the implementation |
