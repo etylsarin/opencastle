@@ -99,9 +99,9 @@ Finally: ensure whatever produced the claim being verified links the consolidate
 ## Model Selection for Reviewers
 
 Choose reviewer models based on the domain being reviewed:
-- **Security, architecture, complex logic** → Premium (Claude Opus 4.6) for all 3 reviewers
+- **Security, architecture, complex logic** → Quality (Claude Sonnet 4.6) for all 3 reviewers
 - **Feature implementation, UI, queries** → Standard (Gemini 3.1 Pro) for all 3 reviewers
-- **Mixed-domain review** → Use Premium for at least 1 reviewer, Standard for the other 2
+- **Mixed-domain review** → Use Quality for at least 1 reviewer, Standard for the other 2
 
 All 3 reviewers should use the same model to ensure comparable verdicts. Mixing models can lead to inconsistent review depth and confusing disagreements.
 

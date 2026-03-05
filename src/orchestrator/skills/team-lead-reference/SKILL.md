@@ -17,18 +17,19 @@ Choose models deliberately based on task complexity. Not every task needs the mo
 
 | Tier | Cost | Use For |
 |------|------|---------|
-| **Premium** | $$$ | Architecture decisions, security audits, complex reasoning, panel reviews |
-| **Standard** | $$ | Feature implementation, schema design, component building |
-| **Utility** | $$ | Terminal-heavy tasks, E2E tests, data pipelines, scripted workflows |
+| **Premium** | $$$$ | Team Lead orchestration, highest-stakes decisions |
+| **Quality** | $$$ | Feature implementation, UI/frontend, security audits, architecture, complex reasoning |
+| **Standard** | $$ | Large-scale analysis, schema design, cost-efficient coding, repo-level exploration |
+| **Fast** | $$ | Terminal-heavy tasks, E2E tests, data pipelines, agentic workflows |
 | **Economy** | $ | Documentation, simple config changes, formatting, boilerplate |
 
 ### Selection Rules
 
 1. **Default to the agent's assigned model** — the registry maps tasks to appropriate tiers
 2. **Downgrade when possible** — If a task is pure docs/config with no reasoning needed, prefer Economy tier
-3. **Upgrade for ambiguity** — If the task involves security, architecture decisions, or complex tradeoffs, use Premium
-4. **Never use Premium for boilerplate** — Writing test scaffolding, updating docs, or config changes should use Economy/Standard
-5. **Parallel sub-agents are cost multipliers** — When firing 3+ parallel sub-agents, prefer Standard/Economy unless precision is critical
+3. **Upgrade for ambiguity** — If the task involves security, architecture decisions, or complex tradeoffs, use Quality/Premium
+4. **Never use Premium/Quality for boilerplate** — Writing test scaffolding, updating docs, or config changes should use Economy/Fast/Standard
+5. **Parallel sub-agents are cost multipliers** — When firing 3+ parallel sub-agents, prefer Economy/Fast/Standard unless precision is critical
 
 ## Complexity-Based Task Scoring
 
@@ -48,15 +49,15 @@ During decomposition, assign a **complexity score** (Fibonacci: 1, 2, 3, 5, 8, 1
 
 | Score | Tier | Examples |
 |-------|------|----------|
-| **1-2** | Economy/Utility | Docs update, config tweak, rename, simple test |
-| **3-5** | Standard | Component build, CMS query, API route, migration |
-| **8** | Premium | Architecture decision, security audit, complex refactor |
-| **13** | Premium + Panel | DB migration with data transform, auth flow redesign |
+| **1-2** | Economy/Fast | Docs update, config tweak, rename, simple test |
+| **3-5** | Standard/Quality | Component build, CMS query, API route, migration |
+| **8** | Quality | Architecture decision, security audit, complex refactor |
+| **13** | Quality + Panel | DB migration with data transform, auth flow redesign |
 
 ### Override Rules
 
 - **Blocker tasks** (blocking 2+ downstream tasks): Upgrade one tier regardless of score
-- **Security-touching tasks**: Always Premium, regardless of score
+- **Security-touching tasks**: Always Quality or higher, regardless of score
 - **Pure documentation**: Always Economy, regardless of estimated scope
 - The agent registry default model takes precedence unless the task complexity clearly warrants an upgrade/downgrade
 

@@ -75,8 +75,9 @@ Fast review is **never skipped**. Panel review remains opt-in for high-stakes wo
 | Implementation Agent Tier | Reviewer Model | Rationale |
 |--------------------------|---------------|-----------|
 | Economy (GPT-5 mini) | GPT-5 mini | Peer-level review is sufficient |
-| Utility (GPT-5.3-Codex) | GPT-5 mini | One tier lower for cost savings |
+| Fast (GPT-5.3-Codex) | GPT-5 mini | Economy is enough for structured checks |
 | Standard (Gemini 3.1 Pro) | GPT-5 mini | Economy is enough for structured checks |
+| Quality (Claude Sonnet 4.6) | GPT-5 mini | Economy is enough for structured checks |
 | Premium (Claude Opus 4.6) | Gemini 3.1 Pro | Premium work deserves Standard review |
 
 **Override:** If the task touches security, auth, or data integrity, upgrade the reviewer to Standard regardless of the implementation tier.

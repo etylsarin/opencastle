@@ -68,7 +68,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 | `session_id` | `string` | Yes | Branch name or feature identifier |
 | `agent` | `string` | Yes | Agent name delegated to |
 | `model` | `string` | Yes | Model used |
-| `tier` | `string` | Yes | `economy`, `fast`, `standard`, `premium` |
+| `tier` | `string` | Yes | `economy`, `fast`, `standard`, `quality`, `premium` |
 | `mechanism` | `string` | Yes | `sub-agent` or `background` |
 | `tracker_issue` | `string` | No | Issue ID |
 | `outcome` | `string` | Yes | `success`, `partial`, `failed`, `redirected` |

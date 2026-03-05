@@ -105,7 +105,7 @@ echo '{"timestamp":"<ISO-NOW>","session_id":"<branch>","agent":"<name>","model":
 ```
 Verify: `tail -1 .github/customizations/logs/delegations.ndjson`
 
-> **`model` and `tier` must come from the agent registry** — not the Team Lead's own model. Look up the agent in [agent-registry.md](../customizations/agents/agent-registry.md) and use their assigned model and tier. For example, delegating to Developer → `"model":"gemini-3.1-pro","tier":"standard"`, not the Team Lead's `claude-opus-4-6`.
+> **`model` and `tier` must come from the agent registry** — not the Team Lead's own model. Look up the agent in [agent-registry.md](../customizations/agents/agent-registry.md) and use their assigned model and tier. For example, delegating to Developer → `"model":"claude-sonnet-4-6","tier":"quality"`, not the Team Lead's `claude-opus-4-6`.
 
 ### Background Agents — Delegate Session
 
@@ -138,9 +138,10 @@ Parallel agents must never touch the same files. Map file/directory ownership be
 | **Economy** | GPT-5 mini | ~5K–15K | 2–5 min |
 | **Fast** | GPT-5.3-Codex | ~10K–40K | 5–15 min |
 | **Standard** | Gemini 3.1 Pro | ~15K–50K | 8–20 min |
+| **Quality** | Claude Sonnet 4.6 | ~30K–80K | 10–25 min |
 | **Premium** | Claude Opus 4.6 | ~50K–150K | 15–30 min |
 
-**Quick reference:** Premium for security/architecture, Standard for features/schemas, Fast for tests/data, Economy for docs.
+**Quick reference:** Premium for orchestration, Quality for coding/UI/security/architecture, Standard for analysis/schemas/cost-sensitive, Fast for tests/data/terminal, Economy for docs.
 
 - Target 5–7 delegations per session. At 8 → warn. At 9 → checkpoint. At 10+ → STOP and save state.
 - Max 3 delegation attempts per task. After 3 failures → Dead Letter Queue + Architect.

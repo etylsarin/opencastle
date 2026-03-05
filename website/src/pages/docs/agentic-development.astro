@@ -1,0 +1,1438 @@
+---
+import '../../styles/global.css';
+
+const title = 'Agentic Development & Multi-Agent Orchestration Guide — OpenCastle';
+const description = 'Master agentic development with AI coding agents. Learn vibecoding best practices, multi-agent orchestration patterns, and how frameworks like OpenCastle coordinate specialist AI agents for software development.';
+
+const singleAgentSections = [
+  { id: 'what-is-it', label: 'What Is It?' },
+  { id: 'great-prompts', label: 'Write Great Prompts' },
+  { id: 'build-tools', label: 'Build Tools, Not Tasks' },
+  { id: 'scope-requests', label: 'Scope Your Requests' },
+  { id: 'verify', label: 'Verify, Don\'t Trust' },
+  { id: 'use-context', label: 'Use Context' },
+  { id: 'iterate', label: 'Iterate, Don\'t Restart' },
+];
+
+const multiAgentSections = [
+  { id: 'why-multi-agent', label: 'Why Multi-Agent?' },
+  { id: 'orchestration', label: 'Orchestration' },
+  { id: 'specialist-agents', label: 'Specialist Agents' },
+  { id: 'quality-gates', label: 'Quality Gates' },
+  { id: 'getting-started', label: 'Get Started' },
+];
+
+const sectionIcons: Record<string, string> = {
+  'what-is-it': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  'great-prompts': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+  'build-tools': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>`,
+  'scope-requests': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`,
+  'verify': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+  'use-context': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+  'iterate': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>`,
+  'why-multi-agent': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  'orchestration': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>`,
+  'specialist-agents': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`,
+  'quality-gates': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
+  'getting-started': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href="https://www.opencastle.dev/docs/agentic-development/" />
+    <meta property="og:type" content="article" />
+    <meta property="og:url" content="https://www.opencastle.dev/docs/agentic-development/" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content="https://www.opencastle.dev/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content="https://www.opencastle.dev/og-image.png" />
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+  </head>
+  <body>
+    <header class="docs-header">
+      <div class="docs-header__inner">
+        <div class="docs-header__brand">
+          <a href="/docs" class="docs-header__back" title="Back to Docs">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          </a>
+          <img class="docs-header__icon" src="/icon-192.png" alt="OpenCastle" width="28" height="28" />
+          <h1 class="docs-header__title">Agentic Development</h1>
+        </div>
+      </div>
+    </header>
+
+    <div class="docs-layout">
+      <nav class="docs-sidebar" id="docs-sidebar">
+        <p class="docs-sidebar__label">Single Agent</p>
+        <ul class="docs-sidebar__list">
+          {singleAgentSections.map((s, i) => (
+            <li>
+              <a class={`docs-sidebar__link${i === 0 ? ' docs-sidebar__link--active' : ''}`} href={`#${s.id}`}>
+                <Fragment set:html={sectionIcons[s.id]} />
+                {s.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <div class="docs-sidebar__divider"></div>
+        <p class="docs-sidebar__label">Multi-Agent</p>
+        <ul class="docs-sidebar__list">
+          {multiAgentSections.map((s) => (
+            <li>
+              <a class="docs-sidebar__link" href={`#${s.id}`}>
+                <Fragment set:html={sectionIcons[s.id]} />
+                {s.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <main class="docs-main">
+        <!-- Hero -->
+        <section class="docs-hero">
+          <h2 class="docs-hero__heading">Agentic Development & Multi-Agent Orchestration</h2>
+          <p class="docs-hero__sub">Master AI-assisted software development — from effective single-agent vibecoding to coordinating specialist agent teams with orchestration frameworks like OpenCastle.</p>
+        </section>
+
+        <!-- 1. What Is It? -->
+        <section class="content-section" id="what-is-it">
+          <h3 class="section-heading">What Is Agentic Development?</h3>
+          <p class="section-text">
+            Agentic development — sometimes called <em>vibecoding</em> — is a workflow where you collaborate with AI coding agents instead of writing every line yourself. You describe <strong>what</strong> you want, and the agent handles the <strong>how</strong>: writing code, running tests, fixing errors, and iterating until the task is done.
+          </p>
+          <p class="section-text">
+            This isn't about blindly accepting AI output. The best results come from treating the agent as a capable junior developer — one that needs clear direction, good context, and code review.
+          </p>
+          <div class="key-insight">
+            <div class="key-insight__icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>
+            </div>
+            <p><strong>Key mindset shift:</strong> Your job moves from "writing code" to "directing, reviewing, and verifying code." The quality of your input directly determines the quality of the output.</p>
+          </div>
+        </section>
+
+        <!-- 2. Write Great Prompts -->
+        <section class="content-section" id="great-prompts">
+          <h3 class="section-heading">Write Great Prompts</h3>
+          <p class="section-text">
+            The quality of agent output is directly proportional to the quality of your instructions. Vague prompts produce vague results. Specific prompts with context produce production-ready code.
+          </p>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Be specific and provide context</p>
+                <code class="card__example">"Add a `lastLogin` timestamp field to the User model in `src/models/user.ts`. Update the login handler in `src/auth/login.ts` to set it on successful authentication. Use the existing `updatedAt` pattern for the database update."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Give vague, context-free instructions</p>
+                <code class="card__example">"Track when users log in."</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Reference existing files and patterns</p>
+                <code class="card__example">"Create a new API route at `src/api/invoices.ts` following the same pattern as `src/api/orders.ts` — validate with Zod, use the existing `db` client, and return typed responses."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Expect the agent to guess your conventions</p>
+                <code class="card__example">"Make an invoices endpoint."</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Specify acceptance criteria</p>
+                <code class="card__example">"The component should handle loading, error, and empty states. It needs to be keyboard-accessible and work at mobile breakpoints. Add unit tests for the data transformation logic."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Leave requirements implicit</p>
+                <code class="card__example">"Build a user list component."</code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3. Build Tools, Not Tasks -->
+        <section class="content-section" id="build-tools">
+          <h3 class="section-heading">Build Tools, Not Tasks</h3>
+          <p class="section-text">
+            This is the single most impactful pattern for agentic development. When facing a large refactoring or repetitive task, <strong>ask the agent to create a tool or script</strong> that performs the operation — rather than asking it to do the work directly.
+          </p>
+
+          <div class="highlight-box">
+            <h4 class="highlight-box__title">Why Tools Beat Direct Edits</h4>
+            <ul class="highlight-box__list">
+              <li><strong>Repeatable</strong> — Run the tool again if new files appear or requirements change</li>
+              <li><strong>Verifiable</strong> — Review the tool's logic once, trust it for 500 files</li>
+              <li><strong>Reviewable</strong> — A 50-line script is easier to code review than 200 scattered file edits</li>
+              <li><strong>Debuggable</strong> — When something goes wrong, you debug one script — not hunt through hundreds of diffs</li>
+              <li><strong>Safe</strong> — Run with <code>--dry-run</code> first, apply when confident</li>
+            </ul>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO — Ask for a tool</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Create a codemod</p>
+                <code class="card__example">"Write a codemod script that finds all React components using the old `&lt;Button variant='primary'&gt;` API and replaces them with `&lt;Button color='brand'&gt;`. Support both JSX and TSX. Add a --dry-run flag that prints changes without writing."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T — Do it manually</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Edit every file one by one</p>
+                <code class="card__example">"Update every Button component in the codebase to use `color='brand'` instead of `variant='primary'`."</code>
+                <p class="card__note">With 80+ files, the agent will miss some, introduce inconsistencies, or hit context limits mid-way.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO — Ask for a tool</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Create a migration script</p>
+                <code class="card__example">"Write a script that reads all YAML config files in `config/`, converts them to TOML format, and writes the output to `config-v2/`. Preserve comments where possible."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T — Do it manually</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Convert each file individually</p>
+                <code class="card__example">"Convert config/database.yml to TOML. Now convert config/auth.yml. Now convert config/cache.yml..."</code>
+                <p class="card__note">Each conversion is a separate context window with no shared logic. Errors compound instead of being fixed once.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO — Ask for a tool</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Build a linter rule</p>
+                <code class="card__example">"Create an ESLint rule that flags any direct `console.log` calls in `src/` and suggests using our logger utility from `src/lib/logger` instead. Include auto-fix support."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T — Do it manually</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Find-and-replace across the codebase</p>
+                <code class="card__example">"Replace all console.log calls with logger calls in the codebase."</code>
+                <p class="card__note">A rule catches new violations too. Manual replacement is a one-shot fix that regresses immediately.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. Scope Your Requests -->
+        <section class="content-section" id="scope-requests">
+          <h3 class="section-heading">Scope Your Requests</h3>
+          <p class="section-text">
+            AI agents work best with focused, well-scoped tasks. Large, multi-concern requests lead to mediocre results everywhere instead of excellent results somewhere. Break big features into small, independently testable pieces.
+          </p>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Break work into focused tasks</p>
+                <code class="card__example">"Step 1: Create the database schema for invoices with these fields: id, amount, status, customerId, createdAt. Step 2: Build the API route with list and create endpoints. Step 3: Build the UI table component."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Ask for everything at once</p>
+                <code class="card__example">"Build a complete invoicing system with database, API, UI, PDF export, email notifications, and Stripe integration."</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Ship and verify incrementally</p>
+                <code class="card__example">"Let's start with just the data model and API. Once that's working and tested, we'll add the UI."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Wait until everything is done to test anything</p>
+                <code class="card__example">"Build the full feature, I'll test it all at the end."</code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. Verify, Don't Trust -->
+        <section class="content-section" id="verify">
+          <h3 class="section-heading">Verify, Don't Trust</h3>
+          <p class="section-text">
+            AI agents are confident, fast, and sometimes wrong. Always verify their output. Run tests, inspect diffs, and check edge cases. The agent is a tool — you're still the engineer.
+          </p>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Ask the agent to prove its work</p>
+                <code class="card__example">"After making the changes, run the test suite and show me the results. Also run the type checker."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Merge without checking</p>
+                <code class="card__example">"Looks good, ship it." <span class="card__aside">(without reviewing the diff or running tests)</span></code>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Review diffs before committing</p>
+                <code class="card__example">"Show me the git diff of all changes so I can review before we commit."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Let the agent commit and push on its own</p>
+                <code class="card__example">"Just push all changes to main." <span class="card__aside">(skipping review entirely)</span></code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6. Use Context Effectively -->
+        <section class="content-section" id="use-context">
+          <h3 class="section-heading">Use Context Effectively</h3>
+          <p class="section-text">
+            Agents don't automatically know your project's conventions, architecture, or unwritten rules. The more relevant context you provide, the better the output matches your codebase.
+          </p>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Point to existing patterns</p>
+                <code class="card__example">"Create a new service following the same pattern as `src/services/userService.ts` — use dependency injection, return Result types, and log with our structured logger."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Assume conventions are obvious</p>
+                <code class="card__example">"Create an order service."</code>
+                <p class="card__note">The agent might use a completely different pattern — classes instead of functions, throw instead of Result, console.log instead of your logger.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Mention constraints and requirements</p>
+                <code class="card__example">"We use Tailwind CSS v4 with our custom design tokens. Colors come from `theme.colors` — don't use arbitrary hex values. All components must support dark mode."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Let the agent make style decisions</p>
+                <code class="card__example">"Style the card component nicely."</code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. Iterate, Don't Restart -->
+        <section class="content-section" id="iterate">
+          <h3 class="section-heading">Iterate, Don't Restart</h3>
+          <p class="section-text">
+            When the agent produces something close but not right, give targeted feedback and ask for adjustments. Starting over from scratch throws away correct work and burns context.
+          </p>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Give specific, targeted feedback</p>
+                <code class="card__example">"The table component looks good, but the sorting logic is wrong — it should sort by date descending by default, not ascending. Also, the empty state should show the illustration from `public/empty-inbox.svg`."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Throw away everything and start over</p>
+                <code class="card__example">"This is wrong. Redo the whole thing."</code>
+                <p class="card__note">Without saying what's wrong, the agent repeats the same mistakes. And you lose the parts that were already correct.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Acknowledge what's right</p>
+                <code class="card__example">"The API route structure and validation are perfect. Just two changes: rename the `getData` function to `fetchInvoices`, and add pagination support using cursor-based pagination."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Provide only negative feedback</p>
+                <code class="card__example">"That's not what I wanted."</code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- MULTI-AGENT DEVELOPMENT                -->
+        <!-- ═══════════════════════════════════════ -->
+
+        <div class="section-divider">
+          <span class="section-divider__line"></span>
+          <span class="section-divider__label">Multi-Agent Development</span>
+          <span class="section-divider__line"></span>
+        </div>
+
+        <!-- 8 · Why Multi-Agent? -->
+        <section id="why-multi-agent" class="docs-section">
+          <h3 class="section-title">Why Multi-Agent?</h3>
+          <p>A single AI agent is powerful — but it has limits. Context windows fill up. Prompts lose focus when mixing UI, backend, tests, and security in one conversation. Knowledge is shallow across too many domains.</p>
+          <p>Multi-agent development solves this by assigning <strong>specialist agents</strong> to focused tasks — just like a real engineering team. A Team Lead decomposes work, delegates to experts, and verifies results. Each agent operates within a well-scoped context, producing higher quality output.</p>
+          <div class="key-insight">
+            <strong>Key Insight:</strong> Multi-agent orchestration isn't about replacing developers — it's about giving each AI agent the right scope, the right context, and the right expertise to do its best work.
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <svg class="card__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Decompose into specialist tasks</p>
+                <code class="card__example">"Developer: implement the form. Testing Expert: write E2E tests. Security Expert: audit auth flow."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <svg class="card__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Overload one agent with everything</p>
+                <code class="card__example">"Build the feature, write tests, add docs, fix accessibility, and optimize performance."</code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 9 · Orchestration -->
+        <section id="orchestration" class="docs-section">
+          <h3 class="section-title">Orchestration Patterns</h3>
+          <p>In multi-agent development, an <strong>orchestrator</strong> (or Team Lead) coordinates the work. It analyzes requirements, creates a plan, assigns tasks to specialist agents, and verifies their output — similar to a tech lead managing a team of engineers.</p>
+
+          <div class="architecture-card">
+            <div class="architecture-card__header">Orchestrator Pattern</div>
+            <div class="architecture-card__flow">
+              <div class="architecture-card__node architecture-card__node--lead">Team Lead</div>
+              <div class="architecture-card__arrow">decomposes & delegates</div>
+              <div class="architecture-card__row">
+                <div class="architecture-card__node">Developer</div>
+                <div class="architecture-card__node">Tester</div>
+                <div class="architecture-card__node">Reviewer</div>
+              </div>
+              <div class="architecture-card__arrow">verifies & delivers</div>
+              <div class="architecture-card__node architecture-card__node--lead">Team Lead</div>
+            </div>
+          </div>
+
+          <p>Key orchestration principles:</p>
+          <ul class="docs-list">
+            <li><strong>Task decomposition</strong> — break work into the smallest meaningful, independently verifiable units</li>
+            <li><strong>File partitioning</strong> — parallel agents never touch the same files, eliminating merge conflicts</li>
+            <li><strong>Dependency ordering</strong> — tasks are phased so dependent work waits for prerequisites</li>
+            <li><strong>Independent verification</strong> — every output is reviewed before being accepted</li>
+          </ul>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <svg class="card__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Define clear file ownership per agent</p>
+                <code class="card__example">"Developer A owns src/components/. Developer B owns src/api/. No overlap."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <svg class="card__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Let parallel agents edit the same files</p>
+                <code class="card__example">Two agents both modifying layout.tsx at the same time → merge conflicts and lost work</code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 10 · Specialist Agents -->
+        <section id="specialist-agents" class="docs-section">
+          <h3 class="section-title">Specialist Agents</h3>
+          <p>Instead of one generalist AI trying to handle everything, multi-agent systems assign <strong>focused roles</strong> with domain-specific instructions, tools, and context. This mirrors how real engineering teams operate — you wouldn't ask a backend engineer to also design the UI and write the security audit.</p>
+
+          <div class="agent-tiers">
+            <div class="agent-tier">
+              <div class="agent-tier__header agent-tier__header--premium">Premium</div>
+              <div class="agent-tier__body">
+                <p>Architecture, security, orchestration — tasks requiring deep reasoning and cross-system awareness.</p>
+                <div class="agent-tier__examples">Team Lead · Architect · Security Expert</div>
+              </div>
+            </div>
+            <div class="agent-tier">
+              <div class="agent-tier__header agent-tier__header--standard">Standard</div>
+              <div class="agent-tier__body">
+                <p>Feature implementation, UI components, API design — core development work.</p>
+                <div class="agent-tier__examples">Developer · UI/UX Expert · API Designer</div>
+              </div>
+            </div>
+            <div class="agent-tier">
+              <div class="agent-tier__header agent-tier__header--utility">Utility</div>
+              <div class="agent-tier__body">
+                <p>Testing, data pipelines, DevOps — specialized but well-scoped operational tasks.</p>
+                <div class="agent-tier__examples">Testing Expert · Data Expert · DevOps Expert</div>
+              </div>
+            </div>
+            <div class="agent-tier">
+              <div class="agent-tier__header agent-tier__header--economy">Economy</div>
+              <div class="agent-tier__body">
+                <p>Documentation, research, SEO — tasks that benefit from speed over raw reasoning power.</p>
+                <div class="agent-tier__examples">Researcher · Documentation Writer · Copywriter</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <svg class="card__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Match agent tier to task complexity</p>
+                <code class="card__example">Premium model for security audits. Economy model for docs updates. Right tool for the job.</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <svg class="card__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Use the most expensive model for everything</p>
+                <code class="card__example">Running a premium model to update README files wastes budget without adding value.</code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 11 · Quality Gates -->
+        <section id="quality-gates" class="docs-section">
+          <h3 class="section-title">Quality Gates</h3>
+          <p>In single-agent workflows, you manually verify output. In multi-agent systems, <strong>quality gates</strong> automate verification — ensuring every agent's work passes review before being accepted.</p>
+          <ul class="docs-list">
+            <li><strong>Deterministic checks</strong> — lint, type-check, and test suites run automatically</li>
+            <li><strong>Fast review</strong> — a lightweight reviewer agent checks acceptance criteria, file partitions, and regressions</li>
+            <li><strong>Panel review</strong> — for high-stakes changes (security, auth, DB migrations), multiple independent reviewers vote PASS/BLOCK</li>
+            <li><strong>Self-improvement</strong> — lessons from failures are captured and fed back into future agent prompts</li>
+          </ul>
+          <div class="highlight-box">
+            <p>Quality gates turn multi-agent development from "hope it works" into a verified pipeline. Every agent's output is independently checked before it touches the main branch.</p>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <svg class="card__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Verify at every step of the pipeline</p>
+                <code class="card__example">Agent delivers → fast review → lint/typecheck → tests → merge. Every gate must pass.</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <svg class="card__icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Trust agent output without verification</p>
+                <code class="card__example">Merging code because "the agent said it works" — always run tests and reviews.</code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 12 · Getting Started -->
+        <section id="getting-started" class="docs-section">
+          <h3 class="section-title">Get Started with OpenCastle</h3>
+          <p><a href="/" class="docs-link">OpenCastle</a> transforms your AI coding assistant into a coordinated multi-agent team. It works with GitHub Copilot, Cursor, Claude Code, and OpenCode — providing the orchestration layer, specialist agent definitions, and quality gates described in this guide.</p>
+
+          <div class="key-insight">
+            <strong>One orchestrator. Multiple specialists. Zero chaos.</strong> OpenCastle gives you 19 specialist agents across 4 tiers, on-demand skills, workflow templates, and built-in self-improvement — all configured through simple instruction files in your repo.
+          </div>
+
+          <div class="getting-started-steps">
+            <div class="step">
+              <div class="step__number">1</div>
+              <div class="step__content">
+                <p class="step__title">Install OpenCastle</p>
+                <code class="step__code">npx opencastle init</code>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step__number">2</div>
+              <div class="step__content">
+                <p class="step__title">Customize for your project</p>
+                <code class="step__code">npx opencastle doctor</code>
+              </div>
+            </div>
+            <div class="step">
+              <div class="step__number">3</div>
+              <div class="step__content">
+                <p class="step__title">Ask the Team Lead to orchestrate</p>
+                <code class="step__code">@team-lead Implement the new user settings page</code>
+              </div>
+            </div>
+          </div>
+
+          <p>Read the <a href="/docs/cli" class="docs-link">CLI documentation</a> for setup details, or explore the <a href="/docs/plugins" class="docs-link">plugin system</a> for extending OpenCastle with custom agents and skills.</p>
+        </section>
+
+        <div class="docs-footer">
+          <a href="/docs">← Back to Docs</a>
+          <span class="docs-footer__sep">·</span>
+          <a href="/">OpenCastle</a>
+        </div>
+      </main>
+    </div>
+
+    <style>
+      :root {
+        --bg-primary: #0a0a0f;
+        --bg-secondary: #111118;
+        --bg-tertiary: #1a1a24;
+        --border-primary: #1e1e2e;
+        --border-secondary: #2a2a3a;
+        --border-color: rgba(255, 255, 255, 0.06);
+        --text-primary: #e2e2e8;
+        --text-secondary: #8888a0;
+        --text-tertiary: #55556a;
+        --text-accent: #a78bfa;
+        --accent-glow: rgba(167, 139, 250, .12);
+        --color-do-bg: rgba(52, 211, 153, 0.06);
+        --color-do-border: rgba(52, 211, 153, 0.2);
+        --color-do-accent: #34d399;
+        --color-dont-bg: rgba(248, 113, 113, 0.06);
+        --color-dont-border: rgba(248, 113, 113, 0.2);
+        --color-dont-accent: #f87171;
+        --max-width: 1280px;
+        --transition-fast: .15s ease;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
+
+      /* ── Header ── */
+      .docs-header {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: rgba(10, 10, 15, .85);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border-primary);
+        height: 56px;
+      }
+      .docs-header__inner {
+        max-width: var(--max-width);
+        margin: 0 auto;
+        padding: 0 1.5rem;
+        height: 100%;
+        display: flex;
+        align-items: center;
+      }
+      .docs-header__brand {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+      }
+      .docs-header__back {
+        color: var(--text-secondary);
+        display: flex;
+        transition: color .15s;
+      }
+      .docs-header__back:hover { color: var(--text-accent); }
+      .docs-header__icon { border-radius: 6px; }
+      .docs-header__title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        letter-spacing: -.01em;
+      }
+
+      /* ── Layout ── */
+      .docs-layout {
+        display: flex;
+        max-width: var(--max-width);
+        margin: 0 auto;
+        position: relative;
+      }
+
+      /* ── Sidebar ── */
+      .docs-sidebar {
+        position: sticky;
+        top: 56px;
+        height: calc(100vh - 56px);
+        width: 200px;
+        flex-shrink: 0;
+        padding: 24px 0 24px 24px;
+        overflow-y: auto;
+        display: none;
+      }
+      @media (min-width: 1024px) {
+        .docs-sidebar { display: block; }
+      }
+      .docs-sidebar__list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .docs-sidebar__link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 8px 14px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--text-tertiary);
+        text-decoration: none;
+        border-radius: 8px;
+        transition: color var(--transition-fast), background var(--transition-fast);
+        line-height: 1.4;
+      }
+      .docs-sidebar__link:hover {
+        color: var(--text-secondary);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .docs-sidebar__link--active {
+        color: var(--text-accent);
+        background: rgba(167, 139, 250, 0.08);
+        font-weight: 600;
+      }
+      .docs-sidebar__link svg {
+        flex-shrink: 0;
+        opacity: 0.7;
+      }
+      .docs-sidebar__link--active svg {
+        opacity: 1;
+      }
+
+      /* ── Main ── */
+      .docs-main {
+        flex: 1;
+        min-width: 0;
+        max-width: 860px;
+        padding: 32px 24px 64px;
+      }
+
+      /* ── Hero ── */
+      .docs-hero {
+        margin-bottom: 2.5rem;
+      }
+      .docs-hero__heading {
+        font-size: 1.75rem;
+        font-weight: 700;
+        letter-spacing: -.02em;
+        margin-bottom: .5rem;
+      }
+      .docs-hero__sub {
+        color: var(--text-secondary);
+        font-size: 1.05rem;
+        line-height: 1.6;
+      }
+
+      /* ── Content sections ── */
+      .content-section {
+        margin-bottom: 3rem;
+        scroll-margin-top: 72px;
+      }
+      .section-heading {
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: -.01em;
+        margin-bottom: .75rem;
+        padding-bottom: .5rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .section-text {
+        color: var(--text-secondary);
+        font-size: .95rem;
+        line-height: 1.7;
+        margin-bottom: 1rem;
+      }
+      .section-text em {
+        color: var(--text-primary);
+        font-style: italic;
+      }
+      .section-text strong {
+        color: var(--text-primary);
+      }
+
+      /* ── Key insight box ── */
+      .key-insight {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.25rem;
+        background: var(--accent-glow);
+        border: 1px solid rgba(167, 139, 250, .2);
+        border-radius: 10px;
+        margin-top: 1rem;
+      }
+      .key-insight__icon {
+        flex-shrink: 0;
+        color: var(--text-accent);
+        margin-top: 2px;
+      }
+      .key-insight p {
+        color: var(--text-secondary);
+        font-size: .9rem;
+        line-height: 1.6;
+      }
+      .key-insight strong {
+        color: var(--text-accent);
+      }
+
+      /* ── Highlight box ── */
+      .highlight-box {
+        padding: 1.5rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+      }
+      .highlight-box__title {
+        font-size: .8rem;
+        font-weight: 600;
+        color: var(--text-accent);
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        margin-bottom: 1rem;
+      }
+      .highlight-box__list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: .5rem;
+      }
+      .highlight-box__list li {
+        color: var(--text-secondary);
+        font-size: .9rem;
+        line-height: 1.6;
+        padding-left: 1.25rem;
+        position: relative;
+      }
+      .highlight-box__list li::before {
+        content: '→';
+        position: absolute;
+        left: 0;
+        color: var(--text-accent);
+      }
+      .highlight-box__list li strong {
+        color: var(--text-primary);
+      }
+      .highlight-box__list li code {
+        font-size: .8rem;
+        background: var(--bg-tertiary);
+        padding: .1rem .35rem;
+        border-radius: 4px;
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+        color: #c9d1d9;
+      }
+
+      /* ── DO/DON'T grid ── */
+      .do-dont-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        margin-bottom: 1rem;
+      }
+      @media (max-width: 700px) {
+        .do-dont-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* ── Cards ── */
+      .card {
+        border-radius: 10px;
+        padding: 1.25rem;
+        border: 1px solid;
+      }
+      .card--do {
+        background: var(--color-do-bg);
+        border-color: var(--color-do-border);
+      }
+      .card--dont {
+        background: var(--color-dont-bg);
+        border-color: var(--color-dont-border);
+      }
+      .card__header {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        margin-bottom: .75rem;
+      }
+      .card__icon {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .75rem;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .card__icon--do {
+        background: rgba(52, 211, 153, 0.15);
+        color: var(--color-do-accent);
+      }
+      .card__icon--dont {
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--color-dont-accent);
+      }
+      .card__label {
+        font-size: .7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+      }
+      .card__label--do { color: var(--color-do-accent); }
+      .card__label--dont { color: var(--color-dont-accent); }
+
+      .card__body {}
+      .card__title {
+        font-size: .875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: .5rem;
+      }
+      .card__example {
+        display: block;
+        font-size: .8rem;
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+        background: rgba(0, 0, 0, 0.25);
+        padding: .75rem;
+        border-radius: 6px;
+        line-height: 1.5;
+        color: var(--text-secondary);
+        word-break: break-word;
+        white-space: pre-wrap;
+      }
+      .card--do .card__example {
+        border: 1px solid rgba(52, 211, 153, 0.1);
+      }
+      .card--dont .card__example {
+        border: 1px solid rgba(248, 113, 113, 0.1);
+      }
+      .card__note {
+        margin-top: .5rem;
+        font-size: .8rem;
+        color: var(--text-tertiary);
+        line-height: 1.5;
+        font-style: italic;
+      }
+      .card__aside {
+        color: var(--text-tertiary);
+        font-style: italic;
+      }
+
+      /* ── Footer ── */
+      .docs-footer {
+        margin-top: 48px;
+        padding-top: 24px;
+        border-top: 1px solid var(--border-color);
+        font-size: 0.875rem;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .docs-footer a {
+        color: var(--text-secondary);
+        text-decoration: none;
+      }
+      .docs-footer a:hover { color: var(--text-primary); }
+      .docs-footer__sep { color: var(--text-tertiary); }
+
+      a { color: var(--text-accent); }
+
+      /* ── Sidebar divider ── */
+      .docs-sidebar__divider {
+        height: 1px;
+        background: var(--border-primary);
+        margin: 12px 14px;
+      }
+      .docs-sidebar__label {
+        font-size: .65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--text-tertiary);
+        padding: 8px 14px 4px;
+      }
+
+      /* ── Section divider ── */
+      .section-divider {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin: 3rem 0 2rem;
+      }
+      .section-divider__line {
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--border-secondary), transparent);
+      }
+      .section-divider__label {
+        font-size: .75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        color: var(--text-accent);
+        white-space: nowrap;
+      }
+
+      /* ── Docs section (for multi-agent) ── */
+      .docs-section {
+        margin-bottom: 3rem;
+        scroll-margin-top: 72px;
+      }
+      .docs-section p {
+        color: var(--text-secondary);
+        font-size: .95rem;
+        line-height: 1.7;
+        margin-bottom: 1rem;
+      }
+      .docs-section p strong {
+        color: var(--text-primary);
+      }
+      .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: -.01em;
+        margin-bottom: .75rem;
+        padding-bottom: .5rem;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .docs-list {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 1.5rem;
+      }
+      .docs-list li {
+        color: var(--text-secondary);
+        font-size: .9rem;
+        line-height: 1.6;
+        padding-left: 1.25rem;
+        position: relative;
+        margin-bottom: .5rem;
+      }
+      .docs-list li::before {
+        content: '→';
+        position: absolute;
+        left: 0;
+        color: var(--text-accent);
+      }
+      .docs-list li strong {
+        color: var(--text-primary);
+      }
+      .docs-link { color: var(--text-accent); text-decoration: none; }
+      .docs-link:hover { text-decoration: underline; }
+
+      /* ── Architecture card ── */
+      .architecture-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 12px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+      }
+      .architecture-card__header {
+        padding: .75rem 1.25rem;
+        font-size: .8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--text-accent);
+        border-bottom: 1px solid var(--border-primary);
+        background: rgba(167, 139, 250, 0.04);
+      }
+      .architecture-card__flow {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: .75rem;
+        padding: 1.5rem;
+      }
+      .architecture-card__node {
+        padding: .5rem 1.25rem;
+        border-radius: 8px;
+        font-size: .85rem;
+        font-weight: 600;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-secondary);
+        color: var(--text-primary);
+      }
+      .architecture-card__node--lead {
+        background: rgba(167, 139, 250, 0.1);
+        border-color: rgba(167, 139, 250, 0.3);
+        color: var(--text-accent);
+      }
+      .architecture-card__arrow {
+        font-size: .75rem;
+        color: var(--text-tertiary);
+        font-style: italic;
+      }
+      .architecture-card__row {
+        display: flex;
+        gap: .75rem;
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      /* ── Agent tiers ── */
+      .agent-tiers {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      @media (max-width: 700px) {
+        .agent-tiers { grid-template-columns: 1fr; }
+      }
+      .agent-tier {
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid var(--border-primary);
+        background: var(--bg-secondary);
+      }
+      .agent-tier__header {
+        padding: .5rem 1rem;
+        font-size: .75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+      }
+      .agent-tier__header--premium {
+        background: rgba(167, 139, 250, 0.12);
+        color: #a78bfa;
+        border-bottom: 1px solid rgba(167, 139, 250, 0.2);
+      }
+      .agent-tier__header--standard {
+        background: rgba(96, 165, 250, 0.1);
+        color: #60a5fa;
+        border-bottom: 1px solid rgba(96, 165, 250, 0.2);
+      }
+      .agent-tier__header--utility {
+        background: rgba(52, 211, 153, 0.08);
+        color: #34d399;
+        border-bottom: 1px solid rgba(52, 211, 153, 0.2);
+      }
+      .agent-tier__header--economy {
+        background: rgba(251, 191, 36, 0.08);
+        color: #fbbf24;
+        border-bottom: 1px solid rgba(251, 191, 36, 0.2);
+      }
+      .agent-tier__body {
+        padding: 1rem;
+      }
+      .agent-tier__body p {
+        font-size: .85rem;
+        margin-bottom: .5rem;
+      }
+      .agent-tier__examples {
+        font-size: .8rem;
+        color: var(--text-tertiary);
+        font-style: italic;
+      }
+
+      /* ── Getting started steps ── */
+      .getting-started-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin: 1.5rem 0;
+      }
+      .step {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1.25rem;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-primary);
+        border-radius: 10px;
+      }
+      .step__number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(167, 139, 250, 0.12);
+        color: var(--text-accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: .85rem;
+        font-weight: 700;
+        flex-shrink: 0;
+        border: 1px solid rgba(167, 139, 250, 0.25);
+      }
+      .step__content { flex: 1; }
+      .step__title {
+        font-size: .9rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: .25rem;
+      }
+      .step__code {
+        display: block;
+        font-size: .8rem;
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+        background: rgba(0, 0, 0, 0.25);
+        padding: .5rem .75rem;
+        border-radius: 6px;
+        color: var(--text-secondary);
+        border: 1px solid var(--border-primary);
+      }
+
+      /* ── Mobile sidebar toggle ── */
+      .docs-mobile-toggle {
+        display: none;
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 60;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 1px solid var(--border-color);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+        transition: background var(--transition-fast);
+      }
+      .docs-mobile-toggle:hover { background: var(--bg-tertiary); }
+      @media (max-width: 1023px) {
+        .docs-mobile-toggle { display: flex; }
+        .docs-sidebar--open {
+          display: block;
+          position: fixed;
+          top: 56px;
+          left: 0;
+          width: 220px;
+          height: calc(100vh - 56px);
+          background: var(--bg-secondary);
+          border-right: 1px solid var(--border-color);
+          z-index: 55;
+          padding: 16px;
+        }
+      }
+    </style>
+
+    <button class="docs-mobile-toggle" id="mobile-toggle" type="button" aria-label="Toggle navigation">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+
+    <script>
+      const sidebar = document.getElementById('docs-sidebar');
+      const mobileToggle = document.getElementById('mobile-toggle');
+      const sidebarLinks = sidebar?.querySelectorAll('.docs-sidebar__link');
+
+      // Highlight active section on scroll
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            sidebarLinks?.forEach(link => {
+              const href = link.getAttribute('href');
+              link.classList.toggle('docs-sidebar__link--active',
+                href === `#${entry.target.id}`);
+            });
+          }
+        });
+      }, { rootMargin: '-80px 0px -60% 0px' });
+
+      document.querySelectorAll('.content-section, .docs-section').forEach(s => observer.observe(s));
+
+      // Mobile toggle
+      mobileToggle?.addEventListener('click', () => {
+        sidebar?.classList.toggle('docs-sidebar--open');
+      });
+
+      // Close mobile sidebar on link click
+      sidebarLinks?.forEach(link => {
+        link.addEventListener('click', () => {
+          sidebar?.classList.remove('docs-sidebar--open');
+        });
+      });
+
+      // Close on outside click
+      document.addEventListener('click', (e) => {
+        if (sidebar?.classList.contains('docs-sidebar--open') &&
+            !sidebar.contains(e.target as Node) &&
+            e.target !== mobileToggle) {
+          sidebar.classList.remove('docs-sidebar--open');
+        }
+      });
+    </script>
+  </body>
+</html>
