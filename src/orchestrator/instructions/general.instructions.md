@@ -148,7 +148,9 @@ If task tracker MCP tools are not available in the current session, do NOT block
 
 1. **Document planned issues** in your output with the title, description, and acceptance criteria you would have used
 2. **Proceed with implementation** — the work is still valuable without a ticket number
-3. **Use `TAS-PENDING` as a placeholder** in commit messages and PR descriptions
+3. **Placeholder value for `tracker_issue`:**
+   - **No tracker configured** (no `task-management` slot bound in `skill-matrix.json`) → use `"N/A"`
+   - **Tracker configured but tools unavailable** → use the project prefix + `PENDING` (e.g., `"TAS-PENDING"`)
 4. **Ask the user** to create the issues manually if tracking is critical for the task
 5. After implementation, update commit messages and PR descriptions when issue IDs become available
 
@@ -182,21 +184,26 @@ echo '{"timestamp":"2026-03-01T14:00:00Z","agent":"Developer","model":"claude-op
 ```
 
 **Delegation record** (Team Lead only, **immediately after each delegation — not at session end**):
-Use the echo command template from the Team Lead agent file § Delegation. Fields: `timestamp`, `session_id`, `agent`, `model`, `tier`, `mechanism`, `linear_issue`, `outcome`, `retries`, `phase`, `file_partition`.
+```bash
+echo '{"timestamp":"2026-03-01T14:00:00Z","session_id":"feat/prj-57","agent":"Developer","model":"gemini-3.1-pro","tier":"standard","mechanism":"sub-agent","tracker_issue":"PRJ-57","outcome":"success","retries":0,"phase":2,"file_partition":["src/components/"]}' >> .github/customizations/logs/delegations.ndjson
+```
+Verify: `tail -1 .github/customizations/logs/delegations.ndjson`
+
+> **`model` and `tier` must reflect the delegated agent's assignment from the agent registry** — not the Team Lead's own model.
 
 **Fast review record** (Team Lead, after each fast review):
 ```bash
-echo '{"timestamp":"2026-03-01T14:30:00Z","linear_issue":"PRJ-42","agent":"Developer","reviewer_model":"gpt-5-mini","verdict":"pass","attempt":1,"issues_critical":0,"issues_major":0,"issues_minor":2,"confidence":"high","escalated":false,"duration_sec":45}' >> .github/customizations/logs/reviews.ndjson
+echo '{"timestamp":"2026-03-01T14:30:00Z","tracker_issue":"PRJ-42","agent":"Developer","reviewer_model":"gpt-5-mini","verdict":"pass","attempt":1,"issues_critical":0,"issues_major":0,"issues_minor":2,"confidence":"high","escalated":false,"duration_sec":45}' >> .github/customizations/logs/reviews.ndjson
 ```
 
 **Panel record** (after each panel majority vote):
 ```bash
-echo '{"timestamp":"2026-03-01T15:00:00Z","panel_key":"auth-review","verdict":"pass","pass_count":2,"block_count":1,"must_fix":0,"should_fix":3,"reviewer_model":"claude-opus-4-6","weighted":false,"attempt":1,"linear_issue":"PRJ-42","artifacts_count":5}' >> .github/customizations/logs/panels.ndjson
+echo '{"timestamp":"2026-03-01T15:00:00Z","panel_key":"auth-review","verdict":"pass","pass_count":2,"block_count":1,"must_fix":0,"should_fix":3,"reviewer_model":"claude-opus-4-6","weighted":false,"attempt":1,"tracker_issue":"PRJ-42","artifacts_count":5}' >> .github/customizations/logs/panels.ndjson
 ```
 
 **Dispute record** (Team Lead, after each dispute):
 ```bash
-echo '{"timestamp":"2026-03-01T16:00:00Z","dispute_id":"DSP-001","linear_issue":"PRJ-42","priority":"high","trigger":"panel-3x-block","implementing_agent":"Developer","reviewing_agents":["Reviewer","Panel (3x)"],"total_attempts":6,"est_tokens_spent":120000,"status":"pending","resolution_option_chosen":null,"resolved_at":null}' >> .github/customizations/logs/disputes.ndjson
+echo '{"timestamp":"2026-03-01T16:00:00Z","dispute_id":"DSP-001","tracker_issue":"PRJ-42","priority":"high","trigger":"panel-3x-block","implementing_agent":"Developer","reviewing_agents":["Reviewer","Panel (3x)"],"total_attempts":6,"est_tokens_spent":120000,"status":"pending","resolution_option_chosen":null,"resolved_at":null}' >> .github/customizations/logs/disputes.ndjson
 ```
 
 ### Pre-Response Logging Checklist

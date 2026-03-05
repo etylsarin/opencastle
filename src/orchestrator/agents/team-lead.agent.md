@@ -101,8 +101,11 @@ When calling `runSubagent`, always specify which custom agent to use by name: *"
 
 **After each sub-agent returns**, log immediately:
 ```bash
-echo '{"timestamp":"...","session_id":"<branch>","agent":"...","model":"...","tier":"...","mechanism":"sub-agent","outcome":"...","retries":0,"phase":N,"file_partition":["..."]}' >> .github/customizations/logs/delegations.ndjson
+echo '{"timestamp":"<ISO-NOW>","session_id":"<branch>","agent":"<name>","model":"<model>","tier":"<tier>","mechanism":"sub-agent","tracker_issue":"<issue-or-N/A>","outcome":"<success|partial|failed>","retries":0,"phase":<N>,"file_partition":["<paths>"]}' >> .github/customizations/logs/delegations.ndjson
 ```
+Verify: `tail -1 .github/customizations/logs/delegations.ndjson`
+
+> **`model` and `tier` must come from the agent registry** — not the Team Lead's own model. Look up the agent in [agent-registry.md](../customizations/agents/agent-registry.md) and use their assigned model and tier. For example, delegating to Developer → `"model":"gemini-3.1-pro","tier":"standard"`, not the Team Lead's `claude-opus-4-6`.
 
 ### Background Agents — Delegate Session
 
@@ -116,8 +119,11 @@ Spawn via: Delegate Session → Background → Select agent → Enter prompt wit
 
 **After spawning**, log immediately (with `"outcome":"pending"`):
 ```bash
-echo '{"timestamp":"...","session_id":"<branch>","agent":"...","model":"...","tier":"...","mechanism":"background","outcome":"pending","retries":0,"phase":N,"file_partition":["..."]}' >> .github/customizations/logs/delegations.ndjson
+echo '{"timestamp":"<ISO-NOW>","session_id":"<branch>","agent":"<name>","model":"<model>","tier":"<tier>","mechanism":"background","tracker_issue":"<issue-or-N/A>","outcome":"pending","retries":0,"phase":<N>,"file_partition":["<paths>"]}' >> .github/customizations/logs/delegations.ndjson
 ```
+Verify: `tail -1 .github/customizations/logs/delegations.ndjson`
+
+> **`model` and `tier` must come from the agent registry** — see note in Sub-Agents section above.
 
 **Rule of thumb:** Sub-agents for the critical path. Background agents for parallel work off the critical path.
 

@@ -1139,7 +1139,7 @@ const base = import.meta.env.BASE_URL;
             (s.retries != null ? s.retries : '\u2014') +
             '</td>' +
             '<td class="td-issue">' +
-            (s.linear_issue ? escapeHtml(s.linear_issue) : '\u2014') +
+            (s.tracker_issue ? escapeHtml(s.tracker_issue) : '\u2014') +
             '</td>' +
             '</tr>'
         )
@@ -1275,7 +1275,7 @@ const base = import.meta.env.BASE_URL;
             '<td class="td-num">' + (r.confidence || '\u2014') + '</td>' +
             '<td class="td-num">' + (r.attempt ?? 1) + '</td>' +
             '<td class="td-num">' + (r.escalated ? '\u26A0' : '\u2014') + '</td>' +
-            '<td class="td-issue">' + (r.linear_issue ? escapeHtml(r.linear_issue) : '\u2014') + '</td>' +
+            '<td class="td-issue">' + (r.tracker_issue ? escapeHtml(r.tracker_issue) : '\u2014') + '</td>' +
             '</tr>'
         )
         .join('') +
