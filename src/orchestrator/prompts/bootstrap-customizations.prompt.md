@@ -1,6 +1,6 @@
 ---
 description: 'Bootstrap the .github/customizations/ directory for a new project. Discovers project structure, tech stack, and configuration, then generates all customization files so skills have project-specific context to operate on.'
-agent: Team Lead
+agent: 'Team Lead (OpenCastle)'
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
@@ -61,7 +61,7 @@ The result is a single unified view of the project's tech stack:
 **Use `repoInfo` to:**
 - Skip re-scanning for technologies already listed — go straight to reading their config files
 - Pre-fill the tech stack table in `project.instructions.md`
-- Know which `stack/` config files to create (e.g., if `repoInfo.databases` includes `"prisma"`, create `stack/prisma-config.md`)
+- Know which `stack/` config files to create (e.g., if `repoInfo.databases` includes `"prisma"`, create `stack/prisma-config.md`; if `repoInfo.deployment` includes `"vercel"`, create `stack/deployment-config.md`)
 - Know which `project/` config files to create (e.g., if `repoInfo.pm` includes `"linear"`, create `project/linear-config.md`)
 - Identify `configFiles` to read for deep inspection (Phase 1.3)
 
@@ -188,7 +188,7 @@ Files are organized into subdirectories by domain:
    - Middleware chain
    - Authentication/authorization patterns
 
-9. **`stack/deployment-config.md`** — If deployment config exists:
+9. **`stack/deployment-config.md`** — If deployment config exists or `repoInfo.deployment` is non-empty:
    - Platform and architecture
    - Environment variables (names, not values)
    - Cron jobs / scheduled tasks

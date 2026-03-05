@@ -1,6 +1,6 @@
 ---
 description: 'Generate a valid opencastle.tasks.yml spec file for autonomous overnight runs based on a high-level description of what needs to be done.'
-agent: Team Lead
+agent: 'Team Lead (OpenCastle)'
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

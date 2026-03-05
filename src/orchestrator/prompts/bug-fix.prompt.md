@@ -1,6 +1,6 @@
 ---
 description: 'Investigate and fix a reported bug with proper triage, root cause analysis, issue tracking, and verification.'
-agent: Team Lead
+agent: 'Team Lead (OpenCastle)'
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

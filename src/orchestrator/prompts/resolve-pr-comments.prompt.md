@@ -1,6 +1,6 @@
 ---
 description: 'Resolve GitHub PR review comments by reading them, grouping by file, and applying fixes systematically.'
-agent: Team Lead
+agent: 'Team Lead (OpenCastle)'
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

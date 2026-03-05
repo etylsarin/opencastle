@@ -1,6 +1,6 @@
 ---
 description: 'Collaborative brainstorm to explore requirements, approaches, and trade-offs BEFORE committing to a plan. Use when the task has ambiguity, multiple valid approaches, or significant design decisions.'
-agent: Team Lead
+agent: 'Team Lead (OpenCastle)'
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
