@@ -3,6 +3,7 @@ description: 'SEO specialist for meta tags, structured data, sitemap strategy, O
 name: 'SEO Specialist'
 model: GPT-5 mini
 tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'search', 'search/usages']
+user-invokable: false
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

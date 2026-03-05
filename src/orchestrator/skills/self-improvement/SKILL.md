@@ -21,36 +21,7 @@ This is the team's collective memory — a structured log of tool/command pitfal
 
 ## Protocol for All Agents
 
-### BEFORE Starting Work (Mandatory)
-
-1. **Read `.github/customizations/LESSONS-LEARNED.md`** — scan the full file or at minimum the categories relevant to your task
-2. **Apply relevant lessons proactively** — don't wait to hit the same wall; use the documented correct approach from the start
-3. **Check the Index by Category table** at the bottom of the file to quickly find relevant sections
-
-### DURING Execution (Trigger-Based)
-
-A lesson MUST be written when **any** of these triggers occur:
-
-| Trigger | Example |
-|---------|---------|
-| **Retry with different approach** | Command fails, you try a different flag/syntax and it works |
-| **Tool call fails unexpectedly** | MCP tool returns error, you discover the correct parameter format |
-| **Workaround needed** | Platform limitation requires non-obvious solution |
-| **Docs are misleading** | Official docs say X but reality is Y |
-| **Configuration surprise** | Default behavior differs from expectation |
-| **Error message is unhelpful** | Error says "failed" but the real cause was something else |
-
-### AFTER Completing Work
-
-1. If you wrote any new lessons during execution, **update the Index by Category table** at the bottom of `.github/customizations/LESSONS-LEARNED.md` to include the new lesson IDs.
-
-2. **Log the session** — append one JSON line to `.github/customizations/logs/sessions.ndjson` with: `timestamp`, `agent`, `model`, `task`, `tracker_issue`, `outcome` (success/partial/failed), `files_changed`, `retries`, `lessons_added`, `discoveries`. See `.github/customizations/logs/README.md` for the full schema.
-
-   ```bash
-   echo '{"timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","agent":"Agent Name","model":"model-id","task":"Short description","outcome":"success","files_changed":N,"retries":0}' >> .github/customizations/logs/sessions.ndjson
-   ```
-
-   This is **mandatory** — session logging fuels the observability dashboard (`npx opencastle dashboard`).
+The core protocol (read lessons → write on retry → log session) is defined in `general.instructions.md` § Self-Improvement Protocol. This skill provides the detailed reference material for writing lessons.
 
 ## How to Write a Lesson
 

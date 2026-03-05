@@ -3,6 +3,7 @@ description: 'Full-stack developer for building pages, components, routing, layo
 name: 'Developer'
 model: Gemini 3.1 Pro (Preview)
 tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'vscode/getProjectSetupInfo', 'vscode/installExtension', 'vscode/newWorkspace', 'vscode/runCommand', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages']
+user-invokable: false
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

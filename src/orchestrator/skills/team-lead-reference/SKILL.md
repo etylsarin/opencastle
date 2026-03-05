@@ -113,30 +113,11 @@ Take the Researcher output and update delegation prompts with concrete file path
 
 ## Pre-Delegation Policy Checks
 
-Run these validation checks **before** delegating any subtask. Non-negotiable gates.
+See the Team Lead agent file § Pre-Delegation Checks for the mandatory 5-point checklist (tracker issue, file partition, dependencies, prompt specifics, self-improvement reminder).
 
-### Mandatory Checks (before every delegation)
+**Additional checks for feature work:** (6) Known issues reviewed, (7) Architecture docs read, (8) Existing code searched.
 
-1. **Tracker issue exists** — The subtask has a tracked issue with acceptance criteria
-2. **File partition is clean** — No overlap with other active/parallel agents
-3. **Dependencies are met** — All prerequisite tasks are verified Done (not just claimed done)
-4. **Prompt is specific** — Contains: objective, file paths, acceptance criteria, patterns to follow
-5. **Lessons file referenced** — Prompt includes self-improvement reminder
-
-### Context Checks (before feature work)
-
-6. **Known issues reviewed** — known issues doc checked for blockers
-7. **Architecture docs read** — architecture and decision docs consulted
-8. **Existing code searched** — Confirmed no duplicate implementation exists
-
-### Safety Checks (before high-risk delegations)
-
-9. **Panel review planned** — Security, auth, DB migration, or architecture changes have panel review scheduled
-10. **Rollback path identified** — For DB migrations or data changes, rollback strategy is documented
-
-### Enforcement
-
-Before calling `runSubagent` or handing off to a background agent, mentally walk through checks 1-5. If any fail, fix the gap first. Checks 6-8 apply at feature start. Checks 9-10 apply only to high-risk work.
+**Additional checks for high-risk work:** (9) Panel review planned, (10) Rollback path identified.
 
 ## Cost Tracking Convention
 
@@ -222,45 +203,9 @@ At the start of each session, scan the agent failures doc for:
 - **Patterns** — same agent failing repeatedly may indicate a prompt or skill issue
 - **Tool issues** — MCP servers or external dependencies that need attention
 
-## Batch Review Strategy
+## Error Recovery
 
-When multiple agents complete work simultaneously, **batch similar reviews together**:
-- Review all API/query changes in one session, then all UI changes in another
-- Context-switches less and you spot inconsistencies more easily
-
-## Error Recovery Playbook
-
-Common failure modes and how to recover:
-
-### Agent Stuck in Retry Loop
-
-**Symptom:** Agent retries the same failing command 3+ times without changing approach.
-**Recovery:** Intervene immediately. Read the error output, identify the root cause, and re-delegate with explicit fix instructions. Add a lesson to lessons learned.
-
-### MCP Tool Unavailable
-
-**Symptom:** Tool calls fail with connection or timeout errors.
-**Recovery:** (1) Check if the MCP server is running. (2) If transient, retry once. (3) If persistent, work around: use CLI tools as alternatives. Log to DLQ if critical.
-
-### Background Agent Produces Broken Output
-
-**Symptom:** Background agent returns, but files have lint/type/test errors.
-**Recovery:** (1) Review the diff to understand intent. (2) If fixable with small edits, fix inline. (3) If fundamentally wrong, discard the worktree changes and re-delegate with a more specific prompt. (4) Log to DLQ after 2 failed attempts.
-
-### Merge Conflict from Parallel Agents
-
-**Symptom:** Two background agents modified overlapping files.
-**Recovery:** (1) This should never happen if file partitioning was followed. (2) Accept one agent's changes first (the one with more complex work). (3) Re-delegate the simpler changes to adapt to the new state. (4) Add the conflict to your lessons learned.
-
-### Context Window Exhausted
-
-**Symptom:** Agent responses become confused, repetitive, or lose track of earlier instructions.
-**Recovery:** (1) Save a session checkpoint immediately. (2) End the current session. (3) Resume in a new session, loading the checkpoint. (4) Reduce parallel work in the next session.
-
-### Test Failures After Merge
-
-**Symptom:** Tests pass individually but fail when multiple agent outputs are merged.
-**Recovery:** (1) Run affected tests to identify which projects break. (2) Check for import conflicts, duplicate definitions, or state pollution. (3) Delegate fix to the agent whose changes are most likely the cause.
+For common failure modes and recovery procedures, load the **orchestration-protocols** skill.
 
 ## Dispute Protocol
 

@@ -114,3 +114,37 @@ Monitor delegated agents for failure signals. Intervene early rather than waitin
 1. **First failure:** Re-delegate with more specific prompt + error context
 2. **Second failure:** Downscope the task (split into smaller pieces) and re-delegate
 3. **Third failure:** Log to Dead Letter Queue (`.github/customizations/AGENT-FAILURES.md`), escalate to Architect for root cause analysis. If the failure involves a panel 3x BLOCK or unresolvable agent/reviewer conflict, create a **dispute record** in `.github/customizations/DISPUTES.md` instead (see **team-lead-reference** skill § Dispute Protocol).
+
+## Error Recovery Playbook
+
+Common failure modes and how to recover:
+
+### Agent Stuck in Retry Loop
+
+**Symptom:** Agent retries the same failing command 3+ times without changing approach.
+**Recovery:** Intervene immediately. Read the error output, identify the root cause, and re-delegate with explicit fix instructions. Add a lesson to lessons learned.
+
+### MCP Tool Unavailable
+
+**Symptom:** Tool calls fail with connection or timeout errors.
+**Recovery:** (1) Check if the MCP server is running. (2) If transient, retry once. (3) If persistent, work around: use CLI tools as alternatives. Log to DLQ if critical.
+
+### Background Agent Produces Broken Output
+
+**Symptom:** Background agent returns, but files have lint/type/test errors.
+**Recovery:** (1) Review the diff to understand intent. (2) If fixable with small edits, fix inline. (3) If fundamentally wrong, discard the worktree changes and re-delegate with a more specific prompt. (4) Log to DLQ after 2 failed attempts.
+
+### Merge Conflict from Parallel Agents
+
+**Symptom:** Two background agents modified overlapping files.
+**Recovery:** (1) This should never happen if file partitioning was followed. (2) Accept one agent's changes first (the one with more complex work). (3) Re-delegate the simpler changes to adapt to the new state. (4) Add the conflict to your lessons learned.
+
+### Context Window Exhausted
+
+**Symptom:** Agent responses become confused, repetitive, or lose track of earlier instructions.
+**Recovery:** (1) Save a session checkpoint immediately. (2) End the current session. (3) Resume in a new session, loading the checkpoint. (4) Reduce parallel work in the next session.
+
+### Test Failures After Merge
+
+**Symptom:** Tests pass individually but fail when multiple agent outputs are merged.
+**Recovery:** (1) Run affected tests to identify which projects break. (2) Check for import conflicts, duplicate definitions, or state pollution. (3) Delegate fix to the agent whose changes are most likely the cause.

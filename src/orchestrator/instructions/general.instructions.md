@@ -181,10 +181,8 @@ Append one JSON line per task using `echo '...' >> <file>`. When the Team Lead w
 echo '{"timestamp":"2026-03-01T14:00:00Z","agent":"Developer","model":"claude-opus-4-6","task":"Fix login redirect bug","outcome":"success","duration_min":15,"files_changed":3,"retries":0,"lessons_added":[],"discoveries":[]}' >> .github/customizations/logs/sessions.ndjson
 ```
 
-**Delegation record** (Team Lead only, after each delegation):
-```bash
-echo '{"timestamp":"2026-03-01T14:00:00Z","session_id":"feat/prj-57","agent":"Developer","model":"gpt-5.3-codex","tier":"fast","mechanism":"sub-agent","linear_issue":"PRJ-57","outcome":"success","retries":0,"phase":2,"file_partition":["src/components/"]}' >> .github/customizations/logs/delegations.ndjson
-```
+**Delegation record** (Team Lead only, **immediately after each delegation — not at session end**):
+Use the echo command template from the Team Lead agent file § Delegation. Fields: `timestamp`, `session_id`, `agent`, `model`, `tier`, `mechanism`, `linear_issue`, `outcome`, `retries`, `phase`, `file_partition`.
 
 **Fast review record** (Team Lead, after each fast review):
 ```bash
@@ -227,7 +225,13 @@ If ANY required log is missing, append it NOW before responding.
 **Every agent must learn from mistakes and share knowledge.** This prevents the same pitfalls from being repeated across sessions.
 
 1. **Before starting work:** Read `.github/customizations/LESSONS-LEARNED.md` — apply relevant lessons proactively. This is NOT optional.
-2. **During execution:** If you retry a command/tool with a different approach and it works, **immediately** add a lesson entry to `.github/customizations/LESSONS-LEARNED.md`
+2. **During execution:** If any of these triggers occur, **immediately** add a lesson entry to `.github/customizations/LESSONS-LEARNED.md`:
+   - Retry with different approach that works
+   - Tool call fails unexpectedly (discover correct parameter format)
+   - Workaround needed for platform limitation
+   - Docs are misleading (reality differs from documentation)
+   - Configuration surprise (default behavior differs from expectation)
+   - Error message is unhelpful (real cause was something else)
 3. **Update source files:** If the lesson reveals a gap in instruction/skill files, update those files too
 4. **Update instructions:** Proactively suggest updates to `.github/instructions/` or `.github/skills/` files when:
    - The user had to intervene or correct the agent's approach

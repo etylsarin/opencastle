@@ -82,26 +82,7 @@ Load relevant skills before writing code.
 
 **When:** Team Lead only — before every delegation (sub-agent or background agent).
 
-### Actions
-
-1. **Tracker issue exists** — Verify the task has a tracker issue. If not, create one first.
-2. **File partition clean** — Confirm no overlap with other active agents' file ownership.
-3. **Dependencies verified** — All prerequisite tasks are marked Done with independent verification.
-4. **Prompt is specific** — Includes: objective, file paths, acceptance criteria, patterns to follow, self-improvement reminder.
-5. **Context map** (optional, for complex tasks) — If modifying 5+ files, generate a context map first (load **context-map** skill).
-6. **Cost check** — Estimate token usage based on task complexity and model tier. Check against session budget.
-
-### Quick Checklist
-
-```
-Pre-Delegate:
-☐ Tracker issue ID included
-☐ File partition specified
-☐ Dependencies are Done
-☐ Prompt has file paths + acceptance criteria
-☐ Self-improvement reminder included
-☐ Budget check passes
-```
+Run the 5-point Pre-Delegation Checks from the Team Lead agent file: (1) Tracker issue exists, (2) File partition clean, (3) Dependencies verified Done, (4) Prompt has file paths + acceptance criteria, (5) Self-improvement reminder included. For complex tasks (5+ files), also generate a context map.
 
 ---
 
@@ -111,11 +92,9 @@ Pre-Delegate:
 
 ### Actions
 
-0. **Log the delegation NOW** — Append a record to `.github/customizations/logs/delegations.ndjson` immediately. Do this BEFORE review or verification — logging must not depend on review passing.
-   ```bash
-   echo '{"timestamp":"...","session_id":"<branch>","agent":"...","model":"...","tier":"...","mechanism":"sub-agent","outcome":"...","retries":0,"phase":N,"file_partition":["..."]}' >> .github/customizations/logs/delegations.ndjson
-   ```
-1. **Fast review (mandatory)** — Run the `fast-review` skill against the agent's output. This is a **non-skippable gate**. See the fast-review skill for the full procedure (single reviewer sub-agent, automatic retry, escalation). Only after the fast review passes do you proceed to the remaining post-delegate actions below.
+0. **Log the delegation** — Append a record to `.github/customizations/logs/delegations.ndjson` **before** proceeding to review or verification.
+   Use the delegation echo command template from the Team Lead agent file § Delegation.
+1. **Fast review (mandatory)** — Run the `fast-review` skill against the agent's output. This is a **non-skippable gate**. See the fast-review skill for the full procedure (single reviewer sub-agent, automatic retry, escalation). Log the review to `reviews.ndjson` immediately after. Only after the fast review passes do you proceed to the remaining post-delegate actions below.
 2. **Verify output** — Read changed files. Check that changes stay within the agent's file partition.
 2. **Run verification** — Execute appropriate checks: lint, type-check, tests, or visual inspection.
 3. **Check acceptance criteria** — Compare output against the tracker issue's acceptance criteria. Each criterion must be independently verified.

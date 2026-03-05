@@ -3,6 +3,7 @@ description: 'Copywriter for UI microcopy, marketing text, email templates, venu
 name: 'Copywriter'
 model: GPT-5 mini
 tools: ['search/codebase', 'edit/editFiles', 'web/fetch', 'search', 'read/problems', 'search/usages']
+user-invokable: false
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

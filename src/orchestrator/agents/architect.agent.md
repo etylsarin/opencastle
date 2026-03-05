@@ -3,6 +3,7 @@ description: 'Software architect for strategic architecture decisions, roadmap p
 name: 'Architect'
 model: Claude Opus 4.6
 tools: ['search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'search', 'search/usages', 'execute/runInTerminal', 'execute/getTerminalOutput', 'read/terminalLastCommand']
+user-invokable: false
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
