@@ -99,7 +99,7 @@ Synchronous — blocks until result. Use when:
 
 When calling `runSubagent`, always specify which custom agent to use by name: *"Use the **[Agent Name]** agent to [task]."* This routes the sub-agent to the named agent's model and tools instead of inheriting the Team Lead's Premium model. Include objective, file paths, acceptance criteria, and what to return in the result.
 
-**After each sub-agent returns**, log immediately:
+**After each sub-agent returns**, log the delegation record before doing anything else (before review, before verification):
 ```bash
 echo '{"timestamp":"<ISO-NOW>","session_id":"<branch>","agent":"<name>","model":"<model>","tier":"<tier>","mechanism":"sub-agent","tracker_issue":"<issue-or-N/A>","outcome":"<success|partial|failed>","retries":0,"phase":<N>,"file_partition":["<paths>"]}' >> .github/customizations/logs/delegations.ndjson
 ```
@@ -117,7 +117,7 @@ Async in isolated Git worktree. Use when:
 
 Spawn via: Delegate Session → Background → Select agent → Enter prompt with full self-contained context (they cannot ask follow-ups).
 
-**After spawning**, log immediately (with `"outcome":"pending"`):
+**After spawning**, log the delegation record before spawning another agent or doing any other work:
 ```bash
 echo '{"timestamp":"<ISO-NOW>","session_id":"<branch>","agent":"<name>","model":"<model>","tier":"<tier>","mechanism":"background","tracker_issue":"<issue-or-N/A>","outcome":"pending","retries":0,"phase":<N>,"file_partition":["<paths>"]}' >> .github/customizations/logs/delegations.ndjson
 ```
@@ -248,14 +248,18 @@ See [shared-delivery-phase.md](../agent-workflows/shared-delivery-phase.md) for 
 
 ## Observability
 
-Delegation logging happens **inline with each delegation** (see § Delegation above). Additionally:
+> **⛔ HARD GATE — ALL observability logging is mandatory.** No record type is optional.
+> The Session Guard will flag missing records, but do not rely on it — log inline as you go.
 
-- Session records → `sessions.ndjson` (one per task, before yielding to user)
-- Fast reviews → `reviews.ndjson`
-- Panel reviews → `panels.ndjson`
-- Disputes → `disputes.ndjson`
+| Record | File | When to log | Timing |
+|--------|------|-------------|--------|
+| **Session** | `sessions.ndjson` | Every session — always | Before yielding to user |
+| **Delegation** | `delegations.ndjson` | After each `runSubagent` / background spawn | **Inline** — immediately after each delegation, before review |
+| **Fast review** | `reviews.ndjson` | After each fast review | After review completes |
+| **Panel** | `panels.ndjson` | After each panel majority vote | After panel completes |
+| **Dispute** | `disputes.ndjson` | After each dispute is created | When dispute is filed |
 
-The **Session Guard** verifies completeness as your last action. Pass it: task description, delegation list, whether reviews/panels ran, retries, discoveries, files changed, commit/branch status.
+**Self-check before calling Session Guard:** Count delegations, reviews, and panels performed → count records written → numbers must match for each type. If any count is off, fix it before calling the guard.
 
 ## Rules
 
@@ -269,7 +273,7 @@ The **Session Guard** verifies completeness as your last action. Pass it: task d
 8. Never proceed to dependent task until prerequisite is verified
 9. Sub-agents must not spawn other sub-agents (no recursive delegation)
 10. Never push to `main` — feature branch → PR → human merges
-11. Log every delegation inline — do not defer to session end
+11. Log every delegation inline — immediately after each `runSubagent` or background spawn, not at session end
 12. Steer early — don't wait until an agent finishes to redirect when you spot drift
 13. Never exceed session budget without checkpointing — context degrades after 8+ delegations
 14. Read `LESSONS-LEARNED.md` before delegating — include relevant lessons in prompts

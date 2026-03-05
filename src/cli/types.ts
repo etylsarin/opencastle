@@ -3,7 +3,7 @@ import type { ChildProcess } from 'node:child_process';
 // ── Stack selection types ──────────────────────────────────────
 
 export type IdeChoice = 'vscode' | 'cursor' | 'claude-code' | 'opencode';
-export type TechTool = 'sanity' | 'contentful' | 'strapi' | 'supabase' | 'convex' | 'vercel' | 'nx' | 'chrome-devtools' | 'nextjs' | 'astro';
+export type TechTool = 'sanity' | 'contentful' | 'strapi' | 'supabase' | 'convex' | 'vercel' | 'nx' | 'chrome-devtools' | 'nextjs' | 'astro' | 'netlify' | 'turborepo' | 'prisma' | 'cypress' | 'playwright' | 'vitest' | 'figma' | 'resend';
 export type TeamTool = 'linear' | 'jira' | 'slack' | 'teams';
 
 export interface StackConfig {

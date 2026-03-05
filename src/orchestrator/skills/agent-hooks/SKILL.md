@@ -106,11 +106,12 @@ Run the 5-point Pre-Delegation Checks from the Team Lead agent file: (1) Tracker
 
 ```
 Post-Delegate:
-☐ Delegation logged to delegations.ndjson (FIRST — before anything else)
+☐ Delegation logged to delegations.ndjson (before review — verify with tail -1)
 ☐ Changed files reviewed
 ☐ Files within partition
 ☐ Lint/test/build passes
 ☐ Fast review PASS (mandatory — load fast-review skill)
+☐ Review logged to reviews.ndjson (verify with tail -1)
 ☐ Acceptance criteria met
 ☐ Discovered issues tracked (not ignored)
 ☐ Lessons captured (if retries occurred)
