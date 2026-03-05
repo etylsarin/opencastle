@@ -193,6 +193,36 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
     allManagedPaths.customizable.push(...managed.customizable)
   }
 
+  // If all files were skipped (orphaned install — no manifest but files exist)
+  if (totalCreated === 0 && totalSkipped > 0 && !isReinit) {
+    console.log(`  ${c.yellow('⚠')}  Found ${totalSkipped} existing files from a previous installation.`)
+    const overwrite = await confirm('Overwrite existing files?', true)
+    if (overwrite) {
+      // Delete framework paths and re-run install
+      for (const ide of ides) {
+        const adapter = await IDE_ADAPTERS[ide]()
+        const managed = adapter.getManagedPaths()
+        for (const p of managed.framework) {
+          const fullPath = resolve(projectRoot, p)
+          if (p.endsWith('/')) {
+            await removeDirIfExists(fullPath)
+          } else if (existsSync(fullPath)) {
+            await unlink(fullPath)
+          }
+        }
+      }
+      // Re-run install
+      totalCreated = 0
+      totalSkipped = 0
+      for (const ide of ides) {
+        const adapter = await IDE_ADAPTERS[ide]()
+        const results = await adapter.install(pkgRoot, projectRoot, stack, combinedRepoInfo)
+        totalCreated += results.created.length
+        totalSkipped += results.skipped.length
+      }
+    }
+  }
+
   // ── Write manifest ──────────────────────────────────────────────
   const manifest = createManifest(pkg.version, ides[0], ides)
   manifest.managedPaths = allManagedPaths

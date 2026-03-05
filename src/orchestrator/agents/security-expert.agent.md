@@ -3,7 +3,7 @@ description: "Security expert for authentication, authorization, RLS policies, s
 name: "Security Expert"
 model: Claude Opus 4.6
 tools: ["search/changes", "search/codebase", "edit/editFiles", "web/fetch", "vscode/getProjectSetupInfo", "vscode/installExtension", "vscode/newWorkspace", "vscode/runCommand", "read/problems", "execute/getTerminalOutput", "execute/runInTerminal", "read/terminalLastCommand", "read/terminalSelection", "search", "execute/testFailure", "search/usages"]
-user-invokable: false
+user-invocable: false
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

@@ -15,7 +15,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtemp, readFile, readdir, rm, mkdir, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, readdir, rm, unlink } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { existsSync } from 'node:fs'
@@ -1137,5 +1137,57 @@ describe('full stack configuration', () => {
     const servers = mcpConfig.servers as Record<string, unknown>
     expect(servers).toHaveProperty('Vercel')
     expect(servers).toHaveProperty('Sanity')
+  })
+})
+
+// ═══════════════════════════════════════════════════════════════
+// § 11  Orphaned Installation Handling
+// ═══════════════════════════════════════════════════════════════
+
+describe('init: orphaned installation handling', () => {
+  let tempDir: string
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'opencastle-orphan-test-'))
+  })
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true })
+  })
+
+  it('skips all files when .github/ exists but no .opencastle.json (fresh install path)', async () => {
+    // Simulate orphaned installation — files exist but no manifest
+    const adapter = await IDE_ADAPTERS['vscode']()
+
+    // First install — creates files
+    const firstResult = await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+    expect(firstResult.created.length).toBeGreaterThan(0)
+
+    // Second install (without reinit cleanup) — all files skipped
+    const secondResult = await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+    expect(secondResult.created.length).toBe(0)
+    expect(secondResult.skipped.length).toBeGreaterThan(0)
+  })
+
+  it('creates files after framework dirs are cleaned up (reinit path)', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+
+    // First install
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    // Simulate reinit cleanup — delete framework dirs
+    const managed = adapter.getManagedPaths()
+    for (const p of managed.framework) {
+      const fullPath = join(tempDir, p)
+      if (p.endsWith('/')) {
+        if (existsSync(fullPath)) await rm(fullPath, { recursive: true })
+      } else if (existsSync(fullPath)) {
+        await unlink(fullPath)
+      }
+    }
+
+    // Second install after cleanup — creates framework files
+    const secondResult = await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+    expect(secondResult.created.length).toBeGreaterThan(0)
   })
 })

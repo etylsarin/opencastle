@@ -3,7 +3,7 @@ description: 'Codebase exploration specialist for deep research, pattern discove
 name: 'Researcher'
 model: GPT-5 mini
 tools: ['search/codebase', 'search/textSearch', 'search/fileSearch', 'search/usages', 'read/readFile', 'search/listDirectory', 'web/fetch', 'execute/runInTerminal', 'read/terminalLastCommand']
-user-invokable: false
+user-invocable: false
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

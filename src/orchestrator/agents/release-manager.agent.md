@@ -3,7 +3,7 @@ description: 'Release manager for pre-release verification, changelog generation
 name: 'Release Manager'
 model: GPT-5.3-Codex
 tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'read/problems', 'execute/getTerminalOutput', 'execute/runInTerminal', 'read/terminalLastCommand', 'read/terminalSelection', 'search', 'execute/testFailure', 'search/usages']
-user-invokable: false
+user-invocable: false
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

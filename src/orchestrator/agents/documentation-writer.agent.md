@@ -3,7 +3,7 @@ description: 'Documentation writer for maintaining project docs, roadmaps, chang
 name: 'Documentation Writer'
 model: GPT-5 mini
 tools: ['search/codebase', 'edit/editFiles', 'web/fetch', 'search', 'read/problems']
-user-invokable: false
+user-invocable: false
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
