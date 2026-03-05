@@ -1,6 +1,6 @@
 ---
 description: 'Scaffold a new skill file with proper frontmatter, structure, and registration. Use when adding a new domain skill to the AI configuration.'
-agent: Team Lead
+agent: 'Team Lead (OpenCastle)'
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

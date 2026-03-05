@@ -116,6 +116,11 @@ export function closePrompts(): void {
     _lineBuffer.length = 0;
     _lineResolver = null;
   }
+  // Ensure stdin doesn't keep the event loop alive after all prompts are done.
+  // Node.js TTY stdin can remain active even after readline.close() — unref it
+  // so the process exits cleanly.
+  stdin.pause();
+  stdin.unref();
 }
 
 /**

@@ -1,6 +1,6 @@
 ---
 description: 'Instruct the Team Lead to implement a specific task from the post-MVP roadmap with full orchestration, validation, and traceability.'
-agent: Team Lead
+agent: 'Team Lead (OpenCastle)'
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

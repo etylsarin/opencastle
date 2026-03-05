@@ -98,7 +98,7 @@
       "slots": [],
       "directSkills": ["context-map", "self-improvement"]
     },
-    "Team Lead": {
+    "Team Lead (OpenCastle)": {
       "slots": ["task-management"],
       "directSkills": ["team-lead-reference", "session-checkpoints", "validation-gates", "fast-review", "panel-majority-vote", "context-map", "memory-merger", "agent-hooks", "decomposition", "orchestration-protocols"]
     }

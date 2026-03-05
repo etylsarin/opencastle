@@ -360,6 +360,17 @@ describe('VS Code adapter install', () => {
     expect(existsSync(join(tempDir, '.vscode', 'mcp.json'))).toBe(true)
   })
 
+  it('creates all observability log files in customizations/logs', async () => {
+    const adapter = await IDE_ADAPTERS['vscode']()
+    await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+
+    const logsDir = join(tempDir, '.github', 'customizations', 'logs')
+    expect(existsSync(logsDir)).toBe(true)
+    for (const file of ['sessions.ndjson', 'delegations.ndjson', 'reviews.ndjson', 'panels.ndjson', 'disputes.ndjson']) {
+      expect(existsSync(join(logsDir, file))).toBe(true)
+    }
+  })
+
   it('excludes content-engineer and database-engineer agents when no CMS/DB', async () => {
     const adapter = await IDE_ADAPTERS['vscode']()
     await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
@@ -710,7 +721,7 @@ describe('Claude Code adapter install', () => {
     const content = await readFile(join(tempDir, 'CLAUDE.md'), 'utf8')
     expect(content).toContain('## Agent Definitions')
     expect(content).toContain('**Developer**')
-    expect(content).toContain('**Team Lead**')
+    expect(content).toContain('**Team Lead (OpenCastle)**')
     // Should NOT list excluded agents
     expect(content).not.toContain('**Content Engineer**')
     expect(content).not.toContain('**Database Engineer**')

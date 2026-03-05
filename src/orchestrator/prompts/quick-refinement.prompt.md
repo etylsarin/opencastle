@@ -1,6 +1,6 @@
 ---
 description: 'Handle follow-up refinements after a roadmap task — bug fixes, UI tweaks, polish, and adjustments that are too small for issue tracking.'
-agent: Team Lead
+agent: 'Team Lead (OpenCastle)'
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->

@@ -1,5 +1,5 @@
 import { resolve } from 'node:path';
-import { readFile, access, readdir } from 'node:fs/promises';
+import { readFile, access, readdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { readManifest } from './manifest.js';
 import { getRequiredMcpEnvVars } from './stack-config.js';
@@ -73,9 +73,9 @@ async function checkInstructions(projectRoot: string): Promise<CheckResult> {
 }
 
 async function checkAgents(projectRoot: string): Promise<CheckResult> {
-  const dir = resolve(projectRoot, '.github', 'customizations', 'agents');
+  const dir = resolve(projectRoot, '.github', 'agents');
   if (!existsSync(dir)) {
-    return { ok: false, label: 'Agent definitions', detail: 'agents/ directory not found in customizations' };
+    return { ok: false, label: 'Agent definitions', detail: '.github/agents/ directory not found' };
   }
   const files = await readdir(dir).catch(() => []);
   const agentFiles = files.filter((f) => f.endsWith('.agent.md'));
@@ -102,7 +102,11 @@ async function checkLogs(projectRoot: string): Promise<CheckResult> {
   const required = ['sessions.ndjson', 'delegations.ndjson', 'reviews.ndjson', 'panels.ndjson', 'disputes.ndjson'];
   const missing = required.filter((f) => !existsSync(resolve(dir, f)));
   if (missing.length > 0) {
-    return { ok: true, label: 'Observability logs', detail: `Missing: ${missing.join(', ')}`, warning: true };
+    // Auto-create missing log files — they're empty NDJSON stubs
+    for (const file of missing) {
+      await writeFile(resolve(dir, file), '', { flag: 'wx' }).catch(() => {/* already exists */});
+    }
+    return { ok: true, label: 'Observability logs', detail: `Created missing: ${missing.join(', ')}` };
   }
   return { ok: true, label: 'Observability logs', detail: 'All log files present' };
 }
