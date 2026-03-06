@@ -1,7 +1,7 @@
 import { resolve } from 'node:path'
 import { parseTaskSpec } from './run/schema.js'
 import { createExecutor, buildPhases } from './run/executor.js'
-import { getAdapter } from './run/adapters/index.js'
+import { getAdapter, detectAdapter } from './run/adapters/index.js'
 import { createReporter, printExecutionPlan } from './run/reporter.js'
 import type { CliContext, RunOptions } from './types.js'
 
@@ -46,6 +46,7 @@ function parseArgs(args: string[]): RunOptions {
         if (i + 1 >= args.length) { console.error('  \u2717 --file requires a path'); process.exit(1) }
         opts.file = args[++i]
         break
+      case '--dryRun':
       case '--dry-run':
         opts.dryRun = true
         break
@@ -102,6 +103,19 @@ export default async function run({ args }: CliContext): Promise<void> {
   if (opts.adapter !== null) spec.adapter = opts.adapter
   if (opts.verbose) spec._verbose = true
 
+  // ── Auto-detect adapter if not specified ─────────────────────
+  let detectionFailed = false
+  if (!spec.adapter) {
+    const detected = await detectAdapter()
+    if (detected) {
+      spec.adapter = detected
+      console.log(`  ℹ Auto-detected adapter: ${detected}`)
+    } else {
+      detectionFailed = true
+      spec.adapter = 'claude-code' // fallback for availability check below
+    }
+  }
+
   // ── Dry run ──────────────────────────────────────────────────
   const phases = buildPhases(spec.tasks)
 
@@ -114,26 +128,38 @@ export default async function run({ args }: CliContext): Promise<void> {
   const adapter = await getAdapter(spec.adapter)
   const available = await adapter.isAvailable()
   if (!available) {
-    const hints: Record<string, string> = {
-      'claude-code':
-        '    Install: npm install -g @anthropic-ai/claude-code\n' +
-        '    Docs:    https://docs.anthropic.com/en/docs/claude-code',
-      copilot:
-        '    Requires the Copilot CLI installed and authenticated:\n' +
-        '    https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n' +
-        '    Docs:    https://docs.github.com/en/copilot',
-      cursor:
-        '    The Cursor agent CLI ships with the Cursor editor.\n' +
-        '    Install Cursor from https://cursor.com and ensure the\n' +
-        '    "agent" command is on your PATH (Cursor > Install CLI).',
+    if (detectionFailed) {
+      console.error(
+        `  ✗ No agent CLI found on your PATH.\n` +
+          `    Install one of the following adapters:\n` +
+          `    • copilot    — https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n` +
+          `    • claude     — npm install -g @anthropic-ai/claude-code\n` +
+          `    • cursor     — https://cursor.com (Cursor > Install CLI)\n` +
+          `\n` +
+          `    Or specify an adapter explicitly: opencastle run --adapter <name>`
+      )
+    } else {
+      const hints: Record<string, string> = {
+        'claude-code':
+          '    Install: npm install -g @anthropic-ai/claude-code\n' +
+          '    Docs:    https://docs.anthropic.com/en/docs/claude-code',
+        copilot:
+          '    Requires the Copilot CLI installed and authenticated:\n' +
+          '    https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n' +
+          '    Docs:    https://docs.github.com/en/copilot',
+        cursor:
+          '    The Cursor agent CLI ships with the Cursor editor.\n' +
+          '    Install Cursor from https://cursor.com and ensure the\n' +
+          '    "agent" command is on your PATH (Cursor > Install CLI).',
+      }
+      const cliName = spec.adapter === 'claude-code' ? 'claude' : spec.adapter
+      const hint = hints[spec.adapter] ?? ''
+      console.error(
+        `  ✗ Adapter "${spec.adapter}" is not available.\n` +
+          `    Make sure the "${cliName}" CLI is installed and on your PATH.\n` +
+          hint
+      )
     }
-    const cliName = spec.adapter === 'claude-code' ? 'claude' : spec.adapter
-    const hint = hints[spec.adapter] ?? ''
-    console.error(
-      `  ✗ Adapter "${spec.adapter}" is not available.\n` +
-        `    Make sure the "${cliName}" CLI is installed and on your PATH.\n` +
-        hint
-    )
     process.exit(1)
   }
 

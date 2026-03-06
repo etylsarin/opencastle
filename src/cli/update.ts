@@ -44,7 +44,7 @@ export default async function update({
     await readFile(resolve(pkgRoot, 'package.json'), 'utf8')
   ) as { version: string }
 
-  const dryRun = args.includes('--dry-run')
+  const dryRun = args.includes('--dry-run') || args.includes('--dryRun')
   const forceFlag = args.includes('--force')
   const reconfigureFlag = args.includes('--reconfigure')
 

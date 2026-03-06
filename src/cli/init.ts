@@ -14,7 +14,7 @@ import type { CliContext, IdeChoice, TechTool, TeamTool, StackConfig } from './t
 
 export default async function init({ pkgRoot, args }: CliContext): Promise<void> {
   const projectRoot = process.cwd()
-  const dryRun = args.includes('--dry-run')
+  const dryRun = args.includes('--dry-run') || args.includes('--dryRun')
 
   // Check for existing installation
   const existing = await readManifest(projectRoot)
