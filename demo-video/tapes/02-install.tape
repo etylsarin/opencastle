@@ -61,4 +61,4 @@ Sleep 600ms
 Enter
 
 # Wait for output to finish and fill remaining audio time
-Sleep 672ms
+Sleep 2672ms

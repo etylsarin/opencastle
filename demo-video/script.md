@@ -37,7 +37,7 @@
 **Visual:** Terminal. `tree .github/` and `ls` commands showing the generated structure.
 
 **Narration:**
-> "That one command created everything you need. Eighteen agents — a developer, database engineer, security expert, and more. Thirty-four skills loaded on demand. Eight workflow templates. And your MCP servers are pre-configured for Supabase, Linear, and Slack."
+> "That one command created everything you need. Eighteen agents — a developer, database engineer, security expert, and more. Many skills loaded on demand. Eight workflow templates. And your MCP servers are pre-configured for Supabase, Linear, and Slack."
 
 ---
 

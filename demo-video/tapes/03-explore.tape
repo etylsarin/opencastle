@@ -18,7 +18,7 @@ Sleep 500ms
 Show
 
 Sleep 500ms
-Type "find .github -maxdepth 2 -type d | sort"
+Type "find .github -maxdepth 2 -type d ! -path '.github/skills/*' ! -path '.github/plugins/*' | sort"
 Enter
 
-Sleep 16264ms
+Sleep 16456ms
