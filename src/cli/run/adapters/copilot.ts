@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process'
 import type { CopilotClient as CopilotClientType, CopilotSession, PermissionHandler } from '@github/copilot-sdk'
+import { parseTimeout } from '../schema.js'
 import type { Task, ExecuteOptions, ExecuteResult } from '../../types.js'
 
 /** Adapter name */
@@ -91,7 +92,8 @@ export async function execute(task: Task, options: ExecuteOptions = {}): Promise
   }
 
   try {
-    const response = await session.sendAndWait({ prompt })
+    const timeoutMs = parseTimeout(task.timeout)
+    const response = await session.sendAndWait({ prompt }, timeoutMs)
     const output = response?.data?.content ?? ''
 
     return {

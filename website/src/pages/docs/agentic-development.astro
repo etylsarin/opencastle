@@ -61,11 +61,14 @@ const sectionIcons: Record<string, string> = {
     <header class="docs-header">
       <div class="docs-header__inner">
         <div class="docs-header__brand">
-          <a href="/docs" class="docs-header__back" title="Back to Docs">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+          <a href="/" class="docs-header__logo-link">
+            <img class="docs-header__icon" src="/icon-192.png" alt="OpenCastle" width="28" height="28" />
           </a>
-          <img class="docs-header__icon" src="/icon-192.png" alt="OpenCastle" width="28" height="28" />
-          <h1 class="docs-header__title">Agentic Development</h1>
+          <h1 class="docs-header__title">
+            <a href="/docs/" class="docs-header__breadcrumb-link">Docs</a>
+            <span class="docs-header__breadcrumb-sep">/</span>
+            Agentic Development
+          </h1>
         </div>
       </div>
     </header>
@@ -736,13 +739,21 @@ const sectionIcons: Record<string, string> = {
           <p>Read the <a href="/docs/cli" class="docs-link">CLI documentation</a> for setup details, or explore the <a href="/docs/plugins" class="docs-link">plugin system</a> for extending OpenCastle with custom agents and skills.</p>
         </section>
 
-        <div class="docs-footer">
-          <a href="/docs">← Back to Docs</a>
-          <span class="docs-footer__sep">·</span>
-          <a href="/">OpenCastle</a>
-        </div>
       </main>
     </div>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <span class="footer__copyright">
+          MIT License · Filip Mares · 2026
+        </span>
+        <ul class="footer__links">
+          <li><a href="/docs/">Docs</a></li>
+          <li><a href="https://github.com/etylsarin/opencastle" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+          <li><a href="https://github.com/etylsarin/opencastle/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a></li>
+        </ul>
+      </div>
+    </footer>
 
     <style>
       :root {
@@ -765,16 +776,6 @@ const sectionIcons: Record<string, string> = {
         --color-dont-accent: #f87171;
         --max-width: 1280px;
         --transition-fast: .15s ease;
-      }
-
-      * { margin: 0; padding: 0; box-sizing: border-box; }
-
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        background: var(--bg-primary);
-        color: var(--text-primary);
-        -webkit-font-smoothing: antialiased;
-        min-height: 100vh;
       }
 
       /* ── Header ── */
@@ -801,12 +802,24 @@ const sectionIcons: Record<string, string> = {
         align-items: center;
         gap: .75rem;
       }
-      .docs-header__back {
-        color: var(--text-secondary);
+      .docs-header__logo-link {
         display: flex;
-        transition: color .15s;
+        align-items: center;
+        text-decoration: none;
       }
-      .docs-header__back:hover { color: var(--text-accent); }
+      .docs-header__breadcrumb-link {
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: color var(--transition-fast);
+      }
+      .docs-header__breadcrumb-link:hover {
+        color: var(--text-accent);
+      }
+      .docs-header__breadcrumb-sep {
+        color: var(--text-tertiary);
+        margin: 0 2px;
+        font-weight: 400;
+      }
       .docs-header__icon { border-radius: 6px; }
       .docs-header__title {
         font-size: 1rem;
@@ -1094,23 +1107,6 @@ const sectionIcons: Record<string, string> = {
         color: var(--text-tertiary);
         font-style: italic;
       }
-
-      /* ── Footer ── */
-      .docs-footer {
-        margin-top: 48px;
-        padding-top: 24px;
-        border-top: 1px solid var(--border-color);
-        font-size: 0.875rem;
-        display: flex;
-        gap: 8px;
-        align-items: center;
-      }
-      .docs-footer a {
-        color: var(--text-secondary);
-        text-decoration: none;
-      }
-      .docs-footer a:hover { color: var(--text-primary); }
-      .docs-footer__sep { color: var(--text-tertiary); }
 
       a { color: var(--text-accent); }
 

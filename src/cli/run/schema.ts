@@ -212,7 +212,8 @@ export function applyDefaults(spec: Record<string, unknown>): TaskSpec {
   const s = spec as Record<string, unknown>
   s.concurrency = s.concurrency !== undefined ? Number(s.concurrency) : 1
   s.on_failure = (s.on_failure as string) || 'continue'
-  s.adapter = (s.adapter as string) || 'claude-code'
+  // Leave adapter empty so run.ts can auto-detect the best available CLI
+  s.adapter = (s.adapter as string) || ''
 
   const tasks = s.tasks as Array<Record<string, unknown>>
   for (const task of tasks) {

@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { formatDuration } from './executor.js'
+import { c } from '../prompt.js'
 import type {
   TaskSpec,
   Task,
@@ -103,25 +104,26 @@ export function createReporter(spec: TaskSpec, options: ReporterOptions = {}): R
  * Print the execution plan (dry-run mode).
  */
 export function printExecutionPlan(spec: TaskSpec, phases: Task[][]): void {
-  console.log(`\n  🏰 Execution Plan: ${spec.name}`)
-  console.log(`  Adapter: ${spec.adapter}`)
-  console.log(`  Concurrency: ${spec.concurrency}`)
-  console.log(`  On failure: ${spec.on_failure}`)
-  console.log(`  Tasks: ${spec.tasks.length}`)
-  console.log()
+  console.log(`\n  ${c.bold(c.cyan(`🏰 Execution Plan: ${spec.name}`))}`)  
+  console.log(`  ${c.dim('Adapter:')}     ${c.cyan(spec.adapter)}`)
+  console.log(`  ${c.dim('Concurrency:')} ${c.yellow(String(spec.concurrency))}`)
+  console.log(`  ${c.dim('On failure:')}  ${c.yellow(spec.on_failure)}`)
+  console.log(`  ${c.dim('Tasks:')}       ${c.yellow(String(spec.tasks.length))}`)
+  console.log(`  ${c.dim('──────────────────────────────────')}`)
 
   for (let i = 0; i < phases.length; i++) {
     const phase = phases[i]
-    console.log(`  Phase ${i + 1}:`)
+    if (i > 0) console.log()
+    console.log(`  ${c.bold(`Phase ${i + 1}:`)}`)
     for (const task of phase) {
       const deps =
         task.depends_on.length > 0
-          ? ` (after: ${task.depends_on.join(', ')})`
+          ? c.yellow(` (after: ${task.depends_on.join(', ')})`)
           : ''
       const files =
-        task.files.length > 0 ? ` [${task.files.join(', ')}]` : ''
+        task.files.length > 0 ? c.dim(` [${task.files.join(', ')}]`) : ''
       console.log(
-        `    ${task.id} — ${task.description} [${task.agent}, ${task.timeout}]${deps}${files}`
+        `    ${c.green(task.id)} — ${task.description} ${c.dim(`[${task.agent}, ${task.timeout}]`)}${deps}${files}`
       )
     }
   }

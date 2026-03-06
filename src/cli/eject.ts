@@ -9,7 +9,7 @@ export default async function eject({
   args,
 }: CliContext): Promise<void> {
   const projectRoot = process.cwd()
-  const dryRun = args.includes('--dry-run')
+  const dryRun = args.includes('--dry-run') || args.includes('--dryRun')
 
   const manifest = await readManifest(projectRoot)
   if (!manifest) {

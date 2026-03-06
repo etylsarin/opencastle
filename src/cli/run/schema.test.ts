@@ -294,7 +294,16 @@ describe('applyDefaults', () => {
       name: 'test',
       tasks: [{ id: 'a', prompt: 'x' }],
     })
-    expect(spec.adapter).toBe('claude-code')
+    // Empty string signals run.ts to auto-detect; no hardcoded default here
+    expect(spec.adapter).toBe('')
+  })
+
+  it('leaves adapter empty when not specified so run.ts can auto-detect', () => {
+    const spec = applyDefaults({
+      name: 'test',
+      tasks: [{ id: 'a', prompt: 'x' }],
+    })
+    expect(spec.adapter).toBe('')
   })
 
   it('preserves user-specified values', () => {

@@ -25,6 +25,26 @@ export async function getAdapter(name: string): Promise<AgentAdapter> {
 }
 
 /**
+ * Detection priority order — checked first-to-last.
+ * The first available adapter wins.
+ */
+const DETECTION_ORDER = ['copilot', 'claude-code', 'cursor'] as const
+
+/**
+ * Auto-detect which adapter CLI is available on the system.
+ * Returns the adapter name or null if none found.
+ */
+export async function detectAdapter(): Promise<string | null> {
+  for (const name of DETECTION_ORDER) {
+    const adapter = await getAdapter(name)
+    if (await adapter.isAvailable()) {
+      return name
+    }
+  }
+  return null
+}
+
+/**
  * List all registered adapters with their availability status.
  */
 export async function listAdapters(): Promise<Array<{ name: string; available: boolean }>> {

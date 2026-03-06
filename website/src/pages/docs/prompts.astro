@@ -1,0 +1,963 @@
+---
+import '../../styles/global.css';
+
+const title = 'Prompt Templates — OpenCastle';
+const description = 'Ready-to-use prompt templates for orchestrating AI agent teams. Brainstorm ideas, implement features, fix bugs, and more.';
+
+/* ---------- Sidebar category icons ---------- */
+const categoryIcons: Record<string, string> = {
+  planning: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/></svg>`,
+  implementation: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>`,
+  collaboration: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  setup: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>`,
+};
+
+const categories = [
+  { id: 'planning', label: 'Planning', icon: categoryIcons.planning },
+  { id: 'implementation', label: 'Implementation', icon: categoryIcons.implementation },
+  { id: 'collaboration', label: 'Collaboration', icon: categoryIcons.collaboration },
+  { id: 'setup', label: 'Setup', icon: categoryIcons.setup },
+];
+
+/* ---------- Prompt data ---------- */
+const prompts = [
+  {
+    id: 'brainstorm',
+    category: 'planning',
+    name: 'Brainstorm',
+    summary: 'Collaborative brainstorm to explore requirements, approaches, and trade-offs BEFORE committing to a plan. Use when the task has ambiguity, multiple valid approaches, or significant design decisions.',
+    agent: 'Team Lead (OpenCastle)',
+    variables: ['{{request}}'],
+    details: [
+      { heading: 'When to use', content: `<p>When a task has ambiguity, multiple valid approaches, or design decisions to make before implementation. Use this <em>before</em> reaching for an implementation prompt.</p>` },
+      { heading: 'What it does', content: `<p>Runs a structured brainstorm — clarifies the problem, explores the solution space, generates alternatives, evaluates trade-offs, and defines scope before any code is written.</p>` },
+    ],
+  },
+  {
+    id: 'generate-task-spec',
+    category: 'planning',
+    name: 'Generate Task Spec',
+    summary: 'Generate a valid .tasks.yml spec file for autonomous overnight runs based on a high-level description of what needs to be done.',
+    agent: 'Team Lead (OpenCastle)',
+    variables: ['{{goal}}', '{{context}}'],
+    details: [
+      { heading: 'When to use', content: `<p>When you want to run <code>opencastle run</code> for autonomous batch execution (e.g., overnight). Generates a YAML task spec file from a high-level goal.</p>` },
+      { heading: 'What it does', content: `<p>Analyzes the goal, decomposes into self-contained tasks with dependency ordering, assigns appropriate agents, and produces a valid <code>.tasks.yml</code> file ready for <code>opencastle run</code>.</p>` },
+    ],
+  },
+  {
+    id: 'implement-feature',
+    category: 'implementation',
+    name: 'Implement Feature',
+    summary: 'Instruct the Team Lead to implement a specific task from the post-MVP roadmap with full orchestration, validation, and traceability.',
+    agent: 'Team Lead (OpenCastle)',
+    variables: ['{{roadmapTask}}'],
+    details: [
+      { heading: 'When to use', content: `<p>When implementing a tracked roadmap task. Provides full orchestration with issue tracking, validation gates, and multi-agent delegation.</p>` },
+      { heading: 'What it does', content: `<ol>
+        <li><strong>Research &amp; context gathering</strong> — reads relevant files, loads skills, and understands scope</li>
+        <li><strong>Task board setup</strong> — creates or locates the tracker issue</li>
+        <li><strong>Multi-agent implementation</strong> — delegates with file partitioning to avoid conflicts</li>
+        <li><strong>Validation &amp; testing</strong> — runs lint, tests, and browser checks</li>
+        <li><strong>Delivery via PR</strong> — opens a pull request linked to the tracker issue</li>
+      </ol>` },
+    ],
+  },
+  {
+    id: 'bug-fix',
+    category: 'implementation',
+    name: 'Bug Fix',
+    summary: 'Investigate and fix a reported bug with proper triage, root cause analysis, issue tracking, and verification.',
+    agent: 'Team Lead (OpenCastle)',
+    variables: ['{{bugDescription}}'],
+    details: [
+      { heading: 'When to use', content: `<p>When a bug is reported. Provides structured triage, root cause analysis, and fix verification — rather than jumping straight to editing code.</p>` },
+      { heading: 'What it does', content: `<ol>
+        <li><strong>Triage &amp; reproduce</strong> — confirms the bug, gathers context</li>
+        <li><strong>Create tracker issue</strong> — opens a bug ticket with reproduction steps</li>
+        <li><strong>Root cause analysis</strong> — traces the defect to its origin</li>
+        <li><strong>Delegate fix</strong> — sends a targeted fix to the appropriate specialist agent</li>
+        <li><strong>Validate</strong> — verifies with tests and browser checks before delivering the PR</li>
+      </ol>` },
+    ],
+  },
+  {
+    id: 'quick-refinement',
+    category: 'implementation',
+    name: 'Quick Refinement',
+    summary: 'Handle follow-up refinements after a roadmap task — bug fixes, UI tweaks, polish, and adjustments that are too small for issue tracking.',
+    agent: 'Team Lead (OpenCastle)',
+    variables: ['{{followUpRequest}}'],
+    details: [
+      { heading: 'When to use', content: `<p>For post-task adjustments like UI tweaks, polish, or minor bug fixes that are too small for full issue tracking. Ideal for iterating after an <code>implement-feature</code> run.</p>` },
+      { heading: 'What it does', content: `<p>Triages the request to determine the appropriate tracking level, then delegates focused fixes via sub-agents with the same code quality and verification standards as full feature work.</p>` },
+    ],
+  },
+  {
+    id: 'resolve-pr-comments',
+    category: 'collaboration',
+    name: 'Resolve PR Comments',
+    summary: 'Resolve GitHub PR review comments by reading them, grouping by file, and applying fixes systematically.',
+    agent: 'Team Lead (OpenCastle)',
+    variables: ['{{prReference}}'],
+    details: [
+      { heading: 'When to use', content: `<p>When a pull request has review comments that need to be addressed. Reads, groups, and resolves comments systematically rather than ad-hoc.</p>` },
+      { heading: 'What it does', content: `<ol>
+        <li><strong>Gather PR comments</strong> — reads all review comments from GitHub</li>
+        <li><strong>Group by file</strong> — organises comments into file-level batches</li>
+        <li><strong>Classify</strong> — marks each as must-fix, should-fix, or discussion</li>
+        <li><strong>Delegate fixes</strong> — sends batches to appropriate specialist agents</li>
+        <li><strong>Verify and push</strong> — confirms lint/tests pass, then pushes to the branch</li>
+      </ol>` },
+    ],
+  },
+  {
+    id: 'bootstrap-customizations',
+    category: 'setup',
+    name: 'Bootstrap Customizations',
+    summary: 'Bootstrap the .github/customizations/ directory for a new project. Discovers project structure, tech stack, and configuration, then generates all customization files so skills have project-specific context to operate on.',
+    agent: 'Team Lead (OpenCastle)',
+    variables: ['{{context}}'],
+    details: [
+      { heading: 'When to use', content: `<p>After running <code>opencastle init</code>, to set up project-specific customization files that give agents concrete context about your codebase. Run this once per project.</p>` },
+      { heading: 'What it does', content: `<p>Discovers project structure, tech stack, and config — then generates customization files for project context, stack config, tracker config, and more so every skill has accurate project-specific data to work from.</p>` },
+    ],
+  },
+  {
+    id: 'create-skill',
+    category: 'setup',
+    name: 'Create Skill',
+    summary: 'Scaffold a new skill file with proper frontmatter, structure, and registration. Use when adding a new domain skill to the AI configuration.',
+    agent: 'Team Lead (OpenCastle)',
+    variables: ['{{skillDescription}}'],
+    details: [
+      { heading: 'When to use', content: `<p>When adding a new domain-specific skill to the AI configuration — either as a process skill (workflow pattern) or a plugin skill (third-party integration).</p>` },
+      { heading: 'What it does', content: `<p>Classifies the skill type, names it, creates the <code>SKILL.md</code> file with proper structure, and registers it in the skill matrix so agents can discover and load it automatically.</p>` },
+    ],
+  },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="docs-header">
+      <div class="docs-header__inner">
+        <div class="docs-header__brand">
+          <a href="/" class="docs-header__logo-link">
+            <img class="docs-header__icon" src="/icon-192.png" alt="OpenCastle" width="28" height="28" />
+          </a>
+          <h1 class="docs-header__title">
+            <a href="/docs/" class="docs-header__breadcrumb-link">Docs</a>
+            <span class="docs-header__breadcrumb-sep">/</span>
+            Prompt Templates
+          </h1>
+        </div>
+      </div>
+    </header>
+
+    <div class="docs-layout">
+      <!-- Sidebar Navigation -->
+      <nav class="docs-sidebar" id="docs-sidebar">
+        <ul class="docs-sidebar__list">
+          <li>
+            <button class="docs-sidebar__link docs-sidebar__link--active" data-section="all">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              All
+            </button>
+          </li>
+          {categories.map(cat => (
+            <li>
+              <button class="docs-sidebar__link" data-section={cat.id}>
+                <Fragment set:html={cat.icon} />
+                {cat.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <div class="docs-sidebar__divider"></div>
+        <p class="docs-sidebar__label">Prompts</p>
+        <ul class="docs-sidebar__list">
+          {prompts.map(prompt => (
+            <li>
+              <a class="docs-sidebar__link docs-sidebar__cmd" href={`#${prompt.id}`} data-prompt={prompt.id}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                {prompt.name}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <main class="docs-main">
+        <p class="docs-subtitle">
+          Prompt templates are <code>.prompt.md</code> files that can be invoked directly in VS Code Copilot Chat
+          or any compatible IDE. Each template is pre-wired to the Team Lead agent with the full OpenCastle skill set.
+        </p>
+
+        <!-- How to use block -->
+        <div class="usage-block">
+          <pre><code>{`# How to use a prompt template in VS Code
+# 1. Open Copilot Chat  (⌃⌘I / Ctrl+Alt+I)
+# 2. Type / to open the prompt picker
+# 3. Select the prompt by name
+# 4. Fill in the required variables
+# 5. Press Enter — the Team Lead takes it from there
+
+# Prompts live in: .github/prompts/
+# All prompts target the Team Lead agent (OpenCastle mode)`}</code></pre>
+        </div>
+
+        <!-- Planning -->
+        <section class="docs-category" id="planning" data-category>
+          <h2 class="docs-category__title">Planning</h2>
+          {prompts.filter(p => p.category === 'planning').map(prompt => (
+            <div class="plugin-card" id={prompt.id}>
+              <h3 class="plugin-card__name">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                {prompt.name}
+              </h3>
+              <p class="plugin-card__desc">{prompt.summary}</p>
+              <div class="prompt-meta">
+                <span class="prompt-meta__agent">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  {prompt.agent}
+                </span>
+                <span class="prompt-meta__sep">·</span>
+                <span class="prompt-meta__vars">
+                  Variables:&nbsp;{prompt.variables.map((v, i) => (
+                    <Fragment key={v}><code>{v}</code>{i < prompt.variables.length - 1 ? ', ' : ''}</Fragment>
+                  ))}
+                </span>
+              </div>
+              {prompt.details.map(d => (
+                <Fragment key={d.heading}>
+                  <h4>{d.heading}</h4>
+                  <Fragment set:html={d.content} />
+                </Fragment>
+              ))}
+              <div class="prompt-filename">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                <code>.github/prompts/{prompt.id}.prompt.md</code>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <!-- Implementation -->
+        <section class="docs-category" id="implementation" data-category>
+          <h2 class="docs-category__title">Implementation</h2>
+          {prompts.filter(p => p.category === 'implementation').map(prompt => (
+            <div class="plugin-card" id={prompt.id}>
+              <h3 class="plugin-card__name">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                {prompt.name}
+              </h3>
+              <p class="plugin-card__desc">{prompt.summary}</p>
+              <div class="prompt-meta">
+                <span class="prompt-meta__agent">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  {prompt.agent}
+                </span>
+                <span class="prompt-meta__sep">·</span>
+                <span class="prompt-meta__vars">
+                  Variables:&nbsp;{prompt.variables.map((v, i) => (
+                    <Fragment key={v}><code>{v}</code>{i < prompt.variables.length - 1 ? ', ' : ''}</Fragment>
+                  ))}
+                </span>
+              </div>
+              {prompt.details.map(d => (
+                <Fragment key={d.heading}>
+                  <h4>{d.heading}</h4>
+                  <Fragment set:html={d.content} />
+                </Fragment>
+              ))}
+              <div class="prompt-filename">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                <code>.github/prompts/{prompt.id}.prompt.md</code>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <!-- Collaboration -->
+        <section class="docs-category" id="collaboration" data-category>
+          <h2 class="docs-category__title">Collaboration</h2>
+          {prompts.filter(p => p.category === 'collaboration').map(prompt => (
+            <div class="plugin-card" id={prompt.id}>
+              <h3 class="plugin-card__name">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                {prompt.name}
+              </h3>
+              <p class="plugin-card__desc">{prompt.summary}</p>
+              <div class="prompt-meta">
+                <span class="prompt-meta__agent">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  {prompt.agent}
+                </span>
+                <span class="prompt-meta__sep">·</span>
+                <span class="prompt-meta__vars">
+                  Variables:&nbsp;{prompt.variables.map((v, i) => (
+                    <Fragment key={v}><code>{v}</code>{i < prompt.variables.length - 1 ? ', ' : ''}</Fragment>
+                  ))}
+                </span>
+              </div>
+              {prompt.details.map(d => (
+                <Fragment key={d.heading}>
+                  <h4>{d.heading}</h4>
+                  <Fragment set:html={d.content} />
+                </Fragment>
+              ))}
+              <div class="prompt-filename">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                <code>.github/prompts/{prompt.id}.prompt.md</code>
+              </div>
+            </div>
+          ))}
+        </section>
+
+        <!-- Setup -->
+        <section class="docs-category" id="setup" data-category>
+          <h2 class="docs-category__title">Setup</h2>
+          {prompts.filter(p => p.category === 'setup').map(prompt => (
+            <div class="plugin-card" id={prompt.id}>
+              <h3 class="plugin-card__name">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                {prompt.name}
+              </h3>
+              <p class="plugin-card__desc">{prompt.summary}</p>
+              <div class="prompt-meta">
+                <span class="prompt-meta__agent">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                  {prompt.agent}
+                </span>
+                <span class="prompt-meta__sep">·</span>
+                <span class="prompt-meta__vars">
+                  Variables:&nbsp;{prompt.variables.map((v, i) => (
+                    <Fragment key={v}><code>{v}</code>{i < prompt.variables.length - 1 ? ', ' : ''}</Fragment>
+                  ))}
+                </span>
+              </div>
+              {prompt.details.map(d => (
+                <Fragment key={d.heading}>
+                  <h4>{d.heading}</h4>
+                  <Fragment set:html={d.content} />
+                </Fragment>
+              ))}
+              <div class="prompt-filename">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+                <code>.github/prompts/{prompt.id}.prompt.md</code>
+              </div>
+            </div>
+          ))}
+        </section>
+
+      </main>
+    </div>
+
+    <footer class="footer">
+      <div class="footer__inner">
+        <span class="footer__copyright">
+          MIT License · Filip Mares · 2026
+        </span>
+        <ul class="footer__links">
+          <li><a href="/docs/">Docs</a></li>
+          <li><a href="https://github.com/etylsarin/opencastle" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+          <li><a href="https://github.com/etylsarin/opencastle/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a></li>
+        </ul>
+      </div>
+    </footer>
+
+    <style>
+      /* ── Design tokens (matching dashboard) ── */
+      :root {
+        --bg-primary: #0a0a0f;
+        --bg-secondary: #111118;
+        --bg-tertiary: #1a1a24;
+        --bg-card: rgba(255, 255, 255, 0.03);
+        --text-primary: #f0f0f5;
+        --text-secondary: #8a8a9a;
+        --text-tertiary: #5a5a6e;
+        --text-accent: #a78bfa;
+        --border-color: rgba(255, 255, 255, 0.06);
+        --gradient-glow: radial-gradient(ellipse 800px 400px at 50% 0%, rgba(99, 102, 241, 0.12) 0%, transparent 70%);
+        --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-base: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+        --max-width: 1280px;
+      }
+
+      /* ── Header ── */
+      .docs-header {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: rgba(10, 10, 15, 0.85);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid var(--border-color);
+      }
+      .docs-header__inner {
+        max-width: var(--max-width);
+        margin: 0 auto;
+        padding: 0 24px;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .docs-header__brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .docs-header__logo-link {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+      }
+      .docs-header__breadcrumb-link {
+        color: var(--text-secondary);
+        text-decoration: none;
+        transition: color var(--transition-fast);
+      }
+      .docs-header__breadcrumb-link:hover {
+        color: var(--text-accent);
+      }
+      .docs-header__breadcrumb-sep {
+        color: var(--text-tertiary);
+        margin: 0 2px;
+        font-weight: 400;
+      }
+      .docs-header__icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        object-fit: contain;
+      }
+      .docs-header__title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      /* ── Layout ── */
+      .docs-layout {
+        display: flex;
+        max-width: var(--max-width);
+        margin: 0 auto;
+        position: relative;
+      }
+
+      /* ── Sidebar ── */
+      .docs-sidebar {
+        position: sticky;
+        top: 56px;
+        height: calc(100vh - 56px);
+        width: 180px;
+        flex-shrink: 0;
+        padding: 24px 0 24px 24px;
+        overflow-y: auto;
+        display: none;
+      }
+      @media (min-width: 1024px) {
+        .docs-sidebar { display: block; }
+      }
+      .docs-sidebar__list {
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .docs-sidebar__link {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        width: 100%;
+        padding: 8px 14px;
+        font-size: 0.8125rem;
+        font-weight: 500;
+        color: var(--text-tertiary);
+        text-decoration: none;
+        border-radius: 8px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        transition: color var(--transition-fast), background var(--transition-fast);
+        text-align: left;
+        font-family: inherit;
+        line-height: 1.4;
+      }
+      .docs-sidebar__link:hover {
+        color: var(--text-secondary);
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .docs-sidebar__link--active {
+        color: var(--text-accent);
+        background: rgba(167, 139, 250, 0.08);
+        font-weight: 600;
+      }
+      .docs-sidebar__link svg {
+        flex-shrink: 0;
+        opacity: 0.7;
+      }
+      .docs-sidebar__link--active svg {
+        opacity: 1;
+      }
+      .docs-sidebar__cmd {
+        font-size: 0.8125rem;
+      }
+      .docs-sidebar__divider {
+        height: 1px;
+        background: var(--border-color);
+        margin: 16px 14px 12px 14px;
+      }
+      .docs-sidebar__label {
+        font-size: 0.6875rem;
+        font-weight: 600;
+        color: var(--text-tertiary);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 0 14px 4px;
+      }
+
+      /* ── Main ── */
+      .docs-main {
+        flex: 1;
+        min-width: 0;
+        max-width: 860px;
+        padding: 32px 24px 64px;
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+        position: relative;
+      }
+      .docs-main::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        height: 600px;
+        background: var(--gradient-glow);
+        pointer-events: none;
+        z-index: 0;
+      }
+      .docs-main > * {
+        position: relative;
+        z-index: 1;
+      }
+      .docs-subtitle {
+        color: var(--text-secondary);
+        font-size: 0.9375rem;
+        margin-bottom: 24px;
+        line-height: 1.6;
+      }
+
+      /* ── Usage block ── */
+      .usage-block {
+        margin-bottom: 32px;
+      }
+      .usage-block pre {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+      }
+
+      /* ── Category sections ── */
+      .docs-category {
+        scroll-margin-top: 72px;
+        margin-bottom: 20px;
+      }
+      .docs-category[hidden] {
+        display: none;
+      }
+      .docs-category__title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 8px;
+        margin-bottom: 16px;
+      }
+
+      /* ── Prompt card ── */
+      .plugin-card {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 20px 24px;
+        margin-bottom: 16px;
+        transition: border-color var(--transition-fast);
+        scroll-margin-top: 72px;
+      }
+      .plugin-card:hover {
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+      .plugin-card__name {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+      }
+      .plugin-card__name svg {
+        flex-shrink: 0;
+        color: var(--text-accent);
+      }
+      .plugin-card__desc {
+        color: var(--text-secondary);
+        font-size: 0.875rem;
+        margin-bottom: 12px;
+        line-height: 1.5;
+      }
+
+      /* ── Prompt meta (agent + variables) ── */
+      .prompt-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 16px;
+        font-size: 0.8125rem;
+        color: var(--text-tertiary);
+      }
+      .prompt-meta__agent {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--text-tertiary);
+      }
+      .prompt-meta__agent svg {
+        flex-shrink: 0;
+      }
+      .prompt-meta__sep {
+        color: var(--text-tertiary);
+        opacity: 0.5;
+      }
+      .prompt-meta__vars {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+
+      /* ── Prompt filename footer ── */
+      .prompt-filename {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 16px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-color);
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+      }
+      .prompt-filename svg {
+        flex-shrink: 0;
+        opacity: 0.6;
+      }
+      .prompt-filename code {
+        font-size: 0.75rem;
+        color: var(--text-tertiary);
+        background: none;
+        padding: 0;
+      }
+
+      /* ── Tables inside set:html content ── */
+      .plugin-card :global(table) {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 12px 0;
+        font-size: 0.8125rem;
+      }
+      .plugin-card :global(th),
+      .plugin-card :global(td) {
+        text-align: left;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .plugin-card :global(th) {
+        background: none;
+        color: var(--text-secondary);
+        font-weight: 600;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        border-bottom: 1px solid rgba(167, 139, 250, .15);
+      }
+      .plugin-card :global(td) {
+        color: var(--text-secondary);
+      }
+      .plugin-card :global(tr:last-child td) {
+        border-bottom: none;
+      }
+
+      /* ── Headings inside cards ── */
+      .plugin-card h4 {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-top: 16px;
+        margin-bottom: 8px;
+      }
+
+      /* ── Lists inside cards (injected via set:html) ── */
+      .plugin-card :global(ul),
+      .plugin-card :global(ol) {
+        margin: 8px 0;
+        padding-left: 0;
+        list-style: none;
+      }
+      .plugin-card :global(li) {
+        position: relative;
+        padding: 6px 0 6px 20px;
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        border-bottom: 1px solid var(--border-color);
+      }
+      .plugin-card :global(li:last-child) {
+        border-bottom: none;
+      }
+      .plugin-card :global(li::before) {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 14px;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: rgba(167, 139, 250, .4);
+      }
+      .plugin-card :global(ol li) {
+        counter-increment: step;
+      }
+      .plugin-card :global(ol) {
+        counter-reset: step;
+      }
+      .plugin-card :global(ol li::before) {
+        content: counter(step);
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: rgba(167, 139, 250, .12);
+        color: var(--text-accent);
+        font-size: 0.7rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        top: 9px;
+      }
+      .plugin-card :global(li strong) {
+        color: var(--text-primary);
+      }
+      .plugin-card :global(li code) {
+        font-size: 0.75rem;
+      }
+      .plugin-card :global(p) {
+        font-size: 0.8125rem;
+        color: var(--text-secondary);
+        line-height: 1.6;
+        margin: 8px 0;
+      }
+      .plugin-card :global(p strong) {
+        color: var(--text-primary);
+      }
+      .plugin-card :global(p code) {
+        font-size: 0.75rem;
+      }
+      .plugin-card :global(em) {
+        color: var(--text-tertiary);
+        font-style: italic;
+      }
+
+      /* ── Code blocks ── */
+      code {
+        background: var(--bg-tertiary);
+        padding: 0.15rem 0.4rem;
+        border-radius: 4px;
+        font-size: 0.8125rem;
+        color: #c9d1d9;
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      }
+      pre {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        margin: 8px 0 16px;
+        overflow-x: auto;
+      }
+      pre code {
+        display: block;
+        padding: 16px;
+        background: none;
+        font-size: 0.8125rem;
+        line-height: 1.5;
+      }
+
+      a {
+        color: var(--text-accent);
+      }
+
+      /* ── Mobile sidebar toggle ── */
+      .docs-mobile-toggle {
+        display: none;
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 60;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        border: 1px solid var(--border-color);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        cursor: pointer;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+        transition: background var(--transition-fast);
+      }
+      .docs-mobile-toggle:hover {
+        background: var(--bg-tertiary);
+      }
+      @media (max-width: 1023px) {
+        .docs-mobile-toggle { display: flex; }
+        .docs-sidebar--open {
+          display: block;
+          position: fixed;
+          top: 56px;
+          left: 0;
+          width: 220px;
+          height: calc(100vh - 56px);
+          background: var(--bg-secondary);
+          border-right: 1px solid var(--border-color);
+          z-index: 55;
+          padding: 16px;
+        }
+      }
+    </style>
+
+    <!-- Mobile sidebar toggle -->
+    <button class="docs-mobile-toggle" id="mobile-toggle" type="button" aria-label="Toggle navigation">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+
+    <script>
+      // ── Sidebar navigation: show/hide categories ──
+      const sidebar = document.getElementById('docs-sidebar');
+      const catLinks = sidebar?.querySelectorAll('[data-section]');
+      const sections = document.querySelectorAll('[data-category]');
+      const mobileToggle = document.getElementById('mobile-toggle');
+      const usageBlock = document.querySelector('.usage-block');
+
+      function setActiveSection(sectionId: string) {
+        catLinks?.forEach(link => {
+          link.classList.toggle('docs-sidebar__link--active',
+            link.getAttribute('data-section') === sectionId);
+        });
+
+        if (sectionId === 'all') {
+          sections.forEach(s => s.removeAttribute('hidden'));
+          usageBlock?.removeAttribute('hidden');
+        } else {
+          usageBlock?.setAttribute('hidden', '');
+          sections.forEach(s => {
+            if (s.id === sectionId) {
+              s.removeAttribute('hidden');
+            } else {
+              s.setAttribute('hidden', '');
+            }
+          });
+          const target = document.getElementById(sectionId);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+
+        sidebar?.classList.remove('docs-sidebar--open');
+        history.replaceState(null, '', sectionId === 'all' ? location.pathname : `#${sectionId}`);
+
+        const countEl = document.getElementById('prompt-count');
+        if (countEl) {
+          if (sectionId === 'all') {
+            countEl.textContent = '8 prompts';
+          } else {
+            const visible = document.querySelectorAll(`#${sectionId} .plugin-card`);
+            countEl.textContent = `${visible.length} prompt${visible.length !== 1 ? 's' : ''}`;
+          }
+        }
+      }
+
+      catLinks?.forEach(link => {
+        link.addEventListener('click', () => {
+          const section = link.getAttribute('data-section');
+          if (section) setActiveSection(section);
+        });
+      });
+
+      const promptLinks = sidebar?.querySelectorAll('[data-prompt]');
+      promptLinks?.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          sections.forEach(s => s.removeAttribute('hidden'));
+          usageBlock?.removeAttribute('hidden');
+          catLinks?.forEach(l => {
+            l.classList.toggle('docs-sidebar__link--active',
+              l.getAttribute('data-section') === 'all');
+          });
+
+          const promptId = link.getAttribute('data-prompt');
+          if (promptId) {
+            const target = document.getElementById(promptId);
+            if (target) {
+              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            history.replaceState(null, '', `#${promptId}`);
+          }
+
+          sidebar?.classList.remove('docs-sidebar--open');
+        });
+      });
+
+      mobileToggle?.addEventListener('click', () => {
+        sidebar?.classList.toggle('docs-sidebar--open');
+      });
+
+      document.addEventListener('click', (e) => {
+        if (sidebar?.classList.contains('docs-sidebar--open') &&
+            !sidebar.contains(e.target as Node) &&
+            e.target !== mobileToggle) {
+          sidebar.classList.remove('docs-sidebar--open');
+        }
+      });
+
+      const hash = location.hash.replace('#', '');
+      if (hash) {
+        const target = document.getElementById(hash);
+        if (target) {
+          if (target.hasAttribute('data-category')) {
+            setActiveSection(hash);
+          } else {
+            requestAnimationFrame(() => {
+              target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
