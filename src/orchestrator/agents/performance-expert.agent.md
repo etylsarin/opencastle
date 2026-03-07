@@ -54,4 +54,4 @@ When completing a task, return a structured summary:
 4. **Trade-offs** — Any DX or functionality trade-offs introduced
 5. **Further Opportunities** — Additional optimizations identified but not implemented
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).

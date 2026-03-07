@@ -93,7 +93,7 @@ Delegate to the appropriate specialist agent via **sub-agent** (inline). For bug
 - **File paths** — Exact files to read and modify
 - **Reproduction steps** — So the agent can verify the fix
 - **Boundaries** — "Only modify files listed above. Fix the bug, do not refactor surrounding code."
-- **Self-improvement reminder** — include per `general.instructions.md` § Self-Improvement Protocol
+- **Self-improvement reminder** — include per the **self-improvement** skill
 
 #### Implementation Rules
 
@@ -121,13 +121,13 @@ Every bug fix must pass ALL applicable gates:
 
 ### 6. Delivery
 
-Follow the **Delivery Outcome** defined in `general.instructions.md` — commit, push, open PR (not merged), and link to the tracker.
+Follow the **Delivery Outcome** defined in the **git-workflow** skill — commit, push, open PR (not merged), and link to the tracker.
 
 ### 7. Wrap Up
 
 1. **Move tracker issue to Done** — Only after all validation passes
 2. **Update Known Issues** — If this was a documented known issue, remove or update the entry in `.github/customizations/KNOWN-ISSUES.md`
-3. **Capture lessons** — If the root cause reveals a pattern that other agents should know about, add it to `.github/customizations/LESSONS-LEARNED.md`
+3. **Capture lessons** — If the root cause reveals a pattern that other agents should know about, use the **self-improvement** skill to add a lesson
 4. **Note prevention** — If this class of bug could be caught earlier (by a lint rule, test, or type check), note that in the tracker issue as a follow-up suggestion
 
 ### 8. Completion Criteria
@@ -142,7 +142,7 @@ The bug fix is complete when:
 - [ ] Bug verified fixed in the browser
 - [ ] No regressions in adjacent functionality
 - [ ] Both apps checked if shared code was modified
-- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
+- [ ] Delivery Outcome completed (see the **git-workflow** skill) — branch pushed, PR opened (not merged), tracker linked
 - [ ] Tracker issue moved to Done
 - [ ] Known issues updated if applicable
 - [ ] Lessons learned captured if any retries occurred

@@ -21,41 +21,28 @@ This is the team's collective memory — a structured log of tool/command pitfal
 
 ## Protocol for All Agents
 
-The core protocol (read lessons → write on retry → log session) is defined in `general.instructions.md` § Self-Improvement Protocol. This skill provides the detailed reference material for writing lessons.
+The core protocol (read lessons → write on retry → log session) is referenced from `general.instructions.md` via the **Workflow & Governance** table. This skill provides the detailed reference material for writing lessons.
 
 ## How to Write a Lesson
 
-### Step 1: Determine the next lesson ID
+> **⛔ HARD GATE — Use the CLI to write lessons. Do NOT edit LESSONS-LEARNED.md directly.**
 
-Look at the last `LES-XXX` entry in `.github/customizations/LESSONS-LEARNED.md` and increment by 1.
+Use the `opencastle lesson` CLI command. It auto-increments the lesson ID, formats the entry, and updates the category index.
 
-### Step 2: Write the entry
-
-Add it **before** the `## Index by Category` section, following this template:
-
-```markdown
-### LES-XXX: Short descriptive title
-
-| Field | Value |
-|-------|-------|
-| **Category** | `category-name` |
-| **Added** | YYYY-MM-DD |
-| **Severity** | `high` / `medium` / `low` |
-
-**Problem:** What went wrong and what error/behavior was observed.
-
-**Wrong approach:** The obvious/intuitive approach that fails (with code block).
-
-**Correct approach:** The working solution (with code block).
-
-**Why:** Root cause explanation (if known).
+```sh
+opencastle lesson --title "Short descriptive title" --category general --severity high \
+  --problem "What went wrong and what error/behavior was observed" \
+  --wrong "The obvious/intuitive approach that fails" \
+  --correct "The working solution" \
+  --why "Root cause explanation"
 ```
 
-### Step 3: Update the index
+Required flags: `--title`, `--category`, `--severity`, `--problem`
+Optional flags: `--wrong`, `--correct`, `--why`
 
-Add the lesson ID to the appropriate category row in the `## Index by Category` table.
+Run `opencastle lesson --help` for full usage and valid category/severity values.
 
-### Step 4: Update related instruction files (if applicable)
+### After writing the lesson
 
 If the lesson reveals a gap in existing instruction/skill files, **also update those files** to include the correct approach. This prevents the pitfall at the source level, not just as a retroactive note.
 

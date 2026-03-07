@@ -121,4 +121,4 @@ When completing a review, return a structured summary:
 4. **Alternatives** — Other approaches considered and why they were rejected or preferred
 5. **Action Items** — Specific changes recommended before proceeding
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).

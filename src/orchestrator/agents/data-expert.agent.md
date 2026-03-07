@@ -59,4 +59,4 @@ When completing a task, return a structured summary:
 3. **Files Created** — Output files with row counts and format
 4. **Import Results** — Records imported, skipped, or failed (with reasons)
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).

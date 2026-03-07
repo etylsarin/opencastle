@@ -2,15 +2,13 @@
 /**
  * Generate realistic seed data for the Agent Dashboard.
  *
- * Writes NDJSON files to docs/ai-agents/logs/:
- *   - sessions.ndjson   (50 records)
- *   - delegations.ndjson (35 records)
- *   - panels.ndjson      (12 records + preserves existing)
+ * Writes a single NDJSON file to the configured logs directory:
+ *   - events.ndjson  (50 session + 35 delegation + 12 panel records, sorted by timestamp)
  *
  * Usage: npx tsx opencastle/src/dashboard/scripts/generate-seed-data.ts
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
 const REPO_ROOT = join(__dirname, '..', '..', '..', '..');
@@ -156,6 +154,7 @@ const END_DATE = new Date('2026-02-25T18:00:00Z');
 // --- Generate Sessions ---
 
 interface SessionRecord {
+  type: 'session';
   timestamp: string;
   agent: string;
   model: string;
@@ -180,6 +179,7 @@ function generateSessions(count: number): SessionRecord[] {
     const discoveries = rng.next() > 0.7 ? [rng.pick(TASK_DESCRIPTIONS)] : [];
 
     records.push({
+      type: 'session',
       timestamp: generateTimestamp(i, count, START_DATE, END_DATE),
       agent: rng.pick(AGENTS),
       model: rng.pick(MODELS),
@@ -199,6 +199,7 @@ function generateSessions(count: number): SessionRecord[] {
 // --- Generate Delegations ---
 
 interface DelegationRecord {
+  type: 'delegation';
   timestamp: string;
   session_id: string;
   agent: string;
@@ -220,9 +221,9 @@ function generateDelegations(count: number): DelegationRecord[] {
     const outcome = outcomeRoll < 0.75 ? 'success' : outcomeRoll < 0.9 ? 'partial' : 'failed';
 
     records.push({
+      type: 'delegation',
       timestamp: generateTimestamp(i, count, START_DATE, END_DATE),
-      session_id: `feat/${issue.toLowerCase()}`,
-      agent: rng.pick(AGENTS),
+      session_id: `feat/${issue.toLowerCase()}`,      agent: rng.pick(AGENTS),
       model: rng.pick(MODELS),
       tier: rng.weighted(TIERS),
       mechanism: rng.next() < 0.6 ? 'sub-agent' : 'background',
@@ -239,6 +240,7 @@ function generateDelegations(count: number): DelegationRecord[] {
 // --- Generate Panels ---
 
 interface PanelRecord {
+  type: 'panel';
   timestamp: string;
   panel_key: string;
   verdict: string;
@@ -264,6 +266,7 @@ function generatePanels(count: number): PanelRecord[] {
     const issue = rng.pick(TRACKER_ISSUES);
 
     records.push({
+      type: 'panel',
       timestamp: generateTimestamp(i, count, START_DATE, END_DATE),
       panel_key: panelKey,
       verdict: isPass ? 'pass' : 'block',
@@ -287,50 +290,27 @@ function generatePanels(count: number): PanelRecord[] {
 function main() {
   mkdirSync(LOGS_DIR, { recursive: true });
 
-  // Read existing panel records to preserve them
-  const panelsPath = join(LOGS_DIR, 'panels.ndjson');
-  let existingPanels: string[] = [];
-  try {
-    const content = readFileSync(panelsPath, 'utf-8').trim();
-    if (content) {
-      existingPanels = content.split('\n').filter(Boolean);
-    }
-  } catch {
-    // File doesn't exist yet
-  }
-
   // Generate data
   const sessions = generateSessions(50);
   const delegations = generateDelegations(35);
   const panels = generatePanels(12);
 
-  // Write sessions
-  const sessionsPath = join(LOGS_DIR, 'sessions.ndjson');
-  writeFileSync(sessionsPath, sessions.map((r) => JSON.stringify(r)).join('\n') + '\n');
-  console.log(`Wrote ${sessions.length} session records to ${sessionsPath}`);
+  // Merge and sort all events by timestamp
+  type AnyRecord = SessionRecord | DelegationRecord | PanelRecord;
+  const allEvents: AnyRecord[] = [...sessions, ...delegations, ...panels]
+    .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 
-  // Write delegations
-  const delegationsPath = join(LOGS_DIR, 'delegations.ndjson');
-  writeFileSync(delegationsPath, delegations.map((r) => JSON.stringify(r)).join('\n') + '\n');
-  console.log(`Wrote ${delegations.length} delegation records to ${delegationsPath}`);
-
-  // Write panels (preserve existing + add new, sorted by timestamp)
-  const allPanelLines = [
-    ...existingPanels,
-    ...panels.map((r) => JSON.stringify(r)),
-  ];
-  // Parse and sort all panel records by timestamp
-  const allPanelRecords = allPanelLines
-    .map((line) => JSON.parse(line))
-    .sort((a: { timestamp: string }, b: { timestamp: string }) => a.timestamp.localeCompare(b.timestamp));
-  writeFileSync(panelsPath, allPanelRecords.map((r: unknown) => JSON.stringify(r)).join('\n') + '\n');
-  console.log(`Wrote ${allPanelRecords.length} panel records to ${panelsPath} (${existingPanels.length} existing + ${panels.length} new)`);
+  // Write single events.ndjson
+  const eventsPath = join(LOGS_DIR, 'events.ndjson');
+  writeFileSync(eventsPath, allEvents.map((r) => JSON.stringify(r)).join('\n') + '\n');
+  console.log(`Wrote ${allEvents.length} event records to ${eventsPath}`);
 
   // Summary
   console.log('\n--- Seed Data Summary ---');
   console.log(`Sessions:    ${sessions.length}`);
   console.log(`Delegations: ${delegations.length}`);
-  console.log(`Panels:      ${allPanelRecords.length} (${existingPanels.length} existing + ${panels.length} generated)`);
+  console.log(`Panels:      ${panels.length}`);
+  console.log(`Total:       ${allEvents.length}`);
 
   // Outcome distribution
   const sessionOutcomes = sessions.reduce<Record<string, number>>((acc, s) => {
@@ -345,10 +325,10 @@ function main() {
   }, {});
   console.log(`Delegation tiers: ${JSON.stringify(tierDist)}`);
 
-  const panelVerdicts = allPanelRecords.reduce((acc: Record<string, number>, p: { verdict: string }) => {
+  const panelVerdicts = panels.reduce<Record<string, number>>((acc, p) => {
     acc[p.verdict] = (acc[p.verdict] || 0) + 1;
     return acc;
-  }, {} as Record<string, number>);
+  }, {});
   console.log(`Panel verdicts: ${JSON.stringify(panelVerdicts)}`);
 }
 

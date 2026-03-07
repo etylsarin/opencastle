@@ -82,13 +82,10 @@ The isolated runner subagent must:
 6. Print a concise summary to chat
   - Overall verdict + vote tally + path to `<panelDir>/<panelKey>.md`.
 
-7. Log the panel result
-  - Append a JSON line to `.github/customizations/logs/panels.ndjson` with the panel record schema (see `.github/customizations/logs/README.md`).
-  - Include: `timestamp`, `panel_key`, `verdict`, `pass_count`, `block_count`, `must_fix`, `should_fix`, `reviewer_model`, `weighted`, `attempt`, `tracker_issue`, `artifacts_count`, `report_path`.
-  - Example:
-    ```bash
-    echo '{"timestamp":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","panel_key":"instruction-refactoring","verdict":"pass","pass_count":3,"block_count":0,"must_fix":0,"should_fix":5,"reviewer_model":"claude-opus-4-6","weighted":false,"attempt":1,"artifacts_count":14,"report_path":".github/customizations/logs/panel/instruction-refactoring.md"}' >> .github/customizations/logs/panels.ndjson
-    ```
+7. Log the panel result **(⛔ hard gate — do NOT return the verdict or proceed until logged)**
+  - Log the panel result using the **observability-logging** skill's panel record command. An unlogged panel is a failed panel.
+  - Include: `panel_key`, `verdict`, `pass_count`, `block_count`, `must_fix`, `should_fix`, `reviewer_model`, `weighted`, `attempt`, `tracker_issue`, `artifacts_count`, `report_path`.
+  - The skill's panel record command includes a verify step.
 
 Finally: ensure whatever produced the claim being verified links the consolidated panel report as verification evidence.
 

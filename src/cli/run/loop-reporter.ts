@@ -2,6 +2,8 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { formatDuration } from './executor.js'
 import { c } from '../prompt.js'
+import { appendEvent } from '../log.js'
+import { appendLesson } from '../lesson.js'
 import type {
   LoopRunReport,
   LoopIterationResult,
@@ -46,6 +48,17 @@ export function createLoopReporter(
       if (verbose && result.output && result.status === 'done') {
         console.log(`    Output: ${result.output.slice(0, 500)}`)
       }
+
+      appendEvent({
+        type: 'delegation',
+        timestamp: new Date().toISOString(),
+        session_id: specName,
+        agent: 'autonomous',
+        task: `Loop iteration ${_i}`,
+        mechanism: 'run-loop',
+        outcome: result.status === 'done' ? 'success' : result.status,
+        duration_sec: Math.round(result.duration / 1000),
+      }).catch(() => {})
     },
 
     onBackpressureStart(cmd: string): void {
@@ -84,7 +97,28 @@ export function createLoopReporter(
       } catch (err: unknown) {
         console.log(`  \u2717 Could not write report: ${(err as Error).message}`)
       }
+      await appendEvent({
+        type: 'session',
+        timestamp: new Date().toISOString(),
+        agent: 'opencastle-run',
+        task: `Loop: ${report.name}`,
+        outcome: report.stoppedReason === 'max-iterations' || report.stoppedReason === 'plan-empty' ? 'success' : 'failure',
+        duration_min: Math.round((new Date(report.completedAt).getTime() - new Date(report.startedAt).getTime()) / 60000),
+        mode: 'loop',
+        total_iterations: report.totalIterations,
+        completed_iterations: report.completedIterations,
+        stopped_reason: report.stoppedReason,
+      }).catch(() => {})
 
+      if (report.stoppedReason === 'error' || report.stoppedReason === 'backpressure-fail') {
+        const lastIter = report.iterations[report.iterations.length - 1]
+        await appendLesson({
+          title: `Run loop "${report.name}" stopped: ${report.stoppedReason}`,
+          category: 'general',
+          severity: 'medium',
+          problem: `Loop stopped after ${report.totalIterations} iterations due to ${report.stoppedReason}.${lastIter?.output ? ` Last output: ${lastIter.output.slice(0, 200)}` : ''}`,
+        }).catch(() => {})
+      }
       console.log()
     },
   }

@@ -53,4 +53,4 @@ When completing a task, return a structured summary:
 3. **Verification** — Schema deploy result, query test results
 4. **Migration Notes** — Any data migration needed for existing content
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).

@@ -57,4 +57,4 @@ When completing a task, return a structured summary:
 4. **Rollback Plan** — How to reverse the migration if needed
 5. **Data Impact** — Rows affected, any data transformations applied
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).

@@ -49,7 +49,7 @@ Each lesson has a natural home in the instruction/skill hierarchy:
 | `cms` | The skill mapped by the `cms` slot in the skill matrix |
 | `database` | The skill mapped by the `database` slot in the skill matrix |
 | `browser-testing` | The skill mapped by the `e2e-testing` slot in the skill matrix |
-| `git-workflow` | `.github/instructions/general.instructions.md` |
+| `git-workflow` | `.github/skills/git-workflow/SKILL.md` |
 | `deployment` | `.github/skills/deployment-infrastructure/SKILL.md` |
 | `delegation` | `.github/agents/team-lead.agent.md` or `.github/skills/team-lead-reference/SKILL.md` |
 | `testing` | `.github/skills/testing-workflow/SKILL.md` |

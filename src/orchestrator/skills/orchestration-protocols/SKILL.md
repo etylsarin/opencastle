@@ -122,7 +122,7 @@ Common failure modes and how to recover:
 ### Agent Stuck in Retry Loop
 
 **Symptom:** Agent retries the same failing command 3+ times without changing approach.
-**Recovery:** Intervene immediately. Read the error output, identify the root cause, and re-delegate with explicit fix instructions. Add a lesson to lessons learned.
+**Recovery:** Intervene immediately. Read the error output, identify the root cause, and re-delegate with explicit fix instructions. Use the **self-improvement** skill to add a lesson.
 
 ### MCP Tool Unavailable
 
@@ -137,7 +137,7 @@ Common failure modes and how to recover:
 ### Merge Conflict from Parallel Agents
 
 **Symptom:** Two background agents modified overlapping files.
-**Recovery:** (1) This should never happen if file partitioning was followed. (2) Accept one agent's changes first (the one with more complex work). (3) Re-delegate the simpler changes to adapt to the new state. (4) Add the conflict to your lessons learned.
+**Recovery:** (1) This should never happen if file partitioning was followed. (2) Accept one agent's changes first (the one with more complex work). (3) Re-delegate the simpler changes to adapt to the new state. (4) Use the **self-improvement** skill to add a lesson about the conflict.
 
 ### Context Window Exhausted
 

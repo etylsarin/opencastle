@@ -19,10 +19,13 @@ const MIME_TYPES: Record<string, string> = {
 }
 
 const DATA_FILES = [
+  'events.ndjson',
+  // Legacy individual files — kept for backwards compatibility
   'sessions.ndjson',
   'delegations.ndjson',
   'panels.ndjson',
   'reviews.ndjson',
+  'disputes.ndjson',
 ]
 
 interface DashboardArgs {
@@ -122,7 +125,8 @@ export default async function dashboard({
   // Check if any log files exist (for messaging)
   let hasLogs = false
   if (!seed) {
-    for (const f of DATA_FILES) {
+    const checkFiles = ['events.ndjson', ...DATA_FILES]
+    for (const f of checkFiles) {
       if (await fileExists(join(logsDir, f))) {
         hasLogs = true
         break

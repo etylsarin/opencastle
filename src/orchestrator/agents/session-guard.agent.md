@@ -30,27 +30,21 @@ Run ALL checks. Report each as ✅ or ❌.
 
 ### 1. Delegation Records
 
-For each delegation in the session summary, verify a matching record exists in `.github/customizations/logs/delegations.ndjson`.
+For each delegation in the session summary, verify a matching record exists in `.github/customizations/logs/events.ndjson` (type=delegation).
 
-**How:** `tail -20 .github/customizations/logs/delegations.ndjson` and match agent + task against the summary.
+**How:** `grep '"type":"delegation"' .github/customizations/logs/events.ndjson | tail -20` and match agent + task against the summary.
 
-**Fix command template:**
-```bash
-(Fill in values from the session summary — see the Team Lead agent file for the canonical JSON schema)
-```
+**Fix:** Load the **observability-logging** skill and run the delegation record command (includes a verify step).
 
 Also verify each delegation record includes `session_id` (branch name). Records missing `session_id` should be flagged.
 
 ### 2. Session Record
 
-Verify a session record exists in `.github/customizations/logs/sessions.ndjson` for the current task.
+Verify a session record exists in `.github/customizations/logs/events.ndjson` (type=session) for the current task.
 
-**How:** `tail -5 .github/customizations/logs/sessions.ndjson` and match task description.
+**How:** `grep '"type":"session"' .github/customizations/logs/events.ndjson | tail -5` and match task description.
 
-**Fix command template:**
-```bash
-echo '{"timestamp":"<ISO>","agent":"Team Lead","model":"<model>","task":"<description>","outcome":"success","duration_min":<N>,"files_changed":<N>,"retries":0,"lessons_added":[],"discoveries":[]}' >> .github/customizations/logs/sessions.ndjson
-```
+**Fix:** Load the **observability-logging** skill and run the session record command (includes a verify step).
 
 ### 3. Lessons Captured
 
@@ -66,17 +60,11 @@ If the session summary lists discovered issues, verify they appear in:
 
 ### 5. Review & Panel Records
 
-If the session summary mentions fast reviews or panel reviews, verify matching records exist in `.github/customizations/logs/reviews.ndjson` and/or `.github/customizations/logs/panels.ndjson`.
+If the session summary mentions fast reviews or panel reviews, verify matching records exist in `.github/customizations/logs/events.ndjson` (type=review and/or type=panel).
 
-**How:** `tail -10 .github/customizations/logs/reviews.ndjson` and/or `tail -5 .github/customizations/logs/panels.ndjson`.
+**How:** `grep '"type":"review"' .github/customizations/logs/events.ndjson | tail -10` and/or `grep '"type":"panel"' .github/customizations/logs/events.ndjson | tail -5`.
 
-**Fix command templates:**
-```bash
-# Fast review
-echo '{"timestamp":"<ISO>","agent":"<reviewed-agent>","reviewer_model":"<model>","verdict":"<pass|fail>","attempt":1,"issues_critical":0,"issues_major":0,"issues_minor":0,"confidence":"high","escalated":false,"duration_sec":N}' >> .github/customizations/logs/reviews.ndjson
-# Panel review
-echo '{"timestamp":"<ISO>","panel_key":"<key>","verdict":"<pass|block>","pass_count":N,"block_count":N,"must_fix":0,"should_fix":0,"reviewer_model":"<model>","weighted":false,"attempt":1,"artifacts_count":N}' >> .github/customizations/logs/panels.ndjson
-```
+**Fix:** Load the **observability-logging** skill and run the review/panel record command as applicable (includes a verify step).
 
 ### 6. Uncommitted Changes
 

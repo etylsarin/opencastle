@@ -113,4 +113,4 @@ After resolving comments, report:
 - **Preserve the reviewer's intent** — don't just technically satisfy the comment, address the underlying concern
 - **Don't over-fix** — resolve only what was commented on. Save unrelated improvements for a separate PR
 - **Respond to every comment** — nothing should be silently ignored
-- **Self-improvement** — Follow `general.instructions.md` § Self-Improvement Protocol
+- **Self-improvement** — Follow the **self-improvement** skill

@@ -62,4 +62,4 @@ When completing a task, return a structured summary:
 5. **Deployment Status** — Production deployment health check results
 6. **Rollback Plan** — Steps to revert if issues arise post-release
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).

@@ -53,4 +53,4 @@ When completing a task, return a structured summary:
 4. **Rollback Plan** — How to revert if the deployment causes issues
 5. **Monitoring** — What to watch after deployment
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).

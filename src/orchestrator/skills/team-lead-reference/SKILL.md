@@ -234,7 +234,7 @@ When automated resolution is exhausted (panel 3x BLOCK, approach conflicts, or c
 5. **Present resolution options** — At least 2 concrete options with rationale and risk for each
 6. **Recommend an action** — Which option the Team Lead thinks is best, with specific next steps
 7. **Link artifacts** — Panel reports, review logs, changed files, DLQ entries
-8. **Log to disputes.ndjson** — Append a machine-readable record (see logs README)
+8. **Log to events.ndjson** — Use the **observability-logging** skill's dispute record command
 9. **Update the tracker issue** — Add the dispute ID and link to the dispute record
 10. **Update the Index table** — Add the new dispute to the bottom of the Index
 
@@ -245,7 +245,7 @@ When a human resolves a dispute:
 2. Record which option was chosen and any additional instructions
 3. If `resolved` → re-delegate the task with the human's decision as an explicit constraint
 4. If `deferred` → create a follow-up tracker issue and continue with other work
-5. Log the resolution in `disputes.ndjson` (update the existing record or append a resolution event)
+5. Log the resolution in `events.ndjson` using the **observability-logging** skill's dispute record command (update or append a resolution event)
 
 ### Session Start: Check Disputes
 

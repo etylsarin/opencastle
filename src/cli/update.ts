@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
-import { readFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { readFile, appendFile, rename } from 'node:fs/promises'
 import { readManifest, writeManifest } from './manifest.js'
 import { multiselect, confirm, closePrompts, c } from './prompt.js'
 import { isLegacyStack, migrateStackConfig, IDE_LABELS } from './types.js'
@@ -247,6 +248,9 @@ export default async function update({
     }
   }
 
+  // ── Migrate legacy log files ────────────────────────────────────
+  await migrateLegacyLogs(projectRoot)
+
   // ── Update manifest ─────────────────────────────────────────────
   if (hasVersionUpdate) manifest.version = pkg.version
   manifest.ides = ides
@@ -320,6 +324,63 @@ export default async function update({
   console.log()
 
   closePrompts()
+}
+
+async function migrateLegacyLogs(projectRoot: string): Promise<void> {
+  const logsDir = resolve(projectRoot, '.github', 'customizations', 'logs')
+  if (!existsSync(logsDir)) return
+
+  const typeMap: Record<string, string> = {
+    'sessions.ndjson': 'session',
+    'delegations.ndjson': 'delegation',
+    'reviews.ndjson': 'review',
+    'panels.ndjson': 'panel',
+    'disputes.ndjson': 'dispute',
+  }
+
+  const eventsFile = resolve(logsDir, 'events.ndjson')
+  let totalMigrated = 0
+
+  for (const [filename, type] of Object.entries(typeMap)) {
+    const filePath = resolve(logsDir, filename)
+    if (!existsSync(filePath)) continue
+
+    let content: string
+    try {
+      content = await readFile(filePath, 'utf8')
+    } catch {
+      continue
+    }
+
+    const lines = content.split('\n').filter((line) => line.trim() !== '')
+    if (lines.length === 0) continue
+
+    const migratedLines: string[] = []
+    for (const line of lines) {
+      try {
+        const record = JSON.parse(line) as Record<string, unknown>
+        if (!record['type']) {
+          record['type'] = type
+        }
+        migratedLines.push(JSON.stringify(record))
+      } catch {
+        console.warn(`  ${c.yellow('⚠')}  Skipping malformed JSON line in ${filename}`)
+      }
+    }
+
+    if (migratedLines.length > 0) {
+      await appendFile(eventsFile, migratedLines.join('\n') + '\n', 'utf8')
+      totalMigrated += migratedLines.length
+    }
+
+    await rename(filePath, filePath + '.migrated')
+  }
+
+  if (totalMigrated > 0) {
+    console.log(
+      `  ${c.green('✓')} Migrated ${c.bold(String(totalMigrated))} records from legacy log files to events.ndjson`
+    )
+  }
 }
 
 function sameSet(a: Set<string>, b: Set<string>): boolean {
