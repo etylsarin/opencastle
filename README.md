@@ -40,6 +40,10 @@ One command. Any repo. Any IDE.
 npx opencastle init
 ```
 
+<p align="center">
+  <img src="opencastle-init.gif" alt="npx opencastle init" width="720" />
+</p>
+
 The CLI asks about your IDEs and stack. It installs agents, skills, and MCP servers tailored to your project.
 
 You can select multiple IDEs and tools — the output is adapted for each one.

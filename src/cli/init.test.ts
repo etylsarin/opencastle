@@ -366,7 +366,7 @@ describe('VS Code adapter install', () => {
 
     const logsDir = join(tempDir, '.github', 'customizations', 'logs')
     expect(existsSync(logsDir)).toBe(true)
-    for (const file of ['sessions.ndjson', 'delegations.ndjson', 'reviews.ndjson', 'panels.ndjson', 'disputes.ndjson']) {
+    for (const file of ['events.ndjson']) {
       expect(existsSync(join(logsDir, file))).toBe(true)
     }
   })

@@ -84,7 +84,7 @@ Delegate to the appropriate specialist agent(s). Since follow-ups are scoped and
 - **Where** — exact file paths to read and modify
 - **How to verify** — what the result should look like or how to test it
 - **Boundaries** — "Only modify files listed above. Do not refactor unrelated code."
-- **Self-improvement reminder** — include per `general.instructions.md` § Self-Improvement Protocol
+- **Self-improvement reminder** — include per the **self-improvement** skill
 
 #### Implementation Rules
 
@@ -110,7 +110,7 @@ Every follow-up, no matter how small, must pass these gates:
 
 ### 6. Delivery
 
-If triage determined this follow-up needs tracker tracking, follow the **Delivery Outcome** defined in `general.instructions.md` — commit, push, open PR (not merged), and link to the tracker.
+If triage determined this follow-up needs tracker tracking, follow the **Delivery Outcome** defined in the **git-workflow** skill — commit, push, open PR (not merged), and link to the tracker.
 
 If triage determined no tracker tracking is needed (pure cosmetic/isolated/trivial), commit the changes to the current working branch. A dedicated branch and PR are not required because the Team Lead will include these changes in the parent task's existing PR — the "every change goes through a PR" rule is still satisfied via the parent PR.
 
@@ -138,6 +138,6 @@ The follow-up is complete when:
 - [ ] **Visual changes verified in Chrome with screenshot taken as proof**
 - [ ] No regressions in adjacent functionality
 - [ ] Shared component changes tested across all consuming apps
-- [ ] Delivery Outcome completed if tracked (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
+- [ ] Delivery Outcome completed if tracked (see the **git-workflow** skill) — branch pushed, PR opened (not merged), tracker linked
 - [ ] Lessons learned captured if any retries occurred
 - [ ] Known issues updated if a new limitation was discovered

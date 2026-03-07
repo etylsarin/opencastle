@@ -24,6 +24,8 @@ const HELP = `
     run         Process a task queue from a spec file autonomously
     dashboard   View agent observability dashboard in your browser
     doctor      Validate your OpenCastle setup
+    log         Append a structured event to the observability log
+    lesson      Append a structured lesson to LESSONS-LEARNED.md
 
   Options:
     --dry-run        Preview what a command would change without writing files
@@ -51,6 +53,8 @@ const commands = {
   run: () => import('../dist/cli/run.js'),
   dashboard: () => import('../dist/cli/dashboard.js'),
   doctor: () => import('../dist/cli/doctor.js'),
+  log: () => import('../dist/cli/log.js'),
+  lesson: () => import('../dist/cli/lesson.js'),
 }
 
 if (!commands[command]) {

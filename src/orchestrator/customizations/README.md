@@ -50,9 +50,7 @@ Structured machine-readable logs appended automatically by agents during session
 | File | Purpose |
 |------|---------|
 | `README.md` | Schema documentation for the NDJSON log files |
-| `sessions.ndjson` | Structured session log entries |
-| `delegations.ndjson` | Structured delegation log entries |
-| `panels.ndjson` | Structured panel review log entries |
+| `events.ndjson` | All structured event log entries (sessions, delegations, reviews, panels, disputes) |
 
 ## When to update
 

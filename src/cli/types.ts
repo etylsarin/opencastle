@@ -126,13 +126,31 @@ export const IDE_LABELS: Record<IdeChoice, string> = {
 
 // ── Run command types ──────────────────────────────────────────
 
+/** Loop execution configuration. */
+export interface LoopConfig {
+  /** Maximum number of agent iterations (default 20). */
+  max_iterations: number;
+  /** Path to the prompt file read each iteration. */
+  prompt: string;
+  /** Path to the plan file (default 'IMPLEMENTATION_PLAN.md'). */
+  plan_file?: string;
+  /** Per-iteration timeout (default '10m'). */
+  timeout: string;
+  /** Model override for loop sessions. */
+  model?: string;
+  /** Shell commands that must exit 0 after each iteration. */
+  backpressure?: string[];
+}
+
 /** Validated task spec from YAML. */
 export interface TaskSpec {
   name: string;
   concurrency: number;
   on_failure: 'continue' | 'stop';
   adapter: string;
-  tasks: Task[];
+  tasks?: Task[];
+  mode?: 'tasks' | 'loop';
+  loop?: LoopConfig;
   _verbose?: boolean;
 }
 
@@ -231,6 +249,8 @@ export interface RunOptions {
   reportDir: string | null;
   verbose: boolean;
   help: boolean;
+  maxIterations: number | null;
+  mode: string | null;
 }
 
 /** Validation result. */
@@ -249,4 +269,50 @@ export interface TimeoutHandle {
 export interface Executor {
   run(): Promise<RunReport>;
   getPhases(): Task[][];
+}
+
+// ── Loop executor types ────────────────────────────────────────
+
+/** Result of a single backpressure command run. */
+export interface BackpressureResult {
+  command: string;
+  exitCode: number;
+  output: string;
+  passed: boolean;
+}
+
+/** Result of a single loop iteration. */
+export interface LoopIterationResult {
+  iteration: number;
+  status: 'done' | 'failed' | 'backpressure-fail';
+  duration: number;
+  output: string;
+  backpressureResults?: BackpressureResult[];
+}
+
+/** Final report produced by the loop executor. */
+export interface LoopRunReport {
+  name: string;
+  mode: 'loop';
+  startedAt: string;
+  completedAt: string;
+  duration: string;
+  totalIterations: number;
+  completedIterations: number;
+  stoppedReason: 'max-iterations' | 'plan-empty' | 'backpressure-fail' | 'user-abort' | 'error';
+  iterations: LoopIterationResult[];
+}
+
+/** Reporter interface for loop execution progress. */
+export interface LoopReporter {
+  onIterationStart(iteration: number, maxIterations: number): void;
+  onIterationDone(iteration: number, result: LoopIterationResult): void;
+  onBackpressureStart(command: string): void;
+  onBackpressureResult(result: BackpressureResult): void;
+  onComplete(report: LoopRunReport): Promise<void>;
+}
+
+/** Executor for loop-mode run specs. */
+export interface LoopExecutor {
+  run(): Promise<LoopRunReport>;
 }

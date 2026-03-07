@@ -142,11 +142,9 @@ Files are organized into subdirectories by domain:
 ├── project/                   # Project management config
 │   ├── docs-structure.md
 │   └── <tracker>-config.md    # e.g. linear-config.md, jira-config.md
-└── logs/                      # Append-only NDJSON session logs
+└── logs/                      # Append-only NDJSON event log
     ├── README.md
-    ├── sessions.ndjson
-    ├── delegations.ndjson
-    └── panels.ndjson
+    └── events.ndjson
 ```
 
 #### Root Files (always create)
@@ -241,10 +239,8 @@ Files are organized into subdirectories by domain:
 
 #### `logs/` — Session Logs (always create)
 
-16. **`logs/README.md`** — Schema documentation for the NDJSON log files
-17. **`logs/sessions.ndjson`** — Empty file for structured session log entries
-18. **`logs/delegations.ndjson`** — Empty file for delegation log entries
-19. **`logs/panels.ndjson`** — Empty file for panel review log entries
+16. **`logs/README.md`** — Schema documentation for the unified NDJSON event log
+17. **`logs/events.ndjson`** — Empty file for all structured event log entries (sessions, delegations, reviews, panels, disputes)
 
 ### Phase 3: Cross-Reference Verification
 

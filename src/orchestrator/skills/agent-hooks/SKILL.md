@@ -53,13 +53,13 @@ Load relevant skills before writing code.
 
 **When:** Before the agent yields control back to the user — every time, unconditionally.
 
-> **⛔ HARD GATE — Run the Pre-Response Quality Gate checklist from `general.instructions.md` before responding.**
+> **⛔ HARD GATE — Run the Pre-Response Quality Gate checklist from the **observability-logging** skill before responding.**
 > A session without log records is a failed session. A session without lessons captured after retries is a failed session.
 
 ### Actions
 
 1. **Call Session Guard** (Team Lead only) — Delegate to the **Session Guard** agent with a session summary (delegations, retries, discoveries, files changed). Execute any fix commands it returns. This replaces the manual Pre-Response Quality Gate checklist — the guard runs it automatically with a fresh context window.
-2. **For specialist agents** (not Team Lead) — Run the Pre-Response Quality Gate checklist from `general.instructions.md` manually. Specialist agents don't have access to the Session Guard.
+2. **For specialist agents** (not Team Lead) — Run the Pre-Response Quality Gate checklist from the **observability-logging** skill manually. Specialist agents don't have access to the Session Guard.
 3. **Save checkpoint** (Team Lead only) — If work is incomplete, write `.github/customizations/SESSION-CHECKPOINT.md` with current state so the next session can resume. Load **session-checkpoints** skill for format.
 4. **Memory merge check** — If `LESSONS-LEARNED.md` has grown significantly (5+ new entries this session), flag for memory merge consideration.
 5. **Clean up** — Remove any temporary files created during the session (e.g., test fixtures, debug outputs).
@@ -67,9 +67,9 @@ Load relevant skills before writing code.
 ### Template for Delegation Prompts
 
 ```
-**Session End:** Run the Pre-Response Quality Gate from general.instructions.md:
-- Log your session to `.github/customizations/logs/sessions.ndjson` (Constitution rule #6)
-- If you retried anything with a different approach that worked, add a lesson to `.github/customizations/LESSONS-LEARNED.md`
+**Session End:** Run the Pre-Response Quality Gate from the **observability-logging** skill:
+- Log your session using the observability-logging skill's session record command (Constitution rule #6)
+- If you retried anything with a different approach that worked, use the **self-improvement** skill to add a lesson
 - Track any discovered issues in KNOWN-ISSUES.md or a tracker ticket
 - Clean up temp files
 ```
@@ -92,26 +92,26 @@ Run the 5-point Pre-Delegation Checks from the Team Lead agent file: (1) Tracker
 
 ### Actions
 
-0. **Log the delegation** — Append a record to `.github/customizations/logs/delegations.ndjson` **before** proceeding to review or verification.
-   Use the delegation echo command template from the Team Lead agent file § Delegation.
-1. **Fast review (mandatory)** — Run the `fast-review` skill against the agent's output. This is a **non-skippable gate**. See the fast-review skill for the full procedure (single reviewer sub-agent, automatic retry, escalation). Log the review to `reviews.ndjson` immediately after. Only after the fast review passes do you proceed to the remaining post-delegate actions below.
+0. **Log the delegation (⛔ hard gate)** — Use the **observability-logging** skill's delegation record command. Do NOT proceed to review or any other action until the delegation is logged and verified.
+1. **Fast review (mandatory)** — Run the `fast-review` skill against the agent's output. This is a **non-skippable gate**. See the fast-review skill for the full procedure (single reviewer sub-agent, automatic retry, escalation). **Log the review (⛔ hard gate)** using the **observability-logging** skill's review record command immediately after — do NOT proceed until logged. Only after both the fast review passes and the review is logged do you proceed to the remaining post-delegate actions below.
 2. **Verify output** — Read changed files. Check that changes stay within the agent's file partition.
 2. **Run verification** — Execute appropriate checks: lint, type-check, tests, or visual inspection.
 3. **Check acceptance criteria** — Compare output against the tracker issue's acceptance criteria. Each criterion must be independently verified.
 4. **Discovered issues tracked** — Verify the agent followed the Discovered Issues Policy. If they found issues, check that they're in KNOWN-ISSUES.md or a new tracker ticket.
-5. **Lessons captured** — If the agent retried anything, verify a lesson was added to LESSONS-LEARNED.md.
+5. **Lessons captured** — If the agent retried anything, verify a lesson was added via the **self-improvement** skill.
 6. **Update tracker** — Move the issue to Done (if passing) or add failure notes and re-delegate (if failing).
 
 ### Quick Checklist
 
 ```
 Post-Delegate:
-☐ Delegation logged to delegations.ndjson (before review — verify with tail -1)
+☐ ⛔ Delegation logged (observability-logging skill — verify with tail -1) — BLOCKING
 ☐ Changed files reviewed
 ☐ Files within partition
 ☐ Lint/test/build passes
 ☐ Fast review PASS (mandatory — load fast-review skill)
-☐ Review logged to reviews.ndjson (verify with tail -1)
+☐ ⛔ Review logged (observability-logging skill — verify with tail -1) — BLOCKING
+☐ ⛔ Panel logged if escalated (observability-logging skill — verify with tail -1) — BLOCKING
 ☐ Acceptance criteria met
 ☐ Discovered issues tracked (not ignored)
 ☐ Lessons captured (if retries occurred)

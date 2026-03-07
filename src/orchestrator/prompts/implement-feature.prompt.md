@@ -64,7 +64,7 @@ Every subtask must be tracked. **No issue = no implementation.** This step produ
 
 #### Self-Improvement
 
-Include the self-improvement reminder in every delegation prompt (see `general.instructions.md` § Self-Improvement Protocol).
+Include the self-improvement reminder in every delegation prompt (see the **self-improvement** skill).
 
 #### Visual Consistency
 
@@ -91,7 +91,7 @@ Every subtask must pass ALL gates before being marked Done:
 
 ### 5. Delivery
 
-Follow the **Delivery Outcome** defined in `general.instructions.md` — commit, push, open PR (not merged), and link to the tracker.
+Follow the **Delivery Outcome** defined in the **git-workflow** skill — commit, push, open PR (not merged), and link to the tracker.
 
 ### 6. Documentation & Traceability
 
@@ -127,5 +127,5 @@ The roadmap task is complete when:
 - [ ] Documentation updated (roadmap, known issues, decisions)
 - [ ] Panel review passed for any high-stakes changes
 - [ ] Roadmap item marked complete in `.github/customizations/project/roadmap.md`
-- [ ] Delivery Outcome completed (see `general.instructions.md`) — branch pushed, PR opened (not merged), tracker linked
+- [ ] Delivery Outcome completed (see the **git-workflow** skill) — branch pushed, PR opened (not merged), tracker linked
 - [ ] Lessons learned captured if any retries occurred

@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { formatDuration } from './executor.js'
 import { c } from '../prompt.js'
+import { appendEvent } from '../log.js'
 import type {
   TaskSpec,
   Task,
@@ -56,6 +57,17 @@ export function createReporter(spec: TaskSpec, options: ReporterOptions = {}): R
       if (verbose && result.output && result.status === 'done') {
         console.log(`    Output: ${result.output.slice(0, 500)}`)
       }
+
+      appendEvent({
+        type: 'delegation',
+        timestamp: new Date().toISOString(),
+        session_id: spec.name,
+        agent: task.agent,
+        task: `${task.id}: ${task.description}`,
+        mechanism: 'run-task',
+        outcome: result.status === 'done' ? 'success' : result.status,
+        duration_sec: Math.round(result.duration / 1000),
+      }).catch(() => {})
     },
 
     onTaskSkipped(task: Task, reason: string): void {
@@ -95,6 +107,23 @@ export function createReporter(spec: TaskSpec, options: ReporterOptions = {}): R
         console.log(`  ${ICONS.failed} Could not write report: ${(err as Error).message}`)
       }
 
+      await appendEvent({
+        type: 'session',
+        timestamp: new Date().toISOString(),
+        agent: 'opencastle-run',
+        model: spec.adapter,
+        task: `Run: ${report.name}`,
+        outcome: report.summary.failed > 0 || report.summary['timed-out'] > 0 ? 'failure' : 'success',
+        duration_min: Math.round((new Date(report.completedAt).getTime() - new Date(report.startedAt).getTime()) / 60000),
+        files_changed: 0,
+        retries: 0,
+        mode: 'tasks',
+        tasks_total: report.summary.total,
+        tasks_done: report.summary.done,
+        tasks_failed: report.summary.failed,
+        tasks_skipped: report.summary.skipped,
+      }).catch(() => {})
+
       console.log()
     },
   }
@@ -108,7 +137,7 @@ export function printExecutionPlan(spec: TaskSpec, phases: Task[][]): void {
   console.log(`  ${c.dim('Adapter:')}     ${c.cyan(spec.adapter)}`)
   console.log(`  ${c.dim('Concurrency:')} ${c.yellow(String(spec.concurrency))}`)
   console.log(`  ${c.dim('On failure:')}  ${c.yellow(spec.on_failure)}`)
-  console.log(`  ${c.dim('Tasks:')}       ${c.yellow(String(spec.tasks.length))}`)
+  console.log(`  ${c.dim('Tasks:')}       ${c.yellow(String(spec.tasks?.length ?? 0))}`)
   console.log(`  ${c.dim('──────────────────────────────────')}`)
 
   for (let i = 0; i < phases.length; i++) {

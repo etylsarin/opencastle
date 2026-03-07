@@ -1,0 +1,133 @@
+import { mkdir, appendFile, stat } from 'node:fs/promises'
+import { join, dirname } from 'node:path'
+import type { CliContext } from './types.js'
+
+const HELP = `
+  opencastle log [options]
+
+  Append a structured event to the observability log (events.ndjson).
+
+  Options:
+    --type <type>          Event type (required): session|delegation|review|panel|dispute
+    --<field> <value>      Any field from the event schema (see documentation)
+    --logs-dir <path>      Override the logs directory path
+    --help, -h             Show this help
+
+  Array fields (comma-separated): file_partition, lessons_added, discoveries, reviewing_agents
+  Boolean fields: escalated, weighted
+  Numeric fields: auto-detected from value
+
+  Examples:
+    opencastle log --type session --agent Developer --model claude-sonnet-4-6 --task "Fix bug" --outcome success
+    opencastle log --type delegation --session_id feat/prj-1 --agent Developer --tier fast --mechanism sub-agent --outcome success
+    opencastle log --type panel --panel_key auth-review --verdict pass --pass_count 3 --block_count 0
+`
+
+const VALID_TYPES = ['session', 'delegation', 'review', 'panel', 'dispute']
+
+const ARRAY_FIELDS = new Set([
+  'file_partition',
+  'lessons_added',
+  'discoveries',
+  'reviewing_agents',
+])
+
+const BOOLEAN_FIELDS = new Set(['escalated', 'weighted'])
+
+function coerceValue(key: string, raw: string): unknown {
+  if (ARRAY_FIELDS.has(key)) return raw.split(',').map((s) => s.trim()).filter(Boolean)
+  if (BOOLEAN_FIELDS.has(key)) return raw === 'true'
+  if (/^-?\d+(\.\d+)?$/.test(raw)) return Number(raw)
+  return raw
+}
+
+/** Resolve the path to the logs directory (walks up to find .github/). */
+export async function resolveLogsDir(override?: string | null): Promise<string> {
+  if (override) return override
+  let dir = process.cwd()
+  for (;;) {
+    try {
+      const s = await stat(join(dir, '.github'))
+      if (s.isDirectory()) return join(dir, '.github', 'customizations', 'logs')
+    } catch {
+      // .github not in this directory, walk up
+    }
+    const parent = dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  return join(process.cwd(), '.github', 'customizations', 'logs')
+}
+
+/** Append a structured event record to events.ndjson. */
+export async function appendEvent(
+  record: Record<string, unknown>,
+  logsDir?: string | null,
+): Promise<void> {
+  const resolvedDir = await resolveLogsDir(logsDir ?? null)
+  const eventsFile = join(resolvedDir, 'events.ndjson')
+  await mkdir(resolvedDir, { recursive: true })
+  const line = JSON.stringify(record)
+  await appendFile(eventsFile, line + '\n', 'utf8')
+}
+
+export default async function log({ args }: CliContext): Promise<void> {
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(HELP)
+    return
+  }
+
+  let type: string | null = null
+  let logsDir: string | null = null
+  const fields: Record<string, unknown> = {}
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]
+    switch (arg) {
+      case '--type':
+        if (i + 1 >= args.length) { console.error('  \u2717 --type requires a value'); process.exit(1) }
+        type = args[++i]
+        break
+      case '--logs-dir':
+        if (i + 1 >= args.length) { console.error('  \u2717 --logs-dir requires a path'); process.exit(1) }
+        logsDir = args[++i]
+        break
+      default:
+        if (arg.startsWith('--')) {
+          const key = arg.slice(2)
+          const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+          if (DANGEROUS_KEYS.has(key)) break
+          const next = args[i + 1]
+          if (next === undefined || next.startsWith('--')) {
+            fields[key] = true
+          } else {
+            fields[key] = coerceValue(key, args[++i])
+          }
+        }
+    }
+  }
+
+  if (!type) {
+    console.error('  \u2717 --type is required. Use one of: session, delegation, review, panel, dispute')
+    console.error('  Run "opencastle log --help" for usage.')
+    process.exit(1)
+  }
+
+  if (!VALID_TYPES.includes(type)) {
+    console.error(`  \u2717 Invalid --type "${type}". Must be one of: ${VALID_TYPES.join(', ')}`)
+    process.exit(1)
+  }
+
+  const timestamp = (fields['timestamp'] as string | undefined) ?? new Date().toISOString()
+  delete fields['timestamp']
+  const record = { type, timestamp, ...fields }
+
+  try {
+    await appendEvent(record, logsDir)
+    console.log(JSON.stringify(record))
+  } catch (err: unknown) {
+    console.error(`  ✗ Failed to write log: ${(err as Error).message}`)
+    process.exit(1)
+  }
+}
+

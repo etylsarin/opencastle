@@ -86,7 +86,7 @@ Which option the Team Lead recommends and why. Include specific next steps:
 
 Links to evidence for human review:
 - Panel report: `.github/customizations/logs/panel/[panel-key].md`
-- Review log entries: `.github/customizations/logs/reviews.ndjson` (filter by issue)
+- Review log entries: `.github/customizations/logs/events.ndjson` (filter by `type: "review"` and issue)
 - Changed files: [list of files in the last attempt]
 - DLQ entry (if any): `DLQ-XXX`
 ```
@@ -112,7 +112,7 @@ Links to evidence for human review:
 ┌──────────────────────────────────────┐
 │  Team Lead creates dispute record     │
 │  Status: pending                      │
-│  Logs to disputes.ndjson              │
+│  Logs to events.ndjson                │
 │  Links to tracker issue               │
 └──────────────┬───────────────────────┘
                │

@@ -1,21 +1,64 @@
 # Agent Session Logs
 
-Append-only NDJSON logs for agent activity tracking. Each file stores one JSON object per line.
+Append-only NDJSON log for agent activity tracking. All events are stored in a single file with a `type` discriminator — one JSON object per line.
 
-## Files
+## File
 
-| File | Appended by | Schema |
-|------|------------|--------|
-| `sessions.ndjson` | All agents (via self-improvement protocol) | Session record |
-| `delegations.ndjson` | Team Lead agent | Delegation record |
-| `reviews.ndjson` | Team Lead (via fast-review skill) | Fast review record |
-| `panels.ndjson` | Panel runner (via panel majority vote skill) | Panel record |
-| `disputes.ndjson` | Team Lead (via dispute protocol) | Dispute record |
+| File | Description |
+|------|-------------|
+| `events.ndjson` | All agent events, sorted by timestamp |
 
-## Session Record Schema
+## Type Discriminator
+
+Each record includes a `type` field that identifies the event kind:
+
+| `type` value | Appended by | Description |
+|-------------|-------------|-------------|
+| `session` | All agents (via self-improvement protocol) | Session record |
+| `delegation` | Team Lead agent | Delegation record |
+| `review` | Team Lead (via fast-review skill) | Fast review record |
+| `panel` | Panel runner (via panel majority vote skill) | Panel record |
+| `dispute` | Team Lead (via dispute protocol) | Dispute record |
+
+## CLI Usage
+
+Use `opencastle log` to append events. Agents should call this instead of raw `echo` commands.
+
+```sh
+# Session
+opencastle log --type session --agent Developer --model claude-sonnet-4-6 \
+  --task "PRJ-57: Fix header component" --outcome success --duration_min 12 \
+  --files_changed 5 --retries 0
+
+# Delegation
+opencastle log --type delegation --session_id feat/prj-57 --agent Developer \
+  --model claude-opus-4-6 --tier fast --mechanism sub-agent \
+  --outcome success --phase 2 --file_partition "src/components/,src/pages/"
+
+# Review
+opencastle log --type review --tracker_issue PRJ-42 --agent Developer \
+  --reviewer_model gpt-5-mini --verdict pass --attempt 1 \
+  --issues_critical 0 --issues_major 0 --issues_minor 2 \
+  --confidence high --escalated false
+
+# Panel
+opencastle log --type panel --panel_key auth-review --verdict pass \
+  --pass_count 3 --block_count 0 --must_fix 0 --should_fix 5 \
+  --reviewer_model claude-opus-4-6 --weighted false --attempt 1
+
+# Dispute
+opencastle log --type dispute --dispute_id DSP-001 --tracker_issue PRJ-42 \
+  --priority high --trigger panel-3x-block --implementing_agent Developer \
+  --reviewing_agents "Reviewer,Panel (3x)" --total_attempts 6 --status pending
+```
+
+Run `opencastle log --help` for full options.
+
+## Session Record (`type: "session"`)
 
 ```json
 {
+  "type": "session",
   "timestamp": "2026-02-25T14:30:00Z",
   "agent": "Developer",
   "model": "gpt-5.3-codex",
@@ -32,6 +75,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
+| `type` | `string` | Yes | Always `"session"` |
 | `timestamp` | `string` | Yes | ISO 8601 datetime (YYYY-MM-DDTHH:MM:SSZ) |
 | `agent` | `string` | Yes | Agent name from the registry |
 | `model` | `string` | Yes | Model used (e.g., `claude-opus-4-6`, `gpt-5.3-codex`) |
@@ -44,10 +88,11 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 | `lessons_added` | `string[]` | No | Lesson IDs added (e.g., `["LES-015"]`) |
 | `discoveries` | `string[]` | No | Issues discovered (issue IDs or KNOWN-ISSUES IDs) |
 
-## Delegation Record Schema
+## Delegation Record (`type: "delegation"`)
 
 ```json
 {
+  "type": "delegation",
   "timestamp": "2026-02-25T14:30:00Z",
   "session_id": "feat/prj-57",
   "agent": "Developer",
@@ -64,6 +109,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
+| `type` | `string` | Yes | Always `"delegation"` |
 | `timestamp` | `string` | Yes | ISO 8601 datetime (YYYY-MM-DDTHH:MM:SSZ) |
 | `session_id` | `string` | Yes | Branch name or feature identifier |
 | `agent` | `string` | Yes | Agent name delegated to |
@@ -76,10 +122,11 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 | `phase` | `number` | No | Execution phase number |
 | `file_partition` | `string[]` | No | Directories/files assigned |
 
-## Fast Review Record Schema
+## Fast Review Record (`type: "review"`)
 
 ```json
 {
+  "type": "review",
   "timestamp": "2026-02-28T14:30:00Z",
   "tracker_issue": "PRJ-42",
   "agent": "Developer",
@@ -97,6 +144,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
+| `type` | `string` | Yes | Always `"review"` |
 | `timestamp` | `string` | Yes | ISO 8601 datetime (YYYY-MM-DDTHH:MM:SSZ) |
 | `tracker_issue` | `string` | No | Issue ID if applicable |
 | `agent` | `string` | Yes | Agent whose output was reviewed |
@@ -110,10 +158,11 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 | `escalated` | `boolean` | Yes | Whether this review triggered escalation to panel |
 | `duration_sec` | `number` | No | Review duration in seconds |
 
-## Panel Record Schema
+## Panel Record (`type: "panel"`)
 
 ```json
 {
+  "type": "panel",
   "timestamp": "2026-02-25T14:30:00Z",
   "panel_key": "instruction-refactoring",
   "verdict": "pass",
@@ -132,6 +181,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
+| `type` | `string` | Yes | Always `"panel"` |
 | `timestamp` | `string` | Yes | ISO 8601 datetime (YYYY-MM-DDTHH:MM:SSZ) |
 | `panel_key` | `string` | Yes | Filesystem-safe panel identifier |
 | `verdict` | `string` | Yes | `pass` or `block` |
@@ -146,10 +196,11 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 | `artifacts_count` | `number` | No | Number of artifacts reviewed |
 | `report_path` | `string` | No | Path to the full panel report |
 
-## Dispute Record Schema
+## Dispute Record (`type: "dispute"`)
 
 ```json
 {
+  "type": "dispute",
   "timestamp": "2026-02-28T16:00:00Z",
   "dispute_id": "DSP-001",
   "tracker_issue": "PRJ-42",
@@ -167,6 +218,7 @@ Append-only NDJSON logs for agent activity tracking. Each file stores one JSON o
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
+| `type` | `string` | Yes | Always `"dispute"` |
 | `timestamp` | `string` | Yes | ISO 8601 datetime when dispute was created |
 | `dispute_id` | `string` | Yes | Dispute ID (e.g., `DSP-001`) |
 | `tracker_issue` | `string` | No | Issue ID if applicable |

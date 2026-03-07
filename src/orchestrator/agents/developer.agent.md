@@ -56,4 +56,4 @@ When completing a task, return a structured summary:
 3. **Acceptance Criteria Status** — Checklist from the tracker issue, each item marked ✅ or ❌
 4. **Assumptions Made** — Decisions you made that weren't explicitly specified
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).

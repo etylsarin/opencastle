@@ -221,24 +221,9 @@ CONFIDENCE: low | medium | high
 
 ## Logging
 
-Append a JSON line to `.github/customizations/logs/reviews.ndjson` after each fast review:
+> **⛔ HARD GATE — Do NOT proceed to the next task or accept the review result until the review is logged.**
 
-```json
-{
-  "timestamp": "2026-02-28T14:30:00Z",
-  "tracker_issue": "PRJ-42",
-  "agent": "Developer",
-  "reviewer_model": "gpt-5-mini",
-  "verdict": "pass",
-  "attempt": 1,
-  "issues_critical": 0,
-  "issues_major": 0,
-  "issues_minor": 2,
-  "confidence": "high",
-  "escalated": false,
-  "duration_sec": 45
-}
-```
+After each fast review, log the result using the **observability-logging** skill's review record command. See the skill for the exact CLI syntax, required fields, and verify step. An unlogged review is a failed review.
 
 ## Integration with Existing Workflow
 
@@ -326,7 +311,7 @@ For autonomous overnight sessions, fast review is the primary quality gate. Addi
 
 ## Metrics & Continuous Improvement
 
-Track these metrics from `reviews.ndjson` to optimize the review process:
+Track these metrics from `events.ndjson` (filter by `"type":"review"`) to optimize the review process:
 
 | Metric | Target | Action if Off-Target |
 |--------|--------|---------------------|

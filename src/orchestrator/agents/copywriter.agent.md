@@ -87,4 +87,4 @@ When completing a task, return a structured summary:
 3. **Constraints Met** — Character limits, tone requirements, accessibility considerations
 4. **Context** — Where the copy appears and how it fits the user journey
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).

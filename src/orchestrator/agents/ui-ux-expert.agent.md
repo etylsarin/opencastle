@@ -56,4 +56,4 @@ When completing a task, return a structured summary:
 3. **Responsive** — Breakpoints tested (per project testing config)
 4. **Visual Evidence** — Screenshots at each breakpoint
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).

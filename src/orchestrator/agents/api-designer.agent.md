@@ -58,4 +58,4 @@ When completing a task, return a structured summary:
 4. **Verification** — Lint, type-check, and test results
 5. **Documentation** — API docs produced or updated
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).

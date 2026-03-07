@@ -99,11 +99,7 @@ Synchronous — blocks until result. Use when:
 
 When calling `runSubagent`, always specify which custom agent to use by name: *"Use the **[Agent Name]** agent to [task]."* This routes the sub-agent to the named agent's model and tools instead of inheriting the Team Lead's Premium model. Include objective, file paths, acceptance criteria, and what to return in the result.
 
-**After each sub-agent returns**, log the delegation record before doing anything else (before review, before verification):
-```bash
-echo '{"timestamp":"<ISO-NOW>","session_id":"<branch>","agent":"<name>","model":"<model>","tier":"<tier>","mechanism":"sub-agent","tracker_issue":"<issue-or-N/A>","outcome":"<success|partial|failed>","retries":0,"phase":<N>,"file_partition":["<paths>"]}' >> .github/customizations/logs/delegations.ndjson
-```
-Verify: `tail -1 .github/customizations/logs/delegations.ndjson`
+**After each sub-agent returns**, log the delegation record before doing anything else (before review, before verification). This is a **⛔ hard gate** — do NOT proceed to review or any other action until the delegation is logged. Use the **observability-logging** skill's delegation record command (`--mechanism sub-agent`).
 
 > **`model` and `tier` must come from the agent registry** — not the Team Lead's own model. Look up the agent in [agent-registry.md](../customizations/agents/agent-registry.md) and use their assigned model and tier. For example, delegating to Developer → `"model":"claude-sonnet-4-6","tier":"quality"`, not the Team Lead's `claude-opus-4-6`.
 
@@ -117,11 +113,7 @@ Async in isolated Git worktree. Use when:
 
 Spawn via: Delegate Session → Background → Select agent → Enter prompt with full self-contained context (they cannot ask follow-ups).
 
-**After spawning**, log the delegation record before spawning another agent or doing any other work:
-```bash
-echo '{"timestamp":"<ISO-NOW>","session_id":"<branch>","agent":"<name>","model":"<model>","tier":"<tier>","mechanism":"background","tracker_issue":"<issue-or-N/A>","outcome":"pending","retries":0,"phase":<N>,"file_partition":["<paths>"]}' >> .github/customizations/logs/delegations.ndjson
-```
-Verify: `tail -1 .github/customizations/logs/delegations.ndjson`
+**After spawning**, log the delegation record before spawning another agent or doing any other work. This is a **⛔ hard gate** — do NOT spawn another agent or proceed until the delegation is logged. Use the **observability-logging** skill's delegation record command (`--mechanism background`, `--outcome pending`).
 
 > **`model` and `tier` must come from the agent registry** — see note in Sub-Agents section above.
 
@@ -133,20 +125,11 @@ Parallel agents must never touch the same files. Map file/directory ownership be
 
 ### Budget
 
-| Tier | Model | Est. Tokens | Est. Duration |
-|------|-------|-------------|---------------|
-| **Economy** | GPT-5 mini | ~5K–15K | 2–5 min |
-| **Fast** | GPT-5.3-Codex | ~10K–40K | 5–15 min |
-| **Standard** | Gemini 3.1 Pro | ~15K–50K | 8–20 min |
-| **Quality** | Claude Sonnet 4.6 | ~30K–80K | 10–25 min |
-| **Premium** | Claude Opus 4.6 | ~50K–150K | 15–30 min |
-
-**Quick reference:** Premium for orchestration, Quality for coding/UI/security/architecture, Standard for analysis/schemas/cost-sensitive, Fast for tests/data/terminal, Economy for docs.
+See the **team-lead-reference** skill for model tiers, token estimates, duration estimates, and budget rules.
 
 - Target 5–7 delegations per session. At 8 → warn. At 9 → checkpoint. At 10+ → STOP and save state.
 - Max 3 delegation attempts per task. After 3 failures → Dead Letter Queue + Architect.
 - Max 3 panel attempts. After 3 BLOCKs → dispute record.
-- Full model routing details in **team-lead-reference** skill.
 
 ### Pre-Delegation Checks
 
@@ -191,7 +174,7 @@ Every delegation prompt must include:
 - **File paths** — exact files to read/modify (the agent's partition)
 - **Acceptance criteria** — from the tracker issue
 - **Patterns** — link to existing code examples
-- **Reminder:** *"Read `LESSONS-LEARNED.md` before starting. Add lessons for any retries. Follow the Discovered Issues Policy."*
+- **Reminder:** *"Read `LESSONS-LEARNED.md` before starting. Use the **self-improvement** skill for any lessons. Follow the Discovered Issues Policy."*
 
 For complex tasks (score 5+), load the **decomposition** skill for the Delegation Spec Template.
 
@@ -205,7 +188,7 @@ For complex tasks (score 5+), load the **decomposition** skill for the Delegatio
 For each task:
   1. Move issue → In Progress
   2. Delegate to specialist agent by name (e.g., "Use the Developer agent to...")
-  3. Log delegation to delegations.ndjson (immediately — verify with `tail -1`)
+  3. Log delegation (⛔ hard gate — do NOT proceed until logged. See the **observability-logging** skill for the command and verify step.)
   4. Monitor for drift (load orchestration-protocols skill)
   5. Verify output:
      - Changed files within partition
@@ -216,7 +199,7 @@ For each task:
      - High-stakes: panel review (load panel-majority-vote skill)
      - Discovered issues tracked (not silently ignored)
      - Lessons captured (if agent retried anything)
-  6. PASS → log review, move issue → Done
+  6. PASS → log review (⛔ hard gate — do NOT proceed until logged), move issue → Done
      FAIL → re-delegate with failure details (max 3 attempts)
 ```
 
@@ -248,16 +231,7 @@ See [shared-delivery-phase.md](../agent-workflows/shared-delivery-phase.md) for 
 
 ## Observability
 
-> **⛔ HARD GATE — ALL observability logging is mandatory.** No record type is optional.
-> The Session Guard will flag missing records, but do not rely on it — log inline as you go.
-
-| Record | File | When to log | Timing |
-|--------|------|-------------|--------|
-| **Session** | `sessions.ndjson` | Every session — always | Before yielding to user |
-| **Delegation** | `delegations.ndjson` | After each `runSubagent` / background spawn | **Inline** — immediately after each delegation, before review |
-| **Fast review** | `reviews.ndjson` | After each fast review | After review completes |
-| **Panel** | `panels.ndjson` | After each panel majority vote | After panel completes |
-| **Dispute** | `disputes.ndjson` | After each dispute is created | When dispute is filed |
+> **⛔ HARD GATE — ALL observability logging is mandatory.** Load the **observability-logging** skill for record schemas, logging commands, and the pre-response quality gate.
 
 **Self-check before calling Session Guard:** Count delegations, reviews, and panels performed → count records written → numbers must match for each type. If any count is off, fix it before calling the guard.
 
@@ -273,7 +247,7 @@ See [shared-delivery-phase.md](../agent-workflows/shared-delivery-phase.md) for 
 8. Never proceed to dependent task until prerequisite is verified
 9. Sub-agents must not spawn other sub-agents (no recursive delegation)
 10. Never push to `main` — feature branch → PR → human merges
-11. Log every delegation inline — immediately after each `runSubagent` or background spawn, not at session end
+11. Log every delegation and review inline — immediately after each `runSubagent` or background spawn, and after each fast review/panel. This is a hard gate — never proceed without logging first
 12. Steer early — don't wait until an agent finishes to redirect when you spot drift
 13. Never exceed session budget without checkpointing — context degrades after 8+ delegations
 14. Read `LESSONS-LEARNED.md` before delegating — include relevant lessons in prompts

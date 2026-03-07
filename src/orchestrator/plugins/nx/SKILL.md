@@ -154,7 +154,7 @@ Before running any generator, complete these steps:
    - Read the error message carefully
    - Common causes: missing required options, invalid values, conflicting files, missing dependencies
    - Adjust options and retry
-   - Add a lesson to `.github/customizations/LESSONS-LEARNED.md` if the fix was non-obvious
+   - Use the **self-improvement** skill to add a lesson if the fix was non-obvious
 
 ### Phase 4: Post-Generation
 

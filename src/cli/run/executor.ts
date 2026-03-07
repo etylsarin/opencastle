@@ -72,12 +72,12 @@ export function createExecutor(
   adapter: AgentAdapter,
   reporter: Reporter
 ): Executor {
-  const phases = buildPhases(spec.tasks)
+  const phases = buildPhases(spec.tasks!)
   const statuses = new Map<string, TaskStatus>()
   const results = new Map<string, TaskResult | null>()
   const startTimes = new Map<string, number>()
 
-  for (const t of spec.tasks) {
+  for (const t of spec.tasks!) {
     statuses.set(t.id, 'pending')
     results.set(t.id, null)
   }
@@ -154,7 +154,7 @@ export function createExecutor(
   function skipTask(taskId: string, reason: string): void {
     if (statuses.get(taskId) !== 'pending') return
     statuses.set(taskId, 'skipped')
-    const task = spec.tasks.find((t) => t.id === taskId)!
+    const task = spec.tasks!.find((t) => t.id === taskId)!
     results.set(taskId, {
       id: taskId,
       status: 'skipped',
@@ -165,7 +165,7 @@ export function createExecutor(
     reporter.onTaskSkipped(task, reason)
 
     // Recursively skip dependents
-    for (const t of spec.tasks) {
+    for (const t of spec.tasks!) {
       if ((t.depends_on || []).includes(taskId)) {
         skipTask(t.id, `dependency "${taskId}" was skipped/failed`)
       }
@@ -201,14 +201,14 @@ export function createExecutor(
             if (spec.on_failure === 'stop') {
               halted = true
               // Skip all remaining tasks
-              for (const t of spec.tasks) {
+              for (const t of spec.tasks!) {
                 if (statuses.get(t.id) === 'pending') {
                   skipTask(t.id, 'execution halted due to on_failure: stop')
                 }
               }
             } else {
               // on_failure: continue — skip dependents of this failed task
-              for (const t of spec.tasks) {
+              for (const t of spec.tasks!) {
                 if ((t.depends_on || []).includes(r.id)) {
                   skipTask(t.id, `dependency "${r.id}" failed`)
                 }
@@ -220,7 +220,7 @@ export function createExecutor(
     }
 
     const completedAt = new Date()
-    const allResults: TaskResult[] = spec.tasks.map(
+    const allResults: TaskResult[] = spec.tasks!.map(
       (t) =>
         results.get(t.id) || {
           id: t.id,
@@ -232,7 +232,7 @@ export function createExecutor(
     )
 
     const summary: RunSummary = {
-      total: spec.tasks.length,
+      total: spec.tasks!.length,
       done: 0,
       failed: 0,
       skipped: 0,

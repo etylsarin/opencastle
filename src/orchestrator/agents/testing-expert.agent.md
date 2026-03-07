@@ -76,4 +76,4 @@ When completing a task, return a structured summary:
 4. **Edge Cases Tested** — List edge cases covered and any known gaps
 5. **Regressions Checked** — Adjacent features/pages verified to still work
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).

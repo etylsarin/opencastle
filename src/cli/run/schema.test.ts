@@ -324,7 +324,7 @@ describe('applyDefaults', () => {
       name: 'test',
       tasks: [{ id: 'a', prompt: 'x' }],
     })
-    const task = spec.tasks[0]
+    const task = spec.tasks![0]
     expect(task.agent).toBe('developer')
     expect(task.timeout).toBe('30m')
     expect(task.depends_on).toEqual([])
@@ -343,10 +343,250 @@ describe('applyDefaults', () => {
         files: ['src/'],
       }],
     })
-    const task = spec.tasks[0]
+    const task = spec.tasks![0]
     expect(task.agent).toBe('ui-ux-expert')
     expect(task.timeout).toBe('15m')
     expect(task.depends_on).toEqual(['b'])
     expect(task.files).toEqual(['src/'])
+  })
+})
+
+// ── loop mode — validateSpec ───────────────────────────────────
+
+describe('validateSpec — loop mode', () => {
+  const validLoopSpec = {
+    name: 'build-auth',
+    mode: 'loop',
+    adapter: 'copilot',
+    loop: {
+      prompt: 'PROMPT_build.md',
+      plan_file: 'IMPLEMENTATION_PLAN.md',
+      max_iterations: 20,
+      timeout: '10m',
+      model: 'gpt-5.1',
+      backpressure: ['npm test', 'npx tsc --noEmit'],
+    },
+  }
+
+  it('accepts a valid minimal loop spec (only prompt required)', () => {
+    const result = validateSpec({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT_build.md' },
+    })
+    expect(result.valid).toBe(true)
+    expect(result.errors).toHaveLength(0)
+  })
+
+  it('accepts a full loop spec', () => {
+    const result = validateSpec(validLoopSpec)
+    expect(result.valid).toBe(true)
+    expect(result.errors).toHaveLength(0)
+  })
+
+  it('does not require tasks array in loop mode', () => {
+    const result = validateSpec({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT_build.md' },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('fails when loop object is missing', () => {
+    const result = validateSpec({ name: 'build-auth', mode: 'loop' })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('`loop` is required'))
+  })
+
+  it('fails when loop.prompt is missing', () => {
+    const result = validateSpec({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { max_iterations: 10 },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('loop.prompt'))
+  })
+
+  it('fails when loop.prompt is not a string', () => {
+    const result = validateSpec({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 123 },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('loop.prompt'))
+  })
+
+  it('fails when loop.max_iterations is 0', () => {
+    const result = validateSpec({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT.md', max_iterations: 0 },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('loop.max_iterations'))
+  })
+
+  it('fails when loop.max_iterations is a float', () => {
+    const result = validateSpec({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT.md', max_iterations: 1.5 },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('loop.max_iterations'))
+  })
+
+  it('fails when loop.timeout has invalid format', () => {
+    const result = validateSpec({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT.md', timeout: 'bad' },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('loop.timeout'))
+  })
+
+  it('accepts valid loop.timeout formats', () => {
+    for (const t of ['5s', '10m', '2h']) {
+      const result = validateSpec({
+        name: 'build-auth',
+        mode: 'loop',
+        loop: { prompt: 'PROMPT.md', timeout: t },
+      })
+      expect(result.valid).toBe(true)
+    }
+  })
+
+  it('fails when loop.backpressure is not an array', () => {
+    const result = validateSpec({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT.md', backpressure: 'npm test' },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('loop.backpressure'))
+  })
+
+  it('fails when loop.backpressure contains non-strings', () => {
+    const result = validateSpec({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT.md', backpressure: ['npm test', 42] },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('loop.backpressure'))
+  })
+
+  it('fails when loop.plan_file is not a string', () => {
+    const result = validateSpec({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT.md', plan_file: true },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('loop.plan_file'))
+  })
+
+  it('fails when loop.model is not a string', () => {
+    const result = validateSpec({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT.md', model: 99 },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('loop.model'))
+  })
+
+  it('rejects unknown mode value', () => {
+    const result = validateSpec({
+      name: 'build-auth',
+      mode: 'parallel',
+      tasks: [{ id: 'a', prompt: 'x' }],
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('mode'))
+  })
+
+  it('mode: tasks still requires tasks array', () => {
+    const result = validateSpec({ name: 'build-auth', mode: 'tasks' })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('tasks'))
+  })
+
+  it('spec without mode field defaults to tasks behavior (requires tasks)', () => {
+    const result = validateSpec({ name: 'build-auth' })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('tasks'))
+  })
+})
+
+// ── loop mode — applyDefaults ──────────────────────────────────
+
+describe('applyDefaults — loop mode', () => {
+  it('applies default max_iterations', () => {
+    const spec = applyDefaults({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT.md' },
+    })
+    expect(spec.loop?.max_iterations).toBe(20)
+  })
+
+  it('applies default plan_file', () => {
+    const spec = applyDefaults({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT.md' },
+    })
+    expect(spec.loop?.plan_file).toBe('IMPLEMENTATION_PLAN.md')
+  })
+
+  it('applies default timeout', () => {
+    const spec = applyDefaults({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT.md' },
+    })
+    expect(spec.loop?.timeout).toBe('10m')
+  })
+
+  it('preserves user-specified loop values', () => {
+    const spec = applyDefaults({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: {
+        prompt: 'PROMPT.md',
+        max_iterations: 5,
+        plan_file: 'MY_PLAN.md',
+        timeout: '30m',
+        model: 'gpt-5.1',
+        backpressure: ['npm test'],
+      },
+    })
+    expect(spec.loop?.max_iterations).toBe(5)
+    expect(spec.loop?.plan_file).toBe('MY_PLAN.md')
+    expect(spec.loop?.timeout).toBe('30m')
+    expect(spec.loop?.model).toBe('gpt-5.1')
+    expect(spec.loop?.backpressure).toEqual(['npm test'])
+  })
+
+  it('sets mode to tasks when not specified', () => {
+    const spec = applyDefaults({
+      name: 'test',
+      tasks: [{ id: 'a', prompt: 'x' }],
+    })
+    expect(spec.mode).toBe('tasks')
+  })
+
+  it('preserves mode: loop', () => {
+    const spec = applyDefaults({
+      name: 'build-auth',
+      mode: 'loop',
+      loop: { prompt: 'PROMPT.md' },
+    })
+    expect(spec.mode).toBe('loop')
   })
 })

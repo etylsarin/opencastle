@@ -58,4 +58,4 @@ When completing a task, return a structured summary:
 4. **Verification** — Lighthouse SEO score, Rich Results Test, crawlability check
 5. **Recommendations** — Further SEO opportunities identified but not implemented
 
-See **Base Output Contract** in `general.instructions.md` for the standard closing items (Discovered Issues + Lessons Applied).
+See **Base Output Contract** in the **observability-logging** skill for the standard closing items (Discovered Issues + Lessons Applied).
