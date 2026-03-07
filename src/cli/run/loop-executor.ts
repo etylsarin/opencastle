@@ -119,6 +119,7 @@ export function createLoopExecutor(
             depends_on: [],
             files: [],
             description: `Loop iteration ${i}`,
+            max_retries: 1,
           }
 
           const iterStart = Date.now()

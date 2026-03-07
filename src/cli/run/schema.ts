@@ -41,6 +41,10 @@ interface RawSpec {
   tasks?: unknown
   mode?: unknown
   loop?: unknown
+  version?: unknown
+  defaults?: unknown
+  gates?: unknown
+  branch?: unknown
 }
 
 interface RawTask {
@@ -51,6 +55,8 @@ interface RawTask {
   depends_on?: unknown
   files?: unknown
   description?: unknown
+  model?: unknown
+  max_retries?: unknown
 }
 
 /**
@@ -90,6 +96,54 @@ export function validateSpec(spec: unknown): ValidationResult {
   // adapter
   if (s.adapter !== undefined && typeof s.adapter !== 'string') {
     errors.push('`adapter` must be a string')
+  }
+
+  // version
+  if (s.version !== undefined) {
+    if (typeof s.version !== 'number' || !Number.isInteger(s.version) || s.version !== 1) {
+      errors.push('`version` must be 1')
+    }
+  }
+
+  // defaults
+  if (s.defaults !== undefined) {
+    if (!s.defaults || typeof s.defaults !== 'object' || Array.isArray(s.defaults)) {
+      errors.push('`defaults` must be an object')
+    } else {
+      const d = s.defaults as Record<string, unknown>
+      if (d.timeout !== undefined && isNaN(parseTimeout(d.timeout as string))) {
+        errors.push(
+          '`defaults.timeout` must be in format: <number><s|m|h> (e.g. "10m")'
+        )
+      }
+      if (d.model !== undefined && typeof d.model !== 'string') {
+        errors.push('`defaults.model` must be a string')
+      }
+      if (d.max_retries !== undefined) {
+        const mr = Number(d.max_retries)
+        if (!Number.isInteger(mr) || mr < 0) {
+          errors.push('`defaults.max_retries` must be a non-negative integer')
+        }
+      }
+      if (d.agent !== undefined && typeof d.agent !== 'string') {
+        errors.push('`defaults.agent` must be a string')
+      }
+    }
+  }
+
+  // gates
+  if (s.gates !== undefined) {
+    if (
+      !Array.isArray(s.gates) ||
+      !(s.gates as unknown[]).every((g) => typeof g === 'string')
+    ) {
+      errors.push('`gates` must be an array of strings')
+    }
+  }
+
+  // branch
+  if (s.branch !== undefined && typeof s.branch !== 'string') {
+    errors.push('`branch` must be a string')
   }
 
   // mode
@@ -196,6 +250,21 @@ export function validateSpec(spec: unknown): ValidationResult {
       if (task.files !== undefined && !Array.isArray(task.files)) {
         errors.push(`${prefix}: \`files\` must be an array`)
       }
+
+      // model
+      if (task.model !== undefined && typeof task.model !== 'string') {
+        errors.push(`${prefix}: \`model\` must be a string`)
+      }
+
+      // max_retries
+      if (task.max_retries !== undefined) {
+        const mr = Number(task.max_retries)
+        if (!Number.isInteger(mr) || mr < 0) {
+          errors.push(
+            `${prefix}: \`max_retries\` must be a non-negative integer`
+          )
+        }
+      }
     }
 
     // DAG cycle detection
@@ -271,16 +340,41 @@ export function applyDefaults(spec: Record<string, unknown>): TaskSpec {
     s.loop = loop
   } else {
     const tasks = s.tasks as Array<Record<string, unknown>>
+    const d =
+      s.version === 1 && s.defaults
+        ? (s.defaults as Record<string, unknown>)
+        : {}
     for (const task of tasks) {
-      task.agent = (task.agent as string) || 'developer'
-      task.timeout = (task.timeout as string) || '30m'
+      task.agent =
+        (task.agent as string) || (d.agent as string | undefined) || 'developer'
+      task.timeout =
+        (task.timeout as string) ||
+        (d.timeout as string | undefined) ||
+        '30m'
       task.depends_on = (task.depends_on as string[]) || []
       task.files = (task.files as string[]) || []
       task.description = (task.description as string) || (task.id as string)
+      // model: task-level overrides defaults (no hardcoded fallback)
+      if (task.model === undefined && d.model !== undefined) {
+        task.model = d.model
+      }
+      // max_retries: task-level overrides defaults, fallback to 1
+      if (task.max_retries === undefined) {
+        task.max_retries =
+          d.max_retries !== undefined ? Number(d.max_retries) : 1
+      }
     }
   }
 
   return s as unknown as TaskSpec
+}
+
+/**
+ * Returns true if the spec uses the Convoy Engine enhanced format (version: 1).
+ */
+export function isConvoySpec(spec: unknown): boolean {
+  if (!spec || typeof spec !== 'object') return false
+  return (spec as Record<string, unknown>).version === 1
 }
 
 /**

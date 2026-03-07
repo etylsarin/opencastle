@@ -11,6 +11,7 @@ function makeTask(overrides: Partial<Task> & { id: string; prompt: string }): Ta
     depends_on: [],
     files: [],
     description: overrides.id,
+    max_retries: 1,
     ...overrides,
   }
 }

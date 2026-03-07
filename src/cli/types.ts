@@ -126,6 +126,14 @@ export const IDE_LABELS: Record<IdeChoice, string> = {
 
 // ── Run command types ──────────────────────────────────────────
 
+/** Default values merged into each task for Convoy Engine (version: 1) specs. */
+export interface TaskDefaults {
+  timeout?: string;
+  model?: string;
+  max_retries?: number;
+  agent?: string;
+}
+
 /** Loop execution configuration. */
 export interface LoopConfig {
   /** Maximum number of agent iterations (default 20). */
@@ -152,6 +160,14 @@ export interface TaskSpec {
   mode?: 'tasks' | 'loop';
   loop?: LoopConfig;
   _verbose?: boolean;
+  /** Spec schema version (1 for Convoy Engine format). */
+  version?: number;
+  /** Worker defaults merged into each task (Convoy Engine). */
+  defaults?: TaskDefaults;
+  /** Shell commands run after all tasks complete; each must exit 0. */
+  gates?: string[];
+  /** Git feature branch name. */
+  branch?: string;
 }
 
 /** A single task in the spec. */
@@ -164,6 +180,10 @@ export interface Task {
   files: string[];
   description: string;
   _process?: ChildProcess;
+  /** Model override for this task. */
+  model?: string;
+  /** Max retry attempts (default: 1). */
+  max_retries: number;
 }
 
 /** Task execution status. */
