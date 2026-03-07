@@ -37,7 +37,7 @@ export async function execute(task: Task, options: ExecuteOptions = {}): Promise
     const proc = spawn('agent', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env },
-      cwd: process.cwd(),
+      cwd: options?.cwd ?? process.cwd(),
     })
 
     let stdout = ''

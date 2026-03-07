@@ -234,6 +234,8 @@ export interface AgentAdapter {
 /** Options for agent execution. */
 export interface ExecuteOptions {
   verbose?: boolean;
+  /** Working directory for the agent process (defaults to process.cwd()). */
+  cwd?: string;
 }
 
 /** Result from an agent adapter execution. */
