@@ -61,6 +61,11 @@ async function getClient(): Promise<CopilotClientType> {
  *   - Streaming enabled in verbose mode for live output
  */
 export async function execute(task: Task, options: ExecuteOptions = {}): Promise<ExecuteResult> {
+  // NOTE: The Copilot SDK CopilotClient is a shared singleton. Per-task cwd
+  // isolation requires SDK support for per-session workingDirectory, which is
+  // not yet available. When running in convoy mode with worktrees, prefer
+  // subprocess-based adapters (claude-code, cursor) that support options.cwd
+  // natively. Copilot SDK per-session cwd support is tracked for Phase 3.
   let prompt = `You are a ${task.agent}. ${task.prompt}`
 
   if (task.files && task.files.length > 0) {
