@@ -108,7 +108,7 @@ export function printExecutionPlan(spec: TaskSpec, phases: Task[][]): void {
   console.log(`  ${c.dim('Adapter:')}     ${c.cyan(spec.adapter)}`)
   console.log(`  ${c.dim('Concurrency:')} ${c.yellow(String(spec.concurrency))}`)
   console.log(`  ${c.dim('On failure:')}  ${c.yellow(spec.on_failure)}`)
-  console.log(`  ${c.dim('Tasks:')}       ${c.yellow(String(spec.tasks.length))}`)
+  console.log(`  ${c.dim('Tasks:')}       ${c.yellow(String(spec.tasks!.length))}`)
   console.log(`  ${c.dim('──────────────────────────────────')}`)
 
   for (let i = 0; i < phases.length; i++) {

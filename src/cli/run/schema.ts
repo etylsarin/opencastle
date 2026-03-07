@@ -39,6 +39,8 @@ interface RawSpec {
   on_failure?: unknown
   adapter?: unknown
   tasks?: unknown
+  mode?: unknown
+  loop?: unknown
 }
 
 interface RawTask {
@@ -90,72 +92,117 @@ export function validateSpec(spec: unknown): ValidationResult {
     errors.push('`adapter` must be a string')
   }
 
-  // Tasks
-  if (!s.tasks || !Array.isArray(s.tasks) || s.tasks.length === 0) {
-    errors.push('`tasks` is required and must be a non-empty array')
-    return { valid: false, errors }
+  // mode
+  const mode = s.mode !== undefined ? s.mode : 'tasks'
+  if (mode !== 'tasks' && mode !== 'loop') {
+    errors.push('`mode` must be one of: tasks, loop')
   }
 
-  const taskIds = new Set<string>()
-  const tasks = s.tasks as RawTask[]
-
-  for (let i = 0; i < tasks.length; i++) {
-    const task = tasks[i]
-    const prefix = `tasks[${i}]`
-
-    if (!task || typeof task !== 'object') {
-      errors.push(`${prefix}: must be an object`)
-      continue
-    }
-
-    // id
-    if (!task.id || typeof task.id !== 'string') {
-      errors.push(`${prefix}: \`id\` is required and must be a string`)
-    } else if (taskIds.has(task.id)) {
-      errors.push(`${prefix}: duplicate task id "${task.id}"`)
+  if (mode === 'loop') {
+    // Loop validation — tasks array is NOT required
+    const loop = s.loop as Record<string, unknown> | undefined
+    if (!loop || typeof loop !== 'object') {
+      errors.push('`loop` is required when mode is "loop"')
     } else {
-      taskIds.add(task.id)
-    }
-
-    // prompt
-    if (!task.prompt || typeof task.prompt !== 'string') {
-      errors.push(`${prefix}: \`prompt\` is required and must be a string`)
-    }
-
-    // timeout
-    if (task.timeout !== undefined) {
-      if (isNaN(parseTimeout(task.timeout as string))) {
-        errors.push(
-          `${prefix}: \`timeout\` must be in format: <number><s|m|h> (e.g. "10m")`
-        )
+      if (!loop.prompt || typeof loop.prompt !== 'string') {
+        errors.push('`loop.prompt` is required and must be a string')
+      }
+      if (loop.max_iterations !== undefined) {
+        const mi = Number(loop.max_iterations)
+        if (!Number.isInteger(mi) || mi < 1) {
+          errors.push('`loop.max_iterations` must be an integer >= 1')
+        }
+      }
+      if (loop.timeout !== undefined) {
+        if (isNaN(parseTimeout(loop.timeout as string))) {
+          errors.push(
+            '`loop.timeout` must be in format: <number><s|m|h> (e.g. "10m")'
+          )
+        }
+      }
+      if (loop.backpressure !== undefined) {
+        if (
+          !Array.isArray(loop.backpressure) ||
+          !(loop.backpressure as unknown[]).every((b) => typeof b === 'string')
+        ) {
+          errors.push('`loop.backpressure` must be an array of strings')
+        }
+      }
+      if (loop.plan_file !== undefined && typeof loop.plan_file !== 'string') {
+        errors.push('`loop.plan_file` must be a string')
+      }
+      if (loop.model !== undefined && typeof loop.model !== 'string') {
+        errors.push('`loop.model` must be a string')
       }
     }
+  } else {
+    // Tasks mode — tasks array is required
+    if (!s.tasks || !Array.isArray(s.tasks) || s.tasks.length === 0) {
+      errors.push('`tasks` is required and must be a non-empty array')
+      return { valid: false, errors }
+    }
 
-    // depends_on
-    if (task.depends_on !== undefined) {
-      if (!Array.isArray(task.depends_on)) {
-        errors.push(`${prefix}: \`depends_on\` must be an array`)
+    const taskIds = new Set<string>()
+    const tasks = s.tasks as RawTask[]
+
+    for (let i = 0; i < tasks.length; i++) {
+      const task = tasks[i]
+      const prefix = `tasks[${i}]`
+
+      if (!task || typeof task !== 'object') {
+        errors.push(`${prefix}: must be an object`)
+        continue
+      }
+
+      // id
+      if (!task.id || typeof task.id !== 'string') {
+        errors.push(`${prefix}: \`id\` is required and must be a string`)
+      } else if (taskIds.has(task.id)) {
+        errors.push(`${prefix}: duplicate task id "${task.id}"`)
       } else {
-        for (const dep of task.depends_on as string[]) {
-          if (!taskIds.has(dep) && !tasks.some((t) => t && t.id === dep)) {
-            errors.push(
-              `${prefix}: \`depends_on\` references unknown task "${dep}"`
-            )
+        taskIds.add(task.id)
+      }
+
+      // prompt
+      if (!task.prompt || typeof task.prompt !== 'string') {
+        errors.push(`${prefix}: \`prompt\` is required and must be a string`)
+      }
+
+      // timeout
+      if (task.timeout !== undefined) {
+        if (isNaN(parseTimeout(task.timeout as string))) {
+          errors.push(
+            `${prefix}: \`timeout\` must be in format: <number><s|m|h> (e.g. "10m")`
+          )
+        }
+      }
+
+      // depends_on
+      if (task.depends_on !== undefined) {
+        if (!Array.isArray(task.depends_on)) {
+          errors.push(`${prefix}: \`depends_on\` must be an array`)
+        } else {
+          for (const dep of task.depends_on as string[]) {
+            if (!taskIds.has(dep) && !tasks.some((t) => t && t.id === dep)) {
+              errors.push(
+                `${prefix}: \`depends_on\` references unknown task "${dep}"`
+              )
+            }
           }
         }
       }
+
+      // files
+      if (task.files !== undefined && !Array.isArray(task.files)) {
+        errors.push(`${prefix}: \`files\` must be an array`)
+      }
     }
 
-    // files
-    if (task.files !== undefined && !Array.isArray(task.files)) {
-      errors.push(`${prefix}: \`files\` must be an array`)
+    // DAG cycle detection
+    if (errors.length === 0) {
+      const cycleErr = detectCycles(tasks as Array<{ id: string; depends_on?: string[] }>)
+      if (cycleErr) errors.push(cycleErr)
     }
-  }
-
-  // DAG cycle detection
-  if (errors.length === 0) {
-    const cycleErr = detectCycles(tasks as Array<{ id: string; depends_on?: string[] }>)
-    if (cycleErr) errors.push(cycleErr)
   }
 
   return { valid: errors.length === 0, errors }
@@ -214,14 +261,23 @@ export function applyDefaults(spec: Record<string, unknown>): TaskSpec {
   s.on_failure = (s.on_failure as string) || 'continue'
   // Leave adapter empty so run.ts can auto-detect the best available CLI
   s.adapter = (s.adapter as string) || ''
+  s.mode = (s.mode as string) || 'tasks'
 
-  const tasks = s.tasks as Array<Record<string, unknown>>
-  for (const task of tasks) {
-    task.agent = (task.agent as string) || 'developer'
-    task.timeout = (task.timeout as string) || '30m'
-    task.depends_on = (task.depends_on as string[]) || []
-    task.files = (task.files as string[]) || []
-    task.description = (task.description as string) || (task.id as string)
+  if (s.mode === 'loop') {
+    const loop = ((s.loop ?? {}) as Record<string, unknown>)
+    loop.max_iterations = loop.max_iterations !== undefined ? Number(loop.max_iterations) : 20
+    loop.plan_file = (loop.plan_file as string) || 'IMPLEMENTATION_PLAN.md'
+    loop.timeout = (loop.timeout as string) || '10m'
+    s.loop = loop
+  } else {
+    const tasks = s.tasks as Array<Record<string, unknown>>
+    for (const task of tasks) {
+      task.agent = (task.agent as string) || 'developer'
+      task.timeout = (task.timeout as string) || '30m'
+      task.depends_on = (task.depends_on as string[]) || []
+      task.files = (task.files as string[]) || []
+      task.description = (task.description as string) || (task.id as string)
+    }
   }
 
   return s as unknown as TaskSpec

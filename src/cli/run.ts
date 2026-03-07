@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { parseTaskSpec } from './run/schema.js'
 import { createExecutor, buildPhases } from './run/executor.js'
@@ -9,14 +10,17 @@ const HELP = `
   opencastle run [options]
 
   Process a task queue from a spec file, delegating to AI agents autonomously.
+  Supports two modes: tasks (default phase-based execution) and loop (iterative Ralph Loop).
 
   Options:
     --file, -f <path>        Task spec file (default: opencastle.tasks.yml)
     --dry-run                Show execution plan without running
-    --concurrency, -c <n>    Override max parallel tasks
+    --concurrency, -c <n>    Override max parallel tasks (tasks mode)
     --adapter, -a <name>     Override agent runtime adapter
     --report-dir <path>      Where to write run reports (default: .opencastle/runs)
     --verbose                Show full agent output
+    --mode <name>            Execution mode: tasks | loop
+    --max-iterations <n>     Override max loop iterations (loop mode)
     --help, -h               Show this help
 `
 
@@ -32,6 +36,8 @@ function parseArgs(args: string[]): RunOptions {
     reportDir: null,
     verbose: false,
     help: false,
+    maxIterations: null,
+    mode: null,
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -73,6 +79,26 @@ function parseArgs(args: string[]): RunOptions {
       case '--verbose':
         opts.verbose = true
         break
+      case '--max-iterations': {
+        if (i + 1 >= args.length) { console.error('  \u2717 --max-iterations requires a number'); process.exit(1) }
+        const val = parseInt(args[++i], 10)
+        if (!Number.isFinite(val) || val < 1) {
+          console.error(`  \u2717 --max-iterations must be an integer >= 1`)
+          process.exit(1)
+        }
+        opts.maxIterations = val
+        break
+      }
+      case '--mode': {
+        if (i + 1 >= args.length) { console.error('  \u2717 --mode requires a name'); process.exit(1) }
+        const modeVal = args[++i]
+        if (modeVal !== 'tasks' && modeVal !== 'loop') {
+          console.error(`  \u2717 --mode must be one of: tasks, loop`)
+          process.exit(1)
+        }
+        opts.mode = modeVal
+        break
+      }
       default:
         console.error(`  ✗ Unknown option: ${arg}`)
         console.log(HELP)
@@ -102,6 +128,7 @@ export default async function run({ args }: CliContext): Promise<void> {
   if (opts.concurrency !== null) spec.concurrency = opts.concurrency
   if (opts.adapter !== null) spec.adapter = opts.adapter
   if (opts.verbose) spec._verbose = true
+  if (opts.mode !== null) spec.mode = opts.mode as 'tasks' | 'loop'
 
   // ── Auto-detect adapter if not specified ─────────────────────
   let detectionFailed = false
@@ -117,9 +144,25 @@ export default async function run({ args }: CliContext): Promise<void> {
   }
 
   // ── Dry run ──────────────────────────────────────────────────
-  const phases = buildPhases(spec.tasks)
-
   if (opts.dryRun) {
+    if (spec.mode === 'loop') {
+      const loop = spec.loop!
+      console.log(`\n  \uD83C\uDFF0 Loop Plan: ${spec.name}`)
+      console.log(`  Mode: loop`)
+      console.log(`  Prompt: ${loop.prompt}`)
+      console.log(`  Max iterations: ${loop.max_iterations}`)
+      console.log(`  Timeout: ${loop.timeout}`)
+      if (loop.plan_file) console.log(`  Plan file: ${loop.plan_file}`)
+      if (loop.model) console.log(`  Model: ${loop.model}`)
+      if (loop.backpressure?.length) {
+        console.log(`  Backpressure:`)
+        for (const cmd of loop.backpressure) {
+          console.log(`    - ${cmd}`)
+        }
+      }
+      return
+    }
+    const phases = buildPhases(spec.tasks!)
     printExecutionPlan(spec, phases)
     return
   }
@@ -164,8 +207,42 @@ export default async function run({ args }: CliContext): Promise<void> {
   }
 
   // ── Execute ──────────────────────────────────────────────────
-  console.log(`\n  🏰 OpenCastle Run: ${spec.name}`)
-  console.log(`  Adapter: ${adapter.name} | Concurrency: ${spec.concurrency} | Tasks: ${spec.tasks.length}`)
+  if (spec.mode === 'loop') {
+    const { createLoopExecutor } = await import('./run/loop-executor.js')
+    const { createLoopReporter } = await import('./run/loop-reporter.js')
+
+    if (opts.maxIterations !== null && spec.loop) {
+      spec.loop.max_iterations = opts.maxIterations
+    }
+
+    const promptPath = resolve(process.cwd(), spec.loop!.prompt)
+    try {
+      await readFile(promptPath)
+    } catch {
+      console.error(`  \u2717 Prompt file not found: ${spec.loop!.prompt}`)
+      process.exit(1)
+    }
+
+    console.log(`\n  \uD83C\uDFF0 OpenCastle Loop: ${spec.name}`)
+    console.log(`  Adapter: ${adapter.name} | Max iterations: ${spec.loop!.max_iterations} | Timeout: ${spec.loop!.timeout}`)
+    if (spec.loop!.backpressure?.length) {
+      console.log(`  Backpressure: ${spec.loop!.backpressure.join(', ')}`)
+    }
+
+    const loopReporter = createLoopReporter(spec.name, {
+      reportDir: opts.reportDir ? resolve(process.cwd(), opts.reportDir) : undefined,
+      verbose: opts.verbose,
+    })
+
+    const loopExecutor = createLoopExecutor(spec, adapter, loopReporter)
+    const loopReport = await loopExecutor.run()
+
+    const failed = loopReport.stoppedReason === 'error' || loopReport.stoppedReason === 'backpressure-fail'
+    process.exit(failed ? 1 : 0)
+  }
+
+  console.log(`\n  \uD83C\uDFF0 OpenCastle Run: ${spec.name}`)
+  console.log(`  Adapter: ${adapter.name} | Concurrency: ${spec.concurrency} | Tasks: ${spec.tasks!.length}`)
 
   const reporter = createReporter(spec, {
     reportDir: opts.reportDir
