@@ -26,6 +26,7 @@ const base = import.meta.env.BASE_URL;
     <!-- Sidebar Navigation -->
     <nav class="dash-sidebar" id="dash-sidebar">
       <ul class="dash-sidebar__list">
+        <li><a class="dash-sidebar__link" href="#convoy-section" data-section="convoy-section">Convoy</a></li>
         <li><a class="dash-sidebar__link dash-sidebar__link--active" href="#kpi-row" data-section="kpi-row">Overview</a></li>
         <li><a class="dash-sidebar__link" href="#pipeline-section" data-section="pipeline-section">Pipeline</a></li>
         <li><a class="dash-sidebar__link" href="#agent-section" data-section="agent-section">Agents</a></li>
@@ -66,8 +67,24 @@ const base = import.meta.env.BASE_URL;
           <option value="failed">Failed</option>
         </select>
       </div>
+      <div class="filter-group">
+        <label class="filter-label" for="filter-convoy">Convoy</label>
+        <select class="filter-select" id="filter-convoy">
+          <option value="">All convoys</option>
+        </select>
+      </div>
       <button class="dash-btn dash-btn--ghost filter-reset" id="filter-reset" type="button">Reset</button>
     </div>
+
+    <!-- Convoy Status Section -->
+    <section class="chart-card convoy-status" id="convoy-section" data-nav-section style="display:none">
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Convoy Status</h2>
+        <p class="chart-card__desc" id="convoy-desc">Select a convoy to view details</p>
+      </div>
+      <div class="chart-card__body" id="convoy-body">
+      </div>
+    </section>
 
     <!-- KPI Row -->
     <section class="kpi-row" id="kpi-row" data-nav-section>
@@ -1154,12 +1171,14 @@ const base = import.meta.env.BASE_URL;
   let rawDelegations = [];
   let rawPanels = [];
   let rawReviews = [];
+  let rawConvoys = [];
 
   function applyFilters() {
     const dateFrom = document.getElementById('filter-date-from').value;
     const dateTo = document.getElementById('filter-date-to').value;
     const agentFilter = document.getElementById('filter-agent').value;
     const outcomeFilter = document.getElementById('filter-outcome').value;
+    const convoyFilter = document.getElementById('filter-convoy').value;
 
     function matchDate(ts) {
       const date = ts.slice(0, 10);
@@ -1168,26 +1187,42 @@ const base = import.meta.env.BASE_URL;
       return true;
     }
 
-    const sessions = rawSessions.filter((s) => {
+    let sessions = rawSessions.filter((s) => {
       if (!matchDate(s.timestamp)) return false;
       if (agentFilter && s.agent !== agentFilter) return false;
       if (outcomeFilter && s.outcome !== outcomeFilter) return false;
       return true;
     });
 
-    const delegations = rawDelegations.filter((d) => {
+    let delegations = rawDelegations.filter((d) => {
       if (!matchDate(d.timestamp)) return false;
       if (agentFilter && d.agent !== agentFilter) return false;
       if (outcomeFilter && d.outcome !== outcomeFilter) return false;
       return true;
     });
 
-    const panels = rawPanels.filter((p) => matchDate(p.timestamp));
-    const reviews = rawReviews.filter((r) => {
+    let panels = rawPanels.filter((p) => matchDate(p.timestamp));
+    let reviews = rawReviews.filter((r) => {
       if (!matchDate(r.timestamp)) return false;
       if (agentFilter && r.agent !== agentFilter) return false;
       return true;
     });
+
+    if (convoyFilter) {
+      sessions = sessions.filter((s) => s.convoy_id === convoyFilter);
+      delegations = delegations.filter((d) => d.convoy_id === convoyFilter);
+      panels = panels.filter((p) => p.convoy_id === convoyFilter);
+      reviews = reviews.filter((r) => r.convoy_id === convoyFilter);
+    }
+
+    const convoySection = document.getElementById('convoy-section');
+    if (convoySection) {
+      convoySection.style.display = convoyFilter ? '' : 'none';
+      if (convoyFilter) {
+        const convoy = rawConvoys.find((c) => c.id === convoyFilter);
+        renderConvoyStatus(convoy);
+      }
+    }
 
     renderAll(sessions, delegations, panels, reviews);
   }
@@ -1300,8 +1335,80 @@ const base = import.meta.env.BASE_URL;
     URL.revokeObjectURL(url);
   }
 
+  function populateConvoyFilter(convoys) {
+    const select = document.getElementById('filter-convoy');
+    if (!select) return;
+    while (select.options.length > 1) select.remove(1);
+    const sorted = convoys.slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
+    sorted.forEach((c) => {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      opt.textContent = c.name + ' (' + c.status + ')';
+      select.appendChild(opt);
+    });
+  }
+
+  function renderConvoyStatus(convoy) {
+    const descEl = document.getElementById('convoy-desc');
+    const bodyEl = document.getElementById('convoy-body');
+    if (!descEl || !bodyEl) return;
+
+    if (!convoy) {
+      bodyEl.innerHTML = emptyStateHtml('pipeline', 'Convoy not found', 'No matching convoy data available.');
+      return;
+    }
+
+    descEl.textContent = convoy.name + ' — ' + (convoy.branch || 'no branch');
+
+    const s = convoy.summary || {};
+    const total = s.total || (convoy.tasks ? convoy.tasks.length : 0);
+    const done = s.done || 0;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+    const statusClass = convoy.status === 'done' ? 'success'
+      : (convoy.status === 'failed' || convoy.status === 'gate-failed') ? 'failed'
+      : convoy.status === 'running' ? 'partial' : '';
+
+    let html = '';
+    html += '<div class="convoy-overview">';
+    html += '<div class="convoy-stat"><span class="convoy-stat__label">Status</span><span class="outcome-badge outcome-badge--' + statusClass + '">' + escapeHtml(convoy.status) + '</span></div>';
+    html += '<div class="convoy-stat"><span class="convoy-stat__label">Branch</span><span class="convoy-stat__value">' + escapeHtml(convoy.branch || '\u2014') + '</span></div>';
+    html += '<div class="convoy-stat"><span class="convoy-stat__label">Tasks</span><span class="convoy-stat__value">' + done + '/' + total + '</span></div>';
+    html += '<div class="convoy-stat"><span class="convoy-stat__label">Events</span><span class="convoy-stat__value">' + (convoy.events_count || 0) + '</span></div>';
+    html += '<div class="convoy-stat"><span class="convoy-stat__label">Started</span><span class="convoy-stat__value">' + (convoy.started_at ? formatTime(convoy.started_at) : '\u2014') + '</span></div>';
+    html += '</div>';
+
+    html += '<div class="convoy-progress">';
+    html += '<div class="convoy-progress__bar"><div class="convoy-progress__fill" style="width:' + pct + '%"></div></div>';
+    html += '<span class="convoy-progress__label">' + pct + '% complete</span>';
+    html += '</div>';
+
+    if (convoy.tasks && convoy.tasks.length > 0) {
+      html += '<table class="sessions-table convoy-tasks">';
+      html += '<thead><tr><th>Task</th><th>Phase</th><th>Agent</th><th>Adapter</th><th>Status</th><th>Retries</th></tr></thead>';
+      html += '<tbody>';
+      convoy.tasks.forEach(function(t) {
+        const tStatus = t.status === 'done' ? 'success'
+          : (t.status === 'failed' || t.status === 'timed-out') ? 'failed'
+          : t.status === 'running' ? 'partial' : '';
+        html += '<tr>';
+        html += '<td>' + escapeHtml(t.id) + '</td>';
+        html += '<td class="td-num">' + t.phase + '</td>';
+        html += '<td class="td-agent">' + escapeHtml(t.agent) + '</td>';
+        html += '<td>' + escapeHtml(t.adapter || '\u2014') + '</td>';
+        html += '<td><span class="outcome-badge outcome-badge--' + tStatus + '">' + escapeHtml(t.status) + '</span></td>';
+        html += '<td class="td-num">' + (t.retries || 0) + '</td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+    }
+
+    bodyEl.innerHTML = html;
+  }
+
   async function main() {
     const events = await loadNdjson(base + 'data/events.ndjson');
+    const convoys = await loadNdjson(base + 'data/convoys.ndjson');
 
     const sessions = events.filter((e) => e.type === 'session');
     const delegations = events.filter((e) => e.type === 'delegation');
@@ -1312,22 +1419,71 @@ const base = import.meta.env.BASE_URL;
     rawDelegations = delegations;
     rawPanels = panels;
     rawReviews = reviews;
+    rawConvoys = convoys;
 
     populateAgentFilter(sessions, delegations, reviews);
+    populateConvoyFilter(convoys);
+
+    // ── Read URL params ───────────────────────────────────
+    const urlParams = new URLSearchParams(window.location.search);
+    const convoyParam = urlParams.get('convoy');
+    if (convoyParam === 'active') {
+      const running = rawConvoys.find((c) => c.status === 'running');
+      const latest = rawConvoys.slice().sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+      const target = running || latest;
+      if (target) {
+        const sel = document.getElementById('filter-convoy');
+        if (sel) sel.value = target.id;
+      }
+    } else if (convoyParam) {
+      const sel = document.getElementById('filter-convoy');
+      if (sel) sel.value = convoyParam;
+    }
+
     renderAll(sessions, delegations, panels, reviews);
+
+    // Apply convoy param after initial render (shows convoy section if needed)
+    if (convoyParam) applyFilters();
 
     // ── Filter event listeners ────────────────────────────
     document.getElementById('filter-date-from')?.addEventListener('change', applyFilters);
     document.getElementById('filter-date-to')?.addEventListener('change', applyFilters);
     document.getElementById('filter-agent')?.addEventListener('change', applyFilters);
     document.getElementById('filter-outcome')?.addEventListener('change', applyFilters);
+    document.getElementById('filter-convoy')?.addEventListener('change', applyFilters);
     document.getElementById('filter-reset')?.addEventListener('click', () => {
       document.getElementById('filter-date-from').value = '';
       document.getElementById('filter-date-to').value = '';
       document.getElementById('filter-agent').value = '';
       document.getElementById('filter-outcome').value = '';
+      document.getElementById('filter-convoy').value = '';
       applyFilters();
     });
+
+    // ── Auto-refresh for live convoy monitoring ───────────
+    let refreshInterval = null;
+    function startAutoRefresh() {
+      if (refreshInterval) return;
+      refreshInterval = setInterval(async () => {
+        const freshEvents = await loadNdjson(base + 'data/events.ndjson');
+        const freshConvoys = await loadNdjson(base + 'data/convoys.ndjson');
+        rawSessions = freshEvents.filter((e) => e.type === 'session');
+        rawDelegations = freshEvents.filter((e) => e.type === 'delegation');
+        rawPanels = freshEvents.filter((e) => e.type === 'panel');
+        rawReviews = freshEvents.filter((e) => e.type === 'review');
+        rawConvoys = freshConvoys;
+        const currentValue = document.getElementById('filter-convoy')?.value;
+        populateConvoyFilter(freshConvoys);
+        const sel = document.getElementById('filter-convoy');
+        if (sel && currentValue) sel.value = currentValue;
+        applyFilters();
+      }, 5000);
+    }
+
+    const selectedConvoy = rawConvoys.find((c) => c.id === document.getElementById('filter-convoy')?.value);
+    if (convoyParam === 'active' || (selectedConvoy && selectedConvoy.status === 'running')) {
+      startAutoRefresh();
+    }
 
     // ── Export button ─────────────────────────────────────
     document.getElementById('export-btn')?.addEventListener('click', exportData);

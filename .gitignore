@@ -8,6 +8,12 @@ dist/
 .cache/
 .astro/
 
+# test coverage
+coverage/
+
+# runtime data
+.opencastle/
+
 .env
 .env.*
 *.log

@@ -1533,3 +1533,63 @@ body {
     padding: 8px 6px;
   }
 }
+
+/* ---------- Convoy Section ---------- */
+.convoy-overview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.convoy-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.convoy-stat__label {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.convoy-stat__value {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+/* Progress bar */
+.convoy-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.convoy-progress__bar {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.convoy-progress__fill {
+  height: 100%;
+  background: var(--gradient-accent);
+  border-radius: 4px;
+  transition: width var(--transition-base);
+}
+
+.convoy-progress__label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Task table inherits .sessions-table styles */
+.convoy-tasks {
+  margin-top: 8px;
+}

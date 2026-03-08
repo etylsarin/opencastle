@@ -9,6 +9,7 @@ import { createEventEmitter, type ConvoyEventEmitter } from './events.js'
 import { createWorktreeManager, type WorktreeManager } from './worktree.js'
 import { createMergeQueue, type MergeQueue } from './merge.js'
 import { createHealthMonitor } from './health.js'
+import { exportConvoyToNdjson } from './export.js'
 import type { TaskRecord, ConvoyStatus } from './types.js'
 import { buildPhases, formatDuration } from '../run/executor.js'
 import { parseTimeout } from '../run/schema.js'
@@ -438,6 +439,7 @@ export function createConvoyEngine(options: ConvoyEngineOptions): ConvoyEngine {
     const wtManager = options._worktreeManager ?? createWorktreeManager(basePath)
     const mergeQueue = options._mergeQueue ?? createMergeQueue(basePath)
 
+    let result: ConvoyResult
     try {
       store.insertConvoy({
         id: convoyId,
@@ -474,13 +476,15 @@ export function createConvoyEngine(options: ConvoyEngineOptions): ConvoyEngine {
       store.updateConvoyStatus(convoyId, 'running', { started_at: new Date().toISOString() })
       events.emit('convoy_started', { name: spec.name }, { convoy_id: convoyId })
 
-      return await runConvoy(
+      result = await runConvoy(
         convoyId, spec, adapter, store, events,
         wtManager, mergeQueue, basePath, baseBranch, verbose, startTime,
       )
     } finally {
+      try { await exportConvoyToNdjson(store, convoyId, options.logsDir) } catch { /* silent */ }
       store.close()
     }
+    return result
   }
 
   async function resume(convoyId: string): Promise<ConvoyResult> {
@@ -492,6 +496,7 @@ export function createConvoyEngine(options: ConvoyEngineOptions): ConvoyEngine {
     const wtManager = options._worktreeManager ?? createWorktreeManager(basePath)
     const mergeQueue = options._mergeQueue ?? createMergeQueue(basePath)
 
+    let result: ConvoyResult
     try {
       const convoy = store.getConvoy(convoyId)
       if (!convoy) {
@@ -531,13 +536,15 @@ export function createConvoyEngine(options: ConvoyEngineOptions): ConvoyEngine {
         { convoy_id: convoyId },
       )
 
-      return await runConvoy(
+      result = await runConvoy(
         convoyId, spec, adapter, store, events,
         wtManager, mergeQueue, basePath, baseBranch, verbose, startTime,
       )
     } finally {
+      try { await exportConvoyToNdjson(store, convoyId, options.logsDir) } catch { /* silent */ }
       store.close()
     }
+    return result
   }
 
   return { run, resume }
