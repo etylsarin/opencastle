@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot, removeDirIfExists, getPluginsRoot, getPluginSkillEntries } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
 import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform, getIncludedPluginIds, getAgentTransform } from '../stack-config.js'
-import type { CopyResults, CopyDirOptions, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
+import type { CopyResults, CopyDirOptions, DoctorCheck, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
 
 /**
  * VS Code / GitHub Copilot adapter.
@@ -199,4 +199,15 @@ export function getManagedPaths(): ManagedPaths {
       '.vscode/mcp.json',
     ],
   }
+}
+
+export function getDoctorChecks(): DoctorCheck[] {
+  return [
+    { label: 'Copilot instructions', path: '.github/copilot-instructions.md', type: 'file' },
+    { label: 'Instruction files', path: '.github/instructions/', type: 'dir', countContents: true, countFilter: '.md' },
+    { label: 'Agent definitions', path: '.github/agents/', type: 'dir', countContents: true, countFilter: '.agent.md' },
+    { label: 'Skills directory', path: '.github/skills/', type: 'dir', countContents: true },
+    { label: 'Agent workflows', path: '.github/agent-workflows/', type: 'dir', countContents: true },
+    { label: 'Prompts directory', path: '.github/prompts/', type: 'dir', countContents: true },
+  ]
 }

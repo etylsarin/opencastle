@@ -1,5 +1,5 @@
 ---
-description: 'Instruct the Team Lead to implement a specific task from the post-MVP roadmap with full orchestration, validation, and traceability.'
+description: 'Instruct the Team Lead to implement a specific task from a roadmap with full orchestration, validation, and traceability.'
 agent: 'Team Lead (OpenCastle)'
 ---
 

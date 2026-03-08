@@ -45,16 +45,16 @@ const TRACKER_ISSUES = Array.from({ length: 30 }, (_, i) => `TAS-${i + 30}`);
 
 const FILE_PARTITIONS = [
   ['libs/ui-kit/'],
-  ['apps/tastebeer.eu/app/'],
+  ['apps/web-app/'],
   ['libs/queries/'],
   ['libs/supabase-auth/'],
   ['libs/data-pipeline/'],
-  ['apps/tastecoffee.eu/app/'],
+  ['apps/admin-panel/'],
   ['libs/server-utils/'],
   ['apps/cms-studio/'],
-  ['libs/ui-kit/', 'apps/tastebeer.eu/app/'],
+  ['libs/ui-kit/', 'apps/web-app/'],
   ['libs/queries/', 'libs/server-utils/'],
-  ['apps/tastebeer.eu/app/', 'apps/tastecoffee.eu/app/'],
+  ['apps/web-app/', 'apps/admin-panel/'],
   ['libs/data-pipeline/', 'libs/queries/'],
 ];
 

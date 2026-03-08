@@ -33,7 +33,7 @@ Template structure:
 | Styling approach | Required 2 retries on styling task (TAS-AA) | YYYY-MM-DD |
 
 ### File Familiarity
-- `apps/tastebeer.eu/app/places/` — 3 tasks completed
+- `apps/web-app/places/` — 3 tasks completed
 - `libs/queries/src/lib/` — 2 tasks completed
 ```
 

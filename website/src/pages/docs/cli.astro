@@ -110,47 +110,59 @@ const commands = [
     id: 'run',
     category: 'runtime',
     name: 'run',
-    summary: 'Process a task queue from a spec file autonomously',
-    description: 'Reads a YAML task specification file, builds an execution plan with dependency-aware phases, and delegates each task to an AI agent CLI. Tasks in the same phase run in parallel up to the concurrency limit.',
+    summary: 'Run convoy specs — deterministic, crash-recoverable agent orchestration',
+    description: 'Reads a YAML convoy spec (<code>convoy.yml</code>), builds a dependency-aware execution plan, and runs tasks in isolated git worktrees. Each worker operates in its own worktree with SQLite-backed state persistence. Legacy <code>opencastle.tasks.yml</code> specs without <code>version: 1</code> still work via the legacy executor.',
     usage: 'npx opencastle run [options]',
     options: [
-      { flag: '--file, -f <path>', desc: 'Task spec file (default: opencastle.tasks.yml)' },
+      { flag: '--file, -f <path>', desc: 'Convoy spec file (default: opencastle.tasks.yml, or convoy.yml if present)' },
       { flag: '--dry-run', desc: 'Show execution plan without running tasks' },
       { flag: '--concurrency, -c <n>', desc: 'Override max parallel tasks' },
-      { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude-code, copilot, cursor)' },
+      { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude-code, copilot, cursor, opencode)' },
+      { flag: '--resume', desc: 'Resume the last interrupted convoy from SQLite state' },
+      { flag: '--status', desc: 'Print convoy state summary from SQLite (branch, task breakdown)' },
       { flag: '--report-dir <path>', desc: 'Where to write run reports (default: .opencastle/runs)' },
       { flag: '--verbose', desc: 'Show full agent output' },
       { flag: '--help, -h', desc: 'Show help' },
     ],
     details: [
-      { heading: 'Task spec format', content: `<p>The task spec is a YAML file (<code>opencastle.tasks.yml</code> by default) that defines:</p>
+      { heading: 'Convoy spec format', content: `<p>The convoy spec is a YAML file (<code>convoy.yml</code> by default, falling back to <code>opencastle.tasks.yml</code>) that supports:</p>
       <ul>
-        <li><code>name</code> — run name for reports</li>
-        <li><code>adapter</code> — which AI CLI to use (<code>claude-code</code>, <code>copilot</code>, <code>cursor</code>)</li>
-        <li><code>concurrency</code> — max parallel tasks (default: 3)</li>
-        <li><code>tasks</code> — array of task objects with <code>id</code>, <code>prompt</code>, <code>dependsOn</code>, <code>timeout</code>, etc.</li>
-      </ul>` },
+        <li><code>version: 1</code> — enables the Convoy Engine with full feature set</li>
+        <li><code>name</code> — convoy name for reports and state tracking</li>
+        <li><code>adapter</code> — which AI CLI to use (<code>claude-code</code>, <code>copilot</code>, <code>cursor</code>, <code>opencode</code>, or <code>auto</code>)</li>
+        <li><code>concurrency</code> — max parallel workers (default: 3)</li>
+        <li><code>branch</code> — base branch for worktree isolation</li>
+        <li><code>defaults</code> — default <code>timeout</code>, <code>model</code>, and <code>max_retries</code> for all tasks</li>
+        <li><code>tasks</code> — array of task objects with <code>id</code>, <code>prompt</code>, <code>dependsOn</code>, per-task <code>adapter</code>, etc.</li>
+        <li><code>gates</code> — validation gates that run between phases</li>
+      </ul>
+      <p>Legacy specs without <code>version: 1</code> are still supported via the legacy executor for backward compatibility.</p>` },
       { heading: 'Execution model', content: `<ul>
-        <li><strong>Phase-based:</strong> Tasks are sorted into phases by dependency graph. Tasks in the same phase run in parallel.</li>
-        <li><strong>Adapter-based:</strong> Each task is executed by the configured AI agent CLI (Claude Code, GitHub Copilot, Cursor).</li>
-        <li><strong>Reporting:</strong> Results are written to the report directory as JSON for post-run analysis.</li>
+        <li><strong>Convoy Engine:</strong> <code>version: 1</code> specs use the Convoy Engine — a deterministic orchestrator with phase-based execution and crash recovery.</li>
+        <li><strong>SQLite persistence:</strong> State is stored in WAL-mode SQLite, enabling reliable crash recovery via <code>--resume</code>.</li>
+        <li><strong>Worktree isolation:</strong> Each worker runs in its own git worktree, preventing cross-task interference.</li>
+        <li><strong>Health monitoring:</strong> A background health monitor detects stuck and zombie workers and recovers automatically.</li>
+        <li><strong>Merge queue:</strong> Completed worktrees are merged back to the base branch via a serialized merge queue.</li>
+        <li><strong>Validation gates:</strong> Gates run between phases and can block promotion if checks fail.</li>
       </ul>` },
-      { heading: 'Adapters', content: `<p>The <code>--adapter</code> flag selects which AI CLI to delegate work to:</p>
+      { heading: 'Adapters', content: `<p>The <code>--adapter</code> flag selects which AI CLI to delegate work to. Convoys also support per-task adapter overrides and <code>adapter: auto</code> for auto-detection:</p>
       <table class="plugin-table">
         <thead><tr><th>Adapter</th><th>CLI Required</th><th>Install</th></tr></thead>
         <tbody>
           <tr><td><code>claude-code</code></td><td><code>claude</code></td><td><code>npm i -g @anthropic-ai/claude-code</code></td></tr>
           <tr><td><code>copilot</code></td><td><code>copilot</code></td><td>Ships with GitHub Copilot CLI</td></tr>
           <tr><td><code>cursor</code></td><td><code>cursor</code></td><td>Ships with Cursor editor (Install CLI from menu)</td></tr>
+          <tr><td><code>opencode</code></td><td><code>opencode</code></td><td>See <a href="https://opencode.ai">opencode.ai</a></td></tr>
         </tbody>
       </table>` },
     ],
     examples: [
-      { cmd: 'npx opencastle run', desc: 'Run the default task spec' },
-      { cmd: 'npx opencastle run -f tasks/migration.yml', desc: 'Run a specific task file' },
+      { cmd: 'npx opencastle run', desc: 'Run the default convoy spec' },
+      { cmd: 'npx opencastle run -f auth.convoy.yml', desc: 'Run a specific convoy spec' },
       { cmd: 'npx opencastle run --dry-run', desc: 'Preview execution plan' },
+      { cmd: 'npx opencastle run --resume', desc: 'Resume last interrupted convoy' },
+      { cmd: 'npx opencastle run --status', desc: 'Check convoy state' },
       { cmd: 'npx opencastle run -c 5 -a claude-code', desc: 'Run with 5 parallel tasks using Claude Code' },
-      { cmd: 'npx opencastle run --verbose', desc: 'Show full agent output during execution' },
     ],
   },
   {
@@ -275,7 +287,7 @@ Commands:
   init        Set up OpenCastle in your project
   update      Update framework files (preserves customizations)
   eject       Remove dependency, keep all files standalone
-  run         Process a task queue from a spec file autonomously
+  run         Run convoy specs — deterministic, crash-recoverable agent orchestration
   dashboard   View agent observability dashboard in your browser
   doctor      Validate your OpenCastle setup
 

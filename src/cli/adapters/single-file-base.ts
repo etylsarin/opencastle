@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot, getPluginsRoot, getPluginSkillEntries } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
 import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform, getIncludedPluginIds } from '../stack-config.js'
-import type { CopyResults, IdeAdapter, IdeChoice, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
+import type { CopyResults, DoctorCheck, IdeAdapter, IdeChoice, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
 import { stripFrontmatter, parseFrontmatterMeta } from './frontmatter.js'
 
 /**
@@ -316,5 +316,20 @@ export function createSingleFileAdapter(config: SingleFileAdapterConfig): IdeAda
     }
   }
 
-  return { install, update, getManagedPaths }
+  function getDoctorChecks(): DoctorCheck[] {
+    const checks: DoctorCheck[] = [
+      { label: 'Root instructions file', path: config.rootFile, type: 'file' },
+      { label: 'Agent definitions', path: `${config.dotDir}/agents/`, type: 'dir', countContents: true, countFilter: '.md' },
+      { label: 'Skills directory', path: `${config.dotDir}/skills/`, type: 'dir', countContents: true, countFilter: '.md' },
+    ]
+    if (config.promptsDir === config.workflowsDir) {
+      checks.push({ label: 'Commands directory', path: `${config.dotDir}/${config.promptsDir}/`, type: 'dir', countContents: true })
+    } else {
+      checks.push({ label: 'Prompts directory', path: `${config.dotDir}/${config.promptsDir}/`, type: 'dir', countContents: true })
+      checks.push({ label: 'Workflows directory', path: `${config.dotDir}/${config.workflowsDir}/`, type: 'dir', countContents: true })
+    }
+    return checks
+  }
+
+  return { install, update, getManagedPaths, getDoctorChecks }
 }

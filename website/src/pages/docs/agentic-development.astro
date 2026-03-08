@@ -19,7 +19,7 @@ const multiAgentSections = [
   { id: 'orchestration', label: 'Orchestration' },
   { id: 'specialist-agents', label: 'Specialist Agents' },
   { id: 'quality-gates', label: 'Quality Gates' },
-  { id: 'getting-started', label: 'Get Started' },
+  { id: 'architecture', label: 'Architecture' },
 ];
 
 const sectionIcons: Record<string, string> = {
@@ -34,7 +34,7 @@ const sectionIcons: Record<string, string> = {
   'orchestration': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>`,
   'specialist-agents': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`,
   'quality-gates': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>`,
-  'getting-started': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
+  'architecture': `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="22" x2="21" y2="22"/><line x1="6" y1="18" x2="6" y2="11"/><line x1="10" y1="18" x2="10" y2="11"/><line x1="14" y1="18" x2="14" y2="11"/><line x1="18" y1="18" x2="18" y2="11"/><polygon points="12 2 20 7 4 7"/></svg>`,
 };
 ---
 
@@ -703,40 +703,128 @@ const sectionIcons: Record<string, string> = {
           </div>
         </section>
 
-        <!-- 12 · Getting Started -->
-        <section id="getting-started" class="docs-section">
-          <h3 class="section-title">Get Started with OpenCastle</h3>
-          <p><a href="/" class="docs-link">OpenCastle</a> transforms your AI coding assistant into a coordinated multi-agent team. It works with GitHub Copilot, Cursor, Claude Code, and OpenCode — providing the orchestration layer, specialist agent definitions, and quality gates described in this guide.</p>
+        <!-- 12 · Architecture -->
+        <section id="architecture" class="docs-section">
+          <h3 class="section-title">Architecture</h3>
+
+          <h4 class="arch-subheading">The Ralph Wiggum Loop</h4>
+          <p><a href="https://ghuntley.com/ralph/" class="docs-link" target="_blank" rel="noopener noreferrer">The Ralph Wiggum Loop</a>, invented by Geoffrey Huntley, is a single-agent technique for autonomous coding. It's a simple bash loop — <code>while :; do cat PROMPT.md | claude-code; done</code> — where one AI agent iterates repeatedly on a task until it's done. Named after the Simpsons character because he's cheerfully persistent despite failures: eventual consistency through brute force.</p>
+
+          <ul class="docs-list">
+            <li><strong>One task per iteration</strong> — each loop gets a fresh context window; the spec in <code>PROMPT.md</code> is deterministically loaded every time</li>
+            <li><strong>Backpressure</strong> — tests, type checkers, and linters act as gates; bad code is rejected automatically before the next iteration</li>
+            <li><strong>Self-improvement</strong> — the agent updates <code>AGENT.md</code> and <code>fix_plan.md</code> between runs, accumulating knowledge across iterations</li>
+            <li><strong>Brute force meets persistence</strong> — the loop is the hero, not the model; it runs until the work is done</li>
+            <li><strong>Best for greenfield</strong> — works well as a single-agent technique for new projects (Geoffrey Huntley built an entire programming language, CURSED, using this technique)</li>
+          </ul>
 
           <div class="key-insight">
-            <strong>One orchestrator. Multiple specialists. Zero chaos.</strong> OpenCastle gives you 19 specialist agents across 4 tiers, on-demand skills, workflow templates, and built-in self-improvement — all configured through simple instruction files in your repo.
+            <strong>Single-agent primitive:</strong> Ralph Wiggum shows that one agent looping with specs and backpressure can build real software. Gas Town scales this idea to many agents working in parallel with a full orchestration layer.
           </div>
 
-          <div class="getting-started-steps">
-            <div class="step">
-              <div class="step__number">1</div>
-              <div class="step__content">
-                <p class="step__title">Install OpenCastle</p>
-                <code class="step__code">npx opencastle init</code>
+          <h4 class="arch-subheading">Gas Town Architecture</h4>
+          <p>Steve Yegge's <a href="https://github.com/steveyegge/gastown" class="docs-link" target="_blank" rel="noopener noreferrer">Gas Town</a> takes the looping-agent idea to industrial scale — dozens of Claude Code instances working in parallel through a rigorous work representation system called the <strong>MEOW stack</strong> (Molecular Expression of Work):</p>
+
+          <div class="architecture-card">
+            <div class="architecture-card__header">Gas Town Model</div>
+            <div class="architecture-card__flow">
+              <div class="architecture-card__row">
+                <div class="architecture-card__node architecture-card__node--lead">Beads (Git-backed JSONL)</div>
               </div>
-            </div>
-            <div class="step">
-              <div class="step__number">2</div>
-              <div class="step__content">
-                <p class="step__title">Customize for your project</p>
-                <code class="step__code">npx opencastle doctor</code>
+              <div class="architecture-card__arrow">MEOW stack: Formulas → Molecules → Epics → Beads · state persists in Git</div>
+              <div class="architecture-card__row">
+                <div class="architecture-card__node">Mayor</div>
+                <div class="architecture-card__node">Deacon</div>
+                <div class="architecture-card__node">Polecats</div>
+                <div class="architecture-card__node">Witness</div>
               </div>
-            </div>
-            <div class="step">
-              <div class="step__number">3</div>
-              <div class="step__content">
-                <p class="step__title">Ask the Team Lead to orchestrate</p>
-                <code class="step__code">@team-lead Implement the new user settings page</code>
+              <div class="architecture-card__arrow">GUPP: "If there is work on your hook, YOU MUST RUN IT"</div>
+              <div class="architecture-card__row">
+                <div class="architecture-card__node architecture-card__node--lead">Refinery (Merge Queue)</div>
               </div>
             </div>
           </div>
 
-          <p>Read the <a href="/docs/cli" class="docs-link">CLI documentation</a> for setup details, or explore the <a href="/docs/plugins" class="docs-link">plugin system</a> for extending OpenCastle with custom agents and skills.</p>
+          <ul class="docs-list">
+            <li><strong>Beads</strong> — the atomic unit of work; one-issue-per-line JSON files tracked in Git (a Git-backed JSONL issue tracker built in Go)</li>
+            <li><strong>MEOW stack</strong> — layered work representation: <strong>Beads → Epics → Molecules → Formulas</strong>; state persists in Git so work survives crashes (Nondeterministic Idempotence)</li>
+            <li><strong>GUPP</strong> (Gastown Universal Propulsion Principle) — "If there is work on your hook, YOU MUST RUN IT"; keeps agents driving forward across session crashes</li>
+            <li><strong>Polecats</strong> — ephemeral per-rig workers; they spin up on demand in swarms, produce Merge Requests, get merged, then are fully decommissioned with names recycled — cattle, not pets</li>
+            <li><strong>Deacon</strong> — the "daemon beacon"; a patrol agent that runs workflows in a loop, propagating DYFJ ("Do Your Job") signals to workers, managing orchestration, plugins, and session recycling; has helper workers called Dogs (including Boot)</li>
+            <li><strong>Witness</strong> — the actual worker health monitor; checks on polecats and refineries and detects stuck or zombie workers</li>
+            <li><strong>Convoy</strong> — the ticketing and work-order system that wraps work into a delivery unit, maintaining order and dependencies across the pipeline</li>
+            <li><strong>Refinery</strong> — a merge queue that serializes changes from parallel workers, preventing conflicts before they reach the main branch</li>
+          </ul>
+
+          <h4 class="arch-subheading">Gas Town vs OpenCastle</h4>
+          <p>OpenCastle takes these ideas and rebuilds them for the IDE-native developer workflow — TypeScript over Go, SQLite over Git JSONL, standard git tooling over custom infrastructure:</p>
+
+          <div class="comparison-table-wrap">
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>Aspect</th>
+                  <th>Gas Town</th>
+                  <th>OpenCastle</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Language</td>
+                  <td>Go + custom tooling</td>
+                  <td>TypeScript (Node.js 22+)</td>
+                </tr>
+                <tr>
+                  <td>State storage</td>
+                  <td>Beads (Git-backed JSONL)</td>
+                  <td>SQLite WAL — zero deps, built into Node.js</td>
+                </tr>
+                <tr>
+                  <td>Worker model</td>
+                  <td>Claude Code instances in tmux</td>
+                  <td>Any AI runtime (Copilot, Claude Code, Cursor, OpenCode)</td>
+                </tr>
+                <tr>
+                  <td>Setup</td>
+                  <td>tmux + Claude Code + Go binary (<code>gt</code>)</td>
+                  <td><code>npx opencastle init</code> — works in any repo</td>
+                </tr>
+                <tr>
+                  <td>Orchestration</td>
+                  <td>MEOW stack (formulas → molecules → beads)</td>
+                  <td>YAML spec → deterministic execution</td>
+                </tr>
+                <tr>
+                  <td>Isolation</td>
+                  <td>Git worktrees (same as OpenCastle)</td>
+                  <td>Git worktrees — standard tooling</td>
+                </tr>
+                <tr>
+                  <td>Integration</td>
+                  <td>Standalone platform</td>
+                  <td>Plugs into existing IDE workflows</td>
+                </tr>
+                <tr>
+                  <td>Learning curve</td>
+                  <td>Steep — proprietary concepts</td>
+                  <td>Gentle — standard tools, familiar patterns</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h4 class="arch-subheading">Why OpenCastle</h4>
+          <div class="highlight-box">
+            <p class="highlight-box__title">Benefits</p>
+            <ul class="highlight-box__list">
+              <li><strong>Easy adoption</strong> — one command install (<code>npx opencastle init</code>), works with your existing IDE and AI runtime</li>
+              <li><strong>Minimal setup</strong> — YAML config, no dedicated infrastructure, no proprietary tooling to learn</li>
+              <li><strong>Crash-safe execution</strong> — SQLite WAL persists all task state; interrupted runs resume from where they stopped</li>
+              <li><strong>Isolated workers</strong> — git worktrees give each parallel agent its own branch, eliminating mid-flight merge conflicts</li>
+              <li><strong>Multi-runtime support</strong> — bring your own AI: GitHub Copilot, Claude Code, Cursor, and OpenCode all supported</li>
+              <li><strong>Observable by default</strong> — SQL-queryable state, NDJSON event logs, and a real-time dashboard out of the box</li>
+            </ul>
+          </div>
         </section>
 
       </main>
@@ -1346,6 +1434,68 @@ const sectionIcons: Record<string, string> = {
         border-radius: 6px;
         color: var(--text-secondary);
         border: 1px solid var(--border-primary);
+      }
+
+      /* ── Architecture subheadings ── */
+      .arch-subheading {
+        font-size: 1rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -.01em;
+        margin: 1.75rem 0 .6rem;
+      }
+
+      /* ── Comparison table ── */
+      .comparison-table-wrap {
+        overflow-x: auto;
+        margin-bottom: 1.5rem;
+        border-radius: 10px;
+        border: 1px solid var(--border-primary);
+      }
+      .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: .875rem;
+      }
+      .comparison-table thead tr {
+        background: rgba(167, 139, 250, 0.06);
+        border-bottom: 1px solid var(--border-secondary);
+      }
+      .comparison-table th {
+        padding: .65rem 1rem;
+        text-align: left;
+        font-size: .75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: .06em;
+        color: var(--text-accent);
+        white-space: nowrap;
+      }
+      .comparison-table td {
+        padding: .65rem 1rem;
+        color: var(--text-secondary);
+        line-height: 1.5;
+        border-bottom: 1px solid var(--border-color);
+        vertical-align: top;
+      }
+      .comparison-table tbody tr:last-child td {
+        border-bottom: none;
+      }
+      .comparison-table tbody tr:nth-child(even) td {
+        background: rgba(255, 255, 255, 0.015);
+      }
+      .comparison-table td:first-child {
+        font-weight: 600;
+        color: var(--text-primary);
+        white-space: nowrap;
+      }
+      .comparison-table td code {
+        font-size: .8rem;
+        background: var(--bg-tertiary);
+        padding: .1rem .35rem;
+        border-radius: 4px;
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+        color: #c9d1d9;
       }
 
       /* ── Mobile sidebar toggle ── */
