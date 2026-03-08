@@ -1,12 +1,13 @@
 import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { parseTaskSpecText, isConvoySpec } from './run/schema.js'
+import { parseTaskSpecText, isConvoySpec, isPipelineSpec } from './run/schema.js'
 import { createExecutor, buildPhases } from './run/executor.js'
 import { getAdapter, detectAdapter } from './run/adapters/index.js'
 import { createReporter, printExecutionPlan } from './run/reporter.js'
 import type { CliContext, RunOptions } from './types.js'
 import type { ConvoyResult } from './convoy/engine.js'
+import type { PipelineResult } from './convoy/pipeline.js'
 
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
@@ -165,6 +166,26 @@ function printConvoyResult(result: ConvoyResult): void {
 }
 
 /**
+ * Print a pipeline result summary.
+ */
+function printPipelineResult(result: PipelineResult): void {
+  console.log(`\n  ──────────────────────────────────────`)
+  console.log(`  Pipeline ${result.status}: ${result.duration}`)
+  console.log(
+    `  Convoys: ${result.summary.completed}/${result.summary.totalConvoys} completed` +
+    (result.summary.failed > 0 ? ` | ${result.summary.failed} failed` : '') +
+    (result.summary.skipped > 0 ? ` | ${result.summary.skipped} skipped` : '')
+  )
+  for (const cr of result.convoyResults) {
+    const icon = cr.status === 'done' ? '✓' : cr.status === 'failed' ? '✗' : '⊘'
+    console.log(`    ${icon} ${cr.convoyId}: ${cr.status} (${cr.duration})`)
+  }
+  if (result.cost) {
+    console.log(`  Tokens: ${formatTokens(result.cost.total_tokens)}`)
+  }
+}
+
+/**
  * CLI entry point for the `run` command.
  */
 export default async function run({ args, pkgRoot }: CliContext): Promise<void> {
@@ -186,6 +207,38 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     const { createConvoyStore } = await import('./convoy/store.js')
     const store = createConvoyStore(dbPath)
     try {
+      const pipeline = store.getLatestPipeline()
+      if (pipeline) {
+        const pipelineConvoys = store.getConvoysByPipeline(pipeline.id)
+        console.log(`\n  Pipeline: ${pipeline.name}`)
+        console.log(`  ID:       ${pipeline.id}`)
+        console.log(`  Status:   ${pipeline.status}`)
+        console.log(`  Branch:   ${pipeline.branch ?? '(none)'}`)
+        console.log(`  Created:  ${pipeline.created_at}`)
+        if (pipeline.started_at) console.log(`  Started:  ${pipeline.started_at}`)
+        if (pipeline.finished_at) console.log(`  Finished: ${pipeline.finished_at}`)
+        if (pipelineConvoys.length > 0) {
+          console.log(`\n  Convoys:`)
+          let totalTasks = 0
+          let totalDone = 0
+          let totalFailed = 0
+          let totalTokens = 0
+          for (const c of pipelineConvoys) {
+            const tasks = store.getTasksByConvoy(c.id)
+            const done = tasks.filter(t => t.status === 'done').length
+            const failed = tasks.filter(t => t.status === 'failed').length
+            totalTasks += tasks.length
+            totalDone += done
+            totalFailed += failed
+            totalTokens += tasks.reduce((sum, t) => sum + (t.total_tokens ?? 0), 0)
+            console.log(`    ${c.name} [${c.status}] — ${done}/${tasks.length} tasks done`)
+          }
+          console.log(`\n  Tasks: ${totalDone} done | ${totalFailed} failed | ${totalTasks} total`)
+          if (totalTokens > 0) console.log(`  Tokens: ${formatTokens(totalTokens)}`)
+        }
+        return
+      }
+
       const convoy = store.getLatestConvoy()
       if (!convoy) {
         console.log('  No convoy records found.')
@@ -237,6 +290,47 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     }
     const { createConvoyStore } = await import('./convoy/store.js')
     const store = createConvoyStore(dbPath)
+    const latestPipeline = store.getLatestPipeline()
+    if (latestPipeline && (latestPipeline.status === 'pending' || latestPipeline.status === 'running')) {
+      store.close()
+      const resumePipelineSpec = parseTaskSpecText(latestPipeline.spec_yaml)
+      if (opts.concurrency !== null) resumePipelineSpec.concurrency = opts.concurrency
+      if (opts.adapter !== null) resumePipelineSpec.adapter = opts.adapter
+      if (opts.verbose) resumePipelineSpec._verbose = true
+
+      let resumePipelineDetectionFailed = false
+      if (!resumePipelineSpec.adapter) {
+        const detected = await detectAdapter()
+        if (detected) {
+          resumePipelineSpec.adapter = detected
+          console.log(`  ℹ Auto-detected adapter: ${detected}`)
+        } else {
+          resumePipelineDetectionFailed = true
+          resumePipelineSpec.adapter = 'claude-code'
+        }
+      }
+
+      const resumePipelineAdapter = await getAdapter(resumePipelineSpec.adapter)
+      const resumePipelineAvailable = await resumePipelineAdapter.isAvailable()
+      if (!resumePipelineAvailable) {
+        printAdapterError(resumePipelineDetectionFailed, resumePipelineSpec.adapter)
+        process.exit(1)
+      }
+
+      console.log(`\n  🏰 OpenCastle Pipeline (Resume): ${latestPipeline.name}`)
+      console.log(`  Pipeline ID: ${latestPipeline.id}`)
+      const { createPipelineOrchestrator } = await import('./convoy/pipeline.js')
+      const resumePipelineOrchestrator = createPipelineOrchestrator({
+        spec: resumePipelineSpec,
+        specYaml: latestPipeline.spec_yaml,
+        adapter: resumePipelineAdapter,
+        verbose: opts.verbose,
+      })
+      const resumePipelineResult = await resumePipelineOrchestrator.resume(latestPipeline.id)
+      printPipelineResult(resumePipelineResult)
+      process.exit(resumePipelineResult.status !== 'done' ? 1 : 0)
+    }
+
     const convoy = store.getLatestConvoy()
     store.close()
     if (!convoy) {
@@ -332,7 +426,16 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
 
   // ── Dry run ──────────────────────────────────────────────────
   if (opts.dryRun) {
-    if (isConvoySpec(spec)) {
+    if (isPipelineSpec(spec)) {
+      console.log(`\n  🏰 Pipeline Plan: ${spec.name}`)
+      console.log(`  Convoy chain: ${(spec.depends_on_convoy as string[]).join(' → ')}`)
+      if (spec.tasks?.length) {
+        console.log(`  Plus ${spec.tasks.length} local tasks after chain completes`)
+      }
+      if (spec.branch) console.log(`  Branch: ${spec.branch}`)
+      if (spec.gates?.length) console.log(`  Gates: ${spec.gates.length} validation commands`)
+      if (!spec.tasks?.length) return
+    } else if (isConvoySpec(spec)) {
       console.log(`\n  \uD83C\uDFF0 Convoy Plan: ${spec.name}`)
       console.log(
         `  Adapter: ${spec.adapter} | Concurrency: ${spec.concurrency} | Tasks: ${spec.tasks!.length}`
@@ -351,6 +454,41 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
   if (!available) {
     printAdapterError(detectionFailed, spec.adapter)
     process.exit(1)
+  }
+
+  // ── Pipeline orchestrator path (version: 2 specs with depends_on_convoy) ──
+  if (isPipelineSpec(spec)) {
+    const { createPipelineOrchestrator } = await import('./convoy/pipeline.js')
+    console.log(`\n  🏰 OpenCastle Pipeline: ${spec.name}`)
+    console.log(`  Convoy chain: ${(spec.depends_on_convoy as string[]).join(' → ')}`)
+    if (spec.branch) console.log(`  Branch: ${spec.branch}`)
+    if (spec.gates?.length) console.log(`  Gates: ${spec.gates.length} validation commands`)
+
+    const { startDashboardServer } = await import('./dashboard.js')
+    let pipelineDashboardResult: { server: import('node:http').Server } | null = null
+    try {
+      pipelineDashboardResult = await startDashboardServer({
+        pkgRoot,
+        openBrowser: true,
+        convoyId: 'active',
+      })
+    } catch {
+      // Dashboard failure must not block pipeline
+    }
+
+    const pipelineOrchestrator = createPipelineOrchestrator({
+      spec,
+      specYaml: specText,
+      adapter,
+      verbose: opts.verbose,
+    })
+
+    const pipelineResult = await pipelineOrchestrator.run()
+    printPipelineResult(pipelineResult)
+    if (pipelineDashboardResult) {
+      pipelineDashboardResult.server.close()
+    }
+    process.exit(pipelineResult.status !== 'done' ? 1 : 0)
   }
 
   // ── Convoy engine path (version: 1 specs) ────────────────────

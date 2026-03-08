@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseYaml, parseTimeout, validateSpec, applyDefaults, isConvoySpec, parseTaskSpecText } from './schema.js'
+import { parseYaml, parseTimeout, validateSpec, applyDefaults, isConvoySpec, isPipelineSpec, parseTaskSpecText } from './schema.js'
 
 // ── parseYaml ──────────────────────────────────────────────────
 
@@ -365,10 +365,16 @@ describe('validateSpec — version field', () => {
     expect(result.errors).toHaveLength(0)
   })
 
-  it('rejects version 2', () => {
-    const result = validateSpec({ ...validSpec, version: 2 })
+  it('rejects version 3', () => {
+    const result = validateSpec({ ...validSpec, version: 3 })
     expect(result.valid).toBe(false)
     expect(result.errors).toContainEqual(expect.stringContaining('version'))
+  })
+
+  it('accepts version 2', () => {
+    const result = validateSpec({ ...validSpec, version: 2 })
+    expect(result.valid).toBe(true)
+    expect(result.errors).toHaveLength(0)
   })
 
   it('rejects non-integer version', () => {
@@ -614,14 +620,20 @@ describe('isConvoySpec', () => {
     ).toBe(true)
   })
 
+  it('returns true for version 2 spec', () => {
+    expect(
+      isConvoySpec({ name: 'test', version: 2, depends_on_convoy: ['other-convoy'] })
+    ).toBe(true)
+  })
+
   it('returns false for legacy spec without version', () => {
     expect(
       isConvoySpec({ name: 'test', tasks: [{ id: 'a', prompt: 'x' }] })
     ).toBe(false)
   })
 
-  it('returns false for version 2', () => {
-    expect(isConvoySpec({ name: 'test', version: 2 })).toBe(false)
+  it('returns false for version 3', () => {
+    expect(isConvoySpec({ name: 'test', version: 3 })).toBe(false)
   })
 
   it('returns false for null input', () => {
@@ -919,5 +931,232 @@ tasks:
     const spec = parseTaskSpecText(yaml)
     expect(spec.version).toBe(1)
     expect(isConvoySpec(spec)).toBe(true)
+  })
+})
+
+// ── validateSpec — depends_on_convoy / pipeline specs ──────────
+
+describe('validateSpec — depends_on_convoy field', () => {
+  it('accepts depends_on_convoy as an array of strings', () => {
+    const result = validateSpec({
+      name: 'pipeline',
+      version: 2,
+      depends_on_convoy: ['phase-1', 'phase-2'],
+      tasks: [{ id: 'a', prompt: 'x' }],
+    })
+    expect(result.valid).toBe(true)
+    expect(result.errors).toHaveLength(0)
+  })
+
+  it('rejects depends_on_convoy as a string (not array)', () => {
+    const result = validateSpec({
+      name: 'pipeline',
+      version: 2,
+      depends_on_convoy: 'phase-1',
+      tasks: [{ id: 'a', prompt: 'x' }],
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('depends_on_convoy'))
+  })
+
+  it('rejects depends_on_convoy with non-string elements', () => {
+    const result = validateSpec({
+      name: 'pipeline',
+      version: 2,
+      depends_on_convoy: ['phase-1', 42],
+      tasks: [{ id: 'a', prompt: 'x' }],
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('depends_on_convoy'))
+  })
+
+  it('rejects depends_on_convoy as a non-array object', () => {
+    const result = validateSpec({
+      name: 'pipeline',
+      version: 2,
+      depends_on_convoy: { convoy: 'phase-1' },
+      tasks: [{ id: 'a', prompt: 'x' }],
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('depends_on_convoy'))
+  })
+
+  it('accepts omitting depends_on_convoy entirely (optional field)', () => {
+    const result = validateSpec({
+      name: 'convoy-run',
+      version: 1,
+      tasks: [{ id: 'a', prompt: 'x' }],
+    })
+    expect(result.valid).toBe(true)
+  })
+})
+
+// ── validateSpec — pipeline spec (v2 tasks-optional) ──────────
+
+describe('validateSpec — pipeline spec (version:2, no tasks)', () => {
+  it('pipeline spec with no tasks is valid when depends_on_convoy is set', () => {
+    const result = validateSpec({
+      name: 'pipeline',
+      version: 2,
+      depends_on_convoy: ['phase-1'],
+    })
+    expect(result.valid).toBe(true)
+    expect(result.errors).toHaveLength(0)
+  })
+
+  it('pipeline spec with tasks AND depends_on_convoy is valid', () => {
+    const result = validateSpec({
+      name: 'pipeline',
+      version: 2,
+      depends_on_convoy: ['phase-1'],
+      tasks: [{ id: 'a', prompt: 'do local work' }],
+    })
+    expect(result.valid).toBe(true)
+    expect(result.errors).toHaveLength(0)
+  })
+
+  it('version:2 without depends_on_convoy still requires tasks', () => {
+    const result = validateSpec({
+      name: 'convoy-v2',
+      version: 2,
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('tasks'))
+  })
+
+  it('pipeline spec with empty depends_on_convoy still requires tasks', () => {
+    const result = validateSpec({
+      name: 'pipeline',
+      version: 2,
+      depends_on_convoy: [],
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('tasks'))
+  })
+
+  it('pipeline spec with explicitly empty tasks array is invalid', () => {
+    const result = validateSpec({
+      name: 'pipeline',
+      version: 2,
+      depends_on_convoy: ['phase-1'],
+      tasks: [],
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('non-empty'))
+  })
+})
+
+// ── isPipelineSpec ─────────────────────────────────────────────
+
+describe('isPipelineSpec', () => {
+  it('returns true for version:2 spec with non-empty depends_on_convoy', () => {
+    expect(
+      isPipelineSpec({ name: 'pipeline', version: 2, depends_on_convoy: ['phase-1'] })
+    ).toBe(true)
+  })
+
+  it('returns true when depends_on_convoy has multiple entries', () => {
+    expect(
+      isPipelineSpec({ name: 'pipeline', version: 2, depends_on_convoy: ['a', 'b', 'c'] })
+    ).toBe(true)
+  })
+
+  it('returns false for v1 spec without depends_on_convoy', () => {
+    expect(
+      isPipelineSpec({ name: 'convoy', version: 1, tasks: [{ id: 'a', prompt: 'x' }] })
+    ).toBe(false)
+  })
+
+  it('returns false for v1 spec even with depends_on_convoy (wrong version)', () => {
+    expect(
+      isPipelineSpec({ name: 'convoy', version: 1, depends_on_convoy: ['phase-1'] })
+    ).toBe(false)
+  })
+
+  it('returns false for version:2 with empty depends_on_convoy', () => {
+    expect(
+      isPipelineSpec({ name: 'pipeline', version: 2, depends_on_convoy: [] })
+    ).toBe(false)
+  })
+
+  it('returns false for version:2 without depends_on_convoy', () => {
+    expect(
+      isPipelineSpec({ name: 'convoy', version: 2, tasks: [{ id: 'a', prompt: 'x' }] })
+    ).toBe(false)
+  })
+
+  it('returns false for legacy spec (no version)', () => {
+    expect(
+      isPipelineSpec({ name: 'legacy', tasks: [{ id: 'a', prompt: 'x' }] })
+    ).toBe(false)
+  })
+
+  it('returns false for null input', () => {
+    expect(isPipelineSpec(null)).toBe(false)
+  })
+
+  it('returns false for non-object input', () => {
+    expect(isPipelineSpec('string')).toBe(false)
+  })
+})
+
+// ── isConvoySpec — version 1 and 2 ────────────────────────────
+
+describe('isConvoySpec — version 1 and 2', () => {
+  it('returns true for version 1 spec', () => {
+    expect(isConvoySpec({ version: 1, tasks: [] })).toBe(true)
+  })
+
+  it('returns true for version 2 pipeline spec', () => {
+    expect(isConvoySpec({ version: 2, depends_on_convoy: ['phase-1'] })).toBe(true)
+  })
+
+  it('returns true for version 2 spec with tasks', () => {
+    expect(isConvoySpec({ version: 2, tasks: [{ id: 'a', prompt: 'x' }] })).toBe(true)
+  })
+
+  it('returns false for legacy spec (no version)', () => {
+    expect(isConvoySpec({ name: 'legacy', tasks: [] })).toBe(false)
+  })
+
+  it('returns false for version 3', () => {
+    expect(isConvoySpec({ version: 3 })).toBe(false)
+  })
+})
+
+// ── applyDefaults — pipeline spec (version:2, no tasks) ────────
+
+describe('applyDefaults — pipeline spec (version:2, no tasks)', () => {
+  it('pipeline spec with no tasks produces empty tasks array', () => {
+    const spec = applyDefaults({
+      name: 'pipeline',
+      version: 2,
+      depends_on_convoy: ['phase-1'],
+    })
+    expect(spec.tasks).toBeUndefined()
+    expect(spec.name).toBe('pipeline')
+    expect(spec.version).toBe(2)
+    expect(spec.depends_on_convoy).toEqual(['phase-1'])
+  })
+
+  it('pipeline spec with tasks applies defaults normally', () => {
+    const spec = applyDefaults({
+      name: 'pipeline',
+      version: 2,
+      depends_on_convoy: ['phase-1'],
+      tasks: [{ id: 'a', prompt: 'x' }],
+    })
+    expect(spec.tasks).toHaveLength(1)
+    expect(spec.tasks![0].agent).toBe('developer')
+    expect(spec.tasks![0].timeout).toBe('30m')
+  })
+
+  it('preserves depends_on_convoy through applyDefaults', () => {
+    const spec = applyDefaults({
+      name: 'pipeline',
+      version: 2,
+      depends_on_convoy: ['phase-1', 'phase-2'],
+    })
+    expect(spec.depends_on_convoy).toEqual(['phase-1', 'phase-2'])
   })
 })

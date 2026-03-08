@@ -1593,3 +1593,119 @@ body {
 .convoy-tasks {
   margin-top: 8px;
 }
+
+/* ---------- Convoy Chain / Pipeline Section ---------- */
+.convoy-chain {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+  padding: 1rem 0 1.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.convoy-chain::-webkit-scrollbar {
+  height: 4px;
+}
+
+.convoy-chain::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.convoy-chain::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.convoy-chain__connector {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  color: var(--text-tertiary);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.convoy-chain__node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  min-width: 140px;
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+  flex-shrink: 0;
+}
+
+.convoy-chain__node:hover {
+  background: var(--bg-card-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.convoy-chain__node-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: center;
+  word-break: break-word;
+  max-width: 120px;
+}
+
+.convoy-chain__node-meta {
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.convoy-chain__node--active {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 1px var(--accent-purple), 0 0 12px rgba(167, 139, 250, 0.2);
+  animation: convoy-pulse 2s ease-in-out infinite;
+}
+
+.convoy-chain__node--done {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.convoy-chain__node--failed {
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.convoy-chain__node--pending {
+  opacity: 0.6;
+}
+
+@keyframes convoy-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 1px var(--accent-purple), 0 0 8px rgba(167, 139, 250, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 0 1px var(--accent-purple), 0 0 18px rgba(167, 139, 250, 0.35);
+  }
+}
+
+@media (max-width: 768px) {
+  .convoy-chain {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .convoy-chain__connector {
+    display: none;
+  }
+
+  .convoy-chain__node {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 120px;
+  }
+}
