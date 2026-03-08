@@ -1,0 +1,88 @@
+import { spawn } from 'node:child_process'
+import type { Task, ExecuteOptions, ExecuteResult } from '../../types.js'
+
+/** Adapter name */
+export const name = 'opencode'
+
+/**
+ * Check if the `opencode` CLI is available on the system PATH.
+ */
+export async function isAvailable(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const proc = spawn('which', ['opencode'], { stdio: 'pipe' })
+    proc.on('close', (code) => resolve(code === 0))
+    proc.on('error', () => resolve(false))
+  })
+}
+
+/**
+ * Execute a task by invoking the OpenCode CLI in headless mode.
+ */
+export async function execute(task: Task, options: ExecuteOptions = {}): Promise<ExecuteResult> {
+  let prompt = `You are a ${task.agent}. ${task.prompt}`
+
+  if (task.files && task.files.length > 0) {
+    prompt += `\n\nOnly modify files under: ${task.files.join(', ')}`
+  }
+
+  const args = ['--headless', '-p', prompt]
+
+  return new Promise((resolve) => {
+    const proc = spawn('opencode', args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: { ...process.env },
+      cwd: options?.cwd ?? process.cwd(),
+    })
+
+    let stdout = ''
+    let stderr = ''
+
+    proc.stdout.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString()
+      if (options.verbose) {
+        process.stdout.write(chunk)
+      }
+    })
+
+    proc.stderr.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString()
+      if (options.verbose) {
+        process.stderr.write(chunk)
+      }
+    })
+
+    proc.on('close', (code) => {
+      const output = [stdout, stderr].filter(Boolean).join('\n')
+      resolve({
+        success: code === 0,
+        output: output.slice(0, 10000), // Cap output size
+        exitCode: code ?? -1,
+      })
+    })
+
+    proc.on('error', (err) => {
+      resolve({
+        success: false,
+        output: `Failed to spawn opencode: ${err.message}`,
+        exitCode: -1,
+      })
+    })
+
+    // Store process ref for potential timeout kill
+    task._process = proc
+  })
+}
+
+/**
+ * Kill the process associated with a task (used by timeout enforcement).
+ */
+export function kill(task: Task): void {
+  if (task._process && !task._process.killed) {
+    task._process.kill('SIGTERM')
+    setTimeout(() => {
+      if (task._process && !task._process.killed) {
+        task._process.kill('SIGKILL')
+      }
+    }, 5000)
+  }
+}

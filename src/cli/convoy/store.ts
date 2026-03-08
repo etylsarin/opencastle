@@ -9,7 +9,7 @@ import type {
   EventRecord,
 } from './types.js'
 
-const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 2
 
 export interface ConvoyStore {
   insertConvoy(record: Omit<ConvoyRecord, 'started_at' | 'finished_at'>): void
@@ -82,6 +82,7 @@ class ConvoyStoreImpl implements ConvoyStore {
           phase       INTEGER NOT NULL,
           prompt      TEXT NOT NULL,
           agent       TEXT NOT NULL DEFAULT 'developer',
+          adapter     TEXT,
           model       TEXT,
           timeout_ms  INTEGER NOT NULL DEFAULT 1800000,
           status      TEXT NOT NULL DEFAULT 'pending',
@@ -121,6 +122,10 @@ class ConvoyStoreImpl implements ConvoyStore {
         );
       `)
       this.db.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`)
+    }
+    if (row.user_version === 1) {
+      this.db.exec('ALTER TABLE task ADD COLUMN adapter TEXT')
+      this.db.exec('PRAGMA user_version = 2')
     }
   }
 
@@ -174,11 +179,11 @@ class ConvoyStoreImpl implements ConvoyStore {
     this.db
       .prepare(
         `INSERT INTO task
-           (id, convoy_id, phase, prompt, agent, model, timeout_ms, status,
+           (id, convoy_id, phase, prompt, agent, adapter, model, timeout_ms, status,
             worker_id, worktree, output, exit_code, started_at, finished_at,
             retries, max_retries, files, depends_on)
          VALUES
-           (:id, :convoy_id, :phase, :prompt, :agent, :model, :timeout_ms, :status,
+           (:id, :convoy_id, :phase, :prompt, :agent, :adapter, :model, :timeout_ms, :status,
             NULL, NULL, NULL, NULL, NULL, NULL,
             :retries, :max_retries, :files, :depends_on)`,
       )

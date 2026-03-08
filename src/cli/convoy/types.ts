@@ -29,6 +29,7 @@ export interface TaskRecord {
   phase: number
   prompt: string
   agent: string
+  adapter: string | null
   model: string | null
   timeout_ms: number
   status: ConvoyTaskStatus

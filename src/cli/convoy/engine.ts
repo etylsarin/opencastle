@@ -12,6 +12,7 @@ import { createHealthMonitor } from './health.js'
 import type { TaskRecord, ConvoyStatus } from './types.js'
 import { buildPhases, formatDuration } from '../run/executor.js'
 import { parseTimeout } from '../run/schema.js'
+import { getAdapter, detectAdapter } from '../run/adapters/index.js'
 
 const execFile = promisify(execFileCb)
 
@@ -61,6 +62,7 @@ function taskRecordToTask(record: TaskRecord): Task {
     description: '',
     model: record.model ?? undefined,
     max_retries: record.max_retries,
+    adapter: record.adapter ?? undefined,
   }
 }
 
@@ -91,6 +93,7 @@ async function runConvoy(
   startTime: number,
 ): Promise<ConvoyResult> {
   const activeTaskMap = new Map<string, Task>()
+  const taskAdapterMap = new Map<string, AgentAdapter>()
 
   const healthMonitor = createHealthMonitor({
     store,
@@ -98,10 +101,12 @@ async function runConvoy(
     convoyId,
     onKill: (workerId, taskId) => {
       const task = activeTaskMap.get(taskId)
-      if (task && typeof adapter.kill === 'function') {
-        adapter.kill(task)
+      const taskAdpt = taskAdapterMap.get(taskId) ?? adapter
+      if (task && typeof taskAdpt.kill === 'function') {
+        taskAdpt.kill(task)
       }
       activeTaskMap.delete(taskId)
+      taskAdapterMap.delete(taskId)
     },
   })
   healthMonitor.start()
@@ -148,9 +153,23 @@ async function runConvoy(
     const workerId = `worker-${taskRecord.id}-${Date.now()}`
     const now = () => new Date().toISOString()
 
+    // Resolve per-task adapter (fallback to convoy-level adapter)
+    let taskAdapter: AgentAdapter = adapter
+    if (taskRecord.adapter && taskRecord.adapter !== adapter.name) {
+      if (taskRecord.adapter === 'auto') {
+        const detected = await detectAdapter()
+        if (detected) {
+          taskAdapter = await getAdapter(detected)
+        }
+      } else {
+        taskAdapter = await getAdapter(taskRecord.adapter)
+      }
+    }
+    taskAdapterMap.set(taskRecord.id, taskAdapter)
+
     // Create worktree (skip for copilot adapter)
     let worktreePath: string | null = null
-    if (adapter.name !== 'copilot') {
+    if (taskAdapter.name !== 'copilot') {
       try {
         worktreePath = await wtManager.create(workerId, baseBranch)
       } catch (err) {
@@ -165,7 +184,7 @@ async function runConvoy(
     store.insertWorker({
       id: workerId,
       task_id: taskRecord.id,
-      adapter: adapter.name,
+      adapter: taskAdapter.name,
       pid: null,
       session_id: null,
       status: 'spawned',
@@ -196,7 +215,7 @@ async function runConvoy(
     let result: ExecuteResult
     try {
       result = await Promise.race([
-        adapter.execute(task, { verbose, cwd: worktreePath ?? basePath }),
+        taskAdapter.execute(task, { verbose, cwd: worktreePath ?? basePath }),
         timeout.promise,
       ])
       timeout.clear()
@@ -217,7 +236,7 @@ async function runConvoy(
 
     // ── Timed out ───────────────────────────────────────────────────────────
     if (result._timedOut) {
-      if (typeof adapter.kill === 'function') adapter.kill(task)
+      if (typeof taskAdapter.kill === 'function') taskAdapter.kill(task)
       await removeWorktree()
 
       const freshRecord = store.getTask(taskRecord.id, convoyId)!
@@ -251,6 +270,7 @@ async function runConvoy(
         )
         cascadeFailure(taskRecord.id)
       }
+      taskAdapterMap.delete(taskRecord.id)
       return
     }
 
@@ -283,11 +303,12 @@ async function runConvoy(
         { exit_code: result.exitCode, worker_id: workerId },
         { convoy_id: convoyId, task_id: taskRecord.id, worker_id: workerId },
       )
+      taskAdapterMap.delete(taskRecord.id)
       return
     }
 
     // ── Failure ─────────────────────────────────────────────────────────────
-    if (typeof adapter.kill === 'function') adapter.kill(task)
+    if (typeof taskAdapter.kill === 'function') taskAdapter.kill(task)
     await removeWorktree()
 
     const freshRecord = store.getTask(taskRecord.id, convoyId)!
@@ -322,6 +343,7 @@ async function runConvoy(
       )
       cascadeFailure(taskRecord.id)
     }
+    taskAdapterMap.delete(taskRecord.id)
   }
 
   // ── Main execution loop ───────────────────────────────────────────────────
@@ -437,6 +459,7 @@ export function createConvoyEngine(options: ConvoyEngineOptions): ConvoyEngine {
             phase: phaseIdx,
             prompt: task.prompt,
             agent: task.agent,
+            adapter: task.adapter ?? null,
             model: task.model ?? null,
             timeout_ms: parseTimeout(task.timeout),
             status: 'pending',

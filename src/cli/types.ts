@@ -132,6 +132,7 @@ export interface TaskDefaults {
   model?: string;
   max_retries?: number;
   agent?: string;
+  adapter?: string;
 }
 
 /** Validated task spec from YAML. */
@@ -166,6 +167,8 @@ export interface Task {
   model?: string;
   /** Max retry attempts (default: 1). */
   max_retries: number;
+  /** Per-task adapter override. */
+  adapter?: string;
 }
 
 /** Task execution status. */

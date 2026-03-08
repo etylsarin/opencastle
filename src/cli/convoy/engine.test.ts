@@ -7,11 +7,19 @@ import { createConvoyStore } from './store.js'
 import type { AgentAdapter, Task, TaskSpec, ExecuteResult, ExecuteOptions } from '../types.js'
 import type { WorktreeManager } from './worktree.js'
 import type { MergeQueue } from './merge.js'
+import { getAdapter, detectAdapter } from '../run/adapters/index.js'
 
 // ── Mock NDJSON log writes ────────────────────────────────────────────────────
 
 vi.mock('../log.js', () => ({
   appendEvent: vi.fn().mockResolvedValue(undefined),
+}))
+
+// ── Mock runtime adapter registry ────────────────────────────────────────────
+
+vi.mock('../run/adapters/index.js', () => ({
+  getAdapter: vi.fn(),
+  detectAdapter: vi.fn(),
 }))
 
 // ── Fixture helpers ───────────────────────────────────────────────────────────
@@ -90,6 +98,9 @@ let tmpDir: string
 let dbPath: string
 
 beforeEach(() => {
+  // Throw by default so accidental unmocked getAdapter/detectAdapter calls surface immediately
+  vi.mocked(getAdapter).mockRejectedValue(new Error('unmocked getAdapter call'))
+  vi.mocked(detectAdapter).mockRejectedValue(new Error('unmocked detectAdapter call'))
   tmpDir = mkdtempSync(join(tmpdir(), 'engine-test-'))
   dbPath = join(tmpDir, 'convoy.db')
 })
@@ -541,6 +552,7 @@ describe('resume (crash recovery)', () => {
       phase: 0,
       prompt: 'Do something',
       agent: 'developer',
+      adapter: null,
       model: null,
       timeout_ms: 30_000,
       status: taskStatus,
@@ -643,6 +655,7 @@ describe('resume (crash recovery)', () => {
       phase: 0,
       prompt: 'Do something',
       agent: 'developer',
+      adapter: null,
       model: null,
       timeout_ms: 30_000,
       status: 'pending',
@@ -687,6 +700,7 @@ describe('resume (crash recovery)', () => {
       phase: 0,
       prompt: 'Do something',
       agent: 'developer',
+      adapter: null,
       model: null,
       timeout_ms: 30_000,
       status: 'pending',
@@ -1221,7 +1235,118 @@ describe('msToTimeout — timeout string representation', () => {
   })
 })
 
-// ── 17. getCurrentBranch fallback ─────────────────────────────────────────────
+// ── 17. Per-task adapter resolution ─────────────────────────────────────────
+
+describe('per-task adapter resolution', () => {
+  it('uses per-task adapter when task has adapter field set', async () => {
+    const mainAdapter = makeAdapter('test')
+    const altAdapter = makeAdapter('alt-adapter')
+    vi.mocked(getAdapter).mockResolvedValue(altAdapter)
+
+    const spec = makeSpec({}, [{ adapter: 'alt-adapter' }])
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: 'name: test',
+      adapter: mainAdapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    await engine.run()
+
+    expect(getAdapter).toHaveBeenCalledWith('alt-adapter')
+    expect(altAdapter.execute).toHaveBeenCalledOnce()
+    expect(mainAdapter.execute).not.toHaveBeenCalled()
+  })
+
+  it('uses convoy-level adapter when task has no adapter field', async () => {
+    const adapter = makeAdapter('test')
+    const spec = makeSpec()
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    await engine.run()
+
+    expect(adapter.execute).toHaveBeenCalledOnce()
+    expect(getAdapter).not.toHaveBeenCalled()
+  })
+
+  it('uses convoy-level adapter when task adapter matches convoy adapter name', async () => {
+    const adapter = makeAdapter('test')
+    // task.adapter === adapter.name → no per-task resolution
+    const spec = makeSpec({}, [{ adapter: 'test' }])
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    await engine.run()
+
+    expect(adapter.execute).toHaveBeenCalledOnce()
+    expect(getAdapter).not.toHaveBeenCalled()
+  })
+
+  it('resolves adapter: auto to detected adapter', async () => {
+    const mainAdapter = makeAdapter('test')
+    const autoAdapter = makeAdapter('claude-code')
+    vi.mocked(detectAdapter).mockResolvedValue('claude-code')
+    vi.mocked(getAdapter).mockResolvedValue(autoAdapter)
+
+    const spec = makeSpec({}, [{ adapter: 'auto' }])
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: 'name: test',
+      adapter: mainAdapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    await engine.run()
+
+    expect(detectAdapter).toHaveBeenCalled()
+    expect(getAdapter).toHaveBeenCalledWith('claude-code')
+    expect(autoAdapter.execute).toHaveBeenCalledOnce()
+    expect(mainAdapter.execute).not.toHaveBeenCalled()
+  })
+
+  it('stores per-task adapter name in worker record', async () => {
+    const altAdapter = makeAdapter('alt-adapter')
+    vi.mocked(getAdapter).mockResolvedValue(altAdapter)
+
+    const spec = makeSpec({}, [{ adapter: 'alt-adapter' }])
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: 'name: test',
+      adapter: makeAdapter('test'),
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    const result = await engine.run()
+
+    const store = createConvoyStore(dbPath)
+    const tasks = store.getTasksByConvoy(result.convoyId)
+    const worker = store.getWorker(tasks[0].worker_id!)
+    store.close()
+
+    expect(worker!.adapter).toBe('alt-adapter')
+  })
+})
+
+// ── 18. getCurrentBranch fallback ─────────────────────────────────────────────
 
 describe('getCurrentBranch', () => {
   it('resolves the base branch from git when spec.branch is not set', async () => {

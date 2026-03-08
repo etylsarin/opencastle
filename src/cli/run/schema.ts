@@ -55,6 +55,7 @@ interface RawTask {
   description?: unknown
   model?: unknown
   max_retries?: unknown
+  adapter?: unknown
 }
 
 /**
@@ -125,6 +126,9 @@ export function validateSpec(spec: unknown): ValidationResult {
       }
       if (d.agent !== undefined && typeof d.agent !== 'string') {
         errors.push('`defaults.agent` must be a string')
+      }
+      if (d.adapter !== undefined && typeof d.adapter !== 'string') {
+        errors.push('`defaults.adapter` must be a string')
       }
     }
   }
@@ -219,6 +223,11 @@ export function validateSpec(spec: unknown): ValidationResult {
         )
       }
     }
+
+    // adapter
+    if (task.adapter !== undefined && typeof task.adapter !== 'string') {
+      errors.push(`${prefix}: \`adapter\` must be a string`)
+    }
   }
 
   // DAG cycle detection
@@ -307,6 +316,10 @@ export function applyDefaults(spec: Record<string, unknown>): TaskSpec {
     if (task.max_retries === undefined) {
       task.max_retries =
         d.max_retries !== undefined ? Number(d.max_retries) : 1
+    }
+    // adapter: task-level overrides defaults, no hardcoded fallback (convoy-level is used at runtime)
+    if (task.adapter === undefined && d.adapter !== undefined) {
+      task.adapter = d.adapter
     }
   }
 

@@ -43,6 +43,7 @@ function makeTask(overrides: Partial<Parameters<ConvoyStore['insertTask']>[0]> =
     phase: 0,
     prompt: 'Do something',
     agent: 'developer',
+    adapter: null as string | null,
     model: null,
     timeout_ms: 1_800_000,
     status: 'pending' as const,
@@ -83,11 +84,11 @@ describe('DB creation', () => {
     expect(row.journal_mode).toBe('wal')
   })
 
-  it('sets schema version to 1', () => {
+  it('sets schema version to 2', () => {
     const db = new DatabaseSync(dbPath)
     const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
     db.close()
-    expect(row.user_version).toBe(1)
+    expect(row.user_version).toBe(2)
   })
 
   it('creates all required tables', () => {
@@ -112,7 +113,86 @@ describe('DB creation', () => {
     store2.close()
     // Reassign so afterEach does not double-close
     store = createConvoyStore(dbPath)
-    expect(row.user_version).toBe(1)
+    expect(row.user_version).toBe(2)
+  })
+})
+
+// ── schema migration ─────────────────────────────────────────────────────────
+
+describe('schema migration', () => {
+  it('schema migration v1 to v2 adds adapter column', () => {
+    // Create a v1 database manually: task table without adapter column
+    const v1DbPath = join(tmpDir, 'v1.db')
+    const rawDb = new DatabaseSync(v1DbPath)
+    rawDb.exec(`
+      CREATE TABLE convoy (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        spec_hash   TEXT NOT NULL,
+        status      TEXT NOT NULL DEFAULT 'pending',
+        branch      TEXT,
+        created_at  TEXT NOT NULL,
+        started_at  TEXT,
+        finished_at TEXT,
+        spec_yaml   TEXT NOT NULL
+      );
+      CREATE TABLE task (
+        id          TEXT PRIMARY KEY,
+        convoy_id   TEXT NOT NULL REFERENCES convoy(id),
+        phase       INTEGER NOT NULL,
+        prompt      TEXT NOT NULL,
+        agent       TEXT NOT NULL DEFAULT 'developer',
+        model       TEXT,
+        timeout_ms  INTEGER NOT NULL DEFAULT 1800000,
+        status      TEXT NOT NULL DEFAULT 'pending',
+        worker_id   TEXT,
+        worktree    TEXT,
+        output      TEXT,
+        exit_code   INTEGER,
+        started_at  TEXT,
+        finished_at TEXT,
+        retries     INTEGER NOT NULL DEFAULT 0,
+        max_retries INTEGER NOT NULL DEFAULT 1,
+        files       TEXT,
+        depends_on  TEXT
+      );
+      CREATE TABLE worker (
+        id             TEXT PRIMARY KEY,
+        task_id        TEXT REFERENCES task(id),
+        adapter        TEXT NOT NULL,
+        pid            INTEGER,
+        session_id     TEXT,
+        status         TEXT NOT NULL DEFAULT 'spawned',
+        worktree       TEXT,
+        created_at     TEXT NOT NULL,
+        finished_at    TEXT,
+        last_heartbeat TEXT
+      );
+      CREATE TABLE event (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        convoy_id  TEXT REFERENCES convoy(id),
+        task_id    TEXT,
+        worker_id  TEXT,
+        type       TEXT NOT NULL,
+        data       TEXT,
+        created_at TEXT NOT NULL
+      );
+    `)
+    rawDb.exec('PRAGMA user_version = 1')
+    rawDb.close()
+
+    // Open with createConvoyStore — should apply the v1→v2 migration
+    const v1Store = createConvoyStore(v1DbPath)
+    v1Store.close()
+
+    // Verify adapter column was added to task table
+    const verifyDb = new DatabaseSync(v1DbPath)
+    const cols = verifyDb.prepare('PRAGMA table_info(task)').all() as Array<{ name: string }>
+    const version = verifyDb.prepare('PRAGMA user_version').get() as { user_version: number }
+    verifyDb.close()
+
+    expect(cols.map(c => c.name)).toContain('adapter')
+    expect(version.user_version).toBe(2)
   })
 })
 
@@ -180,6 +260,12 @@ describe('task CRUD', () => {
 
   it('returns undefined for missing task', () => {
     expect(store.getTask('does-not-exist', 'convoy-1')).toBeUndefined()
+  })
+
+  it('insertTask stores adapter field', () => {
+    store.insertTask(makeTask({ adapter: 'opencode' }))
+    const retrieved = store.getTask('task-1', 'convoy-1')!
+    expect(retrieved.adapter).toBe('opencode')
   })
 
   it('stores JSON fields as strings', () => {

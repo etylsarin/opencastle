@@ -63,6 +63,7 @@ function makeTask(
     phase: 0,
     prompt: 'Do something',
     agent: 'developer',
+    adapter: null,
     model: null,
     timeout_ms: 60_000,
     status: 'running' as const,
