@@ -650,6 +650,45 @@ The current `src/cli/run/` already provides substantial machinery we reuse direc
 
 **Delivered:** 1 new file (`generate-convoy.prompt.md`), 1 deleted file (`generate-task-spec.prompt.md`), 8 edited files. Zero code changes — Phase 8 is pure prompt/agent/docs.
 
+### Phase 9: Documentation Alignment — Convoy-First
+**Status: ✅ Done**
+
+**Scope:** Update all external-facing documentation to reflect the convoy engine as the primary execution model. Ensure README, website homepage, and CLI docs present a unified, accurate picture of the convoy architecture.
+
+#### 9.1 README Update
+- [x] Renamed "Task Queue" section → "Convoy Engine"
+- [x] Added Gas Town inspiration with link
+- [x] Updated CLI table — `opencastle run` description references Convoy Engine
+- [x] Updated YAML example to `convoy.yml` format with `version: 1`, `branch`, `defaults`, `gates`
+- [x] Documented key architecture features: SQLite WAL persistence, git worktree isolation, crash recovery, health monitoring, merge queue, validation gates, mixed runtimes, real-time dashboard
+- [x] Replaced "Generate Task Spec" → "Generate Convoy"
+
+#### 9.2 Website Homepage Update
+- [x] Renamed "Autonomous Mode" section → "Convoy Engine" with updated section ID
+- [x] Updated header navigation link
+- [x] Added Gas Town inspiration mention with link in subtitle
+- [x] Updated YAML example to convoy.yml format
+- [x] Replaced feature cards with convoy-specific features: Crash-Safe Execution, Worktree Isolation, Health Monitoring, Mixed Runtimes, Validation Gates, Generate Convoy
+- [x] Updated installation code block — `opencastle run` comment references Convoy Engine
+
+#### 9.3 CLI Documentation Update
+- [x] Updated `run` command summary and description to reference Convoy Engine
+- [x] Added `--resume` and `--status` flags to options
+- [x] Added `opencode` to adapter list
+- [x] Renamed "Task spec format" → "Convoy spec format" with full field documentation
+- [x] Updated execution model details with SQLite, worktree isolation, crash recovery, health monitoring, merge queue, gates
+- [x] Updated examples to include `--resume` and `--status`
+- [x] Updated quick-reference table
+
+**Acceptance criteria:**
+- ✅ No remaining references to "task queue" in user-facing documentation
+- ✅ Convoy Engine architecture clearly explained with Gas Town inspiration
+- ✅ YAML examples consistent across README and website (convoy.yml format)
+- ✅ CLI docs include all new flags (--resume, --status) and opencode adapter
+- ✅ All external-facing docs present unified convoy-first messaging
+
+**Delivered:** 3 files updated (README.md, website/src/pages/index.astro, website/src/pages/docs/cli.astro). Zero code changes — Phase 9 is pure documentation.
+
 ---
 
 ## File Structure (Target)
@@ -723,7 +762,8 @@ src/cli/run/                       # EXISTING — extended, not replaced
 | Phase 6 | Medium | Phase 2 | 1 new adapter file |
 | Phase 7 | Low | Phase 4 | Dashboard pages |
 | Phase 8 | Medium | Phase 5 | Prompt/agent/docs edits |
+| Phase 9 | Medium | Phase 8 | README, website, CLI docs |
 
-Phases 1–3 are the MVP. Phase 4 makes it the default. Phases 5–7 are integration and polish.
+Phases 1–3 are the MVP. Phase 4 makes it the default. Phases 5–8 are integration and polish. Phase 9 is documentation alignment.
 
 **Total new code estimate:** ~6–8 new files in `src/cli/convoy/`, edits to ~4 existing files in `src/cli/run/`. The spec parser, DAG planner, adapter layer, concurrency executor, and timeout/kill logic are already built.

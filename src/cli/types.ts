@@ -94,11 +94,26 @@ export interface ManagedPaths {
   customizable: string[];
 }
 
+/** Structure check for the doctor command — describes expected files/dirs per IDE. */
+export interface DoctorCheck {
+  /** Human-friendly label for the check */
+  label: string;
+  /** Relative path to a file or directory (ending with /) to check exists */
+  path: string;
+  /** 'file' or 'dir' */
+  type: 'file' | 'dir';
+  /** If true, counts the contents and reports count */
+  countContents?: boolean;
+  /** File extension filter when counting (e.g. '.md', '.mdc', '.agent.md') */
+  countFilter?: string;
+}
+
 /** IDE adapter interface (init/update commands). */
 export interface IdeAdapter {
   install(_pkgRoot: string, _projectRoot: string, _stack?: StackConfig, _repoInfo?: RepoInfo): Promise<CopyResults>;
   update(_pkgRoot: string, _projectRoot: string, _stack?: StackConfig): Promise<CopyResults>;
   getManagedPaths(): ManagedPaths;
+  getDoctorChecks(): DoctorCheck[];
 }
 
 /** Select prompt option. */

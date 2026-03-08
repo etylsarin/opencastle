@@ -55,6 +55,7 @@ Load on-demand skills **only when their phase is reached** — not upfront.
 | **agent-hooks** | Step 3 — delegation prompt templates for specialist agents |
 | **task-management** | Step 2 — tracker conventions, issue naming, labels, priorities |
 | **decomposition** | Step 2–3 — dependency resolution, delegation spec templates, prompt examples |
+| **agent-routing** | Step 2 — task-to-agent routing rules, multi-agent decomposition patterns, anti-patterns |
 | **orchestration-protocols** | Step 4+ — steering, background agents, parallel research, health-checks, escalation |
 | **context-map** | Step 2, if 5+ files affected — structured file impact maps |
 | **validation-gates** | Step 4 — deterministic checks, browser testing, regression |
@@ -88,6 +89,10 @@ Delegate via `runSubagent` (inline) or background sessions.
 | **Session Guard** | End-of-session compliance | Called as your last action before every response. |
 
 > **⚠️ Always reference agents by their exact `name` when delegating.** Write "Use the Developer agent to..." or "Use the Researcher agent to..." in your delegation prompt. This ensures VS Code routes the sub-agent to the correct custom agent with its assigned model and tools. If you don't name the agent, the sub-agent inherits the Team Lead's Premium model — wasting expensive requests on Economy/Standard tasks.
+
+## Task-to-Agent Routing
+
+> **⛔ Developer is the LAST resort, not the default.** Load the **agent-routing** skill at Step 2 and scan its routing table before assigning any subtask. Only use Developer when no specialist matches. Always decompose multi-domain tasks across agent boundaries (e.g., code + copy = Developer + Copywriter).
 
 ## Delegation
 

@@ -70,7 +70,7 @@ MCP servers are auto-configured for your stack in each IDE's native format.
 | `opencastle init` | Set up agents in your project |
 | `opencastle update` | Update framework files (keeps your customizations) |
 | `opencastle eject` | Remove the dependency, keep all files |
-| `opencastle run` | Run a [task queue](#task-queue) autonomously |
+| `opencastle run` | Run the Convoy Engine (deterministic, crash-recoverable orchestrator) |
 | `opencastle dashboard` | Open the observability dashboard |
 | `opencastle doctor` | Validate your setup and surface issues |
 
@@ -126,39 +126,48 @@ Runs multiple health checks — manifest, configs, skills, observability logs, I
 
 <br>
 
-## Task Queue
+## Convoy Engine
 
-Queue tasks in YAML. Let agents run overnight. Dependencies resolve automatically.
+A deterministic, crash-recoverable orchestrator inspired by Steve Yegge's [Gas Town](https://github.com/steveyegge/gastown). Define tasks in YAML, run overnight, resume after crashes.
 
 ```bash
-npx opencastle run
+npx opencastle run convoy.yml
 ```
 
 ```yaml
+# convoy.yml
 name: "Overnight feature batch"
-concurrency: 2
+version: 1
 adapter: claude-code
+branch: feat/reviews
 
 tasks:
   - id: migrate-db
     agent: database-engineer
     prompt: "Create a reviews table migration."
-    timeout: 10m
 
   - id: build-component
     agent: ui-ux-expert
     prompt: "Build a ReviewCard component."
-    timeout: 15m
 
   - id: wire-page
     agent: developer
     prompt: "Add reviews to the place detail page."
     depends_on: [migrate-db, build-component]
+
+gates:
+  - npm run lint
+  - npm run test
 ```
 
-TIP: Use the **"Generate Task Spec"** prompt to create this file from a plain description. No YAML by hand.
+- **Crash-safe** — SQLite WAL persistence survives crashes, power loss, OOM kills. Resume with `--resume`.
+- **Isolated** — each worker runs in its own git worktree. Changes merge back in dependency order.
+- **Observable** — real-time dashboard auto-starts during execution.
+- **Multi-runtime** — mix Copilot, Claude Code, Cursor, and OpenCode in the same convoy.
 
-📖 [Task queue CLI documentation →](https://www.opencastle.dev/docs/cli#task-queue)
+TIP: Use the **"Generate Convoy"** prompt to create a `convoy.yml` from a plain description. No YAML by hand.
+
+📖 [Full Convoy Engine documentation →](https://www.opencastle.dev/docs/cli#run)
 
 <br>
 

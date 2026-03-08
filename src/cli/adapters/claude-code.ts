@@ -18,7 +18,7 @@ import { createSingleFileAdapter } from './single-file-base.js'
 
 export const IDE_ID = 'claude-code'
 
-const { install, update, getManagedPaths } = createSingleFileAdapter({
+const { install, update, getManagedPaths, getDoctorChecks } = createSingleFileAdapter({
   rootFile: 'CLAUDE.md',
   dotDir: '.claude',
   mcpConfigPath: '.claude/mcp.json',
@@ -29,4 +29,4 @@ const { install, update, getManagedPaths } = createSingleFileAdapter({
   frameworkDirs: ['agents', 'skills', 'commands'],
 })
 
-export { install, update, getManagedPaths }
+export { install, update, getManagedPaths, getDoctorChecks }

@@ -1,9 +1,11 @@
 import { resolve } from 'node:path';
-import { readFile, access, readdir, writeFile } from 'node:fs/promises';
+import { readdir, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { readManifest } from './manifest.js';
 import { getRequiredMcpEnvVars } from './stack-config.js';
-import type { CliContext, Manifest, IdeChoice } from './types.js';
+import { IDE_ADAPTERS } from './adapters/index.js';
+import type { CliContext, DoctorCheck, IdeChoice, Manifest } from './types.js';
+import { IDE_LABELS } from './types.js';
 
 // ── Styled output helpers ─────────────────────────────────────
 
@@ -43,6 +45,7 @@ async function checkSkillMatrix(projectRoot: string): Promise<CheckResult> {
   if (!existsSync(path)) {
     return { ok: false, label: 'Skill matrix', detail: 'File not found at .github/customizations/agents/skill-matrix.json' };
   }
+  const { readFile } = await import('node:fs/promises');
   const content = await readFile(path, 'utf8');
   try {
     const data = JSON.parse(content);
@@ -59,41 +62,6 @@ async function checkSkillMatrix(projectRoot: string): Promise<CheckResult> {
   }
 }
 
-async function checkInstructions(projectRoot: string): Promise<CheckResult> {
-  const dir = resolve(projectRoot, '.github', 'instructions');
-  if (!existsSync(dir)) {
-    return { ok: false, label: 'Instruction files', detail: '.github/instructions/ not found' };
-  }
-  const files = await readdir(dir).catch(() => []);
-  const mdFiles = files.filter((f) => f.endsWith('.md'));
-  if (mdFiles.length === 0) {
-    return { ok: false, label: 'Instruction files', detail: 'No .md files in .github/instructions/' };
-  }
-  return { ok: true, label: 'Instruction files', detail: `${mdFiles.length} instruction files` };
-}
-
-async function checkAgents(projectRoot: string): Promise<CheckResult> {
-  const dir = resolve(projectRoot, '.github', 'agents');
-  if (!existsSync(dir)) {
-    return { ok: false, label: 'Agent definitions', detail: '.github/agents/ directory not found' };
-  }
-  const files = await readdir(dir).catch(() => []);
-  const agentFiles = files.filter((f) => f.endsWith('.agent.md'));
-  if (agentFiles.length === 0) {
-    return { ok: false, label: 'Agent definitions', detail: 'No .agent.md files found' };
-  }
-  return { ok: true, label: 'Agent definitions', detail: `${agentFiles.length} agents` };
-}
-
-async function checkSkills(projectRoot: string): Promise<CheckResult> {
-  const dir = resolve(projectRoot, '.github', 'skills');
-  if (!existsSync(dir)) {
-    return { ok: false, label: 'Skills directory', detail: '.github/skills/ not found' };
-  }
-  const entries = await readdir(dir).catch(() => []);
-  return { ok: true, label: 'Skills directory', detail: `${entries.length} skills` };
-}
-
 async function checkLogs(projectRoot: string): Promise<CheckResult> {
   const dir = resolve(projectRoot, '.github', 'customizations', 'logs');
   if (!existsSync(dir)) {
@@ -102,7 +70,6 @@ async function checkLogs(projectRoot: string): Promise<CheckResult> {
   const required = ['sessions.ndjson', 'delegations.ndjson', 'reviews.ndjson', 'panels.ndjson', 'disputes.ndjson'];
   const missing = required.filter((f) => !existsSync(resolve(dir, f)));
   if (missing.length > 0) {
-    // Auto-create missing log files — they're empty NDJSON stubs
     for (const file of missing) {
       await writeFile(resolve(dir, file), '', { flag: 'wx' }).catch(() => {/* already exists */});
     }
@@ -141,62 +108,51 @@ async function checkDotEnv(projectRoot: string, manifest: Manifest | null): Prom
   return { ok: true, label: '.env file', detail: 'Present' };
 }
 
-async function checkIdeConfigs(projectRoot: string, manifest: Manifest | null): Promise<CheckResult> {
-  if (!manifest) {
-    return { ok: false, label: 'IDE configuration files', detail: 'No manifest — cannot check' };
-  }
-  const ides = manifest.ides ?? [manifest.ide];
-  const checks: Array<{ ide: string; file: string; found: boolean }> = [];
+// ── Generic adapter-driven checks ────────────────────────────────
 
-  for (const ide of ides) {
-    let configFile: string;
-    switch (ide as IdeChoice) {
-      case 'vscode':
-        configFile = '.github/copilot-instructions.md';
-        break;
-      case 'cursor':
-        configFile = '.cursor/rules/opencastle.mdc';
-        break;
-      case 'claude-code':
-        configFile = '.claude/settings.json';
-        break;
-      case 'opencode':
-        configFile = '.opencode/agents.md';
-        break;
-      default:
-        continue;
+/** Run a single DoctorCheck against the filesystem. */
+export async function runDoctorCheck(projectRoot: string, check: DoctorCheck): Promise<CheckResult> {
+  const fullPath = resolve(projectRoot, check.path);
+
+  if (check.type === 'file') {
+    if (!existsSync(fullPath)) {
+      return { ok: false, label: check.label, detail: `${check.path} not found` };
     }
-    checks.push({ ide: ide as string, file: configFile, found: existsSync(resolve(projectRoot, configFile)) });
+    return { ok: true, label: check.label };
   }
 
-  const missing = checks.filter((c) => !c.found);
-  if (missing.length > 0) {
-    return { ok: false, label: 'IDE configuration files', detail: `Missing: ${missing.map((m) => `${m.ide} (${m.file})`).join(', ')}` };
+  // type === 'dir'
+  if (!existsSync(fullPath)) {
+    return { ok: false, label: check.label, detail: `${check.path} not found` };
   }
-  return { ok: true, label: 'IDE configuration files', detail: `${checks.length} IDE(s) configured` };
+
+  if (check.countContents) {
+    const entries = await readdir(fullPath).catch(() => [] as string[]);
+    const filtered = check.countFilter
+      ? entries.filter((e) => e.endsWith(check.countFilter!))
+      : entries;
+    if (filtered.length === 0) {
+      return { ok: false, label: check.label, detail: `No files found in ${check.path}` };
+    }
+    return { ok: true, label: check.label, detail: `${filtered.length} file(s)` };
+  }
+
+  return { ok: true, label: check.label };
 }
 
-async function checkMcpConfig(projectRoot: string, manifest: Manifest | null): Promise<CheckResult> {
-  if (!manifest) {
-    return { ok: false, label: 'MCP configuration', detail: 'No manifest — cannot check' };
+/** Check MCP config presence from the adapter's customizable paths. */
+export function checkMcpFromPaths(projectRoot: string, mcpPaths: string[]): CheckResult {
+  if (mcpPaths.length === 0) {
+    return { ok: true, label: 'MCP configuration', detail: 'No MCP config path configured' };
   }
-  const ides = manifest.ides ?? [manifest.ide];
-  const mcpPaths: Record<string, string> = {
-    vscode: '.vscode/mcp.json',
-    cursor: '.cursor/mcp.json',
-    'claude-code': '.claude/mcp.json',
-    opencode: 'mcp.json',
-  };
-
-  const found: string[] = [];
-  for (const ide of ides) {
-    const path = mcpPaths[ide as string];
-    if (path && existsSync(resolve(projectRoot, path))) {
-      found.push(ide as string);
-    }
-  }
-  if (found.length === 0 && ides.length > 0) {
-    return { ok: true, label: 'MCP configuration', detail: 'No MCP config files found (MCP tools will not be available)', warning: true };
+  const found = mcpPaths.filter((p) => existsSync(resolve(projectRoot, p)));
+  if (found.length === 0) {
+    return {
+      ok: true,
+      label: 'MCP configuration',
+      detail: `No MCP config found (${mcpPaths.join(', ')}) — MCP tools unavailable`,
+      warning: true,
+    };
   }
   return { ok: true, label: 'MCP configuration', detail: `${found.length} MCP config(s)` };
 }
@@ -211,30 +167,71 @@ export default async function doctor({ args: _args }: CliContext): Promise<void>
 
   const manifest = await readManifest(projectRoot);
 
-  const results: CheckResult[] = [
+  // Shared checks (not IDE-specific)
+  const sharedResults: CheckResult[] = [
     checkManifest(manifest),
     await checkCustomizations(projectRoot),
-    await checkInstructions(projectRoot),
-    await checkAgents(projectRoot),
-    await checkSkills(projectRoot),
     await checkSkillMatrix(projectRoot),
     await checkLogs(projectRoot),
-    await checkIdeConfigs(projectRoot, manifest),
-    await checkMcpConfig(projectRoot, manifest),
     checkMcpEnvVars(manifest),
     await checkDotEnv(projectRoot, manifest),
   ];
 
-  for (const r of results) {
+  // IDE-specific checks derived from each adapter
+  type IdeGroup = { label: string; results: CheckResult[] };
+  const ideGroups: IdeGroup[] = [];
+
+  if (manifest) {
+    const ides = manifest.ides ?? (manifest.ide ? [manifest.ide] : []);
+    for (const ide of ides) {
+      const loader = IDE_ADAPTERS[ide];
+      if (!loader) continue;
+      const adapter = await loader();
+      const doctorChecks = adapter.getDoctorChecks();
+      const managedPaths = adapter.getManagedPaths();
+
+      const checkResults = await Promise.all(
+        doctorChecks.map((c) => runDoctorCheck(projectRoot, c))
+      );
+
+      // MCP config check — non-directory entries in the adapter's customizable paths
+      const mcpPaths = managedPaths.customizable.filter((p) => !p.endsWith('/'));
+      checkResults.push(checkMcpFromPaths(projectRoot, mcpPaths));
+
+      ideGroups.push({
+        label: IDE_LABELS[ide as IdeChoice] ?? ide,
+        results: checkResults,
+      });
+    }
+  }
+
+  // Print shared results
+  for (const r of sharedResults) {
     const icon = r.ok ? (r.warning ? WARN : PASS) : FAIL;
     const detail = r.detail ? `  ${DIM(r.detail)}` : '';
     console.log(`  ${icon} ${r.label}${detail}`);
   }
 
-  const failures = results.filter((r) => !r.ok);
-  const warnings = results.filter((r) => r.ok && r.warning);
+  // Print IDE-specific results, grouped with a header when multiple IDEs are configured
+  if (ideGroups.length > 0) {
+    console.log();
+    for (const group of ideGroups) {
+      if (ideGroups.length > 1) {
+        console.log(`  ${BOLD(`[${group.label}]`)}`);
+      }
+      for (const r of group.results) {
+        const icon = r.ok ? (r.warning ? WARN : PASS) : FAIL;
+        const detail = r.detail ? `  ${DIM(r.detail)}` : '';
+        console.log(`  ${icon} ${r.label}${detail}`);
+      }
+      if (ideGroups.length > 1) console.log();
+    }
+  }
 
-  console.log();
+  const allResults = [...sharedResults, ...ideGroups.flatMap((g) => g.results)];
+  const failures = allResults.filter((r) => !r.ok);
+  const warnings = allResults.filter((r) => r.ok && r.warning);
+
   if (failures.length > 0) {
     console.log(`  ${BOLD(`${failures.length} issue(s) found.`)} Run "npx opencastle init" to fix.\n`);
     process.exit(1);

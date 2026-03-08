@@ -63,8 +63,8 @@ Produce a structured map in this format:
 ### Cascade Effects (WILL change)
 | File | Triggered By | Reason | Owner |
 |------|-------------|--------|-------|
-| `apps/tastebeer.eu/app/places/page.tsx` | PlaceCard change | Update props | Frontend Dev |
-| `apps/tastecoffee.eu/app/places/page.tsx` | PlaceCard change | Update props | Frontend Dev |
+| `apps/web-app/places/page.tsx` | PlaceCard change | Update props | Frontend Dev |
+| `apps/admin-panel/places/page.tsx` | PlaceCard change | Update props | Frontend Dev |
 | `libs/queries/src/lib/__tests__/places.test.ts` | Query change | Update test | Testing Expert |
 
 ### Shared Boundaries (WATCH for conflicts)
@@ -87,7 +87,7 @@ From the context map, assign file ownership to agents:
 ```
 Agent A (Content Engineer):    libs/queries/src/lib/places.ts
 Agent B (UI/UX Expert):     libs/ui-kit/src/lib/components/PlaceCard/
-Agent C (Frontend Dev):      apps/tastebeer.eu/app/places/, apps/tastecoffee.eu/app/places/
+Agent C (Frontend Dev):      apps/web-app/places/, apps/admin-panel/places/
 Agent D (Testing Expert):   **/*test*, **/*spec*
 ```
 

@@ -4,7 +4,7 @@ import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot, removeDirIfExists, getPluginsRoot, getPluginSkillEntries } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
 import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform, getIncludedPluginIds } from '../stack-config.js'
-import type { CopyResults, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
+import type { CopyResults, DoctorCheck, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
 import { splitFrontmatter, parseFrontmatterString } from './frontmatter.js'
 
 /**
@@ -315,6 +315,17 @@ export function getManagedPaths(): ManagedPaths {
       '.cursor/mcp.json',
     ],
   }
+}
+
+export function getDoctorChecks(): DoctorCheck[] {
+  return [
+    { label: 'Cursor rules file', path: '.cursorrules', type: 'file' },
+    { label: 'Instruction rules', path: '.cursor/rules/', type: 'dir', countContents: true, countFilter: '.mdc' },
+    { label: 'Agent rules', path: '.cursor/rules/agents/', type: 'dir', countContents: true, countFilter: '.mdc' },
+    { label: 'Skill rules', path: '.cursor/rules/skills/', type: 'dir', countContents: true, countFilter: '.mdc' },
+    { label: 'Workflow rules', path: '.cursor/rules/agent-workflows/', type: 'dir', countContents: true },
+    { label: 'Prompt rules', path: '.cursor/rules/prompts/', type: 'dir', countContents: true },
+  ]
 }
 
 // ─── Internal helpers ─────────────────────────────────────────────
