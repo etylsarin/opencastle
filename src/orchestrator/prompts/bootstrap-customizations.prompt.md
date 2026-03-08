@@ -270,7 +270,7 @@ Now that your project is configured, here's what you can do:
 3. **Implement a feature** — Use the **"Implement Feature"** prompt to have the Team Lead orchestrate a full feature build with task tracking, delegation, and verification
 4. **Fix a bug** — Use the **"Bug Fix"** prompt for structured triage, root cause analysis, and fix with tracker tracking
 5. **Brainstorm first** — Not sure how to approach something? Use the **"Brainstorm"** prompt to explore requirements and trade-offs before committing to a plan
-6. **Create a task spec** — Use the **"Generate Task Spec"** prompt to create `opencastle.tasks.yml` for autonomous overnight runs with `npx opencastle run` CLI command.
+6. **Generate a convoy spec** — Use the **"Generate Convoy"** prompt to create a `.convoy.yml` spec for autonomous convoy execution with `npx opencastle run` CLI command.
 
 ## Guidelines
 

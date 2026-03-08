@@ -1,13 +1,13 @@
 ---
-description: 'Generate a valid .convoy.yml spec file for autonomous convoy runs based on a high-level description of what needs to be done.'
+description: 'Generate a .convoy.yml spec file for autonomous convoy execution based on a high-level goal.'
 agent: 'Team Lead (OpenCastle)'
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
 
-# Generate Task Spec for Autonomous Run
+# Generate Convoy Spec
 
-You are the Team Lead. The user wants to run `opencastle run` to execute a batch of tasks autonomously (e.g., overnight). Your job is to produce a valid `.convoy.yml` file they can feed to the CLI. Derive a short, descriptive, kebab-case filename from the user's goal (2–4 words max) and use it as the filename — for example `auth-refactor.convoy.yml` or `add-search.convoy.yml`. Always use the `.convoy.yml` extension.
+You are the Team Lead. The user wants to run `opencastle run` to execute a batch of tasks autonomously via the convoy engine. Your job is to produce a valid `.convoy.yml` file they can feed to the CLI. Derive a short, descriptive, kebab-case filename from the user's goal (2–4 words max) and use it as the filename — for example `auth-refactor.convoy.yml` or `add-search.convoy.yml`. Always use the `.convoy.yml` extension.
 
 ## User Goal
 
@@ -174,4 +174,4 @@ Also provide:
 2. An **estimated total duration** (sum of timeouts on the critical path).
 3. A `--dry-run` command they can use to validate: `npx opencastle run --file <feature-name>.convoy.yml --dry-run`
 
-> **Backward compatibility:** `.tasks.yml` files without `version` still work with the legacy executor. Only spec files with `version: 1` are routed to the convoy engine.
+
