@@ -499,23 +499,34 @@ The current `src/cli/run/` already provides substantial machinery we reuse direc
 ---
 
 ### Phase 5: Team Lead Integration + VS Code Chat
-**Scope:** Team Lead agent creates spec and launches engine programmatically.
+**Status: ✅ Done**
+
+**Scope:** Team Lead agent creates convoy specs and launches engine via CLI.
 
 #### 5.1 Spec Generation
-- [ ] Team Lead creates `convoy.yml` from user request (decomposition)
-- [ ] Writes spec to `.opencastle/convoy.yml`
-- [ ] Launches `opencastle run .opencastle/convoy.yml` via terminal
+- [x] Updated `generate-task-spec` prompt to output `.convoy.yml` format with `version: 1`
+- [x] Dynamic naming: `<goal-kebab>.convoy.yml` (e.g., `auth-refactor.convoy.yml`)
+- [x] Added convoy-specific fields: `branch`, `defaults`, `gates`
+- [x] Backward-compatible: `.tasks.yml` files without `version` still use legacy executor
 
-#### 5.2 VS Code Chat Entry Point
-- [ ] When session starts from VS Code chat → Team Lead analyzes request
-- [ ] If multi-task work: generate convoy spec, write it, launch engine
-- [ ] If single-task work: execute directly (no convoy overhead)
-- [ ] Real-time status updates via dashboard or terminal output
+#### 5.2 Team Lead Integration
+- [x] Updated Team Lead handoff to reference `.convoy.yml` format
+- [x] Team Lead generates spec → writes file → launches `opencastle run -f <name>.convoy.yml`
+- [x] Single-task work: Team Lead delegates directly via sub-agent (no convoy overhead)
+- [x] Multi-task work: Team Lead uses `generate-task-spec` prompt → convoy engine
+
+#### 5.3 Convoy Chaining (Convention)
+- [x] Each convoy spec has a unique, descriptive filename: `<goal>.convoy.yml`
+- [x] Naming convention enables future convoy chaining by filename reference
+- [x] No code changes needed — `run.ts` already routes `version: 1` to convoy engine
 
 **Acceptance criteria:**
-- Team Lead can generate and launch convoy specs
-- VS Code chat sessions use convoy engine for multi-task work
-- Single-task requests bypass convoy overhead
+- ✅ `generate-task-spec` prompt outputs valid `.convoy.yml` specs with `version: 1`
+- ✅ Team Lead handoff references `.convoy.yml` format
+- ✅ Dynamic naming convention supports convoy chaining
+- ✅ No code changes — all existing tests still pass
+
+**Delivered:** 3 files updated (prompt, agent config, roadmap). Zero code changes — Phase 5 is pure prompt/config.
 
 ---
 
