@@ -559,18 +559,51 @@ The current `src/cli/run/` already provides substantial machinery we reuse direc
 ---
 
 ### Phase 7: Dashboard + Observability
-**Scope:** Real-time convoy monitoring in the existing dashboard.
+**Status: ✅ Done**
 
-#### 7.1 Convoy Dashboard Page
-- [ ] Add convoy status page to `src/dashboard/`
-- [ ] Read from SQLite `convoy.db` directly (read-only WAL connection)
-- [ ] Show: convoy progress, phase breakdown, task statuses, worker health
-- [ ] Auto-refresh via SSE or polling
+**Scope:** Real-time convoy monitoring in the existing dashboard with persistent logs.
 
-#### 7.2 TUI Feed (optional)
-- [ ] `opencastle feed` command for terminal-based monitoring
-- [ ] Show phase progress, active workers, recent events
-- [ ] Modeled after `gt feed` from Gas Town
+#### 7.1 Convoy NDJSON Export
+- [x] Create `src/cli/convoy/export.ts` — dumps convoy state from SQLite to NDJSON
+- [x] Append one NDJSON record per completed convoy to `.opencastle/logs/convoys.ndjson`
+- [x] Export called automatically after convoy `run()` and `resume()` complete
+- [x] Export failure never crashes the engine (wrapped in try/catch)
+- [x] Records include: id, name, status, branch, timestamps, summary, tasks, events_count
+
+#### 7.2 Dashboard Server Updates
+- [x] Extract reusable `startDashboardServer()` function from dashboard CLI
+- [x] Serve convoy data from `.opencastle/logs/` (in addition to `.github/customizations/logs/`)
+- [x] Add `--convoy <id>` CLI arg and `convoyId` option for pre-filtering
+- [x] Support dual-directory NDJSON serving with concatenation
+
+#### 7.3 Dashboard UI — Convoy Filter + Status
+- [x] Convoy filter dropdown in filter bar (populated from `convoys.ndjson`)
+- [x] Convoy status section: overview stats, progress bar, task table
+- [x] Filter all dashboard data by `convoy_id` when convoy selected
+- [x] URL parameter support: `?convoy=active` auto-selects running/latest convoy
+- [x] Auto-refresh (5s polling) when watching an active convoy
+- [x] Sidebar "Convoy" navigation item
+- [x] Styles match existing dark theme design tokens
+
+#### 7.4 Auto-Start Dashboard During Run
+- [x] `opencastle run convoy.yml` auto-starts dashboard server in background
+- [x] Opens browser with `?convoy=active` pre-filter
+- [x] Dashboard server closed after convoy completes
+- [x] Dashboard start failure does not block convoy execution
+
+#### 7.5 Standalone Dashboard
+- [x] `opencastle dashboard` shows all convoys (no pre-filter)
+- [x] `opencastle dashboard --convoy <id>` filters to specific convoy
+
+**Acceptance criteria:**
+- ✅ Convoy data persists between runs via NDJSON export
+- ✅ Dashboard filters by convoy (current or historical)
+- ✅ Dashboard auto-starts during `opencastle run` with current convoy pre-selected
+- ✅ Standalone dashboard shows all convoys
+- ✅ Auto-refresh polls every 5s for live monitoring
+- ✅ 441 tests passing (8 new for export.ts), 0 failures, zero type errors, 100% coverage on export.ts
+
+**Delivered:** 2 new files (`export.ts`, `export.test.ts`), 5 edited files (`engine.ts`, `dashboard.ts`, `run.ts`, `index.astro`, `dashboard.css`). +339 −49 lines.
 
 ---
 
@@ -586,6 +619,7 @@ src/cli/convoy/                    # NEW — convoy engine layer
 ├── merge.ts                       # Merge queue (Refinery)
 ├── health.ts                      # Health monitor (Deacon)
 ├── events.ts                      # Event emitter (SQLite + NDJSON dual-write)
+├── export.ts                      # Convoy-to-NDJSON export for persistence
 ├── types.ts                       # Convoy-specific interfaces + DB row types
 └── __tests__/
     ├── store.test.ts

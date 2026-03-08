@@ -20,6 +20,7 @@ const MIME_TYPES: Record<string, string> = {
 
 const DATA_FILES = [
   'events.ndjson',
+  'convoys.ndjson',
   // Legacy individual files — kept for backwards compatibility
   'sessions.ndjson',
   'delegations.ndjson',
@@ -32,12 +33,28 @@ interface DashboardArgs {
   port: number
   openBrowser: boolean
   seed: boolean
+  convoyId?: string
+}
+
+export interface DashboardServerOptions {
+  port?: number
+  openBrowser?: boolean
+  seed?: boolean
+  pkgRoot: string
+  convoyId?: string
+}
+
+export interface DashboardServerResult {
+  server: Server
+  port: number
+  url: string
 }
 
 function parseArgs(args: string[]): DashboardArgs {
   let port = 4300
   let openBrowser = true
   let seed = false
+  let convoyId: string | undefined
 
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--port' && args[i + 1]) {
@@ -47,10 +64,13 @@ function parseArgs(args: string[]): DashboardArgs {
       openBrowser = false
     } else if (args[i] === '--seed') {
       seed = true
+    } else if (args[i] === '--convoy' && args[i + 1]) {
+      convoyId = args[i + 1]
+      i++
     }
   }
 
-  return { port, openBrowser, seed }
+  return { port, openBrowser, seed, convoyId }
 }
 
 function openUrl(url: string): void {
@@ -104,15 +124,17 @@ function tryListen(
   })
 }
 
-export default async function dashboard({
-  pkgRoot,
-  args,
-}: CliContext): Promise<void> {
-  const { port, openBrowser, seed } = parseArgs(args)
+export async function startDashboardServer(
+  options: DashboardServerOptions,
+): Promise<DashboardServerResult> {
+  const port = options.port ?? 4300
+  const seed = options.seed ?? false
+  const { pkgRoot } = options
 
   const distDir = resolve(pkgRoot, 'src', 'dashboard', 'dist')
   const seedDir = resolve(pkgRoot, 'src', 'dashboard', 'seed-data')
   const projectRoot = process.cwd()
+  const convoyLogsDir = resolve(projectRoot, '.opencastle', 'logs')
   const logsDir = resolve(projectRoot, '.github', 'customizations', 'logs')
 
   // Check if dist exists
@@ -120,18 +142,6 @@ export default async function dashboard({
     throw new Error(
       'Dashboard not built. Run "npm run dashboard:build" in the opencastle package first.'
     )
-  }
-
-  // Check if any log files exist (for messaging)
-  let hasLogs = false
-  if (!seed) {
-    const checkFiles = ['events.ndjson', ...DATA_FILES]
-    for (const f of checkFiles) {
-      if (await fileExists(join(logsDir, f))) {
-        hasLogs = true
-        break
-      }
-    }
   }
 
   const server = createServer(
@@ -149,22 +159,34 @@ export default async function dashboard({
         const dataMatch = pathname.match(/^\/data\/(.+\.ndjson)$/)
         if (dataMatch && DATA_FILES.includes(dataMatch[1])) {
           const filename = dataMatch[1]
-          let filePath: string
 
           if (seed) {
-            filePath = join(seedDir, filename)
+            const filePath = join(seedDir, filename)
+            if (await fileExists(filePath)) {
+              const content = await readFile(filePath)
+              res.writeHead(200, { 'Content-Type': 'application/x-ndjson' })
+              res.end(content)
+            } else {
+              res.writeHead(200, { 'Content-Type': 'application/x-ndjson' })
+              res.end('')
+            }
           } else {
-            filePath = join(logsDir, filename)
-          }
+            const convoyPath = join(convoyLogsDir, filename)
+            const logsPath = join(logsDir, filename)
+            const inConvoy = await fileExists(convoyPath)
+            const inLogs = await fileExists(logsPath)
 
-          if (await fileExists(filePath)) {
-            const content = await readFile(filePath)
             res.writeHead(200, { 'Content-Type': 'application/x-ndjson' })
-            res.end(content)
-          } else {
-            // Graceful fallback — empty body
-            res.writeHead(200, { 'Content-Type': 'application/x-ndjson' })
-            res.end('')
+            if (inConvoy && inLogs) {
+              const [c1, c2] = await Promise.all([readFile(convoyPath), readFile(logsPath)])
+              res.end(Buffer.concat([c1, c2]))
+            } else if (inConvoy) {
+              res.end(await readFile(convoyPath))
+            } else if (inLogs) {
+              res.end(await readFile(logsPath))
+            } else {
+              res.end('')
+            }
           }
           return
         }
@@ -197,23 +219,53 @@ export default async function dashboard({
   )
 
   const actualPort = await tryListen(server, port)
-  const url = `http://localhost:${actualPort}`
+  const resolvedUrl = `http://localhost:${actualPort}`
+
+  return { server, port: actualPort, url: resolvedUrl }
+}
+
+export default async function dashboard({
+  pkgRoot,
+  args,
+}: CliContext): Promise<void> {
+  const { port, openBrowser, seed, convoyId } = parseArgs(args)
+
+  // Check if any log files exist (for messaging)
+  let hasLogs = false
+  if (!seed) {
+    const projectRoot = process.cwd()
+    const logsDir = resolve(projectRoot, '.github', 'customizations', 'logs')
+    const checkFiles = ['events.ndjson', ...DATA_FILES]
+    for (const f of checkFiles) {
+      if (await fileExists(join(logsDir, f))) {
+        hasLogs = true
+        break
+      }
+    }
+  }
+
+  const dashResult = await startDashboardServer({ port, seed, pkgRoot, convoyId })
 
   console.log('')
   console.log('  \u{1F3F0} OpenCastle Dashboard')
   console.log('')
-  console.log(`  \u2192 ${url}`)
 
-  if (seed) {
-    console.log(
-      '  \u{1F4C2} Showing demo data (use without --seed to read project logs)'
-    )
-  } else if (hasLogs) {
-    console.log('  \u{1F4C2} Reading logs from .github/customizations/logs/')
+  if (convoyId) {
+    console.log(`  \u2192 ${dashResult.url}/?convoy=${convoyId}`)
+    console.log(`  \u{1F4C2} Watching convoy: ${convoyId}`)
   } else {
-    console.log(
-      '  \u{1F4A1} No agent logs found. Run agents with OpenCastle to generate data, or use --seed for demo data.'
-    )
+    console.log(`  \u2192 ${dashResult.url}`)
+    if (seed) {
+      console.log(
+        '  \u{1F4C2} Showing demo data (use without --seed to read project logs)'
+      )
+    } else if (hasLogs) {
+      console.log('  \u{1F4C2} Reading logs from .github/customizations/logs/')
+    } else {
+      console.log(
+        '  \u{1F4A1} No agent logs found. Run agents with OpenCastle to generate data, or use --seed for demo data.'
+      )
+    }
   }
 
   console.log('')
@@ -221,13 +273,13 @@ export default async function dashboard({
   console.log('')
 
   if (openBrowser) {
-    openUrl(url)
+    openUrl(convoyId ? `${dashResult.url}/?convoy=${convoyId}` : dashResult.url)
   }
 
   // Graceful shutdown
   process.on('SIGINT', () => {
     console.log('\n  Dashboard stopped.\n')
-    server.close()
+    dashResult.server.close()
     process.exit(0)
   })
 

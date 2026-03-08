@@ -158,7 +158,7 @@ function printConvoyResult(result: ConvoyResult): void {
 /**
  * CLI entry point for the `run` command.
  */
-export default async function run({ args }: CliContext): Promise<void> {
+export default async function run({ args, pkgRoot }: CliContext): Promise<void> {
   const opts = parseArgs(args)
 
   if (opts.help) {
@@ -340,6 +340,18 @@ export default async function run({ args }: CliContext): Promise<void> {
     if (spec.branch) console.log(`  Branch: ${spec.branch}`)
     if (spec.gates?.length) console.log(`  Gates: ${spec.gates.length} validation commands`)
 
+    const { startDashboardServer } = await import('./dashboard.js')
+    let dashboardResult: { server: import('node:http').Server } | null = null
+    try {
+      dashboardResult = await startDashboardServer({
+        pkgRoot,
+        openBrowser: true,
+        convoyId: 'active',
+      })
+    } catch {
+      // Dashboard failure must not block convoy
+    }
+
     const engine = createConvoyEngine({
       spec,
       specYaml: specText,
@@ -349,6 +361,9 @@ export default async function run({ args }: CliContext): Promise<void> {
 
     const result = await engine.run()
     printConvoyResult(result)
+    if (dashboardResult) {
+      dashboardResult.server.close()
+    }
     process.exit(result.status !== 'done' ? 1 : 0)
   }
 
