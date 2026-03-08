@@ -12,6 +12,11 @@ import { IDE_ADAPTERS } from './adapters/index.js'
 import { IDE_LABELS } from './types.js'
 import type { CliContext, IdeChoice, TechTool, TeamTool, StackConfig } from './types.js'
 
+/** OSC 8 terminal hyperlink — clickable in VS Code integrated terminal and modern terminals */
+function termLink(text: string, url: string): string {
+  return `\x1b]8;;${url}\x07${text}\x1b]8;;\x07`
+}
+
 export default async function init({ pkgRoot, args }: CliContext): Promise<void> {
   const projectRoot = process.cwd()
   const dryRun = args.includes('--dry-run') || args.includes('--dryRun')
@@ -312,8 +317,11 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
     )
   }
   step++
+  const bootstrapLabel = ides.includes('vscode')
+    ? termLink(c.cyan('"Bootstrap Customizations"'), 'vscode://GitHub.Copilot-Chat/chat?mode=Team%20Lead%20(OpenCastle)&prompt=%2Fbootstrap-customizations')
+    : c.cyan('"Bootstrap Customizations"')
   console.log(
-    `  ${step}. Run the ${c.cyan('"Bootstrap Customizations"')} prompt to configure for your project`
+    `  ${step}. Run the ${bootstrapLabel} prompt to configure for your project`
   )
   step++
   console.log(`  ${step}. Commit the .opencastle/ folder to your repository`)

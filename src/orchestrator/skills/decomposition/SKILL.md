@@ -47,6 +47,7 @@ What to build/change and why. 1-3 sentences max.
 ### Context
 - Key files to read first: [list]
 - Related patterns to follow: [file:line references]
+- Prior phase output (compacted): [summary from Context Compaction protocol if this task depends on a prior phase]
 - Relevant lessons: [LES-XXX references from LESSONS-LEARNED.md]
 
 ### Constraints

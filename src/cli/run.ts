@@ -115,6 +115,7 @@ function printAdapterError(detectionFailed: boolean, adapterName: string): void 
         `    • copilot    — https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n` +
         `    • claude     — npm install -g @anthropic-ai/claude-code\n` +
         `    • cursor     — https://cursor.com (Cursor > Install CLI)\n` +
+        `    • opencode   — https://opencode.ai\n` +
         `\n` +
         `    Or specify an adapter explicitly: opencastle run --adapter <name>`
     )
@@ -135,7 +136,7 @@ function printAdapterError(detectionFailed: boolean, adapterName: string): void 
         '    Install OpenCode from https://opencode.ai\n' +
         '    Ensure the "opencode" command is on your PATH.',
     }
-    const cliName = adapterName === 'claude-code' ? 'claude' : adapterName
+    const cliName = adapterName === 'claude-code' ? 'claude' : adapterName === 'cursor' ? 'agent' : adapterName
     const hint = hints[adapterName] ?? ''
     console.error(
       `  ✗ Adapter "${adapterName}" is not available.\n` +

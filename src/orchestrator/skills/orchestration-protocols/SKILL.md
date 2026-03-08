@@ -1,6 +1,6 @@
 ---
 name: orchestration-protocols
-description: "Runtime orchestration patterns for the Team Lead: parallel research spawning, agent health monitoring, active steering, background agent management, and escalation paths."
+description: "Runtime orchestration patterns for the Team Lead: parallel research spawning, agent health monitoring, active steering, background agent management, Context Compaction, Agent Circuit Breaker, and escalation paths."
 ---
 
 # Orchestration Protocols
@@ -89,6 +89,25 @@ When multiple background agents complete work simultaneously, batch similar revi
 - If multiple outputs share the same file partition boundary, review them sequentially to catch integration issues
 - For panel reviews, combine related artifacts into a single panel question when they share acceptance criteria
 
+## Context Compaction
+
+Between phases, summarize prior agent output before passing it to the next agent. Never paste raw sub-agent results into a downstream prompt.
+
+**When:** Multi-phase chains where the next agent only needs outcomes, not full reasoning traces. Skip for single-phase work or when raw detail is needed (e.g., code review).
+
+**How:** After a sub-agent returns, extract only: files changed, key decisions, verification results (pass/fail), and blockers. Discard raw tool output, reasoning traces, and failed attempts.
+
+**Template for delegation prompts:**
+
+```
+### Prior Phase Output
+**Phase [N] — [Agent Name] — [Task Title]**
+- Files changed: [list with one-line descriptions]
+- Decisions: [key decisions that affect downstream work]
+- Verification: [lint ✅ | types ✅ | tests ✅]
+- Blockers: [none | list]
+```
+
 ## Agent Health-Check Protocol
 
 Monitor delegated agents for failure signals. Intervene early rather than waiting for completion.
@@ -148,3 +167,15 @@ Common failure modes and how to recover:
 
 **Symptom:** Tests pass individually but fail when multiple agent outputs are merged.
 **Recovery:** (1) Run affected tests to identify which projects break. (2) Check for import conflicts, duplicate definitions, or state pollution. (3) Delegate fix to the agent whose changes are most likely the cause.
+
+## Agent Circuit Breaker
+
+Track per-agent failure counts across the session (not just per-task). If the same agent keeps failing, the problem is likely systemic.
+
+| Threshold | Action |
+|-----------|--------|
+| **2 failures** | Warning — investigate: same error class? Model endpoint healthy? Prompt pattern issue? |
+| **3 failures** | Open circuit — stop delegating to that agent. Reassign tasks to an overlapping agent, try a different model tier, or checkpoint and escalate to the user. |
+| **Next session** | Half-open — circuit resets. If the agent fails again immediately, re-open and add a lesson via **self-improvement**. |
+
+This is a judgment-based pattern, not a hard gate. 3 failures on similar tasks with the same error is more concerning than 3 unrelated failures.
