@@ -1,7 +1,7 @@
 import { resolve } from 'node:path'
 import { readFile, unlink } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { multiselect, confirm, closePrompts, c } from './prompt.js'
+import { select, multiselect, confirm, closePrompts, c } from './prompt.js'
 import { readManifest, writeManifest, createManifest } from './manifest.js'
 import { removeDirIfExists, copyDir, getOrchestratorRoot } from './copy.js'
 import { updateGitignore } from './gitignore.js'
@@ -50,36 +50,31 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
     console.log(`  ${c.dim('No tooling detected (empty project?)')}\n`)
   }
 
-  // ── IDEs (multiselect, at least 1) ─────────────────────────────
+  // ── IDE (single select) ────────────────────────────────────────
   console.log(`  ${c.bold('── IDEs ──────────────────────────────────────')}`)
-  let ides: string[] = []
-  while (ides.length === 0) {
-    ides = await multiselect('Which IDEs do you use?', [
-      {
-        label: 'VS Code',
-        hint: 'GitHub Copilot agents, instructions, skills',
-        value: 'vscode',
-      },
-      {
-        label: 'Cursor',
-        hint: '.cursorrules & .cursor/rules/*.mdc',
-        value: 'cursor',
-      },
-      {
-        label: 'Claude Code',
-        hint: 'CLAUDE.md & .claude/ commands, skills',
-        value: 'claude-code',
-      },
-      {
-        label: 'OpenCode',
-        hint: 'AGENTS.md & opencode.json',
-        value: 'opencode',
-      },
-    ])
-    if (ides.length === 0) {
-      console.log(`  ${c.yellow('Please select at least one IDE.')}`)
-    }
-  }
+  const selectedIde = await select('Which IDE do you use?', [
+    {
+      label: 'VS Code',
+      hint: 'GitHub Copilot agents, instructions, skills',
+      value: 'vscode',
+    },
+    {
+      label: 'Cursor',
+      hint: '.cursorrules & .cursor/rules/*.mdc',
+      value: 'cursor',
+    },
+    {
+      label: 'Claude Code',
+      hint: 'CLAUDE.md & .claude/ commands, skills',
+      value: 'claude-code',
+    },
+    {
+      label: 'OpenCode',
+      hint: 'AGENTS.md & opencode.json',
+      value: 'opencode',
+    },
+  ])
+  const ides = [selectedIde]
 
   // ── Tech Tools (multiselect, 0-N) ──────────────────────────────
   // Pre-select tools already detected in the repo

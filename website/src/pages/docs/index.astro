@@ -35,7 +35,7 @@ const pages = [
     description: 'Configure plugins for your AI coding agents. Each plugin bundles skills, optional MCP server configs, and agent tool mappings.',
     icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>`,
     sidebarIcon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>`,
-    badge: '23 plugins',
+    badge: '50 plugins',
   },
 ];
 ---
@@ -103,6 +103,7 @@ const pages = [
         <section class="quickstart" id="quick-start">
           <h3 class="quickstart__heading">Quick Start</h3>
           <div class="quickstart__steps">
+            <!-- Step 1: Install -->
             <div class="quickstart__step">
               <span class="quickstart__num">1</span>
               <div>
@@ -110,18 +111,129 @@ const pages = [
                 <code class="quickstart__code">npx opencastle init</code>
               </div>
             </div>
+
+            <!-- Step 2: Select your stack -->
             <div class="quickstart__step">
               <span class="quickstart__num">2</span>
               <div>
                 <p class="quickstart__label">Select your stack</p>
-                <p class="quickstart__desc">Pick your IDE, frameworks, database, and team tools in the interactive wizard.</p>
+                <p class="quickstart__desc">Pick your IDE, frameworks, and team tools in the interactive wizard.</p>
               </div>
             </div>
+          </div>
+
+          <!-- Single IDE switcher for steps 3–5 -->
+          <div class="quickstart__ide-switcher">
+            <div class="quickstart__tabs" role="tablist" aria-label="IDE selection">
+              <button class="quickstart__tab quickstart__tab--active" role="tab" aria-selected="true" data-ide="vscode">VS Code</button>
+              <button class="quickstart__tab" role="tab" aria-selected="false" data-ide="cursor">Cursor</button>
+              <button class="quickstart__tab" role="tab" aria-selected="false" data-ide="claude-code">Claude Code</button>
+              <button class="quickstart__tab" role="tab" aria-selected="false" data-ide="opencode">OpenCode</button>
+            </div>
+          </div>
+
+          <div class="quickstart__steps">
+            <!-- Step 3: Open your IDE -->
             <div class="quickstart__step">
               <span class="quickstart__num">3</span>
               <div>
+                <p class="quickstart__label">Open your IDE</p>
+                <div class="quickstart__panels" data-panel-group="step3">
+                  <div class="quickstart__panel quickstart__panel--active" data-ide="vscode" role="tabpanel">
+                    <p class="quickstart__desc">Open VS Code and reload the window (<code class="quickstart__code">Cmd+Shift+P</code> &rarr; <em>&ldquo;Developer: Reload Window&rdquo;</em>). This loads the OpenCastle agents, skills, and instructions.</p>
+                  </div>
+                  <div class="quickstart__panel" data-ide="cursor" role="tabpanel" hidden>
+                    <p class="quickstart__desc">Open Cursor &mdash; the rules will be loaded automatically from <code class="quickstart__code">.cursor/rules/</code>.</p>
+                  </div>
+                  <div class="quickstart__panel" data-ide="claude-code" role="tabpanel" hidden>
+                    <p class="quickstart__desc">Run <code class="quickstart__code">claude</code> in your terminal from the project root. CLAUDE.md will be auto-loaded.</p>
+                  </div>
+                  <div class="quickstart__panel" data-ide="opencode" role="tabpanel" hidden>
+                    <p class="quickstart__desc">Run <code class="quickstart__code">opencode</code> in your terminal from the project root. AGENTS.md will be auto-loaded.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 4: Bootstrap your project -->
+            <div class="quickstart__step">
+              <span class="quickstart__num">4</span>
+              <div>
+                <p class="quickstart__label">Bootstrap your project</p>
+                <p class="quickstart__desc">If you have an existing codebase, run the bootstrap prompt first. It scans your project and generates tailored configuration.</p>
+                <div class="quickstart__panels" data-panel-group="step4">
+                  <div class="quickstart__panel quickstart__panel--active" data-ide="vscode" role="tabpanel">
+                    <p class="quickstart__desc">In Copilot Chat, select the <strong>Team Lead</strong> agent and run the <strong>Bootstrap Customizations</strong> prompt. The Team Lead will scan your project, detect your tech stack, and generate tailored configuration files in <code class="quickstart__code">.opencastle/</code>.</p>
+                  </div>
+                  <div class="quickstart__panel" data-ide="cursor" role="tabpanel" hidden>
+                    <p class="quickstart__desc">Start a new chat and ask: <em>&ldquo;Run the Bootstrap Customizations prompt&rdquo;</em>. The Team Lead will scan your project, detect your tech stack, and generate tailored configuration files in <code class="quickstart__code">.opencastle/</code>.</p>
+                  </div>
+                  <div class="quickstart__panel" data-ide="claude-code" role="tabpanel" hidden>
+                    <p class="quickstart__desc">Run the <code class="quickstart__code">/bootstrap-customizations</code> command. The Team Lead will scan your project, detect your tech stack, and generate tailored configuration files in <code class="quickstart__code">.opencastle/</code>.</p>
+                  </div>
+                  <div class="quickstart__panel" data-ide="opencode" role="tabpanel" hidden>
+                    <p class="quickstart__desc">Run the <code class="quickstart__code">bootstrap-customizations</code> prompt. The Team Lead will scan your project, detect your tech stack, and generate tailored configuration files in <code class="quickstart__code">.opencastle/</code>.</p>
+                  </div>
+                </div>
+                <p class="quickstart__hint">Skip this step for brand-new projects &mdash; there&rsquo;s nothing to detect yet.</p>
+              </div>
+            </div>
+
+            <!-- Step 5: Start building -->
+            <div class="quickstart__step">
+              <span class="quickstart__num">5</span>
+              <div>
                 <p class="quickstart__label">Start building</p>
-                <p class="quickstart__desc">Open your IDE and talk to the Team Lead agent. It orchestrates the rest.</p>
+                <p class="quickstart__desc">You&rsquo;re ready to go. Choose how you want to work:</p>
+
+                <div class="quickstart__options">
+                  <!-- Option A: Interactive -->
+                  <div class="quickstart__option">
+                    <span class="quickstart__option-letter">A</span>
+                    <div>
+                      <p class="quickstart__option-title">Interactive <span class="quickstart__option-badge">recommended</span></p>
+                      <p class="quickstart__desc">Ask the <strong>Team Lead</strong> to implement a feature, fix a bug, or brainstorm ideas. It will decompose the work, delegate to specialist agents, and deliver a PR.</p>
+                      <div class="quickstart__panels" data-panel-group="step5a">
+                        <div class="quickstart__panel quickstart__panel--active" data-ide="vscode" role="tabpanel">
+                          <p class="quickstart__desc">In Copilot Chat, select the <strong>Team Lead</strong> agent and run the <strong>Implement Feature</strong> prompt. Describe what you want to build.</p>
+                        </div>
+                        <div class="quickstart__panel" data-ide="cursor" role="tabpanel" hidden>
+                          <p class="quickstart__desc">Start a new chat and describe what you want to build. The Team Lead rules will activate automatically.</p>
+                        </div>
+                        <div class="quickstart__panel" data-ide="claude-code" role="tabpanel" hidden>
+                          <p class="quickstart__desc">Run the <code class="quickstart__code">/implement-feature</code> command and describe what you want to build.</p>
+                        </div>
+                        <div class="quickstart__panel" data-ide="opencode" role="tabpanel" hidden>
+                          <p class="quickstart__desc">Run the <code class="quickstart__code">implement-feature</code> prompt and describe what you want to build.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Option B: Convoy -->
+                  <div class="quickstart__option">
+                    <span class="quickstart__option-letter">B</span>
+                    <div>
+                      <p class="quickstart__option-title">Convoy <span class="quickstart__option-badge">autonomous</span></p>
+                      <p class="quickstart__desc">For larger tasks, generate a convoy spec first, review it, then execute it autonomously. The convoy engine runs tasks in parallel using isolated git worktrees.</p>
+                      <div class="quickstart__substeps">
+                        <div class="quickstart__substep">
+                          <span class="quickstart__substep-num">1</span>
+                          <p class="quickstart__desc"><strong>Generate:</strong> Ask the Team Lead to <em>&ldquo;generate a convoy for [your goal]&rdquo;</em>. It produces a <code class="quickstart__code">.convoy.yml</code> file with tasks, dependencies, and validation gates.</p>
+                        </div>
+                        <div class="quickstart__substep">
+                          <span class="quickstart__substep-num">2</span>
+                          <p class="quickstart__desc"><strong>Review:</strong> Open the generated YAML file and verify the task breakdown, file partitions, and dependency order.</p>
+                        </div>
+                        <div class="quickstart__substep">
+                          <span class="quickstart__substep-num">3</span>
+                          <p class="quickstart__desc"><strong>Execute:</strong> <code class="quickstart__code">npx opencastle run</code></p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
           </div>
@@ -407,6 +519,126 @@ const pages = [
         line-height: 1.5;
       }
 
+      /* ── IDE Tabs ── */
+      .quickstart__tabs {
+        display: flex;
+        gap: 0;
+        margin-bottom: .75rem;
+        border-bottom: 1px solid var(--border-secondary);
+      }
+      .quickstart__tab {
+        padding: .4rem .75rem;
+        font-size: .8rem;
+        font-weight: 500;
+        color: var(--text-tertiary);
+        background: none;
+        border: none;
+        border-bottom: 2px solid transparent;
+        cursor: pointer;
+        transition: color var(--transition-fast), border-color var(--transition-fast);
+        font-family: inherit;
+      }
+      .quickstart__tab:hover {
+        color: var(--text-secondary);
+      }
+      .quickstart__tab--active {
+        color: var(--text-accent);
+        border-bottom-color: var(--text-accent);
+      }
+      .quickstart__panel { display: none; }
+      .quickstart__panel--active { display: block; }
+
+      /* ── IDE Switcher (single bar between step 2 and 3) ── */
+      .quickstart__ide-switcher {
+        margin: 1.25rem 0;
+        padding-left: calc(28px + 1rem); /* align with step content (num width + gap) */
+      }
+
+      /* ── Quick Start – hints ── */
+      .quickstart__hint {
+        font-size: .8rem;
+        color: var(--text-tertiary);
+        font-style: italic;
+        margin-top: .5rem;
+      }
+
+      /* ── Quick Start – options (A/B) ── */
+      .quickstart__options {
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        margin-top: .75rem;
+      }
+      .quickstart__option {
+        display: flex;
+        gap: .75rem;
+        padding: 1rem 1.25rem;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-secondary);
+        border-radius: 10px;
+      }
+      .quickstart__option-letter {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--accent-glow);
+        color: var(--text-accent);
+        border: 1px solid rgba(167, 139, 250, .2);
+        border-radius: 6px;
+        font-size: .75rem;
+        font-weight: 700;
+        margin-top: 2px;
+      }
+      .quickstart__option-title {
+        font-weight: 600;
+        font-size: .9rem;
+        margin-bottom: .35rem;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+      }
+      .quickstart__option-badge {
+        font-size: .65rem;
+        font-weight: 600;
+        color: var(--text-accent);
+        background: var(--accent-glow);
+        border: 1px solid rgba(167, 139, 250, .2);
+        padding: .1rem .4rem;
+        border-radius: 100px;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+      }
+
+      /* ── Quick Start – substeps ── */
+      .quickstart__substeps {
+        display: flex;
+        flex-direction: column;
+        gap: .5rem;
+        margin-top: .5rem;
+      }
+      .quickstart__substep {
+        display: flex;
+        gap: .6rem;
+        align-items: flex-start;
+      }
+      .quickstart__substep-num {
+        flex-shrink: 0;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-tertiary);
+        border: 1px solid var(--border-secondary);
+        border-radius: 50%;
+        font-size: .7rem;
+        font-weight: 600;
+        margin-top: 2px;
+      }
+
       /* ── Demo Video ── */
       .demo-video-section {
         margin-bottom: 3rem;
@@ -520,5 +752,34 @@ const pages = [
         .quickstart { padding: 1.25rem; }
       }
     </style>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const tablist = document.querySelector('.quickstart__ide-switcher .quickstart__tabs');
+        if (!tablist) return;
+
+        const allPanels = document.querySelectorAll('.quickstart__panel[data-ide]');
+        const allTabs = tablist.querySelectorAll('.quickstart__tab[data-ide]');
+
+        function switchIde(ide) {
+          allTabs.forEach(t => {
+            const isMatch = t.dataset.ide === ide;
+            t.classList.toggle('quickstart__tab--active', isMatch);
+            t.setAttribute('aria-selected', String(isMatch));
+          });
+          allPanels.forEach(p => {
+            const isMatch = p.dataset.ide === ide;
+            p.classList.toggle('quickstart__panel--active', isMatch);
+            p.hidden = !isMatch;
+          });
+        }
+
+        tablist.addEventListener('click', (e) => {
+          const tab = e.target.closest('.quickstart__tab');
+          if (!tab || !tab.dataset.ide) return;
+          switchIde(tab.dataset.ide);
+        });
+      });
+    </script>
   </body>
 </html>

@@ -4,14 +4,8 @@ import '../../styles/global.css';
 const title = 'Agentic Development & Multi-Agent Orchestration Guide — OpenCastle';
 const description = 'Master agentic development with AI coding agents. Learn vibecoding best practices, multi-agent orchestration patterns, and how frameworks like OpenCastle coordinate specialist AI agents for software development.';
 
-const singleAgentSections = [
+const introSections = [
   { id: 'what-is-it', label: 'What Is It?' },
-  { id: 'great-prompts', label: 'Write Great Prompts' },
-  { id: 'build-tools', label: 'Build Tools, Not Tasks' },
-  { id: 'scope-requests', label: 'Scope Your Requests' },
-  { id: 'verify', label: 'Verify, Don\'t Trust' },
-  { id: 'use-context', label: 'Use Context' },
-  { id: 'iterate', label: 'Iterate, Don\'t Restart' },
 ];
 
 const multiAgentSections = [
@@ -20,6 +14,15 @@ const multiAgentSections = [
   { id: 'specialist-agents', label: 'Specialist Agents' },
   { id: 'quality-gates', label: 'Quality Gates' },
   { id: 'architecture', label: 'Architecture' },
+];
+
+const bestPracticesSections = [
+  { id: 'great-prompts', label: 'Write Great Prompts' },
+  { id: 'build-tools', label: 'Build Tools, Not Tasks' },
+  { id: 'scope-requests', label: 'Scope Your Requests' },
+  { id: 'verify', label: 'Verify, Don\'t Trust' },
+  { id: 'use-context', label: 'Use Context' },
+  { id: 'iterate', label: 'Iterate, Don\'t Restart' },
 ];
 
 const sectionIcons: Record<string, string> = {
@@ -75,9 +78,8 @@ const sectionIcons: Record<string, string> = {
 
     <div class="docs-layout">
       <nav class="docs-sidebar" id="docs-sidebar">
-        <p class="docs-sidebar__label">Single Agent</p>
         <ul class="docs-sidebar__list">
-          {singleAgentSections.map((s, i) => (
+          {introSections.map((s, i) => (
             <li>
               <a class={`docs-sidebar__link${i === 0 ? ' docs-sidebar__link--active' : ''}`} href={`#${s.id}`}>
                 <Fragment set:html={sectionIcons[s.id]} />
@@ -90,6 +92,18 @@ const sectionIcons: Record<string, string> = {
         <p class="docs-sidebar__label">Multi-Agent</p>
         <ul class="docs-sidebar__list">
           {multiAgentSections.map((s) => (
+            <li>
+              <a class="docs-sidebar__link" href={`#${s.id}`}>
+                <Fragment set:html={sectionIcons[s.id]} />
+                {s.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <div class="docs-sidebar__divider"></div>
+        <p class="docs-sidebar__label">Best Practices</p>
+        <ul class="docs-sidebar__list">
+          {bestPracticesSections.map((s) => (
             <li>
               <a class="docs-sidebar__link" href={`#${s.id}`}>
                 <Fragment set:html={sectionIcons[s.id]} />
@@ -121,392 +135,6 @@ const sectionIcons: Record<string, string> = {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z"/><line x1="9" y1="21" x2="15" y2="21"/></svg>
             </div>
             <p><strong>Key mindset shift:</strong> Your job moves from "writing code" to "directing, reviewing, and verifying code." The quality of your input directly determines the quality of the output.</p>
-          </div>
-        </section>
-
-        <!-- 2. Write Great Prompts -->
-        <section class="content-section" id="great-prompts">
-          <h3 class="section-heading">Write Great Prompts</h3>
-          <p class="section-text">
-            The quality of agent output is directly proportional to the quality of your instructions. Vague prompts produce vague results. Specific prompts with context produce production-ready code.
-          </p>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Be specific and provide context</p>
-                <code class="card__example">"Add a `lastLogin` timestamp field to the User model in `src/models/user.ts`. Update the login handler in `src/auth/login.ts` to set it on successful authentication. Use the existing `updatedAt` pattern for the database update."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Give vague, context-free instructions</p>
-                <code class="card__example">"Track when users log in."</code>
-              </div>
-            </div>
-          </div>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Reference existing files and patterns</p>
-                <code class="card__example">"Create a new API route at `src/api/invoices.ts` following the same pattern as `src/api/orders.ts` — validate with Zod, use the existing `db` client, and return typed responses."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Expect the agent to guess your conventions</p>
-                <code class="card__example">"Make an invoices endpoint."</code>
-              </div>
-            </div>
-          </div>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Specify acceptance criteria</p>
-                <code class="card__example">"The component should handle loading, error, and empty states. It needs to be keyboard-accessible and work at mobile breakpoints. Add unit tests for the data transformation logic."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Leave requirements implicit</p>
-                <code class="card__example">"Build a user list component."</code>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 3. Build Tools, Not Tasks -->
-        <section class="content-section" id="build-tools">
-          <h3 class="section-heading">Build Tools, Not Tasks</h3>
-          <p class="section-text">
-            This is the single most impactful pattern for agentic development. When facing a large refactoring or repetitive task, <strong>ask the agent to create a tool or script</strong> that performs the operation — rather than asking it to do the work directly.
-          </p>
-
-          <div class="highlight-box">
-            <h4 class="highlight-box__title">Why Tools Beat Direct Edits</h4>
-            <ul class="highlight-box__list">
-              <li><strong>Repeatable</strong> — Run the tool again if new files appear or requirements change</li>
-              <li><strong>Verifiable</strong> — Review the tool's logic once, trust it for 500 files</li>
-              <li><strong>Reviewable</strong> — A 50-line script is easier to code review than 200 scattered file edits</li>
-              <li><strong>Debuggable</strong> — When something goes wrong, you debug one script — not hunt through hundreds of diffs</li>
-              <li><strong>Safe</strong> — Run with <code>--dry-run</code> first, apply when confident</li>
-            </ul>
-          </div>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO — Ask for a tool</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Create a codemod</p>
-                <code class="card__example">"Write a codemod script that finds all React components using the old `&lt;Button variant='primary'&gt;` API and replaces them with `&lt;Button color='brand'&gt;`. Support both JSX and TSX. Add a --dry-run flag that prints changes without writing."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T — Do it manually</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Edit every file one by one</p>
-                <code class="card__example">"Update every Button component in the codebase to use `color='brand'` instead of `variant='primary'`."</code>
-                <p class="card__note">With 80+ files, the agent will miss some, introduce inconsistencies, or hit context limits mid-way.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO — Ask for a tool</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Create a migration script</p>
-                <code class="card__example">"Write a script that reads all YAML config files in `config/`, converts them to TOML format, and writes the output to `config-v2/`. Preserve comments where possible."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T — Do it manually</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Convert each file individually</p>
-                <code class="card__example">"Convert config/database.yml to TOML. Now convert config/auth.yml. Now convert config/cache.yml..."</code>
-                <p class="card__note">Each conversion is a separate context window with no shared logic. Errors compound instead of being fixed once.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO — Ask for a tool</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Build a linter rule</p>
-                <code class="card__example">"Create an ESLint rule that flags any direct `console.log` calls in `src/` and suggests using our logger utility from `src/lib/logger` instead. Include auto-fix support."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T — Do it manually</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Find-and-replace across the codebase</p>
-                <code class="card__example">"Replace all console.log calls with logger calls in the codebase."</code>
-                <p class="card__note">A rule catches new violations too. Manual replacement is a one-shot fix that regresses immediately.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 4. Scope Your Requests -->
-        <section class="content-section" id="scope-requests">
-          <h3 class="section-heading">Scope Your Requests</h3>
-          <p class="section-text">
-            AI agents work best with focused, well-scoped tasks. Large, multi-concern requests lead to mediocre results everywhere instead of excellent results somewhere. Break big features into small, independently testable pieces.
-          </p>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Break work into focused tasks</p>
-                <code class="card__example">"Step 1: Create the database schema for invoices with these fields: id, amount, status, customerId, createdAt. Step 2: Build the API route with list and create endpoints. Step 3: Build the UI table component."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Ask for everything at once</p>
-                <code class="card__example">"Build a complete invoicing system with database, API, UI, PDF export, email notifications, and Stripe integration."</code>
-              </div>
-            </div>
-          </div>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Ship and verify incrementally</p>
-                <code class="card__example">"Let's start with just the data model and API. Once that's working and tested, we'll add the UI."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Wait until everything is done to test anything</p>
-                <code class="card__example">"Build the full feature, I'll test it all at the end."</code>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 5. Verify, Don't Trust -->
-        <section class="content-section" id="verify">
-          <h3 class="section-heading">Verify, Don't Trust</h3>
-          <p class="section-text">
-            AI agents are confident, fast, and sometimes wrong. Always verify their output. Run tests, inspect diffs, and check edge cases. The agent is a tool — you're still the engineer.
-          </p>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Ask the agent to prove its work</p>
-                <code class="card__example">"After making the changes, run the test suite and show me the results. Also run the type checker."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Merge without checking</p>
-                <code class="card__example">"Looks good, ship it." <span class="card__aside">(without reviewing the diff or running tests)</span></code>
-              </div>
-            </div>
-          </div>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Review diffs before committing</p>
-                <code class="card__example">"Show me the git diff of all changes so I can review before we commit."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Let the agent commit and push on its own</p>
-                <code class="card__example">"Just push all changes to main." <span class="card__aside">(skipping review entirely)</span></code>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 6. Use Context Effectively -->
-        <section class="content-section" id="use-context">
-          <h3 class="section-heading">Use Context Effectively</h3>
-          <p class="section-text">
-            Agents don't automatically know your project's conventions, architecture, or unwritten rules. The more relevant context you provide, the better the output matches your codebase.
-          </p>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Point to existing patterns</p>
-                <code class="card__example">"Create a new service following the same pattern as `src/services/userService.ts` — use dependency injection, return Result types, and log with our structured logger."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Assume conventions are obvious</p>
-                <code class="card__example">"Create an order service."</code>
-                <p class="card__note">The agent might use a completely different pattern — classes instead of functions, throw instead of Result, console.log instead of your logger.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Mention constraints and requirements</p>
-                <code class="card__example">"We use Tailwind CSS v4 with our custom design tokens. Colors come from `theme.colors` — don't use arbitrary hex values. All components must support dark mode."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Let the agent make style decisions</p>
-                <code class="card__example">"Style the card component nicely."</code>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 7. Iterate, Don't Restart -->
-        <section class="content-section" id="iterate">
-          <h3 class="section-heading">Iterate, Don't Restart</h3>
-          <p class="section-text">
-            When the agent produces something close but not right, give targeted feedback and ask for adjustments. Starting over from scratch throws away correct work and burns context.
-          </p>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Give specific, targeted feedback</p>
-                <code class="card__example">"The table component looks good, but the sorting logic is wrong — it should sort by date descending by default, not ascending. Also, the empty state should show the illustration from `public/empty-inbox.svg`."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Throw away everything and start over</p>
-                <code class="card__example">"This is wrong. Redo the whole thing."</code>
-                <p class="card__note">Without saying what's wrong, the agent repeats the same mistakes. And you lose the parts that were already correct.</p>
-              </div>
-            </div>
-          </div>
-
-          <div class="do-dont-grid">
-            <div class="card card--do">
-              <div class="card__header">
-                <span class="card__icon card__icon--do">✓</span>
-                <span class="card__label card__label--do">DO</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Acknowledge what's right</p>
-                <code class="card__example">"The API route structure and validation are perfect. Just two changes: rename the `getData` function to `fetchInvoices`, and add pagination support using cursor-based pagination."</code>
-              </div>
-            </div>
-            <div class="card card--dont">
-              <div class="card__header">
-                <span class="card__icon card__icon--dont">✗</span>
-                <span class="card__label card__label--dont">DON'T</span>
-              </div>
-              <div class="card__body">
-                <p class="card__title">Provide only negative feedback</p>
-                <code class="card__example">"That's not what I wanted."</code>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -614,29 +242,36 @@ const sectionIcons: Record<string, string> = {
             <div class="agent-tier">
               <div class="agent-tier__header agent-tier__header--premium">Premium</div>
               <div class="agent-tier__body">
-                <p>Architecture, security, orchestration — tasks requiring deep reasoning and cross-system awareness.</p>
-                <div class="agent-tier__examples">Team Lead · Architect · Security Expert</div>
+                <p>Orchestration and cross-system coordination — tasks requiring deep reasoning and multi-step planning.</p>
+                <div class="agent-tier__examples">Team Lead</div>
+              </div>
+            </div>
+            <div class="agent-tier">
+              <div class="agent-tier__header agent-tier__header--quality">Quality</div>
+              <div class="agent-tier__body">
+                <p>Feature implementation, UI components, security audits — core development work that demands precision and nuanced reasoning.</p>
+                <div class="agent-tier__examples">Developer · UI/UX Expert · Security Expert · Architect</div>
               </div>
             </div>
             <div class="agent-tier">
               <div class="agent-tier__header agent-tier__header--standard">Standard</div>
               <div class="agent-tier__body">
-                <p>Feature implementation, UI components, API design — core development work.</p>
-                <div class="agent-tier__examples">Developer · UI/UX Expert · API Designer</div>
+                <p>CMS integration, database work, API design, performance profiling — domain-specific tasks with broad context needs.</p>
+                <div class="agent-tier__examples">Content Engineer · Database Engineer · API Designer · Performance Expert · Researcher</div>
               </div>
             </div>
             <div class="agent-tier">
-              <div class="agent-tier__header agent-tier__header--utility">Utility</div>
+              <div class="agent-tier__header agent-tier__header--fast">Fast</div>
               <div class="agent-tier__body">
-                <p>Testing, data pipelines, DevOps — specialized but well-scoped operational tasks.</p>
-                <div class="agent-tier__examples">Testing Expert · Data Expert · DevOps Expert</div>
+                <p>Testing, data pipelines, DevOps, releases — terminal-heavy tasks that benefit from rapid iteration cycles.</p>
+                <div class="agent-tier__examples">Testing Expert · Data Expert · DevOps Expert · Release Manager</div>
               </div>
             </div>
             <div class="agent-tier">
               <div class="agent-tier__header agent-tier__header--economy">Economy</div>
               <div class="agent-tier__body">
-                <p>Documentation, research, SEO — tasks that benefit from speed over raw reasoning power.</p>
-                <div class="agent-tier__examples">Researcher · Documentation Writer · Copywriter</div>
+                <p>Documentation, copy, SEO, code review — tasks that benefit from speed and cost-efficiency over raw reasoning power.</p>
+                <div class="agent-tier__examples">Documentation Writer · Reviewer · Copywriter · SEO Specialist</div>
               </div>
             </div>
           </div>
@@ -824,6 +459,402 @@ const sectionIcons: Record<string, string> = {
               <li><strong>Multi-runtime support</strong> — bring your own AI: GitHub Copilot, Claude Code, Cursor, and OpenCode all supported</li>
               <li><strong>Observable by default</strong> — SQL-queryable state, NDJSON event logs, and a real-time dashboard out of the box</li>
             </ul>
+          </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════ -->
+        <!-- BEST PRACTICES                         -->
+        <!-- ═══════════════════════════════════════ -->
+
+        <div class="section-divider">
+          <span class="section-divider__line"></span>
+          <span class="section-divider__label">Best Practices</span>
+          <span class="section-divider__line"></span>
+        </div>
+
+        <!-- Write Great Prompts -->
+        <section class="content-section" id="great-prompts">
+          <h3 class="section-heading">Write Great Prompts</h3>
+          <p class="section-text">
+            The quality of agent output is directly proportional to the quality of your instructions. Vague prompts produce vague results. Specific prompts with context produce production-ready code.
+          </p>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Be specific and provide context</p>
+                <code class="card__example">"Add a `lastLogin` timestamp field to the User model in `src/models/user.ts`. Update the login handler in `src/auth/login.ts` to set it on successful authentication. Use the existing `updatedAt` pattern for the database update."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Give vague, context-free instructions</p>
+                <code class="card__example">"Track when users log in."</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Reference existing files and patterns</p>
+                <code class="card__example">"Create a new API route at `src/api/invoices.ts` following the same pattern as `src/api/orders.ts` — validate with Zod, use the existing `db` client, and return typed responses."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Expect the agent to guess your conventions</p>
+                <code class="card__example">"Make an invoices endpoint."</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Specify acceptance criteria</p>
+                <code class="card__example">"The component should handle loading, error, and empty states. It needs to be keyboard-accessible and work at mobile breakpoints. Add unit tests for the data transformation logic."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Leave requirements implicit</p>
+                <code class="card__example">"Build a user list component."</code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Build Tools, Not Tasks -->
+        <section class="content-section" id="build-tools">
+          <h3 class="section-heading">Build Tools, Not Tasks</h3>
+          <p class="section-text">
+            This is the single most impactful pattern for agentic development. When facing a large refactoring or repetitive task, <strong>ask the agent to create a tool or script</strong> that performs the operation — rather than asking it to do the work directly.
+          </p>
+
+          <div class="highlight-box">
+            <h4 class="highlight-box__title">Why Tools Beat Direct Edits</h4>
+            <ul class="highlight-box__list">
+              <li><strong>Repeatable</strong> — Run the tool again if new files appear or requirements change</li>
+              <li><strong>Verifiable</strong> — Review the tool's logic once, trust it for 500 files</li>
+              <li><strong>Reviewable</strong> — A 50-line script is easier to code review than 200 scattered file edits</li>
+              <li><strong>Debuggable</strong> — When something goes wrong, you debug one script — not hunt through hundreds of diffs</li>
+              <li><strong>Safe</strong> — Run with <code>--dry-run</code> first, apply when confident</li>
+            </ul>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO — Ask for a tool</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Create a codemod</p>
+                <code class="card__example">"Write a codemod script that finds all React components using the old `&lt;Button variant='primary'&gt;` API and replaces them with `&lt;Button color='brand'&gt;`. Support both JSX and TSX. Add a --dry-run flag that prints changes without writing."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T — Do it manually</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Edit every file one by one</p>
+                <code class="card__example">"Update every Button component in the codebase to use `color='brand'` instead of `variant='primary'`."</code>
+                <p class="card__note">With 80+ files, the agent will miss some, introduce inconsistencies, or hit context limits mid-way.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO — Ask for a tool</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Create a migration script</p>
+                <code class="card__example">"Write a script that reads all YAML config files in `config/`, converts them to TOML format, and writes the output to `config-v2/`. Preserve comments where possible."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T — Do it manually</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Convert each file individually</p>
+                <code class="card__example">"Convert config/database.yml to TOML. Now convert config/auth.yml. Now convert config/cache.yml..."</code>
+                <p class="card__note">Each conversion is a separate context window with no shared logic. Errors compound instead of being fixed once.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO — Ask for a tool</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Build a linter rule</p>
+                <code class="card__example">"Create an ESLint rule that flags any direct `console.log` calls in `src/` and suggests using our logger utility from `src/lib/logger` instead. Include auto-fix support."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T — Do it manually</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Find-and-replace across the codebase</p>
+                <code class="card__example">"Replace all console.log calls with logger calls in the codebase."</code>
+                <p class="card__note">A rule catches new violations too. Manual replacement is a one-shot fix that regresses immediately.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Scope Your Requests -->
+        <section class="content-section" id="scope-requests">
+          <h3 class="section-heading">Scope Your Requests</h3>
+          <p class="section-text">
+            AI agents work best with focused, well-scoped tasks. Large, multi-concern requests lead to mediocre results everywhere instead of excellent results somewhere. Break big features into small, independently testable pieces.
+          </p>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Break work into focused tasks</p>
+                <code class="card__example">"Step 1: Create the database schema for invoices with these fields: id, amount, status, customerId, createdAt. Step 2: Build the API route with list and create endpoints. Step 3: Build the UI table component."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Ask for everything at once</p>
+                <code class="card__example">"Build a complete invoicing system with database, API, UI, PDF export, email notifications, and Stripe integration."</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Ship and verify incrementally</p>
+                <code class="card__example">"Let's start with just the data model and API. Once that's working and tested, we'll add the UI."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Wait until everything is done to test anything</p>
+                <code class="card__example">"Build the full feature, I'll test it all at the end."</code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Verify, Don't Trust -->
+        <section class="content-section" id="verify">
+          <h3 class="section-heading">Verify, Don't Trust</h3>
+          <p class="section-text">
+            AI agents are confident, fast, and sometimes wrong. Always verify their output. Run tests, inspect diffs, and check edge cases. The agent is a tool — you're still the engineer.
+          </p>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Ask the agent to prove its work</p>
+                <code class="card__example">"After making the changes, run the test suite and show me the results. Also run the type checker."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Merge without checking</p>
+                <code class="card__example">"Looks good, ship it." <span class="card__aside">(without reviewing the diff or running tests)</span></code>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Review diffs before committing</p>
+                <code class="card__example">"Show me the git diff of all changes so I can review before we commit."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Let the agent commit and push on its own</p>
+                <code class="card__example">"Just push all changes to main." <span class="card__aside">(skipping review entirely)</span></code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Use Context Effectively -->
+        <section class="content-section" id="use-context">
+          <h3 class="section-heading">Use Context Effectively</h3>
+          <p class="section-text">
+            Agents don't automatically know your project's conventions, architecture, or unwritten rules. The more relevant context you provide, the better the output matches your codebase.
+          </p>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Point to existing patterns</p>
+                <code class="card__example">"Create a new service following the same pattern as `src/services/userService.ts` — use dependency injection, return Result types, and log with our structured logger."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Assume conventions are obvious</p>
+                <code class="card__example">"Create an order service."</code>
+                <p class="card__note">The agent might use a completely different pattern — classes instead of functions, throw instead of Result, console.log instead of your logger.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Mention constraints and requirements</p>
+                <code class="card__example">"We use Tailwind CSS v4 with our custom design tokens. Colors come from `theme.colors` — don't use arbitrary hex values. All components must support dark mode."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Let the agent make style decisions</p>
+                <code class="card__example">"Style the card component nicely."</code>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Iterate, Don't Restart -->
+        <section class="content-section" id="iterate">
+          <h3 class="section-heading">Iterate, Don't Restart</h3>
+          <p class="section-text">
+            When the agent produces something close but not right, give targeted feedback and ask for adjustments. Starting over from scratch throws away correct work and burns context.
+          </p>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Give specific, targeted feedback</p>
+                <code class="card__example">"The table component looks good, but the sorting logic is wrong — it should sort by date descending by default, not ascending. Also, the empty state should show the illustration from `public/empty-inbox.svg`."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Throw away everything and start over</p>
+                <code class="card__example">"This is wrong. Redo the whole thing."</code>
+                <p class="card__note">Without saying what's wrong, the agent repeats the same mistakes. And you lose the parts that were already correct.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="do-dont-grid">
+            <div class="card card--do">
+              <div class="card__header">
+                <span class="card__icon card__icon--do">✓</span>
+                <span class="card__label card__label--do">DO</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Acknowledge what's right</p>
+                <code class="card__example">"The API route structure and validation are perfect. Just two changes: rename the `getData` function to `fetchInvoices`, and add pagination support using cursor-based pagination."</code>
+              </div>
+            </div>
+            <div class="card card--dont">
+              <div class="card__header">
+                <span class="card__icon card__icon--dont">✗</span>
+                <span class="card__label card__label--dont">DON'T</span>
+              </div>
+              <div class="card__body">
+                <p class="card__title">Provide only negative feedback</p>
+                <code class="card__example">"That's not what I wanted."</code>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -1036,6 +1067,7 @@ const sectionIcons: Record<string, string> = {
         border: 1px solid rgba(167, 139, 250, .2);
         border-radius: 10px;
         margin-top: 1rem;
+        margin-bottom: 1rem;
       }
       .key-insight__icon {
         flex-shrink: 0;
@@ -1360,12 +1392,17 @@ const sectionIcons: Record<string, string> = {
         color: #a78bfa;
         border-bottom: 1px solid rgba(167, 139, 250, 0.2);
       }
-      .agent-tier__header--standard {
+      .agent-tier__header--quality {
         background: rgba(96, 165, 250, 0.1);
         color: #60a5fa;
         border-bottom: 1px solid rgba(96, 165, 250, 0.2);
       }
-      .agent-tier__header--utility {
+      .agent-tier__header--standard {
+        background: rgba(129, 140, 248, 0.1);
+        color: #818cf8;
+        border-bottom: 1px solid rgba(129, 140, 248, 0.2);
+      }
+      .agent-tier__header--fast {
         background: rgba(52, 211, 153, 0.08);
         color: #34d399;
         border-bottom: 1px solid rgba(52, 211, 153, 0.2);
