@@ -3,7 +3,7 @@ description: 'Collaborative brainstorm to explore requirements, approaches, and 
 agent: 'Team Lead (OpenCastle)'
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Brainstorm
 
@@ -35,8 +35,8 @@ Before exploring solutions, make sure the problem is well-understood:
 Research before proposing. Gather data, don't guess:
 
 1. **Search existing code** — is there already a partial implementation, similar pattern, or relevant utility?
-2. **Check documentation** — read `.github/customizations/project.instructions.md`, `.github/customizations/project/decisions.md`, `.github/customizations/KNOWN-ISSUES.md` for constraints
-3. **Check lessons learned** — read `.github/customizations/LESSONS-LEARNED.md` for pitfalls in this area
+2. **Check documentation** — read `.opencastle/project.instructions.md`, `.opencastle/project/decisions.md`, `.opencastle/KNOWN-ISSUES.md` for constraints
+3. **Check lessons learned** — read `.opencastle/LESSONS-LEARNED.md` for pitfalls in this area
 4. **Identify affected layers** — which apps, libs, data stores, and third-party services are involved?
 
 ### 3. Generate Alternatives

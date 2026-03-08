@@ -3,7 +3,7 @@ description: 'Handle follow-up refinements after a roadmap task — bug fixes, U
 agent: 'Team Lead (OpenCastle)'
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Follow-Up Refinement
 
@@ -59,8 +59,8 @@ Before touching any code:
 
 1. **Clarify scope** — Identify exactly which pages, components, or behaviors need to change
 2. **Find affected files** — Search the codebase for the relevant components, styles, queries, and tests
-3. **Check known issues** — Scan `.github/customizations/KNOWN-ISSUES.md` in case this is a documented limitation
-4. **Read lessons learned** — Check `.github/customizations/LESSONS-LEARNED.md` for relevant pitfalls before starting
+3. **Check known issues** — Scan `.opencastle/KNOWN-ISSUES.md` in case this is a documented limitation
+4. **Read lessons learned** — Check `.opencastle/LESSONS-LEARNED.md` for relevant pitfalls before starting
 5. **Assess complexity** — If the request turns out to be larger than expected (touches >5 files, needs a migration, or affects auth/security), escalate it:
    - Inform the user that this should be a tracked task
    - Create a tracker issue (if not already created in triage) and switch to the `implement-feature` workflow

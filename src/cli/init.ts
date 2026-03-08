@@ -3,9 +3,9 @@ import { readFile, unlink } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { multiselect, confirm, closePrompts, c } from './prompt.js'
 import { readManifest, writeManifest, createManifest } from './manifest.js'
-import { removeDirIfExists } from './copy.js'
+import { removeDirIfExists, copyDir, getOrchestratorRoot } from './copy.js'
 import { updateGitignore } from './gitignore.js'
-import { getRequiredMcpEnvVars } from './stack-config.js'
+import { getRequiredMcpEnvVars, getCustomizationsTransform } from './stack-config.js'
 import { TECH_PLUGINS, TEAM_PLUGINS } from '../orchestrator/plugins/index.js'
 import { detectRepoInfo, mergeStackIntoRepoInfo, formatRepoInfo, buildDetectedToolsSet } from './detect.js'
 import { IDE_ADAPTERS } from './adapters/index.js'
@@ -138,7 +138,7 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
         console.log(`    ${c.green('+')} ${p}`)
       }
     }
-    console.log(`    ${c.green('+')} .opencastle.json`)
+    console.log(`    ${c.green('+')} .opencastle/manifest.json`)
     console.log(`    ${c.green('+')} .gitignore (OpenCastle entries)`)
     console.log(`\n  ${c.dim('No files were written.')}\n`)
     closePrompts()
@@ -215,6 +215,16 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
         totalSkipped += results.skipped.length
       }
     }
+  }
+
+  // ── Scaffold customizations to .opencastle/ ──────────────────────────────
+  const custSrcDir = resolve(getOrchestratorRoot(pkgRoot), 'customizations')
+  if (existsSync(custSrcDir)) {
+    const custDestDir = resolve(projectRoot, '.opencastle')
+    const custTransform = getCustomizationsTransform(stack)
+    const sub = await copyDir(custSrcDir, custDestDir, { transform: custTransform })
+    totalCreated += sub.created.length
+    totalSkipped += sub.skipped.length
   }
 
   // ── Write manifest ──────────────────────────────────────────────
@@ -311,7 +321,7 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
     `  ${step}. Run the ${c.cyan('"Bootstrap Customizations"')} prompt to configure for your project`
   )
   step++
-  console.log(`  ${step}. Commit the customizations/ folder to your repository`)
+  console.log(`  ${step}. Commit the .opencastle/ folder to your repository`)
   console.log()
 
   closePrompts()

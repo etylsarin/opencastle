@@ -3,7 +3,7 @@ name: turborepo-monorepo
 description: "Turborepo monorepo commands, pipeline configuration, caching strategies, and task orchestration. Use when running builds, tests, linting, or any development commands in a Turborepo monorepo."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Turborepo Monorepo
 

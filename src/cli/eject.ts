@@ -19,7 +19,7 @@ export default async function eject({
 
   console.log(`\n  🏰 OpenCastle eject\n`)
   console.log('  This will:')
-  console.log('    • Remove .opencastle.json (manifest)')
+  console.log('    • Remove .opencastle/manifest.json (manifest)')
   console.log('    • Keep ALL generated files as standalone')
   console.log(
     '    • You can safely uninstall the opencastle package after this\n'
@@ -36,7 +36,7 @@ export default async function eject({
     return
   }
 
-  await unlink(resolve(projectRoot, '.opencastle.json'))
+  await unlink(resolve(projectRoot, '.opencastle', 'manifest.json'))
 
   console.log('\n  ✓ Ejected. Files are now standalone.')
   console.log('  You can uninstall: npm uninstall opencastle\n')

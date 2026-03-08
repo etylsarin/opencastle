@@ -70,7 +70,7 @@ Return a structured summary with:
 **Note:** Follow the Structured Output Contract from the team-lead-reference skill. Include all standard fields plus agent-specific extensions.
 
 ### Self-Improvement
-Read `.github/customizations/LESSONS-LEARNED.md` before starting. If you retry any command/tool with a different approach that works, use the **self-improvement** skill to add a lesson immediately.
+Read `.opencastle/LESSONS-LEARNED.md` before starting. If you retry any command/tool with a different approach that works, use the **self-improvement** skill to add a lesson immediately.
 ```
 
 For simpler tasks (score 1-3), the existing prompt format (objective + files + criteria) is sufficient. Don't over-engineer delegation for trivial work.

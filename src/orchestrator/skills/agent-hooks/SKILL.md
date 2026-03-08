@@ -3,7 +3,7 @@ name: agent-hooks
 description: "Lifecycle hooks for AI agent sessions — reusable actions that run at specific points (session start, session end, pre-delegation, post-delegation). Defines what to do at each lifecycle event so agents behave consistently."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Agent Lifecycle Hooks
 
@@ -28,11 +28,11 @@ Session Lifecycle:
 
 ### Actions
 
-1. **Read lessons learned** — Scan `.github/customizations/LESSONS-LEARNED.md` for entries relevant to the current task domain. Apply proactively.
-2. **Check for checkpoint** — If `.github/customizations/SESSION-CHECKPOINT.md` exists, read it. Resume from last known state instead of re-analyzing.
+1. **Read lessons learned** — Scan `.opencastle/LESSONS-LEARNED.md` for entries relevant to the current task domain. Apply proactively.
+2. **Check for checkpoint** — If `.opencastle/SESSION-CHECKPOINT.md` exists, read it. Resume from last known state instead of re-analyzing.
 3. **Check pending approvals** — If the checkpoint has a `## Pending Approvals` section, check for replies using the configured messaging provider's MCP tools (e.g., `conversations_replies` for Slack). Read `.opencastle.json` → `stack.teamTools` to determine the provider. If no messaging is configured, skip this step.
-4. **Check dead letter queue** — Scan `.github/customizations/AGENT-FAILURES.md` for pending failures related to the current scope.
-5. **Validate skill-matrix bindings** — Open `.github/customizations/agents/skill-matrix.json` and check whether the `bindings` object has any slots with non-empty `entries` arrays. If all entries are empty, **warn the user** that the bootstrap hasn't been run and capability slots will not resolve. Suggest running the *"Bootstrap Customizations"* prompt first. Do NOT silently continue with empty bindings.
+4. **Check dead letter queue** — Scan `.opencastle/AGENT-FAILURES.md` for pending failures related to the current scope.
+5. **Validate skill-matrix bindings** — Open `.opencastle/agents/skill-matrix.json` and check whether the `bindings` object has any slots with non-empty `entries` arrays. If all entries are empty, **warn the user** that the bootstrap hasn't been run and capability slots will not resolve. Suggest running the *"Bootstrap Customizations"* prompt first. Do NOT silently continue with empty bindings.
 6. **Load domain skills** — Based on the task description, load the appropriate skills before writing code. Don't start coding without the relevant skill loaded.
 
 ### Template for Delegation Prompts
@@ -40,10 +40,10 @@ Session Lifecycle:
 Include this reminder in every delegation:
 
 ```
-**Session Start:** Read `.github/customizations/LESSONS-LEARNED.md` before starting.
-Check `.github/customizations/SESSION-CHECKPOINT.md` for prior state and pending approvals.
+**Session Start:** Read `.opencastle/LESSONS-LEARNED.md` before starting.
+Check `.opencastle/SESSION-CHECKPOINT.md` for prior state and pending approvals.
 If pending approvals exist, check for replies via the messaging provider.
-Validate `.github/customizations/agents/skill-matrix.json` — warn if skill bindings are empty (bootstrap not run).
+Validate `.opencastle/agents/skill-matrix.json` — warn if skill bindings are empty (bootstrap not run).
 Load relevant skills before writing code.
 ```
 
@@ -60,7 +60,7 @@ Load relevant skills before writing code.
 
 1. **Call Session Guard** (Team Lead only) — Delegate to the **Session Guard** agent with a session summary (delegations, retries, discoveries, files changed). Execute any fix commands it returns. This replaces the manual Pre-Response Quality Gate checklist — the guard runs it automatically with a fresh context window.
 2. **For specialist agents** (not Team Lead) — Run the Pre-Response Quality Gate checklist from the **observability-logging** skill manually. Specialist agents don't have access to the Session Guard.
-3. **Save checkpoint** (Team Lead only) — If work is incomplete, write `.github/customizations/SESSION-CHECKPOINT.md` with current state so the next session can resume. Load **session-checkpoints** skill for format.
+3. **Save checkpoint** (Team Lead only) — If work is incomplete, write `.opencastle/SESSION-CHECKPOINT.md` with current state so the next session can resume. Load **session-checkpoints** skill for format.
 4. **Memory merge check** — If `LESSONS-LEARNED.md` has grown significantly (5+ new entries this session), flag for memory merge consideration.
 5. **Clean up** — Remove any temporary files created during the session (e.g., test fixtures, debug outputs).
 

@@ -31,6 +31,7 @@ import {
 } from './stack-config.js'
 import { ALL_PLUGIN_SKILL_NAMES } from '../orchestrator/plugins/index.js'
 import { IDE_ADAPTERS } from './adapters/index.js'
+import { copyDir, getOrchestratorRoot } from './copy.js'
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -40,6 +41,16 @@ const PKG_ROOT = resolve(import.meta.dirname, '../..')
 /** Read a JSON file from disk. */
 async function readJson<T = unknown>(path: string): Promise<T> {
   return JSON.parse(await readFile(path, 'utf8')) as T
+}
+
+/** Simulate the init.ts customizations scaffold step (copies customizations to .opencastle/). */
+async function scaffoldCustomizations(pkgRoot: string, projectRoot: string, stack: StackConfig): Promise<void> {
+  const custSrcDir = resolve(getOrchestratorRoot(pkgRoot), 'customizations')
+  if (existsSync(custSrcDir)) {
+    const custDestDir = join(projectRoot, '.opencastle')
+    const custTransform = getCustomizationsTransform(stack)
+    await copyDir(custSrcDir, custDestDir, { transform: custTransform })
+  }
 }
 
 /** Recursively list all files in a directory (relative paths). */
@@ -290,7 +301,7 @@ describe('gitignore generation', () => {
   it('creates .gitignore with framework paths ignored and customizable un-ignored', async () => {
     const managed = {
       framework: ['.github/copilot-instructions.md', '.github/agents/'],
-      customizable: ['.github/customizations/', '.vscode/mcp.json'],
+      customizable: ['.opencastle/', '.vscode/mcp.json'],
     }
 
     await updateGitignore(tempDir, managed)
@@ -300,7 +311,7 @@ describe('gitignore generation', () => {
     expect(content).toContain('.github/copilot-instructions.md')
     expect(content).toContain('.github/agents/')
     // Customizable paths should be un-ignored
-    expect(content).toContain('!.github/customizations/')
+    expect(content).toContain('!.opencastle/')
     expect(content).toContain('!.vscode/mcp.json')
     // Markers should be present
     expect(content).toContain('# >>> OpenCastle managed (do not edit) >>>')
@@ -316,14 +327,14 @@ describe('gitignore generation', () => {
 
     const managed2 = {
       framework: ['.github/agents/', '.github/skills/'],
-      customizable: ['.vscode/mcp.json', '.github/customizations/'],
+      customizable: ['.vscode/mcp.json', '.opencastle/'],
     }
     const result = await updateGitignore(tempDir, managed2)
     expect(result).toBe('updated')
 
     const content = await readFile(join(tempDir, '.gitignore'), 'utf8')
     expect(content).toContain('.github/skills/')
-    expect(content).toContain('!.github/customizations/')
+    expect(content).toContain('!.opencastle/')
     // Only one managed block
     const startCount = (content.match(/>>> OpenCastle managed/g) ?? []).length
     expect(startCount).toBe(1)
@@ -356,15 +367,15 @@ describe('VS Code adapter install', () => {
     expect(existsSync(join(githubDir, 'skills'))).toBe(true)
     expect(existsSync(join(githubDir, 'agent-workflows'))).toBe(true)
     expect(existsSync(join(githubDir, 'prompts'))).toBe(true)
-    expect(existsSync(join(githubDir, 'customizations'))).toBe(true)
     expect(existsSync(join(tempDir, '.vscode', 'mcp.json'))).toBe(true)
   })
 
-  it('creates all observability log files in customizations/logs', async () => {
+  it('creates all observability log files in .opencastle/logs', async () => {
     const adapter = await IDE_ADAPTERS['vscode']()
     await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+    await scaffoldCustomizations(PKG_ROOT, tempDir, STACK_EMPTY)
 
-    const logsDir = join(tempDir, '.github', 'customizations', 'logs')
+    const logsDir = join(tempDir, '.opencastle', 'logs')
     expect(existsSync(logsDir)).toBe(true)
     for (const file of ['events.ndjson']) {
       expect(existsSync(join(logsDir, file))).toBe(true)
@@ -516,9 +527,10 @@ describe('VS Code adapter install', () => {
   it('fills skill-matrix.json with selected DB and CMS', async () => {
     const adapter = await IDE_ADAPTERS['vscode']()
     await adapter.install(PKG_ROOT, tempDir, STACK_FULL, EMPTY_REPO_INFO)
+    await scaffoldCustomizations(PKG_ROOT, tempDir, STACK_FULL)
 
     const skillMatrix = await readFile(
-      join(tempDir, '.github', 'customizations', 'agents', 'skill-matrix.json'),
+      join(tempDir, '.opencastle', 'agents', 'skill-matrix.json'),
       'utf8'
     )
     const data = JSON.parse(skillMatrix)
@@ -533,9 +545,10 @@ describe('VS Code adapter install', () => {
   it('leaves skill-matrix.json database/cms slots empty when none selected', async () => {
     const adapter = await IDE_ADAPTERS['vscode']()
     await adapter.install(PKG_ROOT, tempDir, STACK_EMPTY, EMPTY_REPO_INFO)
+    await scaffoldCustomizations(PKG_ROOT, tempDir, STACK_EMPTY)
 
     const skillMatrix = await readFile(
-      join(tempDir, '.github', 'customizations', 'agents', 'skill-matrix.json'),
+      join(tempDir, '.opencastle', 'agents', 'skill-matrix.json'),
       'utf8'
     )
     const data = JSON.parse(skillMatrix)
@@ -554,7 +567,7 @@ describe('VS Code adapter install', () => {
     expect(paths.framework).toContain('.github/agent-workflows/')
     expect(paths.framework).toContain('.github/prompts/')
 
-    expect(paths.customizable).toContain('.github/customizations/')
+    expect(paths.customizable).toContain('.opencastle/')
     expect(paths.customizable).toContain('.vscode/mcp.json')
   })
 })
@@ -680,7 +693,7 @@ describe('Cursor adapter install', () => {
     expect(paths.framework).toContain('.cursor/rules/general.mdc')
     expect(paths.framework).toContain('.cursor/rules/ai-optimization.mdc')
 
-    expect(paths.customizable).toContain('.cursor/rules/customizations/')
+    expect(paths.customizable).toContain('.opencastle/')
     expect(paths.customizable).toContain('.cursor/mcp.json')
   })
 })
@@ -827,7 +840,7 @@ describe('Claude Code adapter install', () => {
     expect(paths.framework).toContain('.claude/skills/')
     expect(paths.framework).toContain('.claude/commands/')
 
-    expect(paths.customizable).toContain('.claude/customizations/')
+    expect(paths.customizable).toContain('.opencastle/')
     expect(paths.customizable).toContain('.claude/mcp.json')
   })
 })
@@ -867,7 +880,6 @@ describe('OpenCode adapter install', () => {
     expect(existsSync(join(tempDir, '.opencode', 'skills'))).toBe(true)
     expect(existsSync(join(tempDir, '.opencode', 'prompts'))).toBe(true)
     expect(existsSync(join(tempDir, '.opencode', 'workflows'))).toBe(true)
-    expect(existsSync(join(tempDir, '.opencode', 'customizations'))).toBe(true)
   })
 
   it('generates OpenCode MCP config with mcp format', async () => {
@@ -919,7 +931,7 @@ describe('OpenCode adapter install', () => {
     expect(paths.framework).toContain('.opencode/prompts/')
     expect(paths.framework).toContain('.opencode/workflows/')
 
-    expect(paths.customizable).toContain('.opencode/customizations/')
+    expect(paths.customizable).toContain('.opencastle/')
     expect(paths.customizable).toContain('opencode.json')
   })
 })
@@ -1078,6 +1090,7 @@ describe('full stack configuration', () => {
 
     const adapter = await IDE_ADAPTERS['vscode']()
     const result = await adapter.install(PKG_ROOT, tempDir, stack, EMPTY_REPO_INFO)
+    await scaffoldCustomizations(PKG_ROOT, tempDir, stack)
 
     expect(result.created.length).toBeGreaterThan(0)
 
@@ -1119,7 +1132,7 @@ describe('full stack configuration', () => {
 
     // Skill matrix should be filled
     const skillMatrix = await readFile(
-      join(tempDir, '.github', 'customizations', 'agents', 'skill-matrix.json'),
+      join(tempDir, '.opencastle', 'agents', 'skill-matrix.json'),
       'utf8'
     )
     const matrixData = JSON.parse(skillMatrix)

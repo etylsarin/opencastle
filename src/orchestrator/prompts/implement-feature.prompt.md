@@ -3,11 +3,11 @@ description: 'Instruct the Team Lead to implement a specific task from a roadmap
 agent: 'Team Lead (OpenCastle)'
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Implement Roadmap Task
 
-You are the Team Lead. Implement the roadmap task described below following this strict workflow. The task comes from `.github/customizations/project/roadmap.md`.
+You are the Team Lead. Implement the roadmap task described below following this strict workflow. The task comes from `.opencastle/project/roadmap.md`.
 
 ## Task
 
@@ -25,10 +25,10 @@ You are the Team Lead. Implement the roadmap task described below following this
 
 Before writing any code, gather all relevant context:
 
-1. **Read the roadmap** — Open `.github/customizations/project/roadmap.md` and find the full scope, status, and acceptance criteria for this task
-2. **Read known issues** — Check `.github/customizations/KNOWN-ISSUES.md` for blockers or workarounds that affect this task
-3. **Read architecture docs** — Check `.github/customizations/project.instructions.md` and `.github/customizations/project/decisions.md` for constraints and prior decisions
-4. **Read lessons learned** — Check `.github/customizations/LESSONS-LEARNED.md` for pitfalls relevant to this feature area
+1. **Read the roadmap** — Open `.opencastle/project/roadmap.md` and find the full scope, status, and acceptance criteria for this task
+2. **Read known issues** — Check `.opencastle/KNOWN-ISSUES.md` for blockers or workarounds that affect this task
+3. **Read architecture docs** — Check `.opencastle/project.instructions.md` and `.opencastle/project/decisions.md` for constraints and prior decisions
+4. **Read lessons learned** — Check `.opencastle/LESSONS-LEARNED.md` for pitfalls relevant to this feature area
 5. **Search existing code** — Find all files, components, queries, and tests related to this feature area
 6. **Identify reusable code** — Before creating anything new, check if similar logic, components, or utilities already exist in the codebase that can be reused or extended
 
@@ -123,15 +123,15 @@ Follow the **Delivery Outcome** defined in the **git-workflow** skill — commit
 
 Keep documentation current so future sessions have full context:
 
-1. **Update roadmap** — Mark completed items in `.github/customizations/project/roadmap.md` with ✅ and the completion date. **Include tracker issue IDs and links** next to each scope item so progress is traceable across sessions. Format:
+1. **Update roadmap** — Mark completed items in `.opencastle/project/roadmap.md` with ✅ and the completion date. **Include tracker issue IDs and links** next to each scope item so progress is traceable across sessions. Format:
    ```
    **Tracker Issues:**
    - [PREFIX-6](<tracker-url>/PREFIX-6) — [Search] Description ✅ Done
    - [PREFIX-7](<tracker-url>/PREFIX-7) — [UI] Description 📋 Todo
    ```
    > Replace `PREFIX` with the project's issue prefix (see `tracker-config.md`).
-2. **Update known issues** — If new limitations are discovered, add them to `.github/customizations/KNOWN-ISSUES.md`
-3. **Update architecture docs** — If architectural decisions were made, add an ADR to `.github/customizations/project/decisions.md`
+2. **Update known issues** — If new limitations are discovered, add them to `.opencastle/KNOWN-ISSUES.md`
+3. **Update architecture docs** — If architectural decisions were made, add an ADR to `.opencastle/project/decisions.md`
 4. **Link tracker issues** — Every issue description should reference:
    - Related roadmap section
    - Files modified (the partition)
@@ -152,6 +152,6 @@ The roadmap task is complete when:
 - [ ] Visual consistency maintained across all affected pages and apps
 - [ ] Documentation updated (roadmap, known issues, decisions)
 - [ ] Panel review passed for any high-stakes changes
-- [ ] Roadmap item marked complete in `.github/customizations/project/roadmap.md`
+- [ ] Roadmap item marked complete in `.opencastle/project/roadmap.md`
 - [ ] Delivery Outcome completed (see the **git-workflow** skill) — branch pushed, PR opened (not merged), tracker linked
 - [ ] Lessons learned captured if any retries occurred

@@ -3,11 +3,11 @@ name: team-lead-reference
 description: "Reference data for Team Lead orchestration — model routing, pre-delegation checks, cost tracking template, and DLQ format. Load when starting a delegation session."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Team Lead Reference
 
-For the specialist agent registry and model assignments, see [agent-registry.md](../../customizations/agents/agent-registry.md).
+For the specialist agent registry and model assignments, see [agent-registry.md](../../.opencastle/agents/agent-registry.md).
 
 ## Cost-Aware Model Routing
 
@@ -81,7 +81,7 @@ Fire one **Researcher** sub-agent with this prompt:
 Research the following planned subtasks and enrich each with:
 1. Exact file paths and line numbers for code that will change
 2. Existing patterns to follow (with file:line examples)
-3. Related lessons from .github/customizations/LESSONS-LEARNED.md
+3. Related lessons from .opencastle/LESSONS-LEARNED.md
 4. Risks or blockers (missing dependencies, known issues)
 
 Subtasks:
@@ -94,7 +94,7 @@ Return a structured report per subtask.
 
 ### Full Deepen (Parallel Researchers)
 
-For large plans, split research by domain and fire parallel Researcher sub-agents. See [agent-registry.md](../../customizations/agents/agent-registry.md) for project-specific scope examples.
+For large plans, split research by domain and fire parallel Researcher sub-agents. See [agent-registry.md](../../.opencastle/agents/agent-registry.md) for project-specific scope examples.
 
 ### What Deepening Produces
 
@@ -166,7 +166,7 @@ This prevents the Team Lead from confusing which agent produced what, especially
 
 ## Dead Letter Queue Format
 
-Log to `.github/customizations/AGENT-FAILURES.md` when:
+Log to `.opencastle/AGENT-FAILURES.md` when:
 - A delegated agent fails to complete its task after 2+ attempts
 - A background agent produces output that fails all verification gates
 - An agent encounters an unrecoverable error (e.g., MCP server down, tool unavailable)
@@ -210,7 +210,7 @@ For common failure modes and recovery procedures, load the **orchestration-proto
 
 ## Dispute Protocol
 
-When automated resolution is exhausted (panel 3x BLOCK, approach conflicts, or criteria contradictions), create a **formal dispute record** in `.github/customizations/DISPUTES.md`. Inspired by the [Steroids CLI](https://github.com/UnlikeOtherAI/steroids-cli) dispute/escalation pattern.
+When automated resolution is exhausted (panel 3x BLOCK, approach conflicts, or criteria contradictions), create a **formal dispute record** in `.opencastle/DISPUTES.md`. Inspired by the [Steroids CLI](https://github.com/UnlikeOtherAI/steroids-cli) dispute/escalation pattern.
 
 ### When to Create a Dispute (vs. DLQ Entry)
 

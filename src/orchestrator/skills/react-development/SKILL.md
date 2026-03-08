@@ -3,7 +3,7 @@ name: react-development
 description: "React development standards for functional components, hooks, TypeScript integration, state management, styling, and testing patterns. Use when creating or modifying React components, custom hooks, or component tests."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # React Development Standards
 

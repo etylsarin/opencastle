@@ -6,7 +6,7 @@ tools: ['search/codebase', 'search/textSearch', 'search/fileSearch', 'search/usa
 user-invocable: false
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Researcher
 
@@ -14,7 +14,7 @@ You are a codebase exploration specialist. Your job is to **find information, ma
 
 ## Skills
 
-Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
+Resolve all skills (slots and direct) via [skill-matrix.json](.opencastle/agents/skill-matrix.json).
 
 ## Critical Rules
 
@@ -69,8 +69,8 @@ Given a feature request, answer:
 Given a bug report, answer:
 - Where does the relevant code live? (entry points → data flow)
 - What does the git history show? (recent changes that might have caused it)
-- Are there related known issues in `.github/customizations/KNOWN-ISSUES.md`?
-- Are there related lessons in `.github/customizations/LESSONS-LEARNED.md`?
+- Are there related known issues in `.opencastle/KNOWN-ISSUES.md`?
+- Are there related lessons in `.opencastle/LESSONS-LEARNED.md`?
 - What test coverage exists for the affected area?
 
 ### 3. Pattern Audit

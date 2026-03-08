@@ -3,11 +3,11 @@ name: jira-management
 description: "Jira board conventions for tracking feature work — issue naming, labels, priorities, status workflow, and session continuity via Atlassian Rovo MCP. Use when decomposing features into tasks or resuming interrupted sessions."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Task Management with Jira
 
-Conventions for tracking feature work on Jira via the Atlassian Rovo MCP server. For project-specific project keys, workflow state IDs, and board configuration, see [tracker-config.md](../../customizations/project/tracker-config.md).
+Conventions for tracking feature work on Jira via the Atlassian Rovo MCP server. For project-specific project keys, workflow state IDs, and board configuration, see [tracker-config.md](../../.opencastle/project/tracker-config.md).
 
 ## Atlassian Rovo MCP Server
 
@@ -167,4 +167,4 @@ project = PROJ AND sprint in openSprints() ORDER BY priority DESC
 project = PROJ AND priority = Highest AND status != Done
 ```
 
-Replace `PROJ` with the actual project key from [tracker-config.md](../../customizations/project/tracker-config.md).
+Replace `PROJ` with the actual project key from [tracker-config.md](../../.opencastle/project/tracker-config.md).

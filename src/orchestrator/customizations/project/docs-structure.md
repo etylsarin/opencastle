@@ -4,19 +4,19 @@
 
 Project-specific documentation layout referenced by the `documentation-standards` skill.
 
-Documentation files live in the `.github/customizations/` directory alongside other project-specific configuration. Key documentation files:
+Documentation files live in the `.opencastle/` directory alongside other project-specific configuration. Key documentation files:
 
-- `.github/customizations/KNOWN-ISSUES.md` — Tracked issues, limitations, and accepted risks
-- `.github/customizations/project/roadmap.md` — Project roadmap and feature status
-- `.github/customizations/project/decisions.md` — Architecture Decision Records
-- `.github/customizations/LESSONS-LEARNED.md` — Agent knowledge base of retries and workarounds
+- `.opencastle/KNOWN-ISSUES.md` — Tracked issues, limitations, and accepted risks
+- `.opencastle/project/roadmap.md` — Project roadmap and feature status
+- `.opencastle/project/decisions.md` — Architecture Decision Records
+- `.opencastle/LESSONS-LEARNED.md` — Agent knowledge base of retries and workarounds
 
 ## Directory Tree
 
 <!-- Map your project's documentation directory here if one exists -->
 
 ```
-.github/customizations/
+.opencastle/
 ├── KNOWN-ISSUES.md            — Tracked issues and limitations
 ├── LESSONS-LEARNED.md         — Agent knowledge base
 └── project/

@@ -3,7 +3,7 @@ name: slack-notifications
 description: "Slack MCP integration for agent-to-human notifications and bi-directional communication. Use when agents need to post progress updates, request approvals, or read user responses via Slack channels and threads."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Slack Notifications
 
@@ -217,7 +217,7 @@ To check for approvals or instructions:
 
 ### Channel Configuration
 
-Project-specific channel mappings are defined in `.github/customizations/stack/notifications-config.md`. Agents read that file to determine which channel to post to for each event type. Always prefer channel IDs from the config over hardcoded names.
+Project-specific channel mappings are defined in `.opencastle/stack/notifications-config.md`. Agents read that file to determine which channel to post to for each event type. Always prefer channel IDs from the config over hardcoded names.
 
 ### Default Channel Structure
 

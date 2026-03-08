@@ -2,7 +2,7 @@
 applyTo: '**'
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Coding Standards
 
@@ -13,7 +13,7 @@ applyTo: '**'
 3. **Leave code better than you found it** — fix adjacent issues when the cost is low.
 4. **Fail visibly** — surface errors clearly; never swallow exceptions silently.
 5. **Verify, don't trust** — confirm outcomes with tools (tests, lint, build) rather than assuming success.
-6. **Log every session** — append observability records to `.github/customizations/logs/` before yielding to the user. No exceptions. Load the **observability-logging** skill for details.
+6. **Log every session** — append observability records to `.opencastle/logs/` before yielding to the user. No exceptions. Load the **observability-logging** skill for details.
 
 ## Instruction Priority Hierarchy
 
@@ -34,7 +34,7 @@ applyTo: '**'
 
 ## Technology Standards
 
-Load the corresponding skill for detailed conventions before writing code in that domain. These are **not optional**. See `.github/customizations/agents/skill-matrix.json` for the full domain-to-skill mapping.
+Load the corresponding skill for detailed conventions before writing code in that domain. These are **not optional**. See `.opencastle/agents/skill-matrix.json` for the full domain-to-skill mapping.
 
 | Domain | Skill |
 |--------|-------|
@@ -90,7 +90,7 @@ See [ai-optimization.instructions.md](ai-optimization.instructions.md) for batch
 
 ## Project Context
 
-For project-specific context (apps, libraries, tech stack, ports, URLs), see [project.instructions.md](../customizations/project.instructions.md).
+For project-specific context (apps, libraries, tech stack, ports, URLs), see [project.instructions.md](../.opencastle/project.instructions.md).
 
 ## Git Workflow
 
@@ -108,13 +108,13 @@ When you encounter a bug unrelated to the current task: check if already tracked
 > Do NOT respond to the user until you have appended the required log records.
 > A session without log records is a failed session — regardless of code quality.
 
-**Every agent MUST log every session** to `.github/customizations/logs/events.ndjson`. No exceptions. No threshold. No "too small to log." Load the **observability-logging** skill for CLI commands, record schemas, and the full logging checklist.
+**Every agent MUST log every session** to `.opencastle/logs/events.ndjson`. No exceptions. No threshold. No "too small to log." Load the **observability-logging** skill for CLI commands, record schemas, and the full logging checklist.
 
 ## Self-Improvement Protocol
 
 > **⛔ HARD GATE — Lessons are the team's collective memory. Skipping them causes repeated failures.**
 
-1. **Before starting work:** Read `.github/customizations/LESSONS-LEARNED.md` — apply relevant lessons proactively. This is NOT optional.
+1. **Before starting work:** Read `.opencastle/LESSONS-LEARNED.md` — apply relevant lessons proactively. This is NOT optional.
 2. **During execution:** If you retry with a different approach and it works, use the **self-improvement** skill to add a lesson immediately.
 3. **Update source files:** If the lesson reveals a gap in instruction/skill files, update those files too.
 

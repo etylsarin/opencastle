@@ -3,11 +3,11 @@ name: deployment-infrastructure
 description: "Deployment architecture, environment variables, cron jobs, security headers, and caching patterns. Use when configuring deployments, managing environment variables, setting up cron jobs, or troubleshooting build/deployment issues."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Deployment Infrastructure
 
-All deployment configuration is project-specific. See [deployment-config.md](../../customizations/stack/deployment-config.md) for the full architecture, environment variables, cron jobs, caching headers, and key files.
+All deployment configuration is project-specific. See [deployment-config.md](../../.opencastle/stack/deployment-config.md) for the full architecture, environment variables, cron jobs, caching headers, and key files.
 
 ## Generic Deployment Principles
 

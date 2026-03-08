@@ -41,22 +41,22 @@ function coerceValue(key: string, raw: string): unknown {
   return raw
 }
 
-/** Resolve the path to the logs directory (walks up to find .github/). */
+/** Resolve the path to the logs directory (walks up to find .opencastle/). */
 export async function resolveLogsDir(override?: string | null): Promise<string> {
   if (override) return override
   let dir = process.cwd()
   for (;;) {
     try {
-      const s = await stat(join(dir, '.github'))
-      if (s.isDirectory()) return join(dir, '.github', 'customizations', 'logs')
+      const s = await stat(join(dir, '.opencastle'))
+      if (s.isDirectory()) return join(dir, '.opencastle', 'logs')
     } catch {
-      // .github not in this directory, walk up
+      // .opencastle not in this directory, walk up
     }
     const parent = dirname(dir)
     if (parent === dir) break
     dir = parent
   }
-  return join(process.cwd(), '.github', 'customizations', 'logs')
+  return join(process.cwd(), '.opencastle', 'logs')
 }
 
 /** Append a structured event record to events.ndjson. */

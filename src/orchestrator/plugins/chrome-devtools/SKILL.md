@@ -3,11 +3,11 @@ name: browser-testing
 description: "Chrome DevTools MCP automation patterns for validating UI changes in real browsers. Use when performing E2E browser testing, validating visual changes, testing user interactions, or debugging UI issues with Chrome DevTools."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Browser Testing with Chrome DevTools MCP
 
-Generic browser testing methodology using Chrome DevTools MCP. For project-specific test app, selectors, suites, and breakpoint config, see [testing-config.md](../../customizations/stack/testing-config.md).
+Generic browser testing methodology using Chrome DevTools MCP. For project-specific test app, selectors, suites, and breakpoint config, see [testing-config.md](../../.opencastle/stack/testing-config.md).
 
 ## Purpose
 
@@ -21,7 +21,7 @@ After any UI change, validate in a real browser:
 
 ## Pre-Test Build Verification
 
-**CRITICAL: Always build before browser testing.** Testing stale code wastes time. See [testing-config.md](../../customizations/stack/testing-config.md) for the specific build and serve commands.
+**CRITICAL: Always build before browser testing.** Testing stale code wastes time. See [testing-config.md](../../.opencastle/stack/testing-config.md) for the specific build and serve commands.
 
 ## Chrome MCP Tools Reference
 
@@ -85,7 +85,7 @@ mcp_chrome-devtoo_performance_analyze_insight({ insightSetId: 'set_id', insightN
 
 ### 1. Setup
 
-Start the dev server (see [testing-config.md](../../customizations/stack/testing-config.md) for app and port).
+Start the dev server (see [testing-config.md](../../.opencastle/stack/testing-config.md) for app and port).
 
 ### 2. Initial State
 

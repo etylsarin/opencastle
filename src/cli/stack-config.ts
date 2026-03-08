@@ -257,20 +257,8 @@ const SUBCATEGORY_TO_SLOT: Record<string, string> = {
 /**
  * Get the filesystem path to the skill matrix file for a given IDE.
  */
-function getSkillMatrixPath(projectRoot: string, ide: string): string {
-  const relativePath = 'customizations/agents/skill-matrix.json';
-  switch (ide) {
-    case 'vscode':
-      return resolve(projectRoot, '.github', relativePath);
-    case 'cursor':
-      return resolve(projectRoot, '.cursor', 'rules', relativePath);
-    case 'claude-code':
-      return resolve(projectRoot, '.claude', relativePath);
-    case 'opencode':
-      return resolve(projectRoot, '.opencode', relativePath);
-    default:
-      return '';
-  }
+function getSkillMatrixPath(projectRoot: string, _ide: string): string {
+  return resolve(projectRoot, '.opencastle', 'agents', 'skill-matrix.json');
 }
 
 /**

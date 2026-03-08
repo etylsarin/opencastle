@@ -3,7 +3,7 @@ description: 'AI assistant optimization patterns for efficient context usage and
 applyTo: '**'
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # AI Optimization
 

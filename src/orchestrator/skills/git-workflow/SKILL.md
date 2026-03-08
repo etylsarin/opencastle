@@ -46,11 +46,11 @@ Every task that produces code changes — whether a roadmap feature, bug fix, fo
 When you encounter a bug, error, or unexpected behavior that is unrelated to the current task:
 
 1. **Check if already tracked:**
-   - Search `.github/customizations/KNOWN-ISSUES.md` for a matching entry
+   - Search `.opencastle/KNOWN-ISSUES.md` for a matching entry
    - If you have task tracker tools available, also search for open bugs (use `search_issues` or `list_issues` with bug label)
 2. **If found tracked** — skip it, continue with your current work
 3. **If NOT tracked** — you must act:
-   - **Unfixable limitation** (third-party constraint, platform restriction, upstream dependency) → add it to `.github/customizations/KNOWN-ISSUES.md` with: Issue ID, Status, Severity, Evidence, Root Cause, Solution Options
+   - **Unfixable limitation** (third-party constraint, platform restriction, upstream dependency) → add it to `.opencastle/KNOWN-ISSUES.md` with: Issue ID, Status, Severity, Evidence, Root Cause, Solution Options
    - **Fixable bug** → if you have task tracker tools, create a ticket with label `bug`, appropriate priority, and a clear description of the symptoms, reproduction steps, and affected files. If you do NOT have task tracker tools, add a `**Discovered Issues**` section to your output listing the bug details so the Team Lead can track it.
 
 Never assume a pre-existing issue is somebody else's problem. If it's not tracked, track it.

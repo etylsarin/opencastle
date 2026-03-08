@@ -26,24 +26,24 @@ interface CheckResult {
 
 function checkManifest(manifest: Manifest | null): CheckResult {
   if (!manifest) {
-    return { ok: false, label: 'OpenCastle manifest (.opencastle.json)', detail: 'Not found. Run "npx opencastle init" first.' };
+    return { ok: false, label: 'OpenCastle manifest (.opencastle/manifest.json)', detail: 'Not found. Run "npx opencastle init" first.' };
   }
-  return { ok: true, label: 'OpenCastle manifest (.opencastle.json)', detail: `v${manifest.version}, IDE: ${manifest.ides?.join(', ') ?? manifest.ide}` };
+  return { ok: true, label: 'OpenCastle manifest (.opencastle/manifest.json)', detail: `v${manifest.version}, IDE: ${manifest.ides?.join(', ') ?? manifest.ide}` };
 }
 
 async function checkCustomizations(projectRoot: string): Promise<CheckResult> {
-  const dir = resolve(projectRoot, '.github', 'customizations');
+  const dir = resolve(projectRoot, '.opencastle');
   if (!existsSync(dir)) {
-    return { ok: false, label: 'Customizations directory', detail: '.github/customizations/ not found' };
+    return { ok: false, label: 'Customizations directory', detail: '.opencastle/ not found' };
   }
   const files = await readdir(dir).catch(() => []);
   return { ok: true, label: 'Customizations directory', detail: `${files.length} entries` };
 }
 
 async function checkSkillMatrix(projectRoot: string): Promise<CheckResult> {
-  const path = resolve(projectRoot, '.github', 'customizations', 'agents', 'skill-matrix.json');
+  const path = resolve(projectRoot, '.opencastle', 'agents', 'skill-matrix.json');
   if (!existsSync(path)) {
-    return { ok: false, label: 'Skill matrix', detail: 'File not found at .github/customizations/agents/skill-matrix.json' };
+    return { ok: false, label: 'Skill matrix', detail: 'File not found at .opencastle/agents/skill-matrix.json' };
   }
   const { readFile } = await import('node:fs/promises');
   const content = await readFile(path, 'utf8');
@@ -63,7 +63,7 @@ async function checkSkillMatrix(projectRoot: string): Promise<CheckResult> {
 }
 
 async function checkLogs(projectRoot: string): Promise<CheckResult> {
-  const dir = resolve(projectRoot, '.github', 'customizations', 'logs');
+  const dir = resolve(projectRoot, '.opencastle', 'logs');
   if (!existsSync(dir)) {
     return { ok: false, label: 'Observability logs', detail: 'logs/ directory not found — dashboard will be empty' };
   }

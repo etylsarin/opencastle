@@ -3,7 +3,7 @@ name: testing-workflow
 description: "Comprehensive testing workflow including test planning, unit/integration/E2E testing patterns, coverage requirements, and common testing mistakes. Use when writing tests, planning test strategies, or validating feature completeness."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Testing Workflow
 
@@ -22,11 +22,11 @@ description: "Comprehensive testing workflow including test planning, unit/integ
 2. **MAX 3 screenshots** per session.
 3. **Use `evaluate_script()` over `take_snapshot()`** — returns less data.
 4. **Reload between major test flows** to clear state.
-5. **Log results separately** — append to `.github/customizations/logs/e2e-results.md`.
+5. **Log results separately** — append to `.opencastle/logs/e2e-results.md`.
 
 ### Suite Files
 
-See `.github/customizations/project.instructions.md` for the full list of E2E test suite files.
+See `.opencastle/project.instructions.md` for the full list of E2E test suite files.
 
 ## Pre-Implementation Test Plan
 

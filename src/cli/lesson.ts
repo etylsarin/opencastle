@@ -25,7 +25,7 @@ type Severity = (typeof SEVERITIES)[number]
 const HELP = `
   opencastle lesson [options]
 
-  Append a structured lesson to .github/customizations/LESSONS-LEARNED.md
+  Append a structured lesson to .opencastle/LESSONS-LEARNED.md
 
   Required flags:
     --title <text>           Short descriptive title
@@ -70,16 +70,16 @@ async function resolveCustomizationsDir(override: string | null): Promise<string
   let dir = process.cwd()
   for (;;) {
     try {
-      const s = await stat(join(dir, '.github'))
-      if (s.isDirectory()) return join(dir, '.github', 'customizations')
+      const s = await stat(join(dir, '.opencastle'))
+      if (s.isDirectory()) return join(dir, '.opencastle')
     } catch {
-      // .github not found here, walk up
+      // .opencastle not found here, walk up
     }
     const parent = dirname(dir)
     if (parent === dir) break
     dir = parent
   }
-  return join(process.cwd(), '.github', 'customizations')
+  return join(process.cwd(), '.opencastle')
 }
 
 function nextLessonId(content: string): string {

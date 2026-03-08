@@ -3,11 +3,11 @@ name: vercel-deployment
 description: "Vercel deployment workflows, environment management, domain configuration, and build troubleshooting. Use when deploying, checking deployment status, reviewing build logs, or managing environments."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Vercel Deployment
 
-Vercel-specific deployment patterns and MCP tool usage. For project-specific deployment architecture, environment variables, and key files, see [deployment-config.md](../../customizations/stack/deployment-config.md).
+Vercel-specific deployment patterns and MCP tool usage. For project-specific deployment architecture, environment variables, and key files, see [deployment-config.md](../../.opencastle/stack/deployment-config.md).
 
 ## Deployment Model
 

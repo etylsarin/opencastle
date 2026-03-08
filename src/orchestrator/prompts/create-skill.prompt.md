@@ -3,7 +3,7 @@ description: 'Scaffold a new skill file with proper frontmatter, structure, and 
 agent: 'Team Lead (OpenCastle)'
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Create Skill
 
@@ -92,13 +92,13 @@ Registration differs by type:
 
 #### Process Skill
 
-1. **Add to the skill matrix** — Add the skill name to the `directSkills` array of each relevant agent in `.github/customizations/agents/skill-matrix.json`
+1. **Add to the skill matrix** — Add the skill name to the `directSkills` array of each relevant agent in `.opencastle/agents/skill-matrix.json`
 2. **Optional: reference in instructions** — If the skill should be loaded by default, add it to the appropriate `.github/instructions/` file
 
 #### Plugin Skill
 
 1. **Set `skillName` in the plugin's `config.ts`** — This connects the skill to the plugin
-2. **Update the skill matrix** — Add an entry to the matching capability slot's `entries` array in `.github/customizations/agents/skill-matrix.json`
+2. **Update the skill matrix** — Add an entry to the matching capability slot's `entries` array in `.opencastle/agents/skill-matrix.json`
 3. **No agent changes needed** — Agents resolve plugin skills through capability slots automatically
 
 ### Step 5: Validate

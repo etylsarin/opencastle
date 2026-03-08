@@ -3,7 +3,7 @@ name: seo-patterns
 description: "Technical SEO patterns for meta tags, structured data, sitemaps, URL strategy, and rendering. Use when optimizing pages for search engines or implementing SEO features."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # SEO Patterns
 

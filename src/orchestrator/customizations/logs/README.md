@@ -175,7 +175,7 @@ Run `opencastle log --help` for full options.
   "attempt": 1,
   "tracker_issue": "PRJ-57",
   "artifacts_count": 14,
-  "report_path": ".github/customizations/logs/panel/instruction-refactoring.md"
+  "report_path": ".opencastle/logs/panel/instruction-refactoring.md"
 }
 ```
 

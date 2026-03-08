@@ -3,7 +3,7 @@ name: memory-merger
 description: "Protocol for graduating mature lessons from LESSONS-LEARNED.md into permanent instruction and skill files. Closes the self-improvement loop by codifying validated knowledge at the source level."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Skill: Memory Merger
 
@@ -11,7 +11,7 @@ This skill automates the final step of the self-improvement cycle: promoting val
 
 ## Why Merge?
 
-`.github/customizations/LESSONS-LEARNED.md` is a flatfile that grows over time. Lessons buried in a 400+ line file lose their impact — agents skim past them or miss relevant entries. The most valuable lessons should **graduate** into the instruction/skill files where they're encountered naturally during every task.
+`.opencastle/LESSONS-LEARNED.md` is a flatfile that grows over time. Lessons buried in a 400+ line file lose their impact — agents skim past them or miss relevant entries. The most valuable lessons should **graduate** into the instruction/skill files where they're encountered naturally during every task.
 
 ## When to Run
 
@@ -27,7 +27,7 @@ Invoke a memory merge when:
 
 ### Step 1: Scan for Merge Candidates
 
-Read `.github/customizations/LESSONS-LEARNED.md` and identify lessons that meet any of these criteria:
+Read `.opencastle/LESSONS-LEARNED.md` and identify lessons that meet any of these criteria:
 
 | Criterion | Signal |
 |-----------|--------|

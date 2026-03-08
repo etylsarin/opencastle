@@ -1,6 +1,6 @@
 import { resolve } from 'node:path'
 import { existsSync } from 'node:fs'
-import { readFile, appendFile, rename } from 'node:fs/promises'
+import { readFile, appendFile, rename, mkdir, writeFile, unlink, copyFile, readdir, rm } from 'node:fs/promises'
 import { readManifest, writeManifest } from './manifest.js'
 import { multiselect, confirm, closePrompts, c } from './prompt.js'
 import { isLegacyStack, migrateStackConfig, IDE_LABELS } from './types.js'
@@ -16,6 +16,8 @@ export default async function update({
   args,
 }: CliContext): Promise<void> {
   const projectRoot = process.cwd()
+
+  await migrateCustomizationsDir(projectRoot)
 
   const manifest = await readManifest(projectRoot)
   if (!manifest) {
@@ -326,9 +328,62 @@ export default async function update({
   closePrompts()
 }
 
+async function copyDirMigrate(srcDir: string, destDir: string): Promise<void> {
+  await mkdir(destDir, { recursive: true })
+  for (const entry of await readdir(srcDir, { withFileTypes: true })) {
+    const srcPath = resolve(srcDir, entry.name)
+    const destPath = resolve(destDir, entry.name)
+    if (entry.isDirectory()) {
+      await copyDirMigrate(srcPath, destPath)
+    } else if (!existsSync(destPath)) {
+      await copyFile(srcPath, destPath)
+    }
+  }
+}
+
+async function migrateCustomizationsDir(projectRoot: string): Promise<void> {
+  const oldManifestPath = resolve(projectRoot, '.opencastle.json')
+  const newOpencastleDir = resolve(projectRoot, '.opencastle')
+  const newManifestPath = resolve(newOpencastleDir, 'manifest.json')
+
+  // Migrate manifest from flat location to .opencastle/manifest.json
+  if (existsSync(oldManifestPath) && !existsSync(newManifestPath)) {
+    await mkdir(newOpencastleDir, { recursive: true })
+    const content = await readFile(oldManifestPath, 'utf8')
+    await writeFile(newManifestPath, content)
+    await unlink(oldManifestPath)
+    console.log(`  ${c.green('✓')} Migrated manifest to .opencastle/manifest.json`)
+  }
+
+  // Old customizations directory locations per IDE
+  const oldCustDirs = [
+    resolve(projectRoot, '.github', 'customizations'),
+    resolve(projectRoot, '.cursor', 'rules', 'customizations'),
+    resolve(projectRoot, '.claude', 'customizations'),
+    resolve(projectRoot, '.opencode', 'customizations'),
+  ]
+
+  // Copy from the first found old location (content is the same across IDEs)
+  for (const oldDir of oldCustDirs) {
+    if (!existsSync(oldDir)) continue
+    await copyDirMigrate(oldDir, newOpencastleDir)
+    console.log(`  ${c.green('✓')} Migrated customizations to .opencastle/`)
+    break
+  }
+
+  // Remove all old customizations directories
+  for (const oldDir of oldCustDirs) {
+    if (existsSync(oldDir)) {
+      await rm(oldDir, { recursive: true })
+    }
+  }
+}
+
 async function migrateLegacyLogs(projectRoot: string): Promise<void> {
-  const logsDir = resolve(projectRoot, '.github', 'customizations', 'logs')
-  if (!existsSync(logsDir)) return
+  const candidateLogsDirs = [
+    resolve(projectRoot, '.github', 'customizations', 'logs'),
+    resolve(projectRoot, '.opencastle', 'logs'),
+  ]
 
   const typeMap: Record<string, string> = {
     'sessions.ndjson': 'session',
@@ -338,48 +393,52 @@ async function migrateLegacyLogs(projectRoot: string): Promise<void> {
     'disputes.ndjson': 'dispute',
   }
 
-  const eventsFile = resolve(logsDir, 'events.ndjson')
-  let totalMigrated = 0
+  for (const logsDir of candidateLogsDirs) {
+    if (!existsSync(logsDir)) continue
 
-  for (const [filename, type] of Object.entries(typeMap)) {
-    const filePath = resolve(logsDir, filename)
-    if (!existsSync(filePath)) continue
+    const eventsFile = resolve(logsDir, 'events.ndjson')
+    let totalMigrated = 0
 
-    let content: string
-    try {
-      content = await readFile(filePath, 'utf8')
-    } catch {
-      continue
-    }
+    for (const [filename, type] of Object.entries(typeMap)) {
+      const filePath = resolve(logsDir, filename)
+      if (!existsSync(filePath)) continue
 
-    const lines = content.split('\n').filter((line) => line.trim() !== '')
-    if (lines.length === 0) continue
-
-    const migratedLines: string[] = []
-    for (const line of lines) {
+      let content: string
       try {
-        const record = JSON.parse(line) as Record<string, unknown>
-        if (!record['type']) {
-          record['type'] = type
-        }
-        migratedLines.push(JSON.stringify(record))
+        content = await readFile(filePath, 'utf8')
       } catch {
-        console.warn(`  ${c.yellow('⚠')}  Skipping malformed JSON line in ${filename}`)
+        continue
       }
+
+      const lines = content.split('\n').filter((line) => line.trim() !== '')
+      if (lines.length === 0) continue
+
+      const migratedLines: string[] = []
+      for (const line of lines) {
+        try {
+          const record = JSON.parse(line) as Record<string, unknown>
+          if (!record['type']) {
+            record['type'] = type
+          }
+          migratedLines.push(JSON.stringify(record))
+        } catch {
+          console.warn(`  ${c.yellow('⚠')}  Skipping malformed JSON line in ${filename}`)
+        }
+      }
+
+      if (migratedLines.length > 0) {
+        await appendFile(eventsFile, migratedLines.join('\n') + '\n', 'utf8')
+        totalMigrated += migratedLines.length
+      }
+
+      await rename(filePath, filePath + '.migrated')
     }
 
-    if (migratedLines.length > 0) {
-      await appendFile(eventsFile, migratedLines.join('\n') + '\n', 'utf8')
-      totalMigrated += migratedLines.length
+    if (totalMigrated > 0) {
+      console.log(
+        `  ${c.green('✓')} Migrated ${c.bold(String(totalMigrated))} records from legacy log files to events.ndjson`
+      )
     }
-
-    await rename(filePath, filePath + '.migrated')
-  }
-
-  if (totalMigrated > 0) {
-    console.log(
-      `  ${c.green('✓')} Migrated ${c.bold(String(totalMigrated))} records from legacy log files to events.ndjson`
-    )
   }
 }
 

@@ -3,11 +3,11 @@ name: playwright-testing
 description: "Playwright E2E testing patterns, cross-browser configuration, page objects, and CI setup. Use when writing E2E tests, visual regression tests, or configuring Playwright in CI pipelines."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Playwright Testing
 
-Playwright-specific E2E testing patterns. For project-specific test configuration and breakpoints, see [testing-config.md](../../customizations/stack/testing-config.md).
+Playwright-specific E2E testing patterns. For project-specific test configuration and breakpoints, see [testing-config.md](../../.opencastle/stack/testing-config.md).
 
 ## Commands
 

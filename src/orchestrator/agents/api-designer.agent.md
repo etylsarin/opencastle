@@ -6,7 +6,7 @@ tools: ['search/changes', 'search/codebase', 'edit/editFiles', 'web/fetch', 'rea
 user-invocable: false
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # API Designer
 
@@ -21,7 +21,7 @@ You are an API designer specializing in route architecture, endpoint conventions
 
 ## Skills
 
-Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
+Resolve all skills (slots and direct) via [skill-matrix.json](.opencastle/agents/skill-matrix.json).
 
 ## Guidelines
 

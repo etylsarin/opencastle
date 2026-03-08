@@ -1,4 +1,4 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Workflow: Security Audit
 
@@ -31,8 +31,8 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 ### Steps
 
 1. Define audit scope (full audit vs. targeted area)
-2. Read `.github/customizations/project.instructions.md` security sections
-3. Read `.github/customizations/KNOWN-ISSUES.md` for existing security items
+2. Read `.opencastle/project.instructions.md` security sections
+3. Read `.opencastle/KNOWN-ISSUES.md` for existing security items
 4. Check current CSP configuration in `next.config.js`
 5. Review auth flow (see database/auth customization for library paths)
 6. Map all API routes and Server Actions
@@ -130,7 +130,7 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 2. Create separate tracker issues for Medium/Low findings if not fixing now
 3. Run verification after each fix
 4. Re-run panel review if initial panel BLOCKed
-5. Update `.github/customizations/KNOWN-ISSUES.md` for any accepted risks
+5. Update `.opencastle/KNOWN-ISSUES.md` for any accepted risks
 
 ### Exit Criteria
 

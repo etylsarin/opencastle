@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot, removeDirIfExists, getPluginsRoot, getPluginSkillEntries } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
-import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform, getIncludedPluginIds, getAgentTransform } from '../stack-config.js'
+import { getExcludedSkills, getExcludedAgents, getIncludedPluginIds, getAgentTransform } from '../stack-config.js'
 import type { CopyResults, CopyDirOptions, DoctorCheck, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
 
 /**
@@ -17,7 +17,7 @@ import type { CopyResults, CopyDirOptions, DoctorCheck, ManagedPaths, RepoInfo, 
  *   skills/                    → .github/skills/
  *   agent-workflows/           → .github/agent-workflows/
  *   prompts/                   → .github/prompts/
- *   customizations/            → .github/customizations/  (scaffolded once)
+ *   customizations/            → .opencastle/  (scaffolded once)
  */
 
 export const IDE_ID = 'vscode'
@@ -33,7 +33,7 @@ const FRAMEWORK_DIRS = [
 ]
 
 /** Directories scaffolded once and never overwritten. */
-const CUSTOMIZABLE_DIRS = ['customizations']
+const CUSTOMIZABLE_DIRS: string[] = []
 
 export async function install(
   pkgRoot: string,
@@ -97,18 +97,6 @@ export async function install(
       await copyFile(skillPath, destPath)
       results.created.push(destPath)
     }
-  }
-
-  // Customization templates (scaffold once)
-  const custTransform = stack ? getCustomizationsTransform(stack) : undefined
-  for (const dir of CUSTOMIZABLE_DIRS) {
-    const srcDir = resolve(srcRoot, dir)
-    if (!existsSync(srcDir)) continue
-    const destDir = resolve(destRoot, dir)
-    const sub = await copyDir(srcDir, destDir, { transform: custTransform })
-    results.copied.push(...sub.copied)
-    results.skipped.push(...sub.skipped)
-    results.created.push(...sub.created)
   }
 
   // MCP server config → .vscode/mcp.json (scaffold once)
@@ -195,7 +183,7 @@ export function getManagedPaths(): ManagedPaths {
       ...FRAMEWORK_DIRS.map((d) => `.github/${d}/`),
     ],
     customizable: [
-      ...CUSTOMIZABLE_DIRS.map((d) => `.github/${d}/`),
+      '.opencastle/',
       '.vscode/mcp.json',
     ],
   }

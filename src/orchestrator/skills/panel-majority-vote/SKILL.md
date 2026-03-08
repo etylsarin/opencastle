@@ -3,7 +3,7 @@ name: panel-majority-vote
 description: "Run 3 isolated reviewer sub-agents against the same question and decide PASS/BLOCK by majority vote (2/3 wins). Use when deterministic verification is insufficient."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Skill: Panel majority vote (3 reviewers)
 
@@ -91,7 +91,7 @@ Finally: ensure whatever produced the claim being verified links the consolidate
 
 ## Notes
 - If the panel output is BLOCK, prefer to change the underlying work and re-run the same panel question over re-wording the question.
-- After 3 consecutive BLOCKs on the same panel key, create a **dispute record** in `.github/customizations/DISPUTES.md` instead of retrying further. The dispute packages the agent's position, all reviewer feedback, attempt history, and resolution options for human decision-making. See the **team-lead-reference** skill § Dispute Protocol for the full procedure.
+- After 3 consecutive BLOCKs on the same panel key, create a **dispute record** in `.opencastle/DISPUTES.md` instead of retrying further. The dispute packages the agent's position, all reviewer feedback, attempt history, and resolution options for human decision-making. See the **team-lead-reference** skill § Dispute Protocol for the full procedure.
 
 ## Model Selection for Reviewers
 
