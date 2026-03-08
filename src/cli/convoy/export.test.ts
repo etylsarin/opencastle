@@ -187,4 +187,41 @@ describe('exportConvoyToNdjson', () => {
       process.chdir(originalCwd)
     }
   })
+
+  it('includes cost fields (prompt_tokens, completion_tokens, total_tokens) per task when present', async () => {
+    insertConvoy('c1')
+    insertTask('t1', 'c1')
+    // Manually set token cost on the task record
+    store.updateTaskStatus('t1', 'c1', 'done', {
+      prompt_tokens: 200,
+      completion_tokens: 100,
+      total_tokens: 300,
+    })
+    // Set convoy-level totals
+    store.updateConvoyStatus('c1', 'done', { total_tokens: 300 })
+    const logsDir = join(tmpDir, 'logs')
+
+    await exportConvoyToNdjson(store, 'c1', logsDir)
+
+    const record = JSON.parse(readFileSync(join(logsDir, 'convoys.ndjson'), 'utf8').trim())
+    expect(record.tasks[0].prompt_tokens).toBe(200)
+    expect(record.tasks[0].completion_tokens).toBe(100)
+    expect(record.tasks[0].total_tokens).toBe(300)
+    expect(record.total_tokens).toBe(300)
+  })
+
+  it('cost fields are null when no usage data recorded', async () => {
+    insertConvoy('c1')
+    insertTask('t1', 'c1')
+    const logsDir = join(tmpDir, 'logs')
+
+    await exportConvoyToNdjson(store, 'c1', logsDir)
+
+    const record = JSON.parse(readFileSync(join(logsDir, 'convoys.ndjson'), 'utf8').trim())
+    expect(record.tasks[0].prompt_tokens).toBeNull()
+    expect(record.tasks[0].completion_tokens).toBeNull()
+    expect(record.tasks[0].total_tokens).toBeNull()
+    expect(record.total_tokens).toBeNull()
+    expect(record.total_cost_usd).toBeNull()
+  })
 })

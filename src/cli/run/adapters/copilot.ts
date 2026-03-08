@@ -100,11 +100,19 @@ export async function execute(task: Task, options: ExecuteOptions = {}): Promise
     const timeoutMs = parseTimeout(task.timeout)
     const response = await session.sendAndWait({ prompt }, timeoutMs)
     const output = response?.data?.content ?? ''
+    const rawUsage = (response?.data as Record<string, unknown> | undefined)?.usage ?? (response as Record<string, unknown> | undefined)?.usage
+    const u = rawUsage as Record<string, number> | undefined
+    const usageResult = u ? {
+      prompt_tokens: u.prompt_tokens ?? u.promptTokens,
+      completion_tokens: u.completion_tokens ?? u.completionTokens,
+      total_tokens: u.total_tokens ?? u.totalTokens,
+    } : undefined
 
     return {
       success: true,
       output: output.slice(0, 10_000),
       exitCode: 0,
+      usage: usageResult,
     }
   } catch (err: unknown) {
     return {

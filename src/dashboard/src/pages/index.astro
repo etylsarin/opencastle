@@ -309,6 +309,12 @@ const base = import.meta.env.BASE_URL;
     return div.innerHTML;
   }
 
+  function formatTokens(n) {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return String(n);
+  }
+
   // ── SVG Icon Library (empty states) ────────────────────
 
   const EMPTY_ICONS = {
@@ -1376,6 +1382,9 @@ const base = import.meta.env.BASE_URL;
     html += '<div class="convoy-stat"><span class="convoy-stat__label">Tasks</span><span class="convoy-stat__value">' + done + '/' + total + '</span></div>';
     html += '<div class="convoy-stat"><span class="convoy-stat__label">Events</span><span class="convoy-stat__value">' + (convoy.events_count || 0) + '</span></div>';
     html += '<div class="convoy-stat"><span class="convoy-stat__label">Started</span><span class="convoy-stat__value">' + (convoy.started_at ? formatTime(convoy.started_at) : '\u2014') + '</span></div>';
+    if (convoy.total_tokens != null) {
+      html += '<div class="convoy-stat"><span class="convoy-stat__label">Tokens</span><span class="convoy-stat__value">' + formatTokens(convoy.total_tokens) + '</span></div>';
+    }
     html += '</div>';
 
     html += '<div class="convoy-progress">';
@@ -1385,7 +1394,7 @@ const base = import.meta.env.BASE_URL;
 
     if (convoy.tasks && convoy.tasks.length > 0) {
       html += '<table class="sessions-table convoy-tasks">';
-      html += '<thead><tr><th>Task</th><th>Phase</th><th>Agent</th><th>Adapter</th><th>Status</th><th>Retries</th></tr></thead>';
+      html += '<thead><tr><th>Task</th><th>Phase</th><th>Agent</th><th>Adapter</th><th>Status</th><th>Retries</th><th>Tokens</th></tr></thead>';
       html += '<tbody>';
       convoy.tasks.forEach(function(t) {
         const tStatus = t.status === 'done' ? 'success'
@@ -1398,6 +1407,7 @@ const base = import.meta.env.BASE_URL;
         html += '<td>' + escapeHtml(t.adapter || '\u2014') + '</td>';
         html += '<td><span class="outcome-badge outcome-badge--' + tStatus + '">' + escapeHtml(t.status) + '</span></td>';
         html += '<td class="td-num">' + (t.retries || 0) + '</td>';
+        html += '<td class="td-num">' + (t.total_tokens != null ? formatTokens(t.total_tokens) : '\u2014') + '</td>';
         html += '</tr>';
       });
       html += '</tbody></table>';

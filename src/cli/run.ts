@@ -8,6 +8,12 @@ import { createReporter, printExecutionPlan } from './run/reporter.js'
 import type { CliContext, RunOptions } from './types.js'
 import type { ConvoyResult } from './convoy/engine.js'
 
+function formatTokens(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'K'
+  return String(n)
+}
+
 const HELP = `
   opencastle run [options]
 
@@ -153,6 +159,9 @@ function printConvoyResult(result: ConvoyResult): void {
       console.log(`    ${g.passed ? '✓' : '✗'} ${g.command}`)
     }
   }
+  if (result.cost) {
+    console.log(`  Tokens: ${formatTokens(result.cost.total_tokens)}`)
+  }
 }
 
 /**
@@ -199,6 +208,20 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
         console.log(`    ${status}: ${count}`)
       }
       console.log(`    total: ${tasks.length}`)
+      const totalTokens = tasks.reduce((sum, t) => sum + (t.total_tokens ?? 0), 0)
+      if (tasks.some(t => t.total_tokens != null)) {
+        console.log(`\n  Tokens: ${formatTokens(totalTokens)}`)
+        const tasksWithTokens = tasks.filter(t => t.total_tokens != null)
+        if (tasksWithTokens.length > 0) {
+          console.log(`\n  Token usage by task:`)
+          for (const t of tasksWithTokens) {
+            const parts = [formatTokens(t.total_tokens!)]
+            if (t.prompt_tokens != null) parts.push(`in: ${formatTokens(t.prompt_tokens)}`)
+            if (t.completion_tokens != null) parts.push(`out: ${formatTokens(t.completion_tokens)}`)
+            console.log(`    ${t.id}: ${parts.join(' | ')}`)
+          }
+        }
+      }
     } finally {
       store.close()
     }

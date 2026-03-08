@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import type { Task, ExecuteOptions, ExecuteResult } from '../../types.js'
+import type { Task, ExecuteOptions, ExecuteResult, TokenUsage } from '../../types.js'
 
 /** Adapter name */
 export const name = 'opencode'
@@ -53,10 +53,22 @@ export async function execute(task: Task, options: ExecuteOptions = {}): Promise
 
     proc.on('close', (code) => {
       const output = [stdout, stderr].filter(Boolean).join('\n')
+      let usage: TokenUsage | undefined
+      try {
+        const parsed = JSON.parse(stdout) as Record<string, unknown>
+        const u = parsed?.usage as Record<string, number> | undefined
+        if (u) {
+          const promptTokens = (u.input_tokens ?? u.prompt_tokens) as number | undefined
+          const completionTokens = (u.output_tokens ?? u.completion_tokens) as number | undefined
+          const total = ((promptTokens ?? 0) + (completionTokens ?? 0)) || undefined
+          usage = { prompt_tokens: promptTokens, completion_tokens: completionTokens, total_tokens: total }
+        }
+      } catch { /* not JSON or no usage — graceful degradation */ }
       resolve({
         success: code === 0,
         output: output.slice(0, 10000), // Cap output size
         exitCode: code ?? -1,
+        usage,
       })
     })
 

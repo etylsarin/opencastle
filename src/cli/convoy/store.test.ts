@@ -84,11 +84,11 @@ describe('DB creation', () => {
     expect(row.journal_mode).toBe('wal')
   })
 
-  it('sets schema version to 2', () => {
+  it('sets schema version to 3', () => {
     const db = new DatabaseSync(dbPath)
     const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
     db.close()
-    expect(row.user_version).toBe(2)
+    expect(row.user_version).toBe(3)
   })
 
   it('creates all required tables', () => {
@@ -113,7 +113,7 @@ describe('DB creation', () => {
     store2.close()
     // Reassign so afterEach does not double-close
     store = createConvoyStore(dbPath)
-    expect(row.user_version).toBe(2)
+    expect(row.user_version).toBe(3)
   })
 })
 
@@ -192,7 +192,180 @@ describe('schema migration', () => {
     verifyDb.close()
 
     expect(cols.map(c => c.name)).toContain('adapter')
-    expect(version.user_version).toBe(2)
+    // v1 chains through v2→v3 in one init, so final version is 3
+    expect(version.user_version).toBe(3)
+  })
+
+  it('schema migration v2 to v3 adds cost columns', () => {
+    // Create a v2 database manually (has adapter column but no cost columns)
+    const v2DbPath = join(tmpDir, 'v2.db')
+    const rawDb = new DatabaseSync(v2DbPath)
+    rawDb.exec(`
+      CREATE TABLE convoy (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        spec_hash   TEXT NOT NULL,
+        status      TEXT NOT NULL DEFAULT 'pending',
+        branch      TEXT,
+        created_at  TEXT NOT NULL,
+        started_at  TEXT,
+        finished_at TEXT,
+        spec_yaml   TEXT NOT NULL
+      );
+      CREATE TABLE task (
+        id          TEXT PRIMARY KEY,
+        convoy_id   TEXT NOT NULL REFERENCES convoy(id),
+        phase       INTEGER NOT NULL,
+        prompt      TEXT NOT NULL,
+        agent       TEXT NOT NULL DEFAULT 'developer',
+        adapter     TEXT,
+        model       TEXT,
+        timeout_ms  INTEGER NOT NULL DEFAULT 1800000,
+        status      TEXT NOT NULL DEFAULT 'pending',
+        worker_id   TEXT,
+        worktree    TEXT,
+        output      TEXT,
+        exit_code   INTEGER,
+        started_at  TEXT,
+        finished_at TEXT,
+        retries     INTEGER NOT NULL DEFAULT 0,
+        max_retries INTEGER NOT NULL DEFAULT 1,
+        files       TEXT,
+        depends_on  TEXT
+      );
+      CREATE TABLE worker (
+        id             TEXT PRIMARY KEY,
+        task_id        TEXT REFERENCES task(id),
+        adapter        TEXT NOT NULL,
+        pid            INTEGER,
+        session_id     TEXT,
+        status         TEXT NOT NULL DEFAULT 'spawned',
+        worktree       TEXT,
+        created_at     TEXT NOT NULL,
+        finished_at    TEXT,
+        last_heartbeat TEXT
+      );
+      CREATE TABLE event (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        convoy_id  TEXT REFERENCES convoy(id),
+        task_id    TEXT,
+        worker_id  TEXT,
+        type       TEXT NOT NULL,
+        data       TEXT,
+        created_at TEXT NOT NULL
+      );
+    `)
+    rawDb.exec('PRAGMA user_version = 2')
+    rawDb.close()
+
+    // Open with createConvoyStore — should apply the v2→v3 migration
+    const v2Store = createConvoyStore(v2DbPath)
+    v2Store.close()
+
+    // Verify cost columns were added
+    const verifyDb = new DatabaseSync(v2DbPath)
+    const taskCols = verifyDb.prepare('PRAGMA table_info(task)').all() as Array<{ name: string }>
+    const convoyCols = verifyDb.prepare('PRAGMA table_info(convoy)').all() as Array<{ name: string }>
+    const version = verifyDb.prepare('PRAGMA user_version').get() as { user_version: number }
+    verifyDb.close()
+
+    const taskColNames = taskCols.map(c => c.name)
+    expect(taskColNames).toContain('prompt_tokens')
+    expect(taskColNames).toContain('completion_tokens')
+    expect(taskColNames).toContain('total_tokens')
+    expect(taskColNames).toContain('cost_usd')
+
+    const convoyColNames = convoyCols.map(c => c.name)
+    expect(convoyColNames).toContain('total_tokens')
+    expect(convoyColNames).toContain('total_cost_usd')
+
+    expect(version.user_version).toBe(3)
+  })
+
+  it('schema migration v1 to v3 chains correctly in a single init', () => {
+    // Create a v1 database (task table without adapter or cost columns)
+    const v1DbPath = join(tmpDir, 'v1-chain.db')
+    const rawDb = new DatabaseSync(v1DbPath)
+    rawDb.exec(`
+      CREATE TABLE convoy (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        spec_hash   TEXT NOT NULL,
+        status      TEXT NOT NULL DEFAULT 'pending',
+        branch      TEXT,
+        created_at  TEXT NOT NULL,
+        started_at  TEXT,
+        finished_at TEXT,
+        spec_yaml   TEXT NOT NULL
+      );
+      CREATE TABLE task (
+        id          TEXT PRIMARY KEY,
+        convoy_id   TEXT NOT NULL REFERENCES convoy(id),
+        phase       INTEGER NOT NULL,
+        prompt      TEXT NOT NULL,
+        agent       TEXT NOT NULL DEFAULT 'developer',
+        model       TEXT,
+        timeout_ms  INTEGER NOT NULL DEFAULT 1800000,
+        status      TEXT NOT NULL DEFAULT 'pending',
+        worker_id   TEXT,
+        worktree    TEXT,
+        output      TEXT,
+        exit_code   INTEGER,
+        started_at  TEXT,
+        finished_at TEXT,
+        retries     INTEGER NOT NULL DEFAULT 0,
+        max_retries INTEGER NOT NULL DEFAULT 1,
+        files       TEXT,
+        depends_on  TEXT
+      );
+      CREATE TABLE worker (
+        id             TEXT PRIMARY KEY,
+        task_id        TEXT REFERENCES task(id),
+        adapter        TEXT NOT NULL,
+        pid            INTEGER,
+        session_id     TEXT,
+        status         TEXT NOT NULL DEFAULT 'spawned',
+        worktree       TEXT,
+        created_at     TEXT NOT NULL,
+        finished_at    TEXT,
+        last_heartbeat TEXT
+      );
+      CREATE TABLE event (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        convoy_id  TEXT REFERENCES convoy(id),
+        task_id    TEXT,
+        worker_id  TEXT,
+        type       TEXT NOT NULL,
+        data       TEXT,
+        created_at TEXT NOT NULL
+      );
+    `)
+    rawDb.exec('PRAGMA user_version = 1')
+    rawDb.close()
+
+    // Open with createConvoyStore — should chain v1→v2→v3 in one init
+    const v1Store = createConvoyStore(v1DbPath)
+    v1Store.close()
+
+    // Verify all columns from both migrations are present
+    const verifyDb = new DatabaseSync(v1DbPath)
+    const taskCols = verifyDb.prepare('PRAGMA table_info(task)').all() as Array<{ name: string }>
+    const convoyCols = verifyDb.prepare('PRAGMA table_info(convoy)').all() as Array<{ name: string }>
+    const version = verifyDb.prepare('PRAGMA user_version').get() as { user_version: number }
+    verifyDb.close()
+
+    const taskColNames = taskCols.map(c => c.name)
+    expect(taskColNames).toContain('adapter')
+    expect(taskColNames).toContain('prompt_tokens')
+    expect(taskColNames).toContain('completion_tokens')
+    expect(taskColNames).toContain('total_tokens')
+    expect(taskColNames).toContain('cost_usd')
+
+    const convoyColNames = convoyCols.map(c => c.name)
+    expect(convoyColNames).toContain('total_tokens')
+    expect(convoyColNames).toContain('total_cost_usd')
+
+    expect(version.user_version).toBe(3)
   })
 })
 
@@ -237,6 +410,25 @@ describe('convoy CRUD', () => {
     const retrieved = store.getConvoy('convoy-1')!
     expect(retrieved.status).toBe('done')
     expect(retrieved.finished_at).toBe(ts)
+  })
+
+  it('cost fields are null by default on a new convoy', () => {
+    store.insertConvoy(makeConvoy())
+    const retrieved = store.getConvoy('convoy-1')!
+    expect(retrieved.total_tokens).toBeNull()
+    expect(retrieved.total_cost_usd).toBeNull()
+  })
+
+  it('updateConvoyStatus persists total_tokens and total_cost_usd', () => {
+    store.insertConvoy(makeConvoy())
+    store.updateConvoyStatus('convoy-1', 'done', {
+      finished_at: '2026-01-01T01:00:00.000Z',
+      total_tokens: 5000,
+      total_cost_usd: '0.015000',
+    })
+    const retrieved = store.getConvoy('convoy-1')!
+    expect(retrieved.total_tokens).toBe(5000)
+    expect(retrieved.total_cost_usd).toBe('0.015000')
   })
 })
 
@@ -310,6 +502,30 @@ describe('task CRUD', () => {
     expect(task.exit_code).toBe(0)
     expect(task.finished_at).toBe(ts)
     expect(task.retries).toBe(1)
+  })
+
+  it('cost fields are null by default on a new task', () => {
+    store.insertTask(makeTask())
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.prompt_tokens).toBeNull()
+    expect(task.completion_tokens).toBeNull()
+    expect(task.total_tokens).toBeNull()
+    expect(task.cost_usd).toBeNull()
+  })
+
+  it('updateTaskStatus persists cost fields', () => {
+    store.insertTask(makeTask())
+    store.updateTaskStatus('task-1', 'convoy-1', 'done', {
+      prompt_tokens: 1200,
+      completion_tokens: 800,
+      total_tokens: 2000,
+      cost_usd: '0.006000',
+    })
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.prompt_tokens).toBe(1200)
+    expect(task.completion_tokens).toBe(800)
+    expect(task.total_tokens).toBe(2000)
+    expect(task.cost_usd).toBe('0.006000')
   })
 })
 

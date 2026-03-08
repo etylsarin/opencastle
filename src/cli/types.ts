@@ -238,6 +238,13 @@ export interface ExecuteOptions {
   cwd?: string;
 }
 
+/** Token usage data from adapter execution. */
+export interface TokenUsage {
+  prompt_tokens?: number;
+  completion_tokens?: number;
+  total_tokens?: number;
+}
+
 /** Result from an agent adapter execution. */
 export interface ExecuteResult {
   success: boolean;
@@ -245,6 +252,8 @@ export interface ExecuteResult {
   exitCode: number;
   _timedOut?: boolean;
   taskId?: string;
+  /** Token usage data if available from the adapter. */
+  usage?: TokenUsage;
 }
 
 /** Reporter interface for the run command. */

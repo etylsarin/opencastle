@@ -21,6 +21,8 @@ export interface ConvoyRecord {
   started_at: string | null
   finished_at: string | null
   spec_yaml: string
+  total_tokens: number | null
+  total_cost_usd: string | null
 }
 
 export interface TaskRecord {
@@ -43,6 +45,10 @@ export interface TaskRecord {
   max_retries: number
   files: string | null
   depends_on: string | null
+  prompt_tokens: number | null
+  completion_tokens: number | null
+  total_tokens: number | null
+  cost_usd: string | null
 }
 
 export interface WorkerRecord {
