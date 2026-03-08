@@ -124,6 +124,9 @@ function printAdapterError(detectionFailed: boolean, adapterName: string): void 
         '    The Cursor agent CLI ships with the Cursor editor.\n' +
         '    Install Cursor from https://cursor.com and ensure the\n' +
         '    "agent" command is on your PATH (Cursor > Install CLI).',
+      opencode:
+        '    Install OpenCode from https://opencode.ai\n' +
+        '    Ensure the "opencode" command is on your PATH.',
     }
     const cliName = adapterName === 'claude-code' ? 'claude' : adapterName
     const hint = hints[adapterName] ?? ''

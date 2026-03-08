@@ -529,6 +529,27 @@ describe('validateSpec — branch field', () => {
   })
 })
 
+// ── validateSpec — per-task adapter ──────────────────────────
+
+describe('validateSpec — per-task adapter', () => {
+  it('task.adapter must be a string', () => {
+    const result = validateSpec({
+      name: 'test',
+      tasks: [{ id: 'a', prompt: 'x', adapter: 123 }],
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('adapter'))
+  })
+
+  it('task.adapter accepts valid string', () => {
+    const result = validateSpec({
+      name: 'test',
+      tasks: [{ id: 'a', prompt: 'x', adapter: 'opencode' }],
+    })
+    expect(result.valid).toBe(true)
+  })
+})
+
 // ── validateSpec — per-task model and max_retries ──────────────
 
 describe('validateSpec — per-task model and max_retries', () => {
@@ -720,6 +741,35 @@ describe('applyDefaults — convoy spec (version: 1)', () => {
     expect(spec.version).toBe(1)
     expect(spec.gates).toEqual(['npm test'])
     expect(spec.branch).toBe('feat/convoy')
+  })
+
+  it('applies defaults.adapter to tasks without explicit adapter', () => {
+    const spec = applyDefaults({
+      name: 'test',
+      version: 1,
+      defaults: { adapter: 'opencode' },
+      tasks: [{ id: 'a', prompt: 'x' }],
+    })
+    expect(spec.tasks![0].adapter).toBe('opencode')
+  })
+
+  it('task-level adapter overrides defaults.adapter', () => {
+    const spec = applyDefaults({
+      name: 'test',
+      version: 1,
+      defaults: { adapter: 'opencode' },
+      tasks: [{ id: 'a', prompt: 'x', adapter: 'claude-code' }],
+    })
+    expect(spec.tasks![0].adapter).toBe('claude-code')
+  })
+
+  it('tasks without adapter remain undefined when no defaults', () => {
+    const spec = applyDefaults({
+      name: 'test',
+      version: 1,
+      tasks: [{ id: 'a', prompt: 'x' }],
+    })
+    expect(spec.tasks![0].adapter).toBeUndefined()
   })
 })
 
