@@ -27,8 +27,9 @@ const base = import.meta.env.BASE_URL;
     <nav class="dash-sidebar" id="dash-sidebar">
       <ul class="dash-sidebar__list">
         <li><a class="dash-sidebar__link" href="#convoy-section" data-section="convoy-section">Convoy</a></li>
+        <li><a class="dash-sidebar__link" href="#convoy-pipeline-section" data-section="convoy-pipeline-section">Convoy Chain</a></li>
         <li><a class="dash-sidebar__link dash-sidebar__link--active" href="#kpi-row" data-section="kpi-row">Overview</a></li>
-        <li><a class="dash-sidebar__link" href="#pipeline-section" data-section="pipeline-section">Pipeline</a></li>
+        <li><a class="dash-sidebar__link" href="#pipeline-section" data-section="pipeline-section">Task Flow</a></li>
         <li><a class="dash-sidebar__link" href="#agent-section" data-section="agent-section">Agents</a></li>
         <li><a class="dash-sidebar__link" href="#tier-section" data-section="tier-section">Tiers</a></li>
         <li><a class="dash-sidebar__link" href="#delegation-section" data-section="delegation-section">Delegations</a></li>
@@ -73,6 +74,12 @@ const base = import.meta.env.BASE_URL;
           <option value="">All convoys</option>
         </select>
       </div>
+      <div class="filter-group">
+        <label class="filter-label" for="filter-pipeline">Pipeline</label>
+        <select class="filter-select" id="filter-pipeline">
+          <option value="">All</option>
+        </select>
+      </div>
       <button class="dash-btn dash-btn--ghost filter-reset" id="filter-reset" type="button">Reset</button>
     </div>
 
@@ -83,6 +90,16 @@ const base = import.meta.env.BASE_URL;
         <p class="chart-card__desc" id="convoy-desc">Select a convoy to view details</p>
       </div>
       <div class="chart-card__body" id="convoy-body">
+      </div>
+    </section>
+
+    <!-- Convoy Pipeline (Chaining) Section -->
+    <section class="chart-card" id="convoy-pipeline-section" data-nav-section style="display:none">
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Convoy Pipeline</h2>
+        <p class="chart-card__desc" id="convoy-pipeline-desc">Pipeline convoy chain progress</p>
+      </div>
+      <div class="chart-card__body" id="convoy-pipeline-body">
       </div>
     </section>
 
@@ -1178,6 +1195,7 @@ const base = import.meta.env.BASE_URL;
   let rawPanels = [];
   let rawReviews = [];
   let rawConvoys = [];
+  let rawPipelines = [];
 
   function applyFilters() {
     const dateFrom = document.getElementById('filter-date-from').value;
@@ -1185,6 +1203,7 @@ const base = import.meta.env.BASE_URL;
     const agentFilter = document.getElementById('filter-agent').value;
     const outcomeFilter = document.getElementById('filter-outcome').value;
     const convoyFilter = document.getElementById('filter-convoy').value;
+    const pipelineFilter = document.getElementById('filter-pipeline')?.value || '';
 
     function matchDate(ts) {
       const date = ts.slice(0, 10);
@@ -1214,6 +1233,18 @@ const base = import.meta.env.BASE_URL;
       return true;
     });
 
+    // Pipeline filter: restrict events to convoy_ids within the selected pipeline
+    if (pipelineFilter) {
+      const activePipeline = rawPipelines.find((p) => p.id === pipelineFilter);
+      const pipelineConvoyIds = new Set((activePipeline && activePipeline.convoy_ids) || []);
+      if (pipelineConvoyIds.size > 0) {
+        sessions = sessions.filter((s) => !s.convoy_id || pipelineConvoyIds.has(s.convoy_id));
+        delegations = delegations.filter((d) => !d.convoy_id || pipelineConvoyIds.has(d.convoy_id));
+        panels = panels.filter((p2) => !p2.convoy_id || pipelineConvoyIds.has(p2.convoy_id));
+        reviews = reviews.filter((r) => !r.convoy_id || pipelineConvoyIds.has(r.convoy_id));
+      }
+    }
+
     if (convoyFilter) {
       sessions = sessions.filter((s) => s.convoy_id === convoyFilter);
       delegations = delegations.filter((d) => d.convoy_id === convoyFilter);
@@ -1227,6 +1258,17 @@ const base = import.meta.env.BASE_URL;
       if (convoyFilter) {
         const convoy = rawConvoys.find((c) => c.id === convoyFilter);
         renderConvoyStatus(convoy);
+      }
+    }
+
+    // Show/hide convoy pipeline section based on pipeline filter
+    const pipelineSectionEl = document.getElementById('convoy-pipeline-section');
+    if (pipelineSectionEl) {
+      if (pipelineFilter) {
+        const activePipeline = rawPipelines.find((p) => p.id === pipelineFilter);
+        renderConvoyPipeline(activePipeline, rawConvoys);
+      } else {
+        pipelineSectionEl.style.display = 'none';
       }
     }
 
@@ -1416,9 +1458,186 @@ const base = import.meta.env.BASE_URL;
     bodyEl.innerHTML = html;
   }
 
+  // ── Pipeline Filter Population ───────────────────────────
+
+  function populatePipelineFilter(pipelines) {
+    const select = document.getElementById('filter-pipeline');
+    if (!select) return;
+    while (select.options.length > 1) select.remove(1);
+    const sorted = pipelines.slice().sort((a, b) =>
+      (b.created_at || '').localeCompare(a.created_at || '')
+    );
+    sorted.forEach((p) => {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = (p.name || p.id) + ' (' + (p.status || 'unknown') + ')';
+      select.appendChild(opt);
+    });
+  }
+
+  // ── Convoy Pipeline (Chaining) Render ────────────────────
+
+  function renderConvoyPipeline(pipeline, convoys) {
+    const sectionEl = document.getElementById('convoy-pipeline-section');
+    const descEl = document.getElementById('convoy-pipeline-desc');
+    const bodyEl = document.getElementById('convoy-pipeline-body');
+    if (!sectionEl || !bodyEl) return;
+
+    if (!pipeline) {
+      sectionEl.style.display = 'none';
+      return;
+    }
+
+    sectionEl.style.display = '';
+    if (descEl) {
+      descEl.textContent =
+        (pipeline.name || pipeline.id) + ' \u2014 ' + (pipeline.branch || 'no branch');
+    }
+
+    const convoyIds = pipeline.convoy_ids || [];
+    const pipelineConvoys = convoyIds
+      .map((id) => convoys.find((c) => c.id === id))
+      .filter(Boolean);
+
+    const total = pipelineConvoys.length;
+    const done = pipelineConvoys.filter((c) => c.status === 'done').length;
+    const failed = pipelineConvoys.filter(
+      (c) => c.status === 'failed' || c.status === 'gate-failed'
+    ).length;
+    const totalTasks = pipelineConvoys.reduce((sum, c) => {
+      const s = c.summary || {};
+      return sum + (s.total || (c.tasks ? c.tasks.length : 0));
+    }, 0);
+    const doneTasks = pipelineConvoys.reduce((sum, c) => {
+      const s = c.summary || {};
+      return sum + (s.done || 0);
+    }, 0);
+    const totalTokens = pipelineConvoys.reduce((sum, c) => sum + (c.total_tokens || 0), 0);
+
+    const pct =
+      totalTasks > 0
+        ? Math.round((doneTasks / totalTasks) * 100)
+        : total > 0
+          ? Math.round((done / total) * 100)
+          : 0;
+
+    const statusClass =
+      pipeline.status === 'done'
+        ? 'success'
+        : pipeline.status === 'failed' || pipeline.status === 'gate-failed'
+          ? 'failed'
+          : pipeline.status === 'running'
+            ? 'partial'
+            : '';
+
+    let html = '<div class="convoy-overview">';
+    html +=
+      '<div class="convoy-stat"><span class="convoy-stat__label">Status</span>' +
+      '<span class="outcome-badge outcome-badge--' + statusClass + '">' +
+      escapeHtml(pipeline.status || 'unknown') + '</span></div>';
+    html +=
+      '<div class="convoy-stat"><span class="convoy-stat__label">Branch</span>' +
+      '<span class="convoy-stat__value">' + escapeHtml(pipeline.branch || '\u2014') + '</span></div>';
+    html +=
+      '<div class="convoy-stat"><span class="convoy-stat__label">Convoys</span>' +
+      '<span class="convoy-stat__value">' + done + '/' + total + '</span></div>';
+    if (totalTasks > 0) {
+      html +=
+        '<div class="convoy-stat"><span class="convoy-stat__label">Tasks</span>' +
+        '<span class="convoy-stat__value">' + doneTasks + '/' + totalTasks + '</span></div>';
+    }
+    if (totalTokens > 0) {
+      html +=
+        '<div class="convoy-stat"><span class="convoy-stat__label">Tokens</span>' +
+        '<span class="convoy-stat__value">' + formatTokens(totalTokens) + '</span></div>';
+    }
+    html +=
+      '<div class="convoy-stat"><span class="convoy-stat__label">Started</span>' +
+      '<span class="convoy-stat__value">' +
+      (pipeline.started_at ? formatTime(pipeline.started_at) : '\u2014') + '</span></div>';
+    if (pipeline.finished_at) {
+      html +=
+        '<div class="convoy-stat"><span class="convoy-stat__label">Finished</span>' +
+        '<span class="convoy-stat__value">' + formatTime(pipeline.finished_at) + '</span></div>';
+    }
+    html += '</div>';
+
+    // Convoy chain visualization
+    html += '<div class="convoy-chain">';
+    pipelineConvoys.forEach((convoy, i) => {
+      const cs = convoy.summary || {};
+      const cDone = cs.done || 0;
+      const cTotal = cs.total || (convoy.tasks ? convoy.tasks.length : 0);
+      const cTokens = convoy.total_tokens || 0;
+      const isActive =
+        (pipeline.current_convoy_id && pipeline.current_convoy_id === convoy.id) ||
+        convoy.status === 'running';
+      const nodeStatusClass =
+        convoy.status === 'done'
+          ? 'done'
+          : convoy.status === 'failed' || convoy.status === 'gate-failed'
+            ? 'failed'
+            : isActive
+              ? 'active'
+              : 'pending';
+      const badgeClass =
+        convoy.status === 'done'
+          ? 'success'
+          : convoy.status === 'failed' || convoy.status === 'gate-failed'
+            ? 'failed'
+            : convoy.status === 'running'
+              ? 'partial'
+              : '';
+
+      if (i > 0) {
+        html += '<div class="convoy-chain__connector">\u2192</div>';
+      }
+      html +=
+        '<div class="convoy-chain__node convoy-chain__node--' + nodeStatusClass +
+        '" data-convoy-id="' + escapeHtml(convoy.id) + '" title="Click to filter to this convoy">';
+      html += '<div class="convoy-chain__node-name">' + escapeHtml(convoy.name || convoy.id) + '</div>';
+      html +=
+        '<span class="outcome-badge outcome-badge--' + badgeClass + '">' +
+        escapeHtml(convoy.status) + '</span>';
+      if (cTotal > 0) {
+        html += '<div class="convoy-chain__node-meta">' + cDone + '/' + cTotal + ' tasks</div>';
+      }
+      if (cTokens > 0) {
+        html += '<div class="convoy-chain__node-meta">' + formatTokens(cTokens) + ' tokens</div>';
+      }
+      html += '</div>';
+    });
+    html += '</div>';
+
+    // Progress bar
+    html += '<div class="convoy-progress">';
+    html +=
+      '<div class="convoy-progress__bar">' +
+      '<div class="convoy-progress__fill" style="width:' + pct + '%"></div></div>';
+    html +=
+      '<span class="convoy-progress__label">' + pct + '% complete' +
+      (failed > 0 ? ' \u00B7 ' + failed + ' failed' : '') + '</span>';
+    html += '</div>';
+
+    bodyEl.innerHTML = html;
+
+    // Click handlers for convoy drill-down
+    bodyEl.querySelectorAll('.convoy-chain__node').forEach((node) => {
+      node.addEventListener('click', () => {
+        const convoyId = node.dataset.convoyId;
+        const sel = document.getElementById('filter-convoy');
+        if (sel && convoyId) {
+          sel.value = convoyId;
+          applyFilters();
+        }
+      });
+    });
+  }
+
   async function main() {
     const events = await loadNdjson(base + 'data/events.ndjson');
     const convoys = await loadNdjson(base + 'data/convoys.ndjson');
+    const pipelines = await loadNdjson(base + 'data/pipelines.ndjson');
 
     const sessions = events.filter((e) => e.type === 'session');
     const delegations = events.filter((e) => e.type === 'delegation');
@@ -1430,9 +1649,11 @@ const base = import.meta.env.BASE_URL;
     rawPanels = panels;
     rawReviews = reviews;
     rawConvoys = convoys;
+    rawPipelines = pipelines;
 
     populateAgentFilter(sessions, delegations, reviews);
     populateConvoyFilter(convoys);
+    populatePipelineFilter(pipelines);
 
     // ── Read URL params ───────────────────────────────────
     const urlParams = new URLSearchParams(window.location.search);
@@ -1461,12 +1682,14 @@ const base = import.meta.env.BASE_URL;
     document.getElementById('filter-agent')?.addEventListener('change', applyFilters);
     document.getElementById('filter-outcome')?.addEventListener('change', applyFilters);
     document.getElementById('filter-convoy')?.addEventListener('change', applyFilters);
+    document.getElementById('filter-pipeline')?.addEventListener('change', applyFilters);
     document.getElementById('filter-reset')?.addEventListener('click', () => {
       document.getElementById('filter-date-from').value = '';
       document.getElementById('filter-date-to').value = '';
       document.getElementById('filter-agent').value = '';
       document.getElementById('filter-outcome').value = '';
       document.getElementById('filter-convoy').value = '';
+      document.getElementById('filter-pipeline').value = '';
       applyFilters();
     });
 
@@ -1477,15 +1700,21 @@ const base = import.meta.env.BASE_URL;
       refreshInterval = setInterval(async () => {
         const freshEvents = await loadNdjson(base + 'data/events.ndjson');
         const freshConvoys = await loadNdjson(base + 'data/convoys.ndjson');
+        const freshPipelines = await loadNdjson(base + 'data/pipelines.ndjson');
         rawSessions = freshEvents.filter((e) => e.type === 'session');
         rawDelegations = freshEvents.filter((e) => e.type === 'delegation');
         rawPanels = freshEvents.filter((e) => e.type === 'panel');
         rawReviews = freshEvents.filter((e) => e.type === 'review');
         rawConvoys = freshConvoys;
+        rawPipelines = freshPipelines;
         const currentValue = document.getElementById('filter-convoy')?.value;
+        const currentPipelineValue = document.getElementById('filter-pipeline')?.value;
         populateConvoyFilter(freshConvoys);
+        populatePipelineFilter(freshPipelines);
         const sel = document.getElementById('filter-convoy');
         if (sel && currentValue) sel.value = currentValue;
+        const pSel = document.getElementById('filter-pipeline');
+        if (pSel && currentPipelineValue) pSel.value = currentPipelineValue;
         applyFilters();
       }, 5000);
     }

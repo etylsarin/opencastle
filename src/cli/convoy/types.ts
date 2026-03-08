@@ -11,6 +11,8 @@ export type ConvoyTaskStatus =
 
 export type WorkerStatus = 'spawned' | 'running' | 'done' | 'failed' | 'killed'
 
+export type PipelineStatus = 'pending' | 'running' | 'done' | 'failed'
+
 export interface ConvoyRecord {
   id: string
   name: string
@@ -23,6 +25,7 @@ export interface ConvoyRecord {
   spec_yaml: string
   total_tokens: number | null
   total_cost_usd: string | null
+  pipeline_id: string | null
 }
 
 export interface TaskRecord {
@@ -72,4 +75,18 @@ export interface EventRecord {
   type: string
   data: string | null
   created_at: string
+}
+
+export interface PipelineRecord {
+  id: string
+  name: string
+  status: PipelineStatus
+  branch: string | null
+  spec_yaml: string
+  convoy_specs: string
+  created_at: string
+  started_at: string | null
+  finished_at: string | null
+  total_tokens: number | null
+  total_cost_usd: string | null
 }

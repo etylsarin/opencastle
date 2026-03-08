@@ -158,7 +158,7 @@ export interface TaskSpec {
   adapter: string;
   tasks?: Task[];
   _verbose?: boolean;
-  /** Spec schema version (1 for Convoy Engine format). */
+  /** Spec schema version (1 for Convoy Engine format, 2 for pipeline chaining). */
   version?: number;
   /** Worker defaults merged into each task (Convoy Engine). */
   defaults?: TaskDefaults;
@@ -166,6 +166,8 @@ export interface TaskSpec {
   gates?: string[];
   /** Git feature branch name. */
   branch?: string;
+  /** Other convoy spec names to run before this one (version: 2 pipeline specs). */
+  depends_on_convoy?: string[];
 }
 
 /** A single task in the spec. */

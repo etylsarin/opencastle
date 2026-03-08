@@ -7,12 +7,14 @@ import type {
   WorkerRecord,
   WorkerStatus,
   EventRecord,
+  PipelineRecord,
+  PipelineStatus,
 } from './types.js'
 
-const SCHEMA_VERSION = 3
+const SCHEMA_VERSION = 4
 
 export interface ConvoyStore {
-  insertConvoy(record: Omit<ConvoyRecord, 'started_at' | 'finished_at' | 'total_tokens' | 'total_cost_usd'>): void
+  insertConvoy(record: Omit<ConvoyRecord, 'started_at' | 'finished_at' | 'total_tokens' | 'total_cost_usd' | 'pipeline_id'> & { pipeline_id?: string | null }): void
   getConvoy(id: string): ConvoyRecord | undefined
   getLatestConvoy(): ConvoyRecord | undefined
   updateConvoyStatus(
@@ -46,6 +48,15 @@ export interface ConvoyStore {
   ): void
   insertEvent(record: Omit<EventRecord, 'id'>): void
   getEvents(convoyId: string): EventRecord[]
+  insertPipeline(record: Omit<PipelineRecord, 'started_at' | 'finished_at' | 'total_tokens' | 'total_cost_usd'>): void
+  getPipeline(id: string): PipelineRecord | undefined
+  getLatestPipeline(): PipelineRecord | undefined
+  updatePipelineStatus(
+    id: string,
+    status: PipelineStatus,
+    extra?: { started_at?: string; finished_at?: string; total_tokens?: number | null; total_cost_usd?: string | null },
+  ): void
+  getConvoysByPipeline(pipelineId: string): ConvoyRecord[]
   withTransaction<T>(fn: () => T): T
   close(): void
 }
@@ -75,7 +86,22 @@ class ConvoyStoreImpl implements ConvoyStore {
           finished_at    TEXT,
           spec_yaml      TEXT NOT NULL,
           total_tokens   INTEGER,
-          total_cost_usd TEXT
+          total_cost_usd TEXT,
+          pipeline_id    TEXT
+        );
+
+        CREATE TABLE IF NOT EXISTS pipeline (
+          id              TEXT PRIMARY KEY,
+          name            TEXT NOT NULL,
+          status          TEXT NOT NULL DEFAULT 'pending',
+          branch          TEXT,
+          spec_yaml       TEXT NOT NULL,
+          convoy_specs    TEXT NOT NULL,
+          created_at      TEXT NOT NULL,
+          started_at      TEXT,
+          finished_at     TEXT,
+          total_tokens    INTEGER,
+          total_cost_usd  TEXT
         );
 
         CREATE TABLE IF NOT EXISTS task (
@@ -145,15 +171,35 @@ class ConvoyStoreImpl implements ConvoyStore {
       this.db.exec('PRAGMA user_version = 3')
       version = 3
     }
+    if (version === 3) {
+      this.db.exec(`
+        CREATE TABLE IF NOT EXISTS pipeline (
+          id              TEXT PRIMARY KEY,
+          name            TEXT NOT NULL,
+          status          TEXT NOT NULL DEFAULT 'pending',
+          branch          TEXT,
+          spec_yaml       TEXT NOT NULL,
+          convoy_specs    TEXT NOT NULL,
+          created_at      TEXT NOT NULL,
+          started_at      TEXT,
+          finished_at     TEXT,
+          total_tokens    INTEGER,
+          total_cost_usd  TEXT
+        )
+      `)
+      this.db.exec('ALTER TABLE convoy ADD COLUMN pipeline_id TEXT')
+      this.db.exec('PRAGMA user_version = 4')
+      version = 4
+    }
   }
 
-  insertConvoy(record: Omit<ConvoyRecord, 'started_at' | 'finished_at' | 'total_tokens' | 'total_cost_usd'>): void {
+  insertConvoy(record: Omit<ConvoyRecord, 'started_at' | 'finished_at' | 'total_tokens' | 'total_cost_usd' | 'pipeline_id'> & { pipeline_id?: string | null }): void {
     this.db
       .prepare(
-        `INSERT INTO convoy (id, name, spec_hash, status, branch, created_at, started_at, finished_at, spec_yaml)
-         VALUES (:id, :name, :spec_hash, :status, :branch, :created_at, NULL, NULL, :spec_yaml)`,
+        `INSERT INTO convoy (id, name, spec_hash, status, branch, created_at, started_at, finished_at, spec_yaml, pipeline_id)
+         VALUES (:id, :name, :spec_hash, :status, :branch, :created_at, NULL, NULL, :spec_yaml, :pipeline_id)`,
       )
-      .run(record)
+      .run({ ...record, pipeline_id: record.pipeline_id ?? null })
   }
 
   getConvoy(id: string): ConvoyRecord | undefined {
@@ -322,6 +368,63 @@ class ConvoyStoreImpl implements ConvoyStore {
     return this.db
       .prepare('SELECT * FROM event WHERE convoy_id = :convoy_id ORDER BY id')
       .all({ convoy_id: convoyId }) as unknown as EventRecord[]
+  }
+
+  insertPipeline(record: Omit<PipelineRecord, 'started_at' | 'finished_at' | 'total_tokens' | 'total_cost_usd'>): void {
+    this.db
+      .prepare(
+        `INSERT INTO pipeline (id, name, status, branch, spec_yaml, convoy_specs, created_at,
+           started_at, finished_at, total_tokens, total_cost_usd)
+         VALUES (:id, :name, :status, :branch, :spec_yaml, :convoy_specs, :created_at,
+           NULL, NULL, NULL, NULL)`,
+      )
+      .run(record)
+  }
+
+  getPipeline(id: string): PipelineRecord | undefined {
+    return this.db
+      .prepare('SELECT * FROM pipeline WHERE id = :id')
+      .get({ id }) as PipelineRecord | undefined
+  }
+
+  getLatestPipeline(): PipelineRecord | undefined {
+    return this.db
+      .prepare('SELECT * FROM pipeline ORDER BY created_at DESC LIMIT 1')
+      .get() as PipelineRecord | undefined
+  }
+
+  updatePipelineStatus(
+    id: string,
+    status: PipelineStatus,
+    extra?: { started_at?: string; finished_at?: string; total_tokens?: number | null; total_cost_usd?: string | null },
+  ): void {
+    const sets = ['status = :status']
+    const params: Record<string, string | number | null> = { id, status }
+
+    if (extra?.started_at !== undefined) {
+      sets.push('started_at = :started_at')
+      params.started_at = extra.started_at
+    }
+    if (extra?.finished_at !== undefined) {
+      sets.push('finished_at = :finished_at')
+      params.finished_at = extra.finished_at
+    }
+    if (extra?.total_tokens !== undefined) {
+      sets.push('total_tokens = :total_tokens')
+      params.total_tokens = extra.total_tokens
+    }
+    if (extra?.total_cost_usd !== undefined) {
+      sets.push('total_cost_usd = :total_cost_usd')
+      params.total_cost_usd = extra.total_cost_usd
+    }
+
+    this.db.prepare(`UPDATE pipeline SET ${sets.join(', ')} WHERE id = :id`).run(params)
+  }
+
+  getConvoysByPipeline(pipelineId: string): ConvoyRecord[] {
+    return this.db
+      .prepare('SELECT * FROM convoy WHERE pipeline_id = :pipeline_id ORDER BY created_at')
+      .all({ pipeline_id: pipelineId }) as unknown as ConvoyRecord[]
   }
 
   withTransaction<T>(fn: () => T): T {

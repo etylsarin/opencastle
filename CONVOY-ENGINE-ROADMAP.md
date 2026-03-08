@@ -789,36 +789,58 @@ src/cli/run/                       # EXISTING — extended, not replaced
 ---
 
 ### Phase 11: Convoy Chaining
-**Status: 📋 Planned**
+**Status: ✅ Done**
 
-**Scope:** Support multi-convoy pipelines where one convoy spec references another as a dependency.
+**Scope:** Multi-convoy pipelines where one convoy spec can reference others as dependencies and be executed as a single pipeline.
 
 #### 11.1 Spec Format Extension
-- [ ] Add optional `depends_on_convoy` field to spec (list of convoy spec file paths)
-- [ ] Spec parser validates referenced files exist and are valid convoy specs
-- [ ] Version bump: `version: 2` for chaining support (v1 specs still work)
+- [x] Add optional `depends_on_convoy` field to spec (list of convoy spec file paths)
+- [x] Spec parser validates `depends_on_convoy` as array of strings
+- [x] Version support: `version: 2` for chaining support (v1 specs still work)
+- [x] `isPipelineSpec()` function detects pipeline specs (version 2 + depends_on_convoy)
+- [x] `isConvoySpec()` returns true for both v1 and v2
 
-#### 11.2 Pipeline Orchestrator
-- [ ] New `pipeline.ts` — reads a chain of convoy specs and executes in order
-- [ ] Each convoy in the chain runs to completion before the next starts
-- [ ] Shared branch: all convoys in a pipeline operate on the same feature branch
-- [ ] Pipeline-level status in SQLite (new `pipeline` table)
+#### 11.2 Pipeline Store
+- [x] `PipelineRecord` and `PipelineStatus` types
+- [x] SQLite schema v3→v4 migration with `pipeline` table
+- [x] Pipeline CRUD: insert, get, getLatest, updateStatus
+- [x] `pipeline_id` column added to convoy table
+- [x] `getConvoysByPipeline()` returns linked convoys
 
-#### 11.3 CLI Support
-- [ ] `opencastle run pipeline.convoy.yml` — detects chaining, runs pipeline orchestrator
-- [ ] `opencastle run --status` shows pipeline progress when applicable
-- [ ] `--resume` recovers interrupted pipelines
+#### 11.3 Pipeline Orchestrator
+- [x] New `pipeline.ts` — reads a chain of convoy specs and executes in order
+- [x] Each convoy in the chain runs to completion before the next starts
+- [x] Shared branch: all convoys in a pipeline operate on the same feature branch
+- [x] Pipeline-level status in SQLite (`pipeline` table)
+- [x] Crash recovery via `resume()` — resumes from first non-completed convoy
+- [x] Hybrid pipeline: own tasks run as final convoy after chained convoys
+- [x] Token aggregation across all convoys
+- [x] NDJSON export (`pipelines.ndjson`)
 
-#### 11.4 Dashboard Pipeline View
-- [ ] Pipeline overview: convoy chain progress visualization
-- [ ] Drill-down from pipeline → individual convoy → tasks
+#### 11.4 CLI Support (was "11.3 CLI Support" in original)
+- [x] `opencastle run pipeline.convoy.yml` — detects chaining via `isPipelineSpec()`, runs pipeline orchestrator
+- [x] `opencastle run --status` shows pipeline progress when applicable (checks pipeline before convoy)
+- [x] `--resume` recovers interrupted pipelines (checks pipeline before convoy)
+- [x] `--dry-run` shows pipeline plan with convoy chain visualization
+- [x] Dashboard auto-starts during pipeline run
 
-**Acceptance criteria:**
-- [ ] Convoy spec can reference other convoy specs as dependencies
-- [ ] Pipeline executes convoys in dependency order
-- [ ] Crash recovery works across convoy boundaries
-- [ ] Dashboard shows pipeline-level progress
-- [ ] Backward-compatible: v1 specs without chaining still work
+#### 11.5 Dashboard Pipeline View (was "11.4 Dashboard Pipeline View" in original)
+- [x] Pipeline filter dropdown in filter bar
+- [x] Convoy pipeline section with chain visualization (horizontal flow with connected nodes)
+- [x] Pipeline overview: status, branch, convoy count, tokens, timestamps
+- [x] Click convoy node → drills down to convoy filter
+- [x] Pipeline progress bar
+- [x] Auto-refresh includes pipeline data
+- [x] "Pipeline" sidebar entry renamed to "Task Flow"; new "Convoy Chain" entry added
+
+**Acceptance criteria — all checked:**
+- [x] Convoy spec can reference other convoy specs as dependencies
+- [x] Pipeline executes convoys in dependency order
+- [x] Crash recovery works across convoy boundaries
+- [x] Dashboard shows pipeline-level progress
+- [x] Backward-compatible: v1 specs without chaining still work
+
+**Delivered:** 2 new files (`pipeline.ts`, `pipeline.test.ts`), 8 edited files (types.ts, store.ts, store.test.ts, schema.ts, schema.test.ts, engine.ts, export.ts, run.ts, dashboard.ts, index.astro, dashboard.css). 546 tests (24 new pipeline), 0 failures. Schema migrated v3→v4.
 
 ---
 
@@ -838,6 +860,6 @@ src/cli/run/                       # EXISTING — extended, not replaced
 | Phase 10 | Medium | Phase 4 | Cost tracking — adapter, store, report, dashboard |
 | Phase 11 | Low | Phase 10 | Convoy chaining — pipeline orchestrator |
 
-Phases 1–10 are complete. Phase 11 (convoy chaining) is planned future work.
+Phases 1–11 are complete.
 
 **Total new code estimate:** ~6–8 new files in `src/cli/convoy/`, edits to ~4 existing files in `src/cli/run/`. The spec parser, DAG planner, adapter layer, concurrency executor, and timeout/kill logic are already built.

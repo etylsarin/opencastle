@@ -27,6 +27,7 @@ export interface ConvoyEngineOptions {
   dbPath?: string
   logsDir?: string
   verbose?: boolean
+  pipelineId?: string
   _worktreeManager?: WorktreeManager
   _mergeQueue?: MergeQueue
 }
@@ -470,6 +471,7 @@ export function createConvoyEngine(options: ConvoyEngineOptions): ConvoyEngine {
         branch: baseBranch,
         created_at: new Date().toISOString(),
         spec_yaml: specYaml,
+        pipeline_id: options.pipelineId ?? null,
       })
 
       const tasks = spec.tasks ?? []

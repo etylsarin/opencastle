@@ -21,6 +21,7 @@ const MIME_TYPES: Record<string, string> = {
 const DATA_FILES = [
   'events.ndjson',
   'convoys.ndjson',
+  'pipelines.ndjson',
   // Legacy individual files — kept for backwards compatibility
   'sessions.ndjson',
   'delegations.ndjson',

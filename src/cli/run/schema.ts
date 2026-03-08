@@ -43,6 +43,7 @@ interface RawSpec {
   defaults?: unknown
   gates?: unknown
   branch?: unknown
+  depends_on_convoy?: unknown
 }
 
 interface RawTask {
@@ -99,8 +100,18 @@ export function validateSpec(spec: unknown): ValidationResult {
 
   // version
   if (s.version !== undefined) {
-    if (typeof s.version !== 'number' || !Number.isInteger(s.version) || s.version !== 1) {
-      errors.push('`version` must be 1')
+    if (typeof s.version !== 'number' || !Number.isInteger(s.version) || (s.version !== 1 && s.version !== 2)) {
+      errors.push('`version` must be 1 or 2')
+    }
+  }
+
+  // depends_on_convoy
+  if (s.depends_on_convoy !== undefined) {
+    if (
+      !Array.isArray(s.depends_on_convoy) ||
+      !(s.depends_on_convoy as unknown[]).every((c) => typeof c === 'string')
+    ) {
+      errors.push('`depends_on_convoy` must be an array of strings')
     }
   }
 
@@ -148,10 +159,26 @@ export function validateSpec(spec: unknown): ValidationResult {
     errors.push('`branch` must be a string')
   }
 
-  // Tasks are always required
-  if (!s.tasks || !Array.isArray(s.tasks) || s.tasks.length === 0) {
-    errors.push('`tasks` is required and must be a non-empty array')
+  // Tasks: required unless this is a version:2 pipeline spec with depends_on_convoy
+  const isPipeline =
+    s.version === 2 &&
+    Array.isArray(s.depends_on_convoy) &&
+    (s.depends_on_convoy as unknown[]).length > 0
+
+  if (!isPipeline) {
+    if (!s.tasks || !Array.isArray(s.tasks) || s.tasks.length === 0) {
+      errors.push('`tasks` is required and must be a non-empty array')
+      return { valid: false, errors }
+    }
+  } else if (s.tasks !== undefined && (!Array.isArray(s.tasks) || s.tasks.length === 0)) {
+    // Pipeline spec may omit tasks entirely, but if present they must be non-empty
+    errors.push('`tasks`, when provided, must be a non-empty array')
     return { valid: false, errors }
+  }
+
+  // Skip per-task validation when pipeline spec has no tasks
+  if (isPipeline && !s.tasks) {
+    return { valid: errors.length === 0, errors }
   }
 
   const taskIds = new Set<string>()
@@ -293,7 +320,7 @@ export function applyDefaults(spec: Record<string, unknown>): TaskSpec {
   // Leave adapter empty so run.ts can auto-detect the best available CLI
   s.adapter = (s.adapter as string) || ''
 
-  const tasks = s.tasks as Array<Record<string, unknown>>
+  const tasks = (s.tasks as Array<Record<string, unknown>> | undefined) ?? []
   const d =
     s.version === 1 && s.defaults
       ? (s.defaults as Record<string, unknown>)
@@ -327,11 +354,25 @@ export function applyDefaults(spec: Record<string, unknown>): TaskSpec {
 }
 
 /**
- * Returns true if the spec uses the Convoy Engine enhanced format (version: 1).
+ * Returns true if the spec uses the Convoy Engine enhanced format (version: 1 or 2).
  */
 export function isConvoySpec(spec: unknown): boolean {
   if (!spec || typeof spec !== 'object') return false
-  return (spec as Record<string, unknown>).version === 1
+  const v = (spec as Record<string, unknown>).version
+  return v === 1 || v === 2
+}
+
+/**
+ * Returns true if the spec is a pipeline spec (version: 2 + non-empty depends_on_convoy).
+ */
+export function isPipelineSpec(spec: unknown): boolean {
+  if (!spec || typeof spec !== 'object') return false
+  const s = spec as Record<string, unknown>
+  return (
+    s.version === 2 &&
+    Array.isArray(s.depends_on_convoy) &&
+    (s.depends_on_convoy as unknown[]).length > 0
+  )
 }
 
 /**

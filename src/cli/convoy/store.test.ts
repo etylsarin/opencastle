@@ -32,6 +32,7 @@ function makeConvoy(overrides: Partial<Parameters<ConvoyStore['insertConvoy']>[0
     branch: null,
     created_at: new Date().toISOString(),
     spec_yaml: 'name: test',
+    pipeline_id: null,
     ...overrides,
   }
 }
@@ -69,6 +70,19 @@ function makeWorker(overrides: Partial<Parameters<ConvoyStore['insertWorker']>[0
   }
 }
 
+function makePipeline(overrides: Partial<Parameters<ConvoyStore['insertPipeline']>[0]> = {}) {
+  return {
+    id: 'pipeline-1',
+    name: 'Test Pipeline',
+    status: 'pending' as const,
+    branch: null,
+    spec_yaml: 'name: test-pipeline\nversion: 2',
+    convoy_specs: JSON.stringify(['convoys/step1.yml', 'convoys/step2.yml']),
+    created_at: new Date().toISOString(),
+    ...overrides,
+  }
+}
+
 // ── DB creation and WAL mode ──────────────────────────────────────────────────
 
 describe('DB creation', () => {
@@ -84,11 +98,11 @@ describe('DB creation', () => {
     expect(row.journal_mode).toBe('wal')
   })
 
-  it('sets schema version to 3', () => {
+  it('sets schema version to 4', () => {
     const db = new DatabaseSync(dbPath)
     const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
     db.close()
-    expect(row.user_version).toBe(3)
+    expect(row.user_version).toBe(4)
   })
 
   it('creates all required tables', () => {
@@ -102,6 +116,7 @@ describe('DB creation', () => {
     expect(names).toContain('task')
     expect(names).toContain('worker')
     expect(names).toContain('event')
+    expect(names).toContain('pipeline')
   })
 
   it('reopening an existing DB does not reset schema version', () => {
@@ -113,7 +128,7 @@ describe('DB creation', () => {
     store2.close()
     // Reassign so afterEach does not double-close
     store = createConvoyStore(dbPath)
-    expect(row.user_version).toBe(3)
+    expect(row.user_version).toBe(4)
   })
 })
 
@@ -192,8 +207,8 @@ describe('schema migration', () => {
     verifyDb.close()
 
     expect(cols.map(c => c.name)).toContain('adapter')
-    // v1 chains through v2→v3 in one init, so final version is 3
-    expect(version.user_version).toBe(3)
+    // v1 chains through v2→v3→v4 in one init, so final version is 4
+    expect(version.user_version).toBe(4)
   })
 
   it('schema migration v2 to v3 adds cost columns', () => {
@@ -279,7 +294,7 @@ describe('schema migration', () => {
     expect(convoyColNames).toContain('total_tokens')
     expect(convoyColNames).toContain('total_cost_usd')
 
-    expect(version.user_version).toBe(3)
+    expect(version.user_version).toBe(4)
   })
 
   it('schema migration v1 to v3 chains correctly in a single init', () => {
@@ -365,7 +380,90 @@ describe('schema migration', () => {
     expect(convoyColNames).toContain('total_tokens')
     expect(convoyColNames).toContain('total_cost_usd')
 
-    expect(version.user_version).toBe(3)
+    expect(version.user_version).toBe(4)
+  })
+
+  it('schema migration v3 to v4 creates pipeline table and adds pipeline_id to convoy', () => {
+    const v3DbPath = join(tmpDir, 'v3.db')
+    const rawDb = new DatabaseSync(v3DbPath)
+    rawDb.exec(`
+      CREATE TABLE convoy (
+        id          TEXT PRIMARY KEY,
+        name        TEXT NOT NULL,
+        spec_hash   TEXT NOT NULL,
+        status      TEXT NOT NULL DEFAULT 'pending',
+        branch      TEXT,
+        created_at  TEXT NOT NULL,
+        started_at  TEXT,
+        finished_at TEXT,
+        spec_yaml   TEXT NOT NULL,
+        total_tokens INTEGER,
+        total_cost_usd TEXT
+      );
+      CREATE TABLE task (
+        id          TEXT PRIMARY KEY,
+        convoy_id   TEXT NOT NULL REFERENCES convoy(id),
+        phase       INTEGER NOT NULL,
+        prompt      TEXT NOT NULL,
+        agent       TEXT NOT NULL DEFAULT 'developer',
+        adapter     TEXT,
+        model       TEXT,
+        timeout_ms  INTEGER NOT NULL DEFAULT 1800000,
+        status      TEXT NOT NULL DEFAULT 'pending',
+        worker_id   TEXT,
+        worktree    TEXT,
+        output      TEXT,
+        exit_code   INTEGER,
+        started_at  TEXT,
+        finished_at TEXT,
+        retries     INTEGER NOT NULL DEFAULT 0,
+        max_retries INTEGER NOT NULL DEFAULT 1,
+        files       TEXT,
+        depends_on  TEXT,
+        prompt_tokens INTEGER,
+        completion_tokens INTEGER,
+        total_tokens INTEGER,
+        cost_usd TEXT
+      );
+      CREATE TABLE worker (
+        id             TEXT PRIMARY KEY,
+        task_id        TEXT REFERENCES task(id),
+        adapter        TEXT NOT NULL,
+        pid            INTEGER,
+        session_id     TEXT,
+        status         TEXT NOT NULL DEFAULT 'spawned',
+        worktree       TEXT,
+        created_at     TEXT NOT NULL,
+        finished_at    TEXT,
+        last_heartbeat TEXT
+      );
+      CREATE TABLE event (
+        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+        convoy_id  TEXT REFERENCES convoy(id),
+        task_id    TEXT,
+        worker_id  TEXT,
+        type       TEXT NOT NULL,
+        data       TEXT,
+        created_at TEXT NOT NULL
+      );
+    `)
+    rawDb.exec('PRAGMA user_version = 3')
+    rawDb.close()
+
+    const v3Store = createConvoyStore(v3DbPath)
+    v3Store.close()
+
+    const verifyDb = new DatabaseSync(v3DbPath)
+    const convoyCols = verifyDb.prepare('PRAGMA table_info(convoy)').all() as Array<{ name: string }>
+    const tables = verifyDb
+      .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+      .all() as Array<{ name: string }>
+    const version = verifyDb.prepare('PRAGMA user_version').get() as { user_version: number }
+    verifyDb.close()
+
+    expect(convoyCols.map(c => c.name)).toContain('pipeline_id')
+    expect(tables.map(t => t.name)).toContain('pipeline')
+    expect(version.user_version).toBe(4)
   })
 })
 
@@ -735,6 +833,140 @@ describe('withTransaction', () => {
     const task = store.getTask('task-alpha', 'convoy-1')!
     expect(task.status).toBe('running')
     expect(task.started_at).toBe(ts)
+  })
+})
+
+// ── pipeline CRUD ─────────────────────────────────────────────────────────────
+
+describe('pipeline CRUD', () => {
+  it('inserts and retrieves a pipeline record', () => {
+    store.insertPipeline(makePipeline())
+    const retrieved = store.getPipeline('pipeline-1')
+    expect(retrieved).toBeDefined()
+    expect(retrieved!.id).toBe('pipeline-1')
+    expect(retrieved!.name).toBe('Test Pipeline')
+    expect(retrieved!.status).toBe('pending')
+    expect(retrieved!.started_at).toBeNull()
+    expect(retrieved!.finished_at).toBeNull()
+    expect(retrieved!.total_tokens).toBeNull()
+    expect(retrieved!.total_cost_usd).toBeNull()
+  })
+
+  it('returns undefined for missing pipeline', () => {
+    expect(store.getPipeline('does-not-exist')).toBeUndefined()
+  })
+
+  it('getLatestPipeline returns most recent pipeline', () => {
+    store.insertPipeline(makePipeline({ id: 'pipeline-old', created_at: '2026-01-01T00:00:00.000Z' }))
+    store.insertPipeline(makePipeline({ id: 'pipeline-new', created_at: '2026-01-02T00:00:00.000Z' }))
+    const latest = store.getLatestPipeline()
+    expect(latest?.id).toBe('pipeline-new')
+  })
+
+  it('getLatestPipeline returns undefined when no pipelines exist', () => {
+    expect(store.getLatestPipeline()).toBeUndefined()
+  })
+
+  it('updatePipelineStatus updates status', () => {
+    store.insertPipeline(makePipeline())
+    store.updatePipelineStatus('pipeline-1', 'running')
+    expect(store.getPipeline('pipeline-1')!.status).toBe('running')
+  })
+
+  it('updatePipelineStatus sets started_at', () => {
+    const ts = '2026-01-01T00:00:00.000Z'
+    store.insertPipeline(makePipeline())
+    store.updatePipelineStatus('pipeline-1', 'running', { started_at: ts })
+    const p = store.getPipeline('pipeline-1')!
+    expect(p.status).toBe('running')
+    expect(p.started_at).toBe(ts)
+  })
+
+  it('updatePipelineStatus sets finished_at', () => {
+    const ts = '2026-01-01T01:00:00.000Z'
+    store.insertPipeline(makePipeline())
+    store.updatePipelineStatus('pipeline-1', 'done', { finished_at: ts })
+    const p = store.getPipeline('pipeline-1')!
+    expect(p.status).toBe('done')
+    expect(p.finished_at).toBe(ts)
+  })
+
+  it('updatePipelineStatus persists total_tokens and total_cost_usd', () => {
+    store.insertPipeline(makePipeline())
+    store.updatePipelineStatus('pipeline-1', 'done', {
+      finished_at: '2026-01-01T01:00:00.000Z',
+      total_tokens: 12000,
+      total_cost_usd: '0.036000',
+    })
+    const p = store.getPipeline('pipeline-1')!
+    expect(p.total_tokens).toBe(12000)
+    expect(p.total_cost_usd).toBe('0.036000')
+  })
+
+  it('pipeline status can transition through all states', () => {
+    store.insertPipeline(makePipeline())
+    const states = ['running', 'failed', 'done', 'pending'] as const
+    for (const s of states) {
+      store.updatePipelineStatus('pipeline-1', s)
+      expect(store.getPipeline('pipeline-1')!.status).toBe(s)
+    }
+  })
+
+  it('convoy_specs is stored and retrieved as a JSON string', () => {
+    const specs = ['convoys/build.yml', 'convoys/test.yml', 'convoys/deploy.yml']
+    store.insertPipeline(makePipeline({ convoy_specs: JSON.stringify(specs) }))
+    const p = store.getPipeline('pipeline-1')!
+    expect(JSON.parse(p.convoy_specs)).toEqual(specs)
+  })
+})
+
+// ── pipeline-convoy linking ───────────────────────────────────────────────────
+
+describe('pipeline-convoy linking', () => {
+  it('insertConvoy accepts pipeline_id', () => {
+    store.insertPipeline(makePipeline())
+    store.insertConvoy(makeConvoy({ pipeline_id: 'pipeline-1' }))
+    const c = store.getConvoy('convoy-1')!
+    expect(c.pipeline_id).toBe('pipeline-1')
+  })
+
+  it('insertConvoy with null pipeline_id creates a standalone convoy', () => {
+    store.insertConvoy(makeConvoy({ pipeline_id: null }))
+    const c = store.getConvoy('convoy-1')!
+    expect(c.pipeline_id).toBeNull()
+  })
+
+  it('getConvoysByPipeline returns all convoys for a pipeline', () => {
+    store.insertPipeline(makePipeline())
+    store.insertConvoy(makeConvoy({ id: 'convoy-1', pipeline_id: 'pipeline-1', created_at: '2026-01-01T00:00:00.000Z' }))
+    store.insertConvoy(makeConvoy({ id: 'convoy-2', pipeline_id: 'pipeline-1', created_at: '2026-01-01T01:00:00.000Z' }))
+    const convoys = store.getConvoysByPipeline('pipeline-1')
+    expect(convoys).toHaveLength(2)
+    expect(convoys.map(c => c.id)).toEqual(['convoy-1', 'convoy-2'])
+  })
+
+  it('getConvoysByPipeline returns convoys ordered by created_at', () => {
+    store.insertPipeline(makePipeline())
+    store.insertConvoy(makeConvoy({ id: 'convoy-b', pipeline_id: 'pipeline-1', created_at: '2026-01-01T02:00:00.000Z' }))
+    store.insertConvoy(makeConvoy({ id: 'convoy-a', pipeline_id: 'pipeline-1', created_at: '2026-01-01T01:00:00.000Z' }))
+    const convoys = store.getConvoysByPipeline('pipeline-1')
+    expect(convoys[0].id).toBe('convoy-a')
+    expect(convoys[1].id).toBe('convoy-b')
+  })
+
+  it('getConvoysByPipeline returns empty array when no convoys are linked', () => {
+    store.insertPipeline(makePipeline())
+    expect(store.getConvoysByPipeline('pipeline-1')).toHaveLength(0)
+  })
+
+  it('getConvoysByPipeline does not return convoys from other pipelines', () => {
+    store.insertPipeline(makePipeline({ id: 'pipeline-1' }))
+    store.insertPipeline(makePipeline({ id: 'pipeline-2' }))
+    store.insertConvoy(makeConvoy({ id: 'convoy-1', pipeline_id: 'pipeline-1' }))
+    store.insertConvoy(makeConvoy({ id: 'convoy-2', pipeline_id: 'pipeline-2' }))
+    const p1Convoys = store.getConvoysByPipeline('pipeline-1')
+    expect(p1Convoys).toHaveLength(1)
+    expect(p1Convoys[0].id).toBe('convoy-1')
   })
 })
 
