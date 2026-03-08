@@ -39,8 +39,6 @@ interface RawSpec {
   on_failure?: unknown
   adapter?: unknown
   tasks?: unknown
-  mode?: unknown
-  loop?: unknown
   version?: unknown
   defaults?: unknown
   gates?: unknown
@@ -146,132 +144,87 @@ export function validateSpec(spec: unknown): ValidationResult {
     errors.push('`branch` must be a string')
   }
 
-  // mode
-  const mode = s.mode !== undefined ? s.mode : 'tasks'
-  if (mode !== 'tasks' && mode !== 'loop') {
-    errors.push('`mode` must be one of: tasks, loop')
+  // Tasks are always required
+  if (!s.tasks || !Array.isArray(s.tasks) || s.tasks.length === 0) {
+    errors.push('`tasks` is required and must be a non-empty array')
+    return { valid: false, errors }
   }
 
-  if (mode === 'loop') {
-    // Loop validation — tasks array is NOT required
-    const loop = s.loop as Record<string, unknown> | undefined
-    if (!loop || typeof loop !== 'object') {
-      errors.push('`loop` is required when mode is "loop"')
-    } else {
-      if (!loop.prompt || typeof loop.prompt !== 'string') {
-        errors.push('`loop.prompt` is required and must be a string')
-      }
-      if (loop.max_iterations !== undefined) {
-        const mi = Number(loop.max_iterations)
-        if (!Number.isInteger(mi) || mi < 1) {
-          errors.push('`loop.max_iterations` must be an integer >= 1')
-        }
-      }
-      if (loop.timeout !== undefined) {
-        if (isNaN(parseTimeout(loop.timeout as string))) {
-          errors.push(
-            '`loop.timeout` must be in format: <number><s|m|h> (e.g. "10m")'
-          )
-        }
-      }
-      if (loop.backpressure !== undefined) {
-        if (
-          !Array.isArray(loop.backpressure) ||
-          !(loop.backpressure as unknown[]).every((b) => typeof b === 'string')
-        ) {
-          errors.push('`loop.backpressure` must be an array of strings')
-        }
-      }
-      if (loop.plan_file !== undefined && typeof loop.plan_file !== 'string') {
-        errors.push('`loop.plan_file` must be a string')
-      }
-      if (loop.model !== undefined && typeof loop.model !== 'string') {
-        errors.push('`loop.model` must be a string')
-      }
-    }
-  } else {
-    // Tasks mode — tasks array is required
-    if (!s.tasks || !Array.isArray(s.tasks) || s.tasks.length === 0) {
-      errors.push('`tasks` is required and must be a non-empty array')
-      return { valid: false, errors }
-    }
+  const taskIds = new Set<string>()
+  const tasks = s.tasks as RawTask[]
 
-    const taskIds = new Set<string>()
-    const tasks = s.tasks as RawTask[]
-
-    for (let i = 0; i < tasks.length; i++) {
+  for (let i = 0; i < tasks.length; i++) {
       const task = tasks[i]
       const prefix = `tasks[${i}]`
 
       if (!task || typeof task !== 'object') {
         errors.push(`${prefix}: must be an object`)
-        continue
-      }
+      continue
+    }
 
-      // id
-      if (!task.id || typeof task.id !== 'string') {
-        errors.push(`${prefix}: \`id\` is required and must be a string`)
-      } else if (taskIds.has(task.id)) {
-        errors.push(`${prefix}: duplicate task id "${task.id}"`)
+    // id
+    if (!task.id || typeof task.id !== 'string') {
+      errors.push(`${prefix}: \`id\` is required and must be a string`)
+    } else if (taskIds.has(task.id)) {
+      errors.push(`${prefix}: duplicate task id "${task.id}"`)
+    } else {
+      taskIds.add(task.id)
+    }
+
+    // prompt
+    if (!task.prompt || typeof task.prompt !== 'string') {
+      errors.push(`${prefix}: \`prompt\` is required and must be a string`)
+    }
+
+    // timeout
+    if (task.timeout !== undefined) {
+      if (isNaN(parseTimeout(task.timeout as string))) {
+        errors.push(
+          `${prefix}: \`timeout\` must be in format: <number><s|m|h> (e.g. "10m")`
+        )
+      }
+    }
+
+    // depends_on
+    if (task.depends_on !== undefined) {
+      if (!Array.isArray(task.depends_on)) {
+        errors.push(`${prefix}: \`depends_on\` must be an array`)
       } else {
-        taskIds.add(task.id)
-      }
-
-      // prompt
-      if (!task.prompt || typeof task.prompt !== 'string') {
-        errors.push(`${prefix}: \`prompt\` is required and must be a string`)
-      }
-
-      // timeout
-      if (task.timeout !== undefined) {
-        if (isNaN(parseTimeout(task.timeout as string))) {
-          errors.push(
-            `${prefix}: \`timeout\` must be in format: <number><s|m|h> (e.g. "10m")`
-          )
-        }
-      }
-
-      // depends_on
-      if (task.depends_on !== undefined) {
-        if (!Array.isArray(task.depends_on)) {
-          errors.push(`${prefix}: \`depends_on\` must be an array`)
-        } else {
-          for (const dep of task.depends_on as string[]) {
-            if (!taskIds.has(dep) && !tasks.some((t) => t && t.id === dep)) {
-              errors.push(
-                `${prefix}: \`depends_on\` references unknown task "${dep}"`
-              )
-            }
+        for (const dep of task.depends_on as string[]) {
+          if (!taskIds.has(dep) && !tasks.some((t) => t && t.id === dep)) {
+            errors.push(
+              `${prefix}: \`depends_on\` references unknown task "${dep}"`
+            )
           }
         }
       }
-
-      // files
-      if (task.files !== undefined && !Array.isArray(task.files)) {
-        errors.push(`${prefix}: \`files\` must be an array`)
-      }
-
-      // model
-      if (task.model !== undefined && typeof task.model !== 'string') {
-        errors.push(`${prefix}: \`model\` must be a string`)
-      }
-
-      // max_retries
-      if (task.max_retries !== undefined) {
-        const mr = Number(task.max_retries)
-        if (!Number.isInteger(mr) || mr < 0) {
-          errors.push(
-            `${prefix}: \`max_retries\` must be a non-negative integer`
-          )
-        }
-      }
     }
 
-    // DAG cycle detection
-    if (errors.length === 0) {
-      const cycleErr = detectCycles(tasks as Array<{ id: string; depends_on?: string[] }>)
-      if (cycleErr) errors.push(cycleErr)
+    // files
+    if (task.files !== undefined && !Array.isArray(task.files)) {
+      errors.push(`${prefix}: \`files\` must be an array`)
     }
+
+    // model
+    if (task.model !== undefined && typeof task.model !== 'string') {
+      errors.push(`${prefix}: \`model\` must be a string`)
+    }
+
+    // max_retries
+    if (task.max_retries !== undefined) {
+      const mr = Number(task.max_retries)
+      if (!Number.isInteger(mr) || mr < 0) {
+        errors.push(
+          `${prefix}: \`max_retries\` must be a non-negative integer`
+        )
+      }
+    }
+  }
+
+  // DAG cycle detection
+  if (errors.length === 0) {
+    const cycleErr = detectCycles(tasks as Array<{ id: string; depends_on?: string[] }>)
+    if (cycleErr) errors.push(cycleErr)
   }
 
   return { valid: errors.length === 0, errors }
@@ -330,39 +283,30 @@ export function applyDefaults(spec: Record<string, unknown>): TaskSpec {
   s.on_failure = (s.on_failure as string) || 'continue'
   // Leave adapter empty so run.ts can auto-detect the best available CLI
   s.adapter = (s.adapter as string) || ''
-  s.mode = (s.mode as string) || 'tasks'
 
-  if (s.mode === 'loop') {
-    const loop = ((s.loop ?? {}) as Record<string, unknown>)
-    loop.max_iterations = loop.max_iterations !== undefined ? Number(loop.max_iterations) : 20
-    loop.plan_file = (loop.plan_file as string) || 'IMPLEMENTATION_PLAN.md'
-    loop.timeout = (loop.timeout as string) || '10m'
-    s.loop = loop
-  } else {
-    const tasks = s.tasks as Array<Record<string, unknown>>
-    const d =
-      s.version === 1 && s.defaults
-        ? (s.defaults as Record<string, unknown>)
-        : {}
-    for (const task of tasks) {
-      task.agent =
-        (task.agent as string) || (d.agent as string | undefined) || 'developer'
-      task.timeout =
-        (task.timeout as string) ||
-        (d.timeout as string | undefined) ||
-        '30m'
-      task.depends_on = (task.depends_on as string[]) || []
-      task.files = (task.files as string[]) || []
-      task.description = (task.description as string) || (task.id as string)
-      // model: task-level overrides defaults (no hardcoded fallback)
-      if (task.model === undefined && d.model !== undefined) {
-        task.model = d.model
-      }
-      // max_retries: task-level overrides defaults, fallback to 1
-      if (task.max_retries === undefined) {
-        task.max_retries =
-          d.max_retries !== undefined ? Number(d.max_retries) : 1
-      }
+  const tasks = s.tasks as Array<Record<string, unknown>>
+  const d =
+    s.version === 1 && s.defaults
+      ? (s.defaults as Record<string, unknown>)
+      : {}
+  for (const task of tasks) {
+    task.agent =
+      (task.agent as string) || (d.agent as string | undefined) || 'developer'
+    task.timeout =
+      (task.timeout as string) ||
+      (d.timeout as string | undefined) ||
+      '30m'
+    task.depends_on = (task.depends_on as string[]) || []
+    task.files = (task.files as string[]) || []
+    task.description = (task.description as string) || (task.id as string)
+    // model: task-level overrides defaults (no hardcoded fallback)
+    if (task.model === undefined && d.model !== undefined) {
+      task.model = d.model
+    }
+    // max_retries: task-level overrides defaults, fallback to 1
+    if (task.max_retries === undefined) {
+      task.max_retries =
+        d.max_retries !== undefined ? Number(d.max_retries) : 1
     }
   }
 
@@ -375,6 +319,30 @@ export function applyDefaults(spec: Record<string, unknown>): TaskSpec {
 export function isConvoySpec(spec: unknown): boolean {
   if (!spec || typeof spec !== 'object') return false
   return (spec as Record<string, unknown>).version === 1
+}
+
+/**
+ * Parse, validate, and return a typed task spec from a YAML string.
+ * @throws If the text is empty, cannot be parsed, or spec is invalid
+ */
+export function parseTaskSpecText(text: string): TaskSpec {
+  if (!text.trim()) {
+    throw new Error('Task spec file is empty')
+  }
+
+  let spec: Record<string, unknown>
+  try {
+    spec = parseYaml(text)
+  } catch (err: unknown) {
+    throw new Error(`YAML parse error: ${(err as Error).message}`)
+  }
+
+  const { valid, errors } = validateSpec(spec)
+  if (!valid) {
+    throw new Error(`Invalid task spec:\n  • ${errors.join('\n  • ')}`)
+  }
+
+  return applyDefaults(spec)
 }
 
 /**
@@ -393,21 +361,5 @@ export async function parseTaskSpec(filePath: string): Promise<TaskSpec> {
     throw new Error(`Cannot read task spec file: ${e.message}`)
   }
 
-  if (!text.trim()) {
-    throw new Error('Task spec file is empty')
-  }
-
-  let spec: Record<string, unknown>
-  try {
-    spec = parseYaml(text)
-  } catch (err: unknown) {
-    throw new Error(`YAML parse error: ${(err as Error).message}`)
-  }
-
-  const { valid, errors } = validateSpec(spec)
-  if (!valid) {
-    throw new Error(`Invalid task spec:\n  • ${errors.join('\n  • ')}`)
-  }
-
-  return applyDefaults(spec)
+  return parseTaskSpecText(text)
 }

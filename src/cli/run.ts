@@ -1,26 +1,28 @@
 import { readFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { parseTaskSpec } from './run/schema.js'
+import { parseTaskSpecText, isConvoySpec } from './run/schema.js'
 import { createExecutor, buildPhases } from './run/executor.js'
 import { getAdapter, detectAdapter } from './run/adapters/index.js'
 import { createReporter, printExecutionPlan } from './run/reporter.js'
 import type { CliContext, RunOptions } from './types.js'
+import type { ConvoyResult } from './convoy/engine.js'
 
 const HELP = `
   opencastle run [options]
 
   Process a task queue from a spec file, delegating to AI agents autonomously.
-  Supports two modes: tasks (default phase-based execution) and loop (iterative Ralph Loop).
+  Version 1 specs use the Convoy Engine; legacy specs use the standard executor.
 
   Options:
     --file, -f <path>        Task spec file (default: opencastle.tasks.yml)
     --dry-run                Show execution plan without running
-    --concurrency, -c <n>    Override max parallel tasks (tasks mode)
+    --concurrency, -c <n>    Override max parallel tasks
     --adapter, -a <name>     Override agent runtime adapter
     --report-dir <path>      Where to write run reports (default: .opencastle/runs)
     --verbose                Show full agent output
-    --mode <name>            Execution mode: tasks | loop
-    --max-iterations <n>     Override max loop iterations (loop mode)
+    --resume                 Resume the last interrupted convoy from .opencastle/convoy.db
+    --status                 Print the current convoy state from .opencastle/convoy.db
     --help, -h               Show this help
 `
 
@@ -36,8 +38,8 @@ function parseArgs(args: string[]): RunOptions {
     reportDir: null,
     verbose: false,
     help: false,
-    maxIterations: null,
-    mode: null,
+    resume: false,
+    status: false,
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -79,26 +81,12 @@ function parseArgs(args: string[]): RunOptions {
       case '--verbose':
         opts.verbose = true
         break
-      case '--max-iterations': {
-        if (i + 1 >= args.length) { console.error('  \u2717 --max-iterations requires a number'); process.exit(1) }
-        const val = parseInt(args[++i], 10)
-        if (!Number.isFinite(val) || val < 1) {
-          console.error(`  \u2717 --max-iterations must be an integer >= 1`)
-          process.exit(1)
-        }
-        opts.maxIterations = val
+      case '--resume':
+        opts.resume = true
         break
-      }
-      case '--mode': {
-        if (i + 1 >= args.length) { console.error('  \u2717 --mode requires a name'); process.exit(1) }
-        const modeVal = args[++i]
-        if (modeVal !== 'tasks' && modeVal !== 'loop') {
-          console.error(`  \u2717 --mode must be one of: tasks, loop`)
-          process.exit(1)
-        }
-        opts.mode = modeVal
+      case '--status':
+        opts.status = true
         break
-      }
       default:
         console.error(`  ✗ Unknown option: ${arg}`)
         console.log(HELP)
@@ -107,6 +95,61 @@ function parseArgs(args: string[]): RunOptions {
   }
 
   return opts
+}
+
+/**
+ * Print a user-friendly adapter unavailable error.
+ */
+function printAdapterError(detectionFailed: boolean, adapterName: string): void {
+  if (detectionFailed) {
+    console.error(
+      `  ✗ No agent CLI found on your PATH.\n` +
+        `    Install one of the following adapters:\n` +
+        `    • copilot    — https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n` +
+        `    • claude     — npm install -g @anthropic-ai/claude-code\n` +
+        `    • cursor     — https://cursor.com (Cursor > Install CLI)\n` +
+        `\n` +
+        `    Or specify an adapter explicitly: opencastle run --adapter <name>`
+    )
+  } else {
+    const hints: Record<string, string> = {
+      'claude-code':
+        '    Install: npm install -g @anthropic-ai/claude-code\n' +
+        '    Docs:    https://docs.anthropic.com/en/docs/claude-code',
+      copilot:
+        '    Requires the Copilot CLI installed and authenticated:\n' +
+        '    https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n' +
+        '    Docs:    https://docs.github.com/en/copilot',
+      cursor:
+        '    The Cursor agent CLI ships with the Cursor editor.\n' +
+        '    Install Cursor from https://cursor.com and ensure the\n' +
+        '    "agent" command is on your PATH (Cursor > Install CLI).',
+    }
+    const cliName = adapterName === 'claude-code' ? 'claude' : adapterName
+    const hint = hints[adapterName] ?? ''
+    console.error(
+      `  ✗ Adapter "${adapterName}" is not available.\n` +
+        `    Make sure the "${cliName}" CLI is installed and on your PATH.\n` +
+        hint
+    )
+  }
+}
+
+/**
+ * Print a convoy result summary.
+ */
+function printConvoyResult(result: ConvoyResult): void {
+  console.log(`\n  ──────────────────────────────────────`)
+  console.log(`  Convoy ${result.status}: ${result.duration}`)
+  console.log(
+    `  Done: ${result.summary.done} | Failed: ${result.summary.failed} | Skipped: ${result.summary.skipped} | Timed out: ${result.summary.timedOut}`
+  )
+  if (result.gateResults) {
+    console.log(`  Gates:`)
+    for (const g of result.gateResults) {
+      console.log(`    ${g.passed ? '✓' : '✗'} ${g.command}`)
+    }
+  }
 }
 
 /**
@@ -120,15 +163,133 @@ export default async function run({ args }: CliContext): Promise<void> {
     return
   }
 
+  const dbPath = resolve(process.cwd(), '.opencastle', 'convoy.db')
+
+  // ── --status flag ─────────────────────────────────────────────
+  if (opts.status) {
+    if (!existsSync(dbPath)) {
+      console.log('  No convoy database found at .opencastle/convoy.db')
+      return
+    }
+    const { createConvoyStore } = await import('./convoy/store.js')
+    const store = createConvoyStore(dbPath)
+    try {
+      const convoy = store.getLatestConvoy()
+      if (!convoy) {
+        console.log('  No convoy records found.')
+        return
+      }
+      const tasks = store.getTasksByConvoy(convoy.id)
+      const byStatus = tasks.reduce((acc, t) => {
+        acc[t.status] = (acc[t.status] ?? 0) + 1
+        return acc
+      }, {} as Record<string, number>)
+      console.log(`\n  Convoy: ${convoy.name}`)
+      console.log(`  ID:     ${convoy.id}`)
+      console.log(`  Status: ${convoy.status}`)
+      console.log(`  Branch: ${convoy.branch ?? '(none)'}`)
+      console.log(`  Created: ${convoy.created_at}`)
+      if (convoy.started_at) console.log(`  Started: ${convoy.started_at}`)
+      if (convoy.finished_at) console.log(`  Finished: ${convoy.finished_at}`)
+      console.log(`\n  Tasks:`)
+      for (const [status, count] of Object.entries(byStatus)) {
+        console.log(`    ${status}: ${count}`)
+      }
+      console.log(`    total: ${tasks.length}`)
+    } finally {
+      store.close()
+    }
+    return
+  }
+
+  // ── --resume flag ─────────────────────────────────────────────
+  if (opts.resume) {
+    if (!existsSync(dbPath)) {
+      console.error('  ✗ No convoy database found at .opencastle/convoy.db')
+      console.error('    Run a convoy spec first: opencastle run convoy.yml')
+      process.exit(1)
+    }
+    const { createConvoyStore } = await import('./convoy/store.js')
+    const store = createConvoyStore(dbPath)
+    const convoy = store.getLatestConvoy()
+    store.close()
+    if (!convoy) {
+      console.error('  ✗ No convoy records found in .opencastle/convoy.db')
+      process.exit(1)
+    }
+    if (convoy.status === 'done' || convoy.status === 'failed') {
+      console.error(
+        `  ✗ Last convoy "${convoy.name}" already finished with status: ${convoy.status}`
+      )
+      console.error(`    Only interrupted (running/pending) convoys can be resumed.`)
+      process.exit(1)
+    }
+
+    const resumeSpec = parseTaskSpecText(convoy.spec_yaml)
+    if (opts.concurrency !== null) resumeSpec.concurrency = opts.concurrency
+    if (opts.adapter !== null) resumeSpec.adapter = opts.adapter
+    if (opts.verbose) resumeSpec._verbose = true
+
+    let resumeDetectionFailed = false
+    if (!resumeSpec.adapter) {
+      const detected = await detectAdapter()
+      if (detected) {
+        resumeSpec.adapter = detected
+        console.log(`  ℹ Auto-detected adapter: ${detected}`)
+      } else {
+        resumeDetectionFailed = true
+        resumeSpec.adapter = 'claude-code'
+      }
+    }
+
+    const resumeAdapter = await getAdapter(resumeSpec.adapter)
+    const resumeAvailable = await resumeAdapter.isAvailable()
+    if (!resumeAvailable) {
+      printAdapterError(resumeDetectionFailed, resumeSpec.adapter)
+      process.exit(1)
+    }
+
+    console.log(`\n  \uD83C\uDFF0 OpenCastle Convoy (Resume): ${convoy.name}`)
+    console.log(`  Convoy ID: ${convoy.id}`)
+    const { createConvoyEngine } = await import('./convoy/engine.js')
+    const resumeEngine = createConvoyEngine({
+      spec: resumeSpec,
+      specYaml: convoy.spec_yaml,
+      adapter: resumeAdapter,
+      verbose: opts.verbose,
+    })
+    const resumeResult = await resumeEngine.resume(convoy.id)
+    printConvoyResult(resumeResult)
+    process.exit(resumeResult.status !== 'done' ? 1 : 0)
+  }
+
   // ── Read and validate spec ────────────────────────────────────
   const specPath = resolve(process.cwd(), opts.file)
-  const spec = await parseTaskSpec(specPath)
+  let specText = ''
+  try {
+    specText = await readFile(specPath, 'utf8')
+  } catch (err: unknown) {
+    const e = err as Error & { code?: string }
+    if (e.code === 'ENOENT') {
+      console.error(`  ✗ Task spec file not found: ${opts.file}`)
+    } else {
+      console.error(`  ✗ Cannot read task spec file: ${e.message}`)
+    }
+    process.exit(1)
+  }
+
+  let spec
+  try {
+    spec = parseTaskSpecText(specText)
+  } catch (err: unknown) {
+    console.error(`  ✗ ${(err as Error).message}`)
+    process.exit(1)
+  }
 
   // Apply CLI overrides
   if (opts.concurrency !== null) spec.concurrency = opts.concurrency
   if (opts.adapter !== null) spec.adapter = opts.adapter
   if (opts.verbose) spec._verbose = true
-  if (opts.mode !== null) spec.mode = opts.mode as 'tasks' | 'loop'
 
   // ── Auto-detect adapter if not specified ─────────────────────
   let detectionFailed = false
@@ -145,22 +306,13 @@ export default async function run({ args }: CliContext): Promise<void> {
 
   // ── Dry run ──────────────────────────────────────────────────
   if (opts.dryRun) {
-    if (spec.mode === 'loop') {
-      const loop = spec.loop!
-      console.log(`\n  \uD83C\uDFF0 Loop Plan: ${spec.name}`)
-      console.log(`  Mode: loop`)
-      console.log(`  Prompt: ${loop.prompt}`)
-      console.log(`  Max iterations: ${loop.max_iterations}`)
-      console.log(`  Timeout: ${loop.timeout}`)
-      if (loop.plan_file) console.log(`  Plan file: ${loop.plan_file}`)
-      if (loop.model) console.log(`  Model: ${loop.model}`)
-      if (loop.backpressure?.length) {
-        console.log(`  Backpressure:`)
-        for (const cmd of loop.backpressure) {
-          console.log(`    - ${cmd}`)
-        }
-      }
-      return
+    if (isConvoySpec(spec)) {
+      console.log(`\n  \uD83C\uDFF0 Convoy Plan: ${spec.name}`)
+      console.log(
+        `  Adapter: ${spec.adapter} | Concurrency: ${spec.concurrency} | Tasks: ${spec.tasks!.length}`
+      )
+      if (spec.branch) console.log(`  Branch: ${spec.branch}`)
+      if (spec.gates?.length) console.log(`  Gates: ${spec.gates.length} validation commands`)
     }
     const phases = buildPhases(spec.tasks!)
     printExecutionPlan(spec, phases)
@@ -171,78 +323,37 @@ export default async function run({ args }: CliContext): Promise<void> {
   const adapter = await getAdapter(spec.adapter)
   const available = await adapter.isAvailable()
   if (!available) {
-    if (detectionFailed) {
-      console.error(
-        `  ✗ No agent CLI found on your PATH.\n` +
-          `    Install one of the following adapters:\n` +
-          `    • copilot    — https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n` +
-          `    • claude     — npm install -g @anthropic-ai/claude-code\n` +
-          `    • cursor     — https://cursor.com (Cursor > Install CLI)\n` +
-          `\n` +
-          `    Or specify an adapter explicitly: opencastle run --adapter <name>`
-      )
-    } else {
-      const hints: Record<string, string> = {
-        'claude-code':
-          '    Install: npm install -g @anthropic-ai/claude-code\n' +
-          '    Docs:    https://docs.anthropic.com/en/docs/claude-code',
-        copilot:
-          '    Requires the Copilot CLI installed and authenticated:\n' +
-          '    https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n' +
-          '    Docs:    https://docs.github.com/en/copilot',
-        cursor:
-          '    The Cursor agent CLI ships with the Cursor editor.\n' +
-          '    Install Cursor from https://cursor.com and ensure the\n' +
-          '    "agent" command is on your PATH (Cursor > Install CLI).',
-      }
-      const cliName = spec.adapter === 'claude-code' ? 'claude' : spec.adapter
-      const hint = hints[spec.adapter] ?? ''
-      console.error(
-        `  ✗ Adapter "${spec.adapter}" is not available.\n` +
-          `    Make sure the "${cliName}" CLI is installed and on your PATH.\n` +
-          hint
-      )
-    }
+    printAdapterError(detectionFailed, spec.adapter)
     process.exit(1)
   }
 
-  // ── Execute ──────────────────────────────────────────────────
-  if (spec.mode === 'loop') {
-    const { createLoopExecutor } = await import('./run/loop-executor.js')
-    const { createLoopReporter } = await import('./run/loop-reporter.js')
+  // ── Convoy engine path (version: 1 specs) ────────────────────
+  if (isConvoySpec(spec)) {
+    const { createConvoyEngine } = await import('./convoy/engine.js')
+    console.log(`\n  \uD83C\uDFF0 OpenCastle Convoy: ${spec.name}`)
+    console.log(
+      `  Adapter: ${adapter.name} | Concurrency: ${spec.concurrency} | Tasks: ${spec.tasks!.length}`
+    )
+    if (spec.branch) console.log(`  Branch: ${spec.branch}`)
+    if (spec.gates?.length) console.log(`  Gates: ${spec.gates.length} validation commands`)
 
-    if (opts.maxIterations !== null && spec.loop) {
-      spec.loop.max_iterations = opts.maxIterations
-    }
-
-    const promptPath = resolve(process.cwd(), spec.loop!.prompt)
-    try {
-      await readFile(promptPath)
-    } catch {
-      console.error(`  \u2717 Prompt file not found: ${spec.loop!.prompt}`)
-      process.exit(1)
-    }
-
-    console.log(`\n  \uD83C\uDFF0 OpenCastle Loop: ${spec.name}`)
-    console.log(`  Adapter: ${adapter.name} | Max iterations: ${spec.loop!.max_iterations} | Timeout: ${spec.loop!.timeout}`)
-    if (spec.loop!.backpressure?.length) {
-      console.log(`  Backpressure: ${spec.loop!.backpressure.join(', ')}`)
-    }
-
-    const loopReporter = createLoopReporter(spec.name, {
-      reportDir: opts.reportDir ? resolve(process.cwd(), opts.reportDir) : undefined,
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: specText,
+      adapter,
       verbose: opts.verbose,
     })
 
-    const loopExecutor = createLoopExecutor(spec, adapter, loopReporter)
-    const loopReport = await loopExecutor.run()
-
-    const failed = loopReport.stoppedReason === 'error' || loopReport.stoppedReason === 'backpressure-fail'
-    process.exit(failed ? 1 : 0)
+    const result = await engine.run()
+    printConvoyResult(result)
+    process.exit(result.status !== 'done' ? 1 : 0)
   }
 
+  // ── Legacy executor path ──────────────────────────────────────
   console.log(`\n  \uD83C\uDFF0 OpenCastle Run: ${spec.name}`)
-  console.log(`  Adapter: ${adapter.name} | Concurrency: ${spec.concurrency} | Tasks: ${spec.tasks!.length}`)
+  console.log(
+    `  Adapter: ${adapter.name} | Concurrency: ${spec.concurrency} | Tasks: ${spec.tasks!.length}`
+  )
 
   const reporter = createReporter(spec, {
     reportDir: opts.reportDir

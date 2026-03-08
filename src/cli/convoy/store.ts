@@ -14,6 +14,7 @@ const SCHEMA_VERSION = 1
 export interface ConvoyStore {
   insertConvoy(record: Omit<ConvoyRecord, 'started_at' | 'finished_at'>): void
   getConvoy(id: string): ConvoyRecord | undefined
+  getLatestConvoy(): ConvoyRecord | undefined
   updateConvoyStatus(
     id: string,
     status: ConvoyStatus,
@@ -136,6 +137,12 @@ class ConvoyStoreImpl implements ConvoyStore {
     return this.db
       .prepare('SELECT * FROM convoy WHERE id = :id')
       .get({ id }) as ConvoyRecord | undefined
+  }
+
+  getLatestConvoy(): ConvoyRecord | undefined {
+    return this.db
+      .prepare('SELECT * FROM convoy ORDER BY created_at DESC LIMIT 1')
+      .get() as ConvoyRecord | undefined
   }
 
   updateConvoyStatus(
