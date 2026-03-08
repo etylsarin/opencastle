@@ -1,10 +1,10 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Workflow: Schema / CMS Changes
 
 Structured workflow for CMS schema modifications, query updates, and content model changes.
 
-> **Project config:** For CMS-specific paths, schema locations, and query library details, see the relevant CMS customization file in `customizations/stack/`.
+> **Project config:** For CMS-specific paths, schema locations, and query library details, see the relevant CMS customization file in `.opencastle/stack/`.
 
 ## Phases
 

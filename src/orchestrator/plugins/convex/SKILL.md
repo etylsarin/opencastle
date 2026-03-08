@@ -3,11 +3,11 @@ name: convex-database
 description: "Convex reactive database patterns, schema design, real-time queries, mutations, actions, and deployment best practices. Use when designing Convex schemas, writing queries/mutations, or managing the Convex backend."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Convex Database
 
-Generic Convex development methodology. For project-specific schema, functions, and deployment details, see [database-config.md](../../customizations/stack/database-config.md).
+Generic Convex development methodology. For project-specific schema, functions, and deployment details, see [database-config.md](../../.opencastle/stack/database-config.md).
 
 ## Critical Development Rules
 

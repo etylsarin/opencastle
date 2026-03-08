@@ -3,7 +3,7 @@ name: session-checkpoints
 description: "Protocol for saving and restoring session state across agent sessions. Enables replay, fork, and resume of interrupted work — inspired by Sandcastle Run Time Machine."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Skill: Session Checkpoints
 
@@ -21,7 +21,7 @@ Create a checkpoint:
 
 ## Checkpoint Format
 
-Create or update the file `.github/customizations/SESSION-CHECKPOINT.md` with this structure:
+Create or update the file `.opencastle/SESSION-CHECKPOINT.md` with this structure:
 
 ```markdown
 # Session Checkpoint
@@ -93,7 +93,7 @@ Track each delegation to monitor budget and optimize future model assignments:
 ```
 Agent A: dir1/, dir2/
 Agent B: dir3/, dir4/
-Agent C: .github/customizations/
+Agent C: .opencastle/
 ```
 
 ## Resume Instructions
@@ -109,7 +109,7 @@ Step-by-step instructions for a new session to pick up where this one left off:
 
 When starting a new session:
 
-1. **Check for checkpoint** — Read `.github/customizations/SESSION-CHECKPOINT.md` if it exists
+1. **Check for checkpoint** — Read `.opencastle/SESSION-CHECKPOINT.md` if it exists
 2. **Verify state** — Run `git status`, check branch, verify files match checkpoint
 3. **Check tracker** — List in-progress and todo issues for current feature
 4. **Follow resume instructions** — Execute the specific steps listed in the checkpoint
@@ -120,7 +120,7 @@ When starting a new session:
 After a feature is fully complete (all tracker issues Done):
 
 1. Archive the checkpoint content to the relevant tracker issue comments
-2. Delete `.github/customizations/SESSION-CHECKPOINT.md` to keep the workspace clean
+2. Delete `.opencastle/SESSION-CHECKPOINT.md` to keep the workspace clean
 3. The next feature starts with a fresh checkpoint
 
 ## Integration with Team Lead

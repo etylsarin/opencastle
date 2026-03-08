@@ -3,7 +3,7 @@ import { mkdir, writeFile, readdir, readFile, unlink, rm } from 'node:fs/promise
 import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot, getPluginsRoot, getPluginSkillEntries } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
-import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform, getIncludedPluginIds } from '../stack-config.js'
+import { getExcludedSkills, getExcludedAgents, getIncludedPluginIds } from '../stack-config.js'
 import type { CopyResults, DoctorCheck, IdeAdapter, IdeChoice, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
 import { stripFrontmatter, parseFrontmatterMeta } from './frontmatter.js'
 
@@ -251,16 +251,6 @@ export function createSingleFileAdapter(config: SingleFileAdapterConfig): IdeAda
       }
     }
 
-    // 6. Customizations (scaffold once)
-    const custDir = resolve(srcRoot, 'customizations')
-    if (existsSync(custDir)) {
-      const destCust = resolve(dotDirPath, 'customizations')
-      const custTransform = stack ? getCustomizationsTransform(stack) : undefined
-      const sub = await copyDir(custDir, destCust, { transform: custTransform })
-      results.created.push(...sub.created)
-      results.skipped.push(...sub.skipped)
-    }
-
     // 7. MCP server config (scaffold once)
     const mcpResult = await scaffoldMcpConfig(
       projectRoot,
@@ -312,7 +302,7 @@ export function createSingleFileAdapter(config: SingleFileAdapterConfig): IdeAda
         config.rootFile,
         ...Array.from(dirs).map((d) => `${config.dotDir}/${d}/`),
       ],
-      customizable: [`${config.dotDir}/customizations/`, config.mcpConfigPath],
+      customizable: ['.opencastle/', config.mcpConfigPath],
     }
   }
 

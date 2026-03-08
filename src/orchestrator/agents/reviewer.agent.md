@@ -6,7 +6,7 @@ user-invocable: false
 tools: [read/readFile, search/codebase, search/fileSearch, search/textSearch, search/listDirectory, read/problems]
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Reviewer
 

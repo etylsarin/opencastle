@@ -3,7 +3,7 @@ name: self-improvement
 description: "Protocol for reading and updating the lessons-learned knowledge base. MUST be followed by ALL agents — read lessons before work, write lessons after retries. This makes the agent team self-improving across sessions."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Self-Improvement Protocol
 
@@ -15,7 +15,7 @@ This skill defines how agents learn from mistakes and share knowledge so the sam
 
 ## The Lessons File
 
-Location: `.github/customizations/LESSONS-LEARNED.md`
+Location: `.opencastle/LESSONS-LEARNED.md`
 
 This is the team's collective memory — a structured log of tool/command pitfalls, workarounds, and correct approaches discovered through execution.
 

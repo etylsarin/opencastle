@@ -3,11 +3,11 @@ name: netlify-deployment
 description: "Netlify deployment workflows, serverless functions, edge functions, environment management, and build configuration. Use when deploying to Netlify, writing serverless/edge functions, or troubleshooting builds."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Netlify Deployment
 
-Netlify-specific deployment patterns and conventions. For project-specific deployment architecture, environment variables, and key files, see [deployment-config.md](../../customizations/stack/deployment-config.md).
+Netlify-specific deployment patterns and conventions. For project-specific deployment architecture, environment variables, and key files, see [deployment-config.md](../../.opencastle/stack/deployment-config.md).
 
 ## Deployment Model
 

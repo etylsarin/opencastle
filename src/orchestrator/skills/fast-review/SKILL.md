@@ -1,4 +1,4 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 ````skill
 ---
@@ -155,7 +155,7 @@ CONFIDENCE: low | medium | high
 4. The panel decides PASS/BLOCK with the standard majority vote protocol
 5. If panel PASS → accept with a note that it required escalation
 6. If panel BLOCK → follow the standard panel retry flow (max 3 panel attempts)
-7. If panel BLOCKs 3 times → create a **dispute record** in `.github/customizations/DISPUTES.md` (see **team-lead-reference** skill § Dispute Protocol)
+7. If panel BLOCKs 3 times → create a **dispute record** in `.opencastle/DISPUTES.md` (see **team-lead-reference** skill § Dispute Protocol)
 
 ```
 Fast Review Attempt 1: FAIL → retry

@@ -3,7 +3,7 @@ name: figma-design
 description: "Figma design-to-code workflows, design token extraction, component inspection, and asset export. Use when translating Figma designs into code, extracting design tokens, or referencing component specs."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Figma Design
 

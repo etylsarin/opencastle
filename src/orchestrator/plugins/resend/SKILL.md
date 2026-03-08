@@ -3,7 +3,7 @@ name: resend-email
 description: "Resend transactional email patterns, React Email templates, domain configuration, and webhook handling. Use when sending emails, building email templates, or configuring email delivery."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Resend Email
 

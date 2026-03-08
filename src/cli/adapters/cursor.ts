@@ -3,7 +3,7 @@ import { mkdir, writeFile, readdir, readFile, unlink } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { copyDir, getOrchestratorRoot, removeDirIfExists, getPluginsRoot, getPluginSkillEntries } from '../copy.js'
 import { scaffoldMcpConfig } from '../mcp.js'
-import { getExcludedSkills, getExcludedAgents, getCustomizationsTransform, getIncludedPluginIds } from '../stack-config.js'
+import { getExcludedSkills, getExcludedAgents, getIncludedPluginIds } from '../stack-config.js'
 import type { CopyResults, DoctorCheck, ManagedPaths, RepoInfo, StackConfig } from '../types.js'
 import { splitFrontmatter, parseFrontmatterString } from './frontmatter.js'
 
@@ -177,16 +177,6 @@ export async function install(
     removeExt: '.prompt.md',
   })
 
-  // 7. Customizations (scaffold once, pre-populated with stack choices)
-  const custSrc = resolve(srcRoot, 'customizations')
-  if (existsSync(custSrc)) {
-    const custDest = resolve(rulesRoot, 'customizations')
-    const custTransform = stack ? getCustomizationsTransform(stack) : undefined
-    const sub = await copyDir(custSrc, custDest, { transform: custTransform })
-    results.created.push(...sub.created)
-    results.skipped.push(...sub.skipped)
-  }
-
   // 8. MCP server config → .cursor/mcp.json (scaffold once)
   const mcpResult = await scaffoldMcpConfig(
     projectRoot,
@@ -311,7 +301,7 @@ export function getManagedPaths(): ManagedPaths {
       '.cursor/rules/ai-optimization.mdc',
     ],
     customizable: [
-      '.cursor/rules/customizations/',
+      '.opencastle/',
       '.cursor/mcp.json',
     ],
   }

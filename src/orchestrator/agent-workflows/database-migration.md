@@ -1,10 +1,10 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Workflow: Database Migration
 
 Structured workflow for database schema changes, RLS policies, and data migrations.
 
-> **Project config:** For database-specific paths, schema details, and migration conventions, see the relevant database customization file in `customizations/stack/`.
+> **Project config:** For database-specific paths, schema details, and migration conventions, see the relevant database customization file in `.opencastle/stack/`.
 
 ## Phases
 
@@ -34,8 +34,8 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 1. Read current schema in the migrations directory (see database customization) to understand existing tables
 2. Check existing RLS policies using the database query tool
-3. Read `.github/customizations/project.instructions.md` for database architecture
-4. Check `.github/customizations/KNOWN-ISSUES.md` for database-related limitations
+3. Read `.opencastle/project.instructions.md` for database architecture
+4. Check `.opencastle/KNOWN-ISSUES.md` for database-related limitations
 5. Document the migration plan: tables affected, columns added/removed, RLS changes
 6. Write rollback strategy (how to reverse the migration)
 7. Create tracker issue with migration details and rollback plan

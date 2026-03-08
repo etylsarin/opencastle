@@ -3,7 +3,7 @@ name: astro-framework
 description: "Astro framework best practices for content-driven sites, islands architecture, routing, integrations, and project structure. Use when creating or modifying Astro pages, layouts, components, or content collections."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Astro Framework
 

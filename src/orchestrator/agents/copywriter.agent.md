@@ -6,7 +6,7 @@ tools: ['search/codebase', 'edit/editFiles', 'web/fetch', 'search', 'read/proble
 user-invocable: false
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Copywriter
 
@@ -21,7 +21,7 @@ You are a copywriter specializing in user-facing text for web applications — U
 
 ## Skills
 
-Resolve all skills (slots and direct) via [skill-matrix.json](.github/customizations/agents/skill-matrix.json).
+Resolve all skills (slots and direct) via [skill-matrix.json](.opencastle/agents/skill-matrix.json).
 
 ## Text Categories
 

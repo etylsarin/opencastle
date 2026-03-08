@@ -30,9 +30,9 @@ Run ALL checks. Report each as ✅ or ❌.
 
 ### 1. Delegation Records
 
-For each delegation in the session summary, verify a matching record exists in `.github/customizations/logs/events.ndjson` (type=delegation).
+For each delegation in the session summary, verify a matching record exists in `.opencastle/logs/events.ndjson` (type=delegation).
 
-**How:** `grep '"type":"delegation"' .github/customizations/logs/events.ndjson | tail -20` and match agent + task against the summary.
+**How:** `grep '"type":"delegation"' .opencastle/logs/events.ndjson | tail -20` and match agent + task against the summary.
 
 **Fix:** Load the **observability-logging** skill and run the delegation record command (includes a verify step).
 
@@ -40,29 +40,29 @@ Also verify each delegation record includes `session_id` (branch name). Records 
 
 ### 2. Session Record
 
-Verify a session record exists in `.github/customizations/logs/events.ndjson` (type=session) for the current task.
+Verify a session record exists in `.opencastle/logs/events.ndjson` (type=session) for the current task.
 
-**How:** `grep '"type":"session"' .github/customizations/logs/events.ndjson | tail -5` and match task description.
+**How:** `grep '"type":"session"' .opencastle/logs/events.ndjson | tail -5` and match task description.
 
 **Fix:** Load the **observability-logging** skill and run the session record command (includes a verify step).
 
 ### 3. Lessons Captured
 
-If the session summary indicates retries occurred, verify new entries exist in `.github/customizations/LESSONS-LEARNED.md`.
+If the session summary indicates retries occurred, verify new entries exist in `.opencastle/LESSONS-LEARNED.md`.
 
-**How:** `grep -c "^### LES-" .github/customizations/LESSONS-LEARNED.md` — compare count with expected.
+**How:** `grep -c "^### LES-" .opencastle/LESSONS-LEARNED.md` — compare count with expected.
 
 ### 4. Discovered Issues Tracked
 
 If the session summary lists discovered issues, verify they appear in:
-- `.github/customizations/KNOWN-ISSUES.md`, OR
+- `.opencastle/KNOWN-ISSUES.md`, OR
 - A task tracker ticket referenced in the summary
 
 ### 5. Review & Panel Records
 
-If the session summary mentions fast reviews or panel reviews, verify matching records exist in `.github/customizations/logs/events.ndjson` (type=review and/or type=panel).
+If the session summary mentions fast reviews or panel reviews, verify matching records exist in `.opencastle/logs/events.ndjson` (type=review and/or type=panel).
 
-**How:** `grep '"type":"review"' .github/customizations/logs/events.ndjson | tail -10` and/or `grep '"type":"panel"' .github/customizations/logs/events.ndjson | tail -5`.
+**How:** `grep '"type":"review"' .opencastle/logs/events.ndjson | tail -10` and/or `grep '"type":"panel"' .opencastle/logs/events.ndjson | tail -5`.
 
 **Fix:** Load the **observability-logging** skill and run the review/panel record command as applicable (includes a verify step).
 
@@ -82,7 +82,7 @@ If the session involved running a convoy (check for `.opencastle/convoy.db` or r
 
 **Verify convoy tasks logged:**
 - Each completed convoy task should have a corresponding event in the NDJSON log
-- Check: `grep '"type":"session"' .github/customizations/logs/events.ndjson | tail -10`
+- Check: `grep '"type":"session"' .opencastle/logs/events.ndjson | tail -10`
 
 **Fix:** If convoy export is missing, the engine should have auto-exported. Manual export: run `opencastle run --status` to verify the convoy completed.
 

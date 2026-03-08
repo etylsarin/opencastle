@@ -3,11 +3,11 @@ name: vitest-testing
 description: "Vitest unit and integration testing patterns, configuration, mocking, and coverage. Use when writing unit tests, configuring Vitest, or setting up test coverage."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Vitest Testing
 
-Vitest-specific unit and integration testing patterns. For project-specific test configuration, see [testing-config.md](../../customizations/stack/testing-config.md).
+Vitest-specific unit and integration testing patterns. For project-specific test configuration, see [testing-config.md](../../.opencastle/stack/testing-config.md).
 
 ## Commands
 

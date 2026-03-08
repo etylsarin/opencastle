@@ -572,7 +572,7 @@ The current `src/cli/run/` already provides substantial machinery we reuse direc
 
 #### 7.2 Dashboard Server Updates
 - [x] Extract reusable `startDashboardServer()` function from dashboard CLI
-- [x] Serve convoy data from `.opencastle/logs/` (in addition to `.github/customizations/logs/`)
+- [x] Serve convoy data from `.opencastle/logs/` (in addition to `.opencastle/logs/`)
 - [x] Add `--convoy <id>` CLI arg and `convoyId` option for pre-filtering
 - [x] Support dual-directory NDJSON serving with concatenation
 

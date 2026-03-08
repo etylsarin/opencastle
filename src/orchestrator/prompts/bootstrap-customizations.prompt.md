@@ -1,9 +1,9 @@
 ---
-description: 'Bootstrap the .github/customizations/ directory for a new project. Discovers project structure, tech stack, and configuration, then generates all customization files so skills have project-specific context to operate on.'
+description: 'Bootstrap the .opencastle/ directory for a new project. Discovers project structure, tech stack, and configuration, then generates all customization files so skills have project-specific context to operate on.'
 agent: 'Team Lead (OpenCastle)'
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Bootstrap Project Customizations
 
@@ -17,7 +17,7 @@ You are setting up the AI agent framework for a new project. Your job is to **di
 
 ## Background
 
-The `.github/customizations/` directory holds project-specific configuration that skills load at runtime. Skills contain generic methodology (how to write migrations, how to test, how to deploy); customizations hold the concrete values (which database, which endpoints, which project IDs).
+The `.opencastle/` directory holds project-specific configuration that skills load at runtime. Skills contain generic methodology (how to write migrations, how to test, how to deploy); customizations hold the concrete values (which database, which endpoints, which project IDs).
 
 Without customizations, agents operate blind — they don't know the project's table schema, API routes, deployment target, or task board. This prompt fixes that.
 
@@ -69,7 +69,7 @@ The result is a single unified view of the project's tech stack:
 
 **Still verify:** `repoInfo` detects presence, not configuration details. You still need to read the actual config files for schemas, IDs, routes, etc.
 
-The skill matrix (`.github/customizations/agents/skill-matrix.json`) will already have the `cms` and `database` binding entries pre-filled based on this selection. The appropriate task management skill (`linear-task-management` for Linear, `jira-management` for Jira) and notifications skill (`slack-notifications` for Slack, `teams-notifications` for Teams) will already be installed. Verify they are correct and fill in any remaining empty bindings.
+The skill matrix (`.opencastle/agents/skill-matrix.json`) will already have the `cms` and `database` binding entries pre-filled based on this selection. The appropriate task management skill (`linear-task-management` for Linear, `jira-management` for Jira) and notifications skill (`slack-notifications` for Slack, `teams-notifications` for Teams) will already be installed. Verify they are correct and fill in any remaining empty bindings.
 
 ## Workflow
 
@@ -117,12 +117,12 @@ For each detected technology, dig into the config:
 
 ### Phase 2: Generate Customization Files
 
-Create `.github/customizations/` and generate files based on what you discovered. **Only create files for technologies actually present in the project.** Skip files that don't apply.
+Create `.opencastle/` and generate files based on what you discovered. **Only create files for technologies actually present in the project.** Skip files that don't apply.
 
 Files are organized into subdirectories by domain:
 
 ```
-.github/customizations/
+.opencastle/
 ├── README.md                  # Directory index
 ├── project.instructions.md    # High-level project context
 ├── LESSONS-LEARNED.md         # Knowledge base (retries, workarounds)
@@ -265,8 +265,8 @@ After your summary, suggest next steps:
 
 Now that your project is configured, here's what you can do:
 
-1. **Review the generated files** — Scan `.github/customizations/` for any `<!-- TODO: verify -->` comments and fill in missing values (e.g., tracker team IDs, Supabase project IDs)
-2. **Commit the customizations** — `git add .github/customizations/ && git commit -m "chore: bootstrap OpenCastle customizations"`
+1. **Review the generated files** — Scan `.opencastle/` for any `<!-- TODO: verify -->` comments and fill in missing values (e.g., tracker team IDs, Supabase project IDs)
+2. **Commit the customizations** — `git add .opencastle/ && git commit -m "chore: bootstrap OpenCastle customizations"`
 3. **Implement a feature** — Use the **"Implement Feature"** prompt to have the Team Lead orchestrate a full feature build with task tracking, delegation, and verification
 4. **Fix a bug** — Use the **"Bug Fix"** prompt for structured triage, root cause analysis, and fix with tracker tracking
 5. **Brainstorm first** — Not sure how to approach something? Use the **"Brainstorm"** prompt to explore requirements and trade-offs before committing to a plan

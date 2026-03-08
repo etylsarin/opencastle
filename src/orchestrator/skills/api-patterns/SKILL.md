@@ -3,11 +3,11 @@ name: api-patterns
 description: "API design patterns for route handlers, Server Actions, Zod validation, and external API integration. Use when creating API routes, Server Actions, or integrating external services."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # API Patterns
 
-Generic API design patterns for server-rendered framework projects. For project-specific endpoints, actions, and external API inventory, see [api-config.md](../../customizations/stack/api-config.md).
+Generic API design patterns for server-rendered framework projects. For project-specific endpoints, actions, and external API inventory, see [api-config.md](../../.opencastle/stack/api-config.md).
 
 ## Architecture
 

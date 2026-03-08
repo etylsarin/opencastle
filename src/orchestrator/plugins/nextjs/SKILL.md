@@ -3,7 +3,7 @@ name: nextjs-framework
 description: "Next.js framework best practices covering App Router, server/client components, data fetching, caching, rendering strategies, middleware, configuration, and deployment. Use when creating or modifying Next.js pages, layouts, route handlers, Server Actions, or project configuration."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Next.js Framework
 

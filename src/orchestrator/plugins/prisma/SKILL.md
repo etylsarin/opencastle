@@ -3,11 +3,11 @@ name: prisma-database
 description: "Prisma ORM schema design, migrations, client generation, and query patterns. Use when designing database schemas, writing migrations, querying data, or managing Prisma Client."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Prisma Database
 
-Prisma-specific schema design, migration, and query patterns. For project-specific database schema and connection details, see [database-config.md](../../customizations/stack/database-config.md).
+Prisma-specific schema design, migration, and query patterns. For project-specific database schema and connection details, see [database-config.md](../../.opencastle/stack/database-config.md).
 
 ## Commands
 

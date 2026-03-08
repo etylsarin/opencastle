@@ -260,7 +260,7 @@ export default async function dashboard({
         '  \u{1F4C2} Showing demo data (use without --seed to read project logs)'
       )
     } else if (hasLogs) {
-      console.log('  \u{1F4C2} Reading logs from .github/customizations/logs/')
+      console.log('  \u{1F4C2} Reading logs from .opencastle/logs/')
     } else {
       console.log(
         '  \u{1F4A1} No agent logs found. Run agents with OpenCastle to generate data, or use --seed for demo data.'

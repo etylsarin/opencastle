@@ -3,7 +3,7 @@ name: agent-memory
 description: "Agent expertise tracking and cross-session knowledge graph. Use when delegating tasks to track agent strengths/weaknesses, or when building context about file relationships and patterns."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Agent Memory Protocol
 
@@ -13,7 +13,7 @@ Track which agents have expertise with which files, patterns, and tools across s
 
 ## Expertise File
 
-Location: `.github/customizations/AGENT-EXPERTISE.md` — a structured record of agent performance per domain.
+Location: `.opencastle/AGENT-EXPERTISE.md` — a structured record of agent performance per domain.
 
 Template structure:
 
@@ -49,7 +49,7 @@ Template structure:
 
 ## Memory Retrieval Protocol
 
-1. Before delegating, check `.github/customizations/AGENT-EXPERTISE.md` for the candidate agent
+1. Before delegating, check `.opencastle/AGENT-EXPERTISE.md` for the candidate agent
 2. If the task matches a Strong Area, include in the prompt: *"You have prior experience with [area] from [TAS-XX]. Apply the same patterns."*
 3. If the task matches a Weak Area, either: (a) add extra context to the prompt to compensate, or (b) consider a different agent
 4. If the file has high familiarity, mention it: *"You've worked on [file] before in [TAS-XX]."*
@@ -102,7 +102,7 @@ Capture structured relationships between concepts, files, agents, and decisions.
 
 ### Knowledge Graph File
 
-Location: `.github/customizations/KNOWLEDGE-GRAPH.md` — an append-only relationship log.
+Location: `.opencastle/KNOWLEDGE-GRAPH.md` — an append-only relationship log.
 
 Template structure:
 

@@ -3,7 +3,7 @@ description: 'Investigate and fix a reported bug with proper triage, root cause 
 agent: 'Team Lead (OpenCastle)'
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Fix Bug
 
@@ -35,9 +35,9 @@ You are the Team Lead. Investigate and fix the bug described below. Bugs are rea
 
 Before fixing anything, understand the bug:
 
-1. **Check known issues** — Search `.github/customizations/KNOWN-ISSUES.md` for an existing entry. If found, note workarounds and decide if a fix is now feasible
+1. **Check known issues** — Search `.opencastle/KNOWN-ISSUES.md` for an existing entry. If found, note workarounds and decide if a fix is now feasible
 2. **Check tracker** — Search for existing bug tickets. If one exists, take it over instead of creating a duplicate
-3. **Read lessons learned** — Check `.github/customizations/LESSONS-LEARNED.md` for related pitfalls
+3. **Read lessons learned** — Check `.opencastle/LESSONS-LEARNED.md` for related pitfalls
 4. **Reproduce the bug** — Start the dev server and confirm you can trigger the issue:
    - Start the dev server (see the **codebase-tool** skill for the serve command)
    - Navigate to the affected page in Chrome
@@ -126,7 +126,7 @@ Follow the **Delivery Outcome** defined in the **git-workflow** skill — commit
 ### 7. Wrap Up
 
 1. **Move tracker issue to Done** — Only after all validation passes
-2. **Update Known Issues** — If this was a documented known issue, remove or update the entry in `.github/customizations/KNOWN-ISSUES.md`
+2. **Update Known Issues** — If this was a documented known issue, remove or update the entry in `.opencastle/KNOWN-ISSUES.md`
 3. **Capture lessons** — If the root cause reveals a pattern that other agents should know about, use the **self-improvement** skill to add a lesson
 4. **Note prevention** — If this class of bug could be caught earlier (by a lint rule, test, or type check), note that in the tracker issue as a follow-up suggestion
 

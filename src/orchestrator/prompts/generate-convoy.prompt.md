@@ -3,7 +3,7 @@ description: 'Generate a .convoy.yml spec file for autonomous convoy execution b
 agent: 'Team Lead (OpenCastle)'
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Generate Convoy Spec
 

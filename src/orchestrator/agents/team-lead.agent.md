@@ -28,7 +28,7 @@ handoffs:
     prompt: 'Use the resolve-pr-comments prompt to resolve the GitHub PR review comments on this PR:'
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Team Lead (OpenCastle)
 
@@ -109,7 +109,7 @@ When calling `runSubagent`, always specify which custom agent to use by name: *"
 
 **After each sub-agent returns**, log the delegation record before doing anything else (before review, before verification). This is a **⛔ hard gate** — do NOT proceed to review or any other action until the delegation is logged. Use the **observability-logging** skill's delegation record command (`--mechanism sub-agent`).
 
-> **`model` and `tier` must come from the agent registry** — not the Team Lead's own model. Look up the agent in [agent-registry.md](../customizations/agents/agent-registry.md) and use their assigned model and tier. For example, delegating to Developer → `"model":"claude-sonnet-4-6","tier":"quality"`, not the Team Lead's `claude-opus-4-6`.
+> **`model` and `tier` must come from the agent registry** — not the Team Lead's own model. Look up the agent in [agent-registry.md](../.opencastle/agents/agent-registry.md) and use their assigned model and tier. For example, delegating to Developer → `"model":"claude-sonnet-4-6","tier":"quality"`, not the Team Lead's `claude-opus-4-6`.
 
 ### Background Agents — Delegate Session
 
@@ -264,7 +264,7 @@ See [shared-delivery-phase.md](../agent-workflows/shared-delivery-phase.md) for 
 
 1. Verify all issues Done or Cancelled
 2. Final build/lint/test across affected projects
-3. Update roadmap (`.github/customizations/project/roadmap.md`)
+3. Update roadmap (`.opencastle/project/roadmap.md`)
 4. Commit to feature branch with issue IDs — Team Lead creates the branch, sub-agents work on it directly, background agents use isolated worktrees
 5. Push and open PR (`GH_PAGER=cat gh pr create ...`). **Do NOT merge.**
 6. Link PR in tracker issue

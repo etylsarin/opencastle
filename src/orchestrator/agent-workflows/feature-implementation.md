@@ -1,4 +1,4 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Workflow: Feature Implementation
 
@@ -77,7 +77,7 @@ Run the `brainstorm` prompt when the task has ambiguity, multiple valid approach
 
 ### Steps
 
-1. Read `.github/customizations/project.instructions.md`, `.github/customizations/KNOWN-ISSUES.md`, `.github/customizations/LESSONS-LEARNED.md`
+1. Read `.opencastle/project.instructions.md`, `.opencastle/KNOWN-ISSUES.md`, `.opencastle/LESSONS-LEARNED.md`
 2. Search codebase for existing implementations
 3. Identify affected apps, libs, and layers
 4. **Spec flow analysis** — Trace the complete user flow end-to-end and identify:
@@ -212,7 +212,7 @@ If there are no open questions, explicitly state: "No open questions — plan is
    - Final responsive sweep at all breakpoints (if UI changes)
 7. Move all issues to Done
 8. Update session checkpoint → delete checkpoint
-9. Update `.github/customizations/project/roadmap.md`
+9. Update `.opencastle/project/roadmap.md`
 
 ### Exit Criteria
 

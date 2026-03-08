@@ -113,7 +113,7 @@ Monitor delegated agents for failure signals. Intervene early rather than waitin
 
 1. **First failure:** Re-delegate with more specific prompt + error context
 2. **Second failure:** Downscope the task (split into smaller pieces) and re-delegate
-3. **Third failure:** Log to Dead Letter Queue (`.github/customizations/AGENT-FAILURES.md`), escalate to Architect for root cause analysis. If the failure involves a panel 3x BLOCK or unresolvable agent/reviewer conflict, create a **dispute record** in `.github/customizations/DISPUTES.md` instead (see **team-lead-reference** skill § Dispute Protocol).
+3. **Third failure:** Log to Dead Letter Queue (`.opencastle/AGENT-FAILURES.md`), escalate to Architect for root cause analysis. If the failure involves a panel 3x BLOCK or unresolvable agent/reviewer conflict, create a **dispute record** in `.opencastle/DISPUTES.md` instead (see **team-lead-reference** skill § Dispute Protocol).
 
 ## Error Recovery Playbook
 

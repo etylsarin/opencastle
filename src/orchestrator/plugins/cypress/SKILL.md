@@ -3,11 +3,11 @@ name: cypress-testing
 description: "Cypress E2E and component testing patterns, commands, selectors, and CI configuration. Use when writing E2E tests, component tests, or configuring Cypress in CI pipelines."
 ---
 
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Cypress Testing
 
-Cypress-specific E2E and component testing patterns. For project-specific test configuration and breakpoints, see [testing-config.md](../../customizations/stack/testing-config.md).
+Cypress-specific E2E and component testing patterns. For project-specific test configuration and breakpoints, see [testing-config.md](../../.opencastle/stack/testing-config.md).
 
 ## Commands
 

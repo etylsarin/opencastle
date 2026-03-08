@@ -1,4 +1,4 @@
-<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .github/customizations/ directory instead. -->
+<!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
 # Workflow: Bug Fix
 
@@ -29,9 +29,9 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 
 ### Steps
 
-1. Check `.github/customizations/KNOWN-ISSUES.md` for existing entry
+1. Check `.opencastle/KNOWN-ISSUES.md` for existing entry
 2. Check tracker for existing bug ticket
-3. Read `.github/customizations/LESSONS-LEARNED.md` for related pitfalls
+3. Read `.opencastle/LESSONS-LEARNED.md` for related pitfalls
 4. **Reproduce the bug** — this is mandatory before any fix attempt:
    a. Start the dev server (see the **codebase-tool** skill for the serve command)
    b. Navigate to the affected page in Chrome
@@ -110,7 +110,7 @@ Follow the **Delivery Outcome** in `general.instructions.md` and the **Branch Ow
 4. Test adjacent features for regressions
 5. If security-related: schedule panel review
 6. Move tracker issue to Done
-7. Update `.github/customizations/KNOWN-ISSUES.md` if the bug was listed there
+7. Update `.opencastle/KNOWN-ISSUES.md` if the bug was listed there
 8. Commit and push
 
 ### Exit Criteria
