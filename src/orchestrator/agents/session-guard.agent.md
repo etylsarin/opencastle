@@ -72,6 +72,20 @@ If the session summary mentions fast reviews or panel reviews, verify matching r
 
 Only flag if the session produced code changes that should have been committed. Research-only or analysis sessions may not produce commits.
 
+### 7. Convoy Observability (if convoy was executed)
+
+If the session involved running a convoy (check for `.opencastle/convoy.db` or references to convoy execution in the session summary):
+
+**Verify convoy NDJSON export:**
+- `cat .opencastle/logs/convoys.ndjson | tail -1` should show the latest convoy record
+- Record should have `status: done` or `status: failed` (not `running`)
+
+**Verify convoy tasks logged:**
+- Each completed convoy task should have a corresponding event in the NDJSON log
+- Check: `grep '"type":"session"' .github/customizations/logs/events.ndjson | tail -10`
+
+**Fix:** If convoy export is missing, the engine should have auto-exported. Manual export: run `opencastle run --status` to verify the convoy completed.
+
 ## Output
 
 Return a structured report:

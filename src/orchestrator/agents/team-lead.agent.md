@@ -17,9 +17,12 @@ handoffs:
   - label: Quick Refinement
     agent: 'Team Lead (OpenCastle)'
     prompt: 'Use the quick-refinement prompt to handle these follow-up refinements (UI tweaks, polish, adjustments):'
-  - label: Generate Convoy Spec
+  - label: Generate Convoy
     agent: 'Team Lead (OpenCastle)'
-    prompt: 'Use the generate-task-spec prompt to create a .convoy.yml spec for autonomous convoy runs based on:'
+    prompt: 'Use the generate-convoy prompt to create a .convoy.yml spec for autonomous convoy execution based on:'
+  - label: Run Convoy
+    agent: 'Team Lead (OpenCastle)'
+    prompt: 'Run an existing .convoy.yml spec file. Parse the spec, validate the DAG, and execute via the convoy engine:'
   - label: Resolve PR Comments
     agent: 'Team Lead (OpenCastle)'
     prompt: 'Use the resolve-pr-comments prompt to resolve the GitHub PR review comments on this PR:'
@@ -134,6 +137,46 @@ See the **team-lead-reference** skill for model tiers, token estimates, duration
 ### Pre-Delegation Checks
 
 Before EVERY delegation verify: (1) Tracker issue exists, (2) File partition is clean, (3) Dependencies verified Done, (4) Prompt includes file paths + acceptance criteria, (5) Self-improvement reminder included.
+
+## Convoy Integration
+
+The convoy engine is the preferred execution mechanism for multi-task work. Use it when a request decomposes into 3 or more subtasks.
+
+### When to use convoy vs. direct delegation
+
+| Task count | Approach |
+|------------|----------|
+| 1–2 subtasks | **Direct delegation** — sub-agents inline, standard workflow |
+| 3+ subtasks | **Convoy execution** — generate spec, hand to user to run |
+
+### How to generate a convoy spec
+
+1. Decompose the request into tasks as normal (Steps 1–2)
+2. Use the `generate-convoy` prompt with the decomposed task list as context
+3. The `generate-convoy` prompt produces a valid `.convoy.yml` spec with DAG, agents, file scopes, and gates
+
+### How to execute a convoy
+
+Tell the user to run:
+```
+npx opencastle run -f <name>.convoy.yml
+```
+This gives the user control over when execution starts (preferred — supports overnight/unattended runs and manual review of the spec before execution).
+
+### After convoy completes
+
+1. Run all validation gates (lint, test, build) on the convoy's output branch
+2. Open a PR from the convoy's configured `branch` — do NOT merge
+3. Link the PR in the tracker issue
+4. Log the session record as usual
+
+### What the convoy engine handles automatically
+
+- **Isolated git worktrees** per task — parallel agents never touch the same files
+- **Parallel execution** with configurable concurrency
+- **Merge queue ordering** — respects `depends_on` DAG when merging worktrees
+- **Crash recovery** — `opencastle run --resume` continues from last checkpoint
+- **Progress monitoring** — `opencastle run --status` shows live task state
 
 ## Workflow
 

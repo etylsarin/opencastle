@@ -107,11 +107,12 @@ Not every task needs a brainstorm. Skip this prompt and go directly to `implemen
 - The task is a simple config change or docs update
 - The technical approach is obvious and unambiguous
 - The scope is a single file or component with no design decisions
+- The task is well-understood and can be expressed as a convoy spec directly → use `generate-convoy` instead
 
 ## After Brainstorming
 
 Once the brainstorm is complete and the user confirms (or you're confident in the approach):
 
-1. **Transition to planning** — use the brainstorm report as input for `implement-feature` or the appropriate workflow
+1. **Transition to planning** — use the brainstorm report as input for `implement-feature` (which will choose between direct delegation and convoy execution based on task count)
 2. **Preserve context** — include the brainstorm report in delegation prompts so agents understand *why* an approach was chosen
 3. **Reference in tracker** — link the brainstorm findings in the tracker issue description

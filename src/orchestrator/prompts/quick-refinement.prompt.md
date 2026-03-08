@@ -127,6 +127,8 @@ Stop the follow-up workflow and switch to a full roadmap task if:
 
 When escalating, explain to the user what you found and why it needs proper tracking.
 
+- **Multi-task escalation** — If the refinement decomposes into 3+ subtasks, switch to `implement-feature` (which will use convoy execution for multi-task work)
+
 ### 8. Completion
 
 The follow-up is complete when:

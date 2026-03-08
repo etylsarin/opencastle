@@ -504,7 +504,7 @@ The current `src/cli/run/` already provides substantial machinery we reuse direc
 **Scope:** Team Lead agent creates convoy specs and launches engine via CLI.
 
 #### 5.1 Spec Generation
-- [x] Updated `generate-task-spec` prompt to output `.convoy.yml` format with `version: 1`
+- [x] Updated `generate-convoy` prompt to output `.convoy.yml` format with `version: 1`
 - [x] Dynamic naming: `<goal-kebab>.convoy.yml` (e.g., `auth-refactor.convoy.yml`)
 - [x] Added convoy-specific fields: `branch`, `defaults`, `gates`
 - [x] Backward-compatible: `.tasks.yml` files without `version` still use legacy executor
@@ -513,7 +513,7 @@ The current `src/cli/run/` already provides substantial machinery we reuse direc
 - [x] Updated Team Lead handoff to reference `.convoy.yml` format
 - [x] Team Lead generates spec → writes file → launches `opencastle run -f <name>.convoy.yml`
 - [x] Single-task work: Team Lead delegates directly via sub-agent (no convoy overhead)
-- [x] Multi-task work: Team Lead uses `generate-task-spec` prompt → convoy engine
+- [x] Multi-task work: Team Lead uses `generate-convoy` prompt → convoy engine
 
 #### 5.3 Convoy Chaining (Convention)
 - [x] Each convoy spec has a unique, descriptive filename: `<goal>.convoy.yml`
@@ -521,7 +521,7 @@ The current `src/cli/run/` already provides substantial machinery we reuse direc
 - [x] No code changes needed — `run.ts` already routes `version: 1` to convoy engine
 
 **Acceptance criteria:**
-- ✅ `generate-task-spec` prompt outputs valid `.convoy.yml` specs with `version: 1`
+- ✅ `generate-convoy` prompt outputs valid `.convoy.yml` specs with `version: 1`
 - ✅ Team Lead handoff references `.convoy.yml` format
 - ✅ Dynamic naming convention supports convoy chaining
 - ✅ No code changes — all existing tests still pass
@@ -605,6 +605,51 @@ The current `src/cli/run/` already provides substantial machinery we reuse direc
 
 **Delivered:** 2 new files (`export.ts`, `export.test.ts`), 5 edited files (`engine.ts`, `dashboard.ts`, `run.ts`, `index.astro`, `dashboard.css`). +339 −49 lines.
 
+### Phase 8: UX Integration — Convoy-First Workflow
+**Status: ✅ Done**
+
+**Scope:** Align all prompts, agents, and documentation with the convoy engine as the primary execution path for multi-task work. Seamless user experience from feature request to convoy execution.
+
+#### 8.1 Rename generate-task-spec → generate-convoy
+- [x] Rename `generate-task-spec.prompt.md` → `generate-convoy.prompt.md`
+- [x] Update title, description, and remove legacy backward-compat note
+- [x] Update all cross-references in other prompts, agents, website docs
+
+#### 8.2 Convoy-First implement-feature Workflow
+- [x] Add "Step 2.5: Choose Execution Path" decision heuristic
+- [x] 1–2 subtasks → direct delegation (unchanged)
+- [x] 3+ subtasks → convoy execution (generate spec → user runs `opencastle run`)
+- [x] Convoy-aware notes in Step 3 (Implementation Rules) and Step 5 (Delivery)
+
+#### 8.3 Team Lead Agent Updates
+- [x] Rename handoff: "Generate Convoy Spec" → "Generate Convoy" with updated prompt reference
+- [x] Add "Run Convoy" handoff for executing existing `.convoy.yml` files
+- [x] Add "## Convoy Integration" section with decision heuristic, execution guidance, and post-convoy workflow
+
+#### 8.4 Session Guard Convoy Checks
+- [x] Add "Convoy Observability" check section
+- [x] Verify convoy NDJSON export exists for completed convoys
+- [x] Verify convoy tasks logged in events NDJSON
+
+#### 8.5 Supporting Prompt Updates
+- [x] `brainstorm.prompt.md` — convoy in "After Brainstorming" transition and "When to Skip" conditions
+- [x] `quick-refinement.prompt.md` — multi-task convoy escalation trigger
+- [x] `bootstrap-customizations.prompt.md` — reference "Generate Convoy" prompt
+
+#### 8.6 Website Documentation
+- [x] `prompts.astro` — replace `generate-task-spec` entry with `generate-convoy`
+- [x] Update implement-feature description to mention execution strategy step
+
+**Acceptance criteria:**
+- ✅ No remaining references to `generate-task-spec` in prompts, agents, or website
+- ✅ `implement-feature` has convoy execution path for 3+ task scenarios
+- ✅ Team Lead handoffs and convoy integration section complete
+- ✅ Session Guard verifies convoy observability data
+- ✅ All supporting prompts reference convoy consistently
+- ✅ Website docs reflect new prompt names and workflow
+
+**Delivered:** 1 new file (`generate-convoy.prompt.md`), 1 deleted file (`generate-task-spec.prompt.md`), 8 edited files. Zero code changes — Phase 8 is pure prompt/agent/docs.
+
 ---
 
 ## File Structure (Target)
@@ -677,6 +722,7 @@ src/cli/run/                       # EXISTING — extended, not replaced
 | Phase 5 | Medium | Phase 4 | Agent config + prompts |
 | Phase 6 | Medium | Phase 2 | 1 new adapter file |
 | Phase 7 | Low | Phase 4 | Dashboard pages |
+| Phase 8 | Medium | Phase 5 | Prompt/agent/docs edits |
 
 Phases 1–3 are the MVP. Phase 4 makes it the default. Phases 5–7 are integration and polish.
 
