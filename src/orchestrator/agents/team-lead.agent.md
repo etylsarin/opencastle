@@ -17,9 +17,9 @@ handoffs:
   - label: Quick Refinement
     agent: 'Team Lead (OpenCastle)'
     prompt: 'Use the quick-refinement prompt to handle these follow-up refinements (UI tweaks, polish, adjustments):'
-  - label: Generate Task Spec
+  - label: Generate Convoy Spec
     agent: 'Team Lead (OpenCastle)'
-    prompt: 'Use the generate-task-spec prompt to create an opencastle.tasks.yml spec for autonomous overnight runs based on:'
+    prompt: 'Use the generate-task-spec prompt to create a .convoy.yml spec for autonomous convoy runs based on:'
   - label: Resolve PR Comments
     agent: 'Team Lead (OpenCastle)'
     prompt: 'Use the resolve-pr-comments prompt to resolve the GitHub PR review comments on this PR:'

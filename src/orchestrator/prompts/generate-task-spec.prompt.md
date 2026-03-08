@@ -1,5 +1,5 @@
 ---
-description: 'Generate a valid .tasks.yml spec file for autonomous overnight runs based on a high-level description of what needs to be done.'
+description: 'Generate a valid .convoy.yml spec file for autonomous convoy runs based on a high-level description of what needs to be done.'
 agent: 'Team Lead (OpenCastle)'
 ---
 
@@ -7,7 +7,7 @@ agent: 'Team Lead (OpenCastle)'
 
 # Generate Task Spec for Autonomous Run
 
-You are the Team Lead. The user wants to run `opencastle run` to execute a batch of tasks autonomously (e.g., overnight). Your job is to produce a valid `.tasks.yml` file they can feed to the CLI. Derive a short, descriptive, kebab-case filename from the user's goal (2–4 words max) and use it as the filename — for example `auth-refactor.tasks.yml` or `add-search.tasks.yml`. Always use the `.tasks.yml` extension.
+You are the Team Lead. The user wants to run `opencastle run` to execute a batch of tasks autonomously (e.g., overnight). Your job is to produce a valid `.convoy.yml` file they can feed to the CLI. Derive a short, descriptive, kebab-case filename from the user's goal (2–4 words max) and use it as the filename — for example `auth-refactor.convoy.yml` or `add-search.convoy.yml`. Always use the `.convoy.yml` extension.
 
 ## User Goal
 
@@ -28,9 +28,13 @@ The output file must conform to the following schema. Fields marked **(required)
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `name` | string | **yes** | — | Human-readable name for the run |
+| `version` | integer | **yes** | — | Spec schema version. Always `1` for convoy specs |
 | `concurrency` | integer ≥ 1 | no | `1` | Max tasks executing in parallel |
 | `on_failure` | `continue` \| `stop` | no | `continue` | Behaviour when a task fails |
 | `adapter` | string | no | auto-detect | Default CLI adapter (`claude-code`, `copilot`, `cursor`). Omit to let the CLI auto-detect the first available adapter. |
+| `branch` | string | no | — | Git feature branch name — created if missing |
+| `defaults` | object | no | — | Worker defaults merged into each task. Keys: `timeout`, `model`, `max_retries`, `agent` |
+| `gates` | array of strings | no | — | Shell commands run after all tasks complete; each must exit 0 |
 | `tasks` | list | **yes** | — | Non-empty list of task objects |
 
 ### Task Fields
@@ -44,6 +48,8 @@ The output file must conform to the following schema. Fields marked **(required)
 | `depends_on` | list of ids | no | `[]` | Task ids that must finish before this one starts |
 | `files` | list of globs | no | `[]` | File scope the agent is allowed to modify |
 | `timeout` | duration | no | `30m` | Max wall time (`<number><s|m|h>`, e.g. `10m`, `1h`) |
+| `max_retries` | integer | no | from `defaults` or `1` | Max retry attempts for this task |
+| `model` | string | no | — | AI model override for this task |
 
 ### Agent Roster
 
@@ -97,6 +103,9 @@ For each workstream, break it down into the smallest meaningful unit of work tha
 - `concurrency` — set to 2–3 for overnight runs; keep at 1 if tasks share files or the machine is constrained.
 - `on_failure` — use `continue` (default) when tasks are independent so one failure doesn't waste the whole run. Use `stop` when every subsequent task depends on success.
 - `adapter` — **omit this field** to let the CLI auto-detect the first available adapter (priority: `copilot` → `claude-code` → `cursor`). Only set this explicitly if the user requests a specific adapter.
+- `branch` — derive from the goal, e.g., `feat/auth-refactor`. Use a descriptive branch name.
+- `defaults` — set sensible defaults for timeout and max_retries. Model can be left unset for auto-detection.
+- `gates` — include standard validation gates (lint, type-check, test) unless the user specifies otherwise.
 
 ### 5. Write the Prompts
 
@@ -128,11 +137,16 @@ Before presenting the YAML, mentally verify:
 Return the final YAML inside a fenced code block with a filename annotation:
 
 ````yaml
-# <feature-name>.tasks.yml
+# <feature-name>.convoy.yml
 name: <run name>
+version: 1
 concurrency: <n>
 on_failure: <continue|stop>
-# adapter: <adapter>  # Omit for auto-detection; set only when user requests a specific adapter
+branch: <branch-name>
+
+defaults:
+  timeout: 30m
+  max_retries: 1
 
 tasks:
   - id: <task-id>
@@ -148,9 +162,16 @@ tasks:
     depends_on:
       - <task-id>
     ...
+
+gates:
+  - <lint command>
+  - <type-check command>
+  - <test command>
 ````
 
 Also provide:
 1. A **DAG summary** showing the phase structure so the user can verify execution order.
 2. An **estimated total duration** (sum of timeouts on the critical path).
-3. A `--dry-run` command they can use to validate: `npx opencastle run --file <feature-name>.tasks.yml --dry-run`
+3. A `--dry-run` command they can use to validate: `npx opencastle run --file <feature-name>.convoy.yml --dry-run`
+
+> **Backward compatibility:** `.tasks.yml` files without `version` still work with the legacy executor. Only spec files with `version: 1` are routed to the convoy engine.
