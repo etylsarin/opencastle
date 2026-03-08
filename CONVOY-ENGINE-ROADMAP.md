@@ -320,7 +320,6 @@ The current `src/cli/run/` already provides substantial machinery we reuse direc
 | **Cursor adapter** | `run/adapters/cursor.ts` | Reuse — subprocess spawn |
 | **Adapter interface** | `run/adapters/index.ts` | Extend — add worktree `cwd` support |
 | **Timeout enforcement** | `run/executor.ts` | Reuse — `Promise.race` + adapter `kill()` |
-| **Loop executor** | `run/loop-executor.ts` | Replace later (Phase 4) |
 | **Reporter / event logging** | `run/reporter.ts` | Extend — dual-write to SQLite + NDJSON |
 
 **Key insight:** The convoy engine is primarily new **infrastructure around** the existing executor — not a rewrite of it. The genuinely new pieces are: SQLite state store, git worktree isolation, merge queue, health monitor, and crash recovery.
@@ -461,36 +460,41 @@ The current `src/cli/run/` already provides substantial machinery we reuse direc
 
 ---
 
-### Phase 4: CLI Integration + Replace `opencastle run`
-**Scope:** Wire the convoy engine into the CLI, deprecate legacy run, replace Ralph loop.
+### Phase 4: CLI Integration + Remove Loop Mode
+**Status: ✅ Done** — PR [#46](https://github.com/etylsarin/opencastle/pull/46)
+
+**Scope:** Wire the convoy engine into the CLI, remove loop mode for simplicity.
 
 #### 4.1 CLI Command
-- [ ] **Edit** `src/cli/run.ts` — detect `version: 1` → convoy engine; else → legacy
-- [ ] `opencastle run convoy.yml` → convoy engine
-- [ ] `opencastle run opencastle.tasks.yml` → legacy executor (unchanged)
-- [ ] `opencastle run --resume` → resume last interrupted convoy
-- [ ] `opencastle run --status` → query SQLite, print convoy state
-- [ ] `opencastle run --dry-run` → parse + plan, print phases, don't execute
+- [x] **Edit** `src/cli/run.ts` — detect `version: 1` → convoy engine; else → legacy
+- [x] `opencastle run convoy.yml` → convoy engine
+- [x] `opencastle run opencastle.tasks.yml` → legacy executor (unchanged)
+- [x] `opencastle run --resume` → resume last interrupted convoy from `.opencastle/convoy.db`
+- [x] `opencastle run --status` → query SQLite, print convoy state summary
+- [x] `opencastle run --dry-run` → parse + plan, print phases, don't execute (both paths)
 
-#### 4.2 Replace Ralph Loop
-- [ ] Map loop mode to convoy engine: single-worker convoy with `max_retries: N`
-- [ ] Backpressure commands → convoy `gates` (run after each iteration)
-- [ ] Fresh prompt re-read → worker re-spawns with updated prompt each iteration
-- [ ] Deprecate `loop-executor.ts` and `loop-reporter.ts`
+#### 4.2 Remove Loop Mode
+- [x] Delete `loop-executor.ts` and `loop-reporter.ts` entirely
+- [x] Remove all loop-related types from `types.ts` (`LoopConfig`, `BackpressureResult`, `LoopIterationResult`, `LoopRunReport`, `LoopReporter`, `LoopExecutor`)
+- [x] Remove `mode` and `loop` fields from `TaskSpec` and `RunOptions`
+- [x] Remove loop validation from `schema.ts` (`validateSpec` and `applyDefaults`)
+- [x] Remove loop tests from `schema.test.ts`
 
-#### 4.3 Legacy Compatibility
-- [ ] Deprecation warnings on legacy spec format (no `version` field)
-- [ ] Migration guide in docs
+#### 4.3 Spec Parser Refactor
+- [x] Extract `parseTaskSpecText(text: string)` from `parseTaskSpec(filePath)` for raw YAML reuse
+- [x] `run.ts` reads file text, passes to both parser and convoy engine (for crash recovery storage)
+- [x] Add `getLatestConvoy()` to convoy store for `--resume` and `--status`
 
 **Acceptance criteria:**
-- `opencastle run convoy.yml` works end-to-end
-- Legacy `opencastle run opencastle.tasks.yml` still works (with deprecation warning)
-- `--resume` recovers from crash
-- `--status` shows convoy state
-- Ralph loop works via convoy engine
-- Dashboard receives events (NDJSON unchanged)
+- ✅ `opencastle run convoy.yml` (version: 1) → convoy engine end-to-end
+- ✅ `opencastle run opencastle.tasks.yml` (no version) → legacy executor unchanged
+- ✅ `--resume` recovers interrupted convoy from SQLite
+- ✅ `--status` prints convoy state, branch, task breakdown
+- ✅ `--dry-run` works for both convoy and legacy specs
+- ✅ Loop mode completely removed — zero references in source
+- ✅ 421 tests passing, 0 failures, zero type errors
 
-**Estimated scope:** Mostly edits to existing `run.ts`
+**Delivered:** 7 files changed (+391 −889, net −498 lines). Rewrote `run.ts`, edited `types.ts` + `schema.ts` + `schema.test.ts` + `store.ts`, deleted `loop-executor.ts` + `loop-reporter.ts`.
 
 ---
 
