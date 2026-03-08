@@ -37,6 +37,7 @@ export interface ConvoyResult {
   summary: { total: number; done: number; failed: number; skipped: number; timedOut: number }
   duration: string
   gateResults?: Array<{ command: string; exitCode: number; passed: boolean }>
+  cost?: { total_tokens: number }
 }
 
 export interface ConvoyEngine {
@@ -290,11 +291,19 @@ async function runConvoy(
         await removeWorktree()
       }
 
+      const usageExtra: Partial<{ prompt_tokens: number; completion_tokens: number; total_tokens: number }> = {}
+      if (result.usage) {
+        if (result.usage.prompt_tokens != null) usageExtra.prompt_tokens = result.usage.prompt_tokens
+        if (result.usage.completion_tokens != null) usageExtra.completion_tokens = result.usage.completion_tokens
+        if (result.usage.total_tokens != null) usageExtra.total_tokens = result.usage.total_tokens
+      }
+
       store.withTransaction(() => {
         store.updateTaskStatus(taskRecord.id, convoyId, 'done', {
           finished_at: finishedAt,
           output: result.output,
           exit_code: result.exitCode,
+          ...usageExtra,
         })
         store.updateWorkerStatus(workerId, 'done', { finished_at: finishedAt })
       })
@@ -398,7 +407,18 @@ async function runConvoy(
       ? 'failed'
       : 'done'
 
-  store.updateConvoyStatus(convoyId, finalStatus, { finished_at: new Date().toISOString() })
+  // Aggregate token usage across completed tasks
+  let convoyTotalTokens: number | null = null
+  for (const t of allTasksFinal) {
+    if (t.total_tokens != null) {
+      convoyTotalTokens = (convoyTotalTokens ?? 0) + t.total_tokens
+    }
+  }
+
+  store.updateConvoyStatus(convoyId, finalStatus, {
+    finished_at: new Date().toISOString(),
+    total_tokens: convoyTotalTokens,
+  })
 
   return {
     convoyId,
@@ -406,6 +426,7 @@ async function runConvoy(
     summary,
     duration: formatDuration(Date.now() - startTime),
     gateResults: spec.gates && spec.gates.length > 0 ? gateResults : undefined,
+    cost: convoyTotalTokens != null ? { total_tokens: convoyTotalTokens } : undefined,
   }
 }
 

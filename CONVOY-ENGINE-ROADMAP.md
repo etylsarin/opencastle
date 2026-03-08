@@ -736,17 +736,89 @@ src/cli/run/                       # EXISTING — extended, not replaced
 
 ---
 
-## Open Questions
+## Resolved Questions
 
-1. **Node.js version bump**: Current engine requirement is `>=18`. SQLite native requires `>=22.5.0`. Should we bump or provide a fallback (e.g., `better-sqlite3`)?
+1. **Node.js version bump**: ✅ **Decided — bump to `>=22.5.0`.** Already applied in Phase 1. This is an OpenCastle CLI requirement only — user repos do not need Node 22. The CLI runs in the developer's environment (which needs Node 22.5+), but the projects it orchestrates can target any Node version.
 
-2. **Worktree strategy for Copilot SDK**: The SDK manages its own workspace concept. Do we use its `workspacePath` or force our worktree via `cwd`? Needs experimentation.
+2. **Worktree strategy for Copilot SDK**: 🔬 **Needs experimentation.** The SDK manages its own workspace concept. Whether we use its `workspacePath` or force our worktree via `cwd` requires hands-on testing once the SDK stabilizes.
 
-3. **Beads integration (future)**: Should we optionally integrate with `bd` CLI for projects already using Beads? Could map bead IDs to convoy task IDs.
+3. **Beads integration**: ❌ **Not now.** May re-consider in future if projects using Beads adopt OpenCastle.
 
-4. **Cost tracking**: Copilot SDK charges per premium request. Should the engine track token usage per task and include in the run report?
+4. **Cost tracking**: ✅ **Accepted — Phase 10.** Track token usage per task and include in the run report. Highly valuable for budget visibility.
 
-5. **Convoy chaining**: Should a convoy spec support referencing another convoy spec as a dependency? (Multi-convoy pipelines for large features.)
+5. **Convoy chaining**: ✅ **Accepted — Phase 11.** Support referencing another convoy spec as a dependency for multi-convoy pipelines.
+
+---
+
+### Phase 10: Cost Tracking
+**Status: ✅ Done**
+
+**Scope:** Track token usage and cost per task, per worker, and per convoy. Surface in run report and dashboard.
+
+#### 10.1 Token Usage Collection
+- [x] Extend adapter interface with optional `usage` field in `ExecuteResult` (prompt tokens, completion tokens, total tokens)
+- [x] Copilot SDK adapter: extract usage from session response metadata
+- [x] Subprocess adapters (Claude Code, Cursor, OpenCode): parse usage from stdout/stderr if available
+- [x] Graceful degradation: missing usage data → `null`, never errors
+
+#### 10.2 Cost Storage
+- [x] Add `prompt_tokens`, `completion_tokens`, `total_tokens`, `cost_usd` columns to `task` table (schema migration v2 → v3)
+- [x] Add `total_tokens`, `total_cost_usd` columns to `convoy` table
+- [x] Update store operations to persist usage data after task completion
+- [x] Compute convoy totals on completion
+
+#### 10.3 Run Report
+- [x] Print per-task token usage in convoy status summary
+- [x] Print convoy total cost in completion message
+- [x] Include cost data in NDJSON export records
+
+#### 10.4 Dashboard Cost View
+- [x] Show per-task token usage in convoy task table
+- [x] Show convoy total cost in convoy overview
+- [x] Cost breakdown by agent/model
+
+**Acceptance criteria:**
+- ✅ Token usage tracked per task when adapter provides it
+- ✅ Cost data persisted in SQLite and exported to NDJSON
+- ✅ Run report shows per-task and total cost
+- ✅ Dashboard displays cost breakdown
+- ✅ Missing usage data handled gracefully (no errors)
+
+**Delivered:** 4 new/edited files in `src/cli/convoy/` (types.ts, store.ts, engine.ts, export.ts), 4 edited adapter files, 2 edited UI files (run.ts, dashboard index.astro). 476 tests (15 new), 0 failures. Schema migrated v2→v3 with chained migration support.
+
+---
+
+### Phase 11: Convoy Chaining
+**Status: 📋 Planned**
+
+**Scope:** Support multi-convoy pipelines where one convoy spec references another as a dependency.
+
+#### 11.1 Spec Format Extension
+- [ ] Add optional `depends_on_convoy` field to spec (list of convoy spec file paths)
+- [ ] Spec parser validates referenced files exist and are valid convoy specs
+- [ ] Version bump: `version: 2` for chaining support (v1 specs still work)
+
+#### 11.2 Pipeline Orchestrator
+- [ ] New `pipeline.ts` — reads a chain of convoy specs and executes in order
+- [ ] Each convoy in the chain runs to completion before the next starts
+- [ ] Shared branch: all convoys in a pipeline operate on the same feature branch
+- [ ] Pipeline-level status in SQLite (new `pipeline` table)
+
+#### 11.3 CLI Support
+- [ ] `opencastle run pipeline.convoy.yml` — detects chaining, runs pipeline orchestrator
+- [ ] `opencastle run --status` shows pipeline progress when applicable
+- [ ] `--resume` recovers interrupted pipelines
+
+#### 11.4 Dashboard Pipeline View
+- [ ] Pipeline overview: convoy chain progress visualization
+- [ ] Drill-down from pipeline → individual convoy → tasks
+
+**Acceptance criteria:**
+- [ ] Convoy spec can reference other convoy specs as dependencies
+- [ ] Pipeline executes convoys in dependency order
+- [ ] Crash recovery works across convoy boundaries
+- [ ] Dashboard shows pipeline-level progress
+- [ ] Backward-compatible: v1 specs without chaining still work
 
 ---
 
@@ -763,7 +835,9 @@ src/cli/run/                       # EXISTING — extended, not replaced
 | Phase 7 | Low | Phase 4 | Dashboard pages |
 | Phase 8 | Medium | Phase 5 | Prompt/agent/docs edits |
 | Phase 9 | Medium | Phase 8 | README, website, CLI docs |
+| Phase 10 | Medium | Phase 4 | Cost tracking — adapter, store, report, dashboard |
+| Phase 11 | Low | Phase 10 | Convoy chaining — pipeline orchestrator |
 
-Phases 1–3 are the MVP. Phase 4 makes it the default. Phases 5–8 are integration and polish. Phase 9 is documentation alignment.
+Phases 1–10 are complete. Phase 11 (convoy chaining) is planned future work.
 
 **Total new code estimate:** ~6–8 new files in `src/cli/convoy/`, edits to ~4 existing files in `src/cli/run/`. The spec parser, DAG planner, adapter layer, concurrency executor, and timeout/kill logic are already built.

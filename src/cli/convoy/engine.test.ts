@@ -1472,3 +1472,180 @@ describe('diamond dependency skip', () => {
     expect(byId['task-c']).toBe('skipped')
   })
 })
+
+// ── 21. Cost tracking (usage propagation) ────────────────────────────────────
+
+describe('cost tracking', () => {
+  it('persists usage data to task record when adapter returns usage', async () => {
+    const adapter = makeAdapter()
+    adapter.execute.mockResolvedValue({
+      success: true,
+      output: 'ok',
+      exitCode: 0,
+      usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
+    } satisfies ExecuteResult)
+
+    const engine = createConvoyEngine({
+      spec: makeSpec(),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    const result = await engine.run()
+    expect(result.status).toBe('done')
+
+    const store = createConvoyStore(dbPath)
+    const tasks = store.getTasksByConvoy(result.convoyId)
+    store.close()
+    expect(tasks[0].prompt_tokens).toBe(100)
+    expect(tasks[0].completion_tokens).toBe(50)
+    expect(tasks[0].total_tokens).toBe(150)
+  })
+
+  it('leaves cost fields null when adapter returns no usage', async () => {
+    const adapter = makeAdapter()
+    // default makeAdapter returns no usage field
+
+    const engine = createConvoyEngine({
+      spec: makeSpec(),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    const result = await engine.run()
+
+    const store = createConvoyStore(dbPath)
+    const tasks = store.getTasksByConvoy(result.convoyId)
+    store.close()
+    expect(tasks[0].prompt_tokens).toBeNull()
+    expect(tasks[0].completion_tokens).toBeNull()
+    expect(tasks[0].total_tokens).toBeNull()
+  })
+
+  it('aggregates total_tokens from multiple tasks to convoy record', async () => {
+    const adapter = makeAdapter()
+    adapter.execute
+      .mockResolvedValueOnce({ success: true, output: 'ok', exitCode: 0, usage: { total_tokens: 100 } })
+      .mockResolvedValueOnce({ success: true, output: 'ok', exitCode: 0, usage: { total_tokens: 200 } })
+
+    const spec = makeSpec({ concurrency: 2 }, [
+      { id: 'task-1', depends_on: [] },
+      { id: 'task-2', depends_on: [] },
+    ])
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    const result = await engine.run()
+
+    const store = createConvoyStore(dbPath)
+    const convoy = store.getConvoy(result.convoyId)
+    store.close()
+    expect(convoy!.total_tokens).toBe(300)
+  })
+
+  it('includes cost in ConvoyResult when usage is available', async () => {
+    const adapter = makeAdapter()
+    adapter.execute.mockResolvedValue({
+      success: true,
+      output: 'ok',
+      exitCode: 0,
+      usage: { total_tokens: 75 },
+    } satisfies ExecuteResult)
+
+    const engine = createConvoyEngine({
+      spec: makeSpec(),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    const result = await engine.run()
+
+    expect(result.cost).toEqual({ total_tokens: 75 })
+  })
+
+  it('omits cost from ConvoyResult when no usage data is available', async () => {
+    const adapter = makeAdapter()
+    // default makeAdapter returns no usage
+
+    const engine = createConvoyEngine({
+      spec: makeSpec(),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    const result = await engine.run()
+
+    expect(result.cost).toBeUndefined()
+  })
+
+  it('partial usage fields are persisted correctly (only total_tokens set)', async () => {
+    const adapter = makeAdapter()
+    adapter.execute.mockResolvedValue({
+      success: true,
+      output: 'ok',
+      exitCode: 0,
+      usage: { total_tokens: 42 },
+    } satisfies ExecuteResult)
+
+    const engine = createConvoyEngine({
+      spec: makeSpec(),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    const result = await engine.run()
+
+    const store = createConvoyStore(dbPath)
+    const tasks = store.getTasksByConvoy(result.convoyId)
+    store.close()
+    expect(tasks[0].total_tokens).toBe(42)
+    expect(tasks[0].prompt_tokens).toBeNull()
+    expect(tasks[0].completion_tokens).toBeNull()
+  })
+
+  it('convoy total_tokens is null when no task has usage', async () => {
+    const adapter = makeAdapter()
+    // default adapter returns no usage
+
+    const engine = createConvoyEngine({
+      spec: makeSpec({ concurrency: 2 }, [
+        { id: 'task-1', depends_on: [] },
+        { id: 'task-2', depends_on: [] },
+      ]),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    const result = await engine.run()
+
+    const store = createConvoyStore(dbPath)
+    const convoy = store.getConvoy(result.convoyId)
+    store.close()
+    expect(convoy!.total_tokens).toBeNull()
+    expect(result.cost).toBeUndefined()
+  })
+})

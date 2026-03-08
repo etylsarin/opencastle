@@ -39,8 +39,13 @@ export async function exportConvoyToNdjson(
         started_at: t.started_at,
         finished_at: t.finished_at,
         retries: t.retries,
+        prompt_tokens: t.prompt_tokens,
+        completion_tokens: t.completion_tokens,
+        total_tokens: t.total_tokens,
       })),
       events_count: eventsCount,
+      total_tokens: convoy.total_tokens,
+      total_cost_usd: convoy.total_cost_usd,
     }
 
     const dir = logsDir ?? resolve(process.cwd(), '.opencastle', 'logs')
