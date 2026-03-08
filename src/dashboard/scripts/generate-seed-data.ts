@@ -13,6 +13,7 @@ import { join } from 'path';
 
 const REPO_ROOT = join(__dirname, '..', '..', '..', '..');
 const LOGS_DIR = join(REPO_ROOT, 'docs', 'ai-agents', 'logs');
+const SEED_DATA_DIR = join(__dirname, '..', 'seed-data');
 
 // --- Constants ---
 
@@ -107,6 +108,16 @@ const TASK_DESCRIPTIONS = [
 ];
 
 const LESSON_IDS = ['LES-001', 'LES-002', 'LES-003', 'LES-004', 'LES-005', 'LES-006', 'LES-007', 'LES-008', 'LES-009', 'LES-010'];
+
+const ADAPTERS = ['copilot', 'claude-code', 'cursor'];
+
+const CONVOY_NAMES = [
+  'Phase 3 — Engine + Health',
+  'Phase 4 — CLI Integration',
+  'Phase 5 — Run System',
+  'Phase 6 — Adapters',
+  'Phase 7 — Dashboard',
+];
 
 // --- Helpers ---
 
@@ -285,15 +296,144 @@ function generatePanels(count: number): PanelRecord[] {
   return records.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 }
 
+// --- Generate Convoys ---
+
+type ConvoyStatus = 'pending' | 'running' | 'done' | 'failed' | 'cancelled';
+type TaskStatus = 'pending' | 'running' | 'done' | 'failed' | 'skipped' | 'timed-out';
+
+interface ConvoyTaskRecord {
+  id: string;
+  phase: number;
+  agent: string;
+  adapter: string;
+  status: TaskStatus;
+  started_at?: string;
+  finished_at?: string;
+  retries: number;
+}
+
+interface ConvoyRecord {
+  id: string;
+  name: string;
+  status: ConvoyStatus;
+  branch: string;
+  created_at: string;
+  started_at?: string;
+  finished_at?: string;
+  summary: {
+    total: number;
+    done: number;
+    failed: number;
+    skipped: number;
+    timedOut: number;
+  };
+  tasks: ConvoyTaskRecord[];
+  events_count: number;
+}
+
+const CONVOY_CONFIGS: Array<{
+  status: ConvoyStatus;
+  taskCount: number;
+  createdAt: string;
+  startedAt: string;
+  finishedAt?: string;
+  failIdx?: number;
+  runningFromIdx?: number;
+  cancelledFromIdx?: number;
+}> = [
+  { status: 'done',      taskCount: 6, createdAt: '2026-02-20T08:00:00.000Z', startedAt: '2026-02-20T08:05:00.000Z', finishedAt: '2026-02-20T14:30:00.000Z' },
+  { status: 'done',      taskCount: 5, failIdx: 1, createdAt: '2026-02-21T09:00:00.000Z', startedAt: '2026-02-21T09:10:00.000Z', finishedAt: '2026-02-21T17:45:00.000Z' },
+  { status: 'done',      taskCount: 4, createdAt: '2026-02-22T10:00:00.000Z', startedAt: '2026-02-22T10:05:00.000Z', finishedAt: '2026-02-22T15:20:00.000Z' },
+  { status: 'running',   taskCount: 5, runningFromIdx: 3, createdAt: '2026-02-24T09:00:00.000Z', startedAt: '2026-02-24T09:05:00.000Z' },
+  { status: 'cancelled', taskCount: 8, cancelledFromIdx: 3, createdAt: '2026-02-25T11:00:00.000Z', startedAt: '2026-02-25T11:05:00.000Z', finishedAt: '2026-02-25T12:30:00.000Z' },
+];
+
+function generateConvoys(count: number): ConvoyRecord[] {
+  const records: ConvoyRecord[] = [];
+  const configs = CONVOY_CONFIGS.slice(0, count);
+
+  for (let i = 0; i < configs.length; i++) {
+    const config = configs[i];
+    const name = CONVOY_NAMES[i];
+    const convoyId = `convoy-${String(i + 1).padStart(3, '0')}`;
+
+    const tasks: ConvoyTaskRecord[] = [];
+    const phaseCount = Math.ceil(config.taskCount / 2);
+    let cursor = new Date(config.startedAt).getTime();
+
+    for (let t = 0; t < config.taskCount; t++) {
+      const phase = Math.min(Math.floor(t / 2) + 1, phaseCount);
+      let taskStatus: TaskStatus;
+
+      if (config.failIdx === t) {
+        taskStatus = 'failed';
+      } else if (config.runningFromIdx !== undefined && t === config.runningFromIdx) {
+        taskStatus = 'running';
+      } else if (config.runningFromIdx !== undefined && t > config.runningFromIdx) {
+        taskStatus = 'pending';
+      } else if (config.cancelledFromIdx !== undefined && t >= config.cancelledFromIdx) {
+        taskStatus = 'skipped';
+      } else {
+        taskStatus = 'done';
+      }
+
+      const durationMs = rng.int(45, 120) * 60 * 1000;
+      const hasStart = taskStatus === 'done' || taskStatus === 'failed' || taskStatus === 'running';
+      const hasEnd   = taskStatus === 'done' || taskStatus === 'failed';
+
+      const task: ConvoyTaskRecord = {
+        id: `task-${String(i + 1).padStart(3, '0')}-${t + 1}`,
+        phase,
+        agent: rng.pick(AGENTS),
+        adapter: rng.pick(ADAPTERS),
+        status: taskStatus,
+        ...(hasStart ? { started_at: new Date(cursor).toISOString() } : {}),
+        ...(hasEnd   ? { finished_at: new Date(cursor + durationMs).toISOString() } : {}),
+        retries: taskStatus === 'failed' ? rng.int(1, 3) : (taskStatus === 'done' && rng.next() > 0.7 ? 1 : 0),
+      };
+
+      if (hasEnd) cursor += durationMs + rng.int(5, 20) * 60 * 1000;
+      tasks.push(task);
+    }
+
+    const summary = {
+      total:    tasks.length,
+      done:     tasks.filter((t) => t.status === 'done').length,
+      failed:   tasks.filter((t) => t.status === 'failed').length,
+      skipped:  tasks.filter((t) => t.status === 'skipped' || t.status === 'pending').length,
+      timedOut: tasks.filter((t) => t.status === 'timed-out').length,
+    };
+
+    const record: ConvoyRecord = {
+      id: convoyId,
+      name,
+      status: config.status,
+      branch: `convoy/${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`,
+      created_at: config.createdAt,
+      started_at: config.startedAt,
+      ...(config.finishedAt ? { finished_at: config.finishedAt } : {}),
+      summary,
+      tasks,
+      events_count: rng.int(15, 50),
+    };
+
+    records.push(record);
+  }
+
+  return records;
+}
+
 // --- Main ---
 
 function main() {
   mkdirSync(LOGS_DIR, { recursive: true });
+  mkdirSync(SEED_DATA_DIR, { recursive: true });
 
   // Generate data
   const sessions = generateSessions(50);
   const delegations = generateDelegations(35);
   const panels = generatePanels(12);
+  const convoys = generateConvoys(5);
 
   // Merge and sort all events by timestamp
   type AnyRecord = SessionRecord | DelegationRecord | PanelRecord;
@@ -305,11 +445,22 @@ function main() {
   writeFileSync(eventsPath, allEvents.map((r) => JSON.stringify(r)).join('\n') + '\n');
   console.log(`Wrote ${allEvents.length} event records to ${eventsPath}`);
 
+  // Write convoys.ndjson to logs dir and seed-data dir
+  const convoysLine = convoys.map((r) => JSON.stringify(r)).join('\n') + '\n';
+  const convoysLogsPath = join(LOGS_DIR, 'convoys.ndjson');
+  writeFileSync(convoysLogsPath, convoysLine);
+  console.log(`Wrote ${convoys.length} convoy records to ${convoysLogsPath}`);
+
+  const convoysSeedPath = join(SEED_DATA_DIR, 'convoys.ndjson');
+  writeFileSync(convoysSeedPath, convoysLine);
+  console.log(`Wrote ${convoys.length} convoy records to ${convoysSeedPath}`);
+
   // Summary
   console.log('\n--- Seed Data Summary ---');
   console.log(`Sessions:    ${sessions.length}`);
   console.log(`Delegations: ${delegations.length}`);
   console.log(`Panels:      ${panels.length}`);
+  console.log(`Convoys:     ${convoys.length}`);
   console.log(`Total:       ${allEvents.length}`);
 
   // Outcome distribution
