@@ -60,5 +60,13 @@
   "dependencies": {
     "@github/copilot-sdk": "^0.1.30",
     "yaml": "^2.8.2"
+  },
+  "peerDependencies": {
+    "@anthropic-ai/agent-sdk": ">=0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@anthropic-ai/agent-sdk": {
+      "optional": true
+    }
   }
 }
