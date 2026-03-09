@@ -42,6 +42,7 @@ interface RawSpec {
   version?: unknown
   defaults?: unknown
   gates?: unknown
+  gate_retries?: unknown
   branch?: unknown
   depends_on_convoy?: unknown
 }
@@ -151,6 +152,14 @@ export function validateSpec(spec: unknown): ValidationResult {
       !(s.gates as unknown[]).every((g) => typeof g === 'string')
     ) {
       errors.push('`gates` must be an array of strings')
+    }
+  }
+
+  // gate_retries
+  if (s.gate_retries !== undefined) {
+    const gr = Number(s.gate_retries)
+    if (!Number.isInteger(gr) || gr < 0) {
+      errors.push('`gate_retries` must be a non-negative integer')
     }
   }
 
@@ -319,6 +328,7 @@ export function applyDefaults(spec: Record<string, unknown>): TaskSpec {
   s.on_failure = (s.on_failure as string) || 'continue'
   // Leave adapter empty so run.ts can auto-detect the best available CLI
   s.adapter = (s.adapter as string) || ''
+  s.gate_retries = s.gate_retries !== undefined ? Number(s.gate_retries) : 0
 
   const tasks = (s.tasks as Array<Record<string, unknown>> | undefined) ?? []
   const d =

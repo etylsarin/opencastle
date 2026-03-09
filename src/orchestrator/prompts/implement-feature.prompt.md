@@ -47,31 +47,20 @@ Every subtask must be tracked. **No issue = no implementation.** This step produ
 5. **Link to roadmap** — Reference the roadmap section in the issue description so context is never lost
 6. **Verify issues exist** — List all created issue IDs. If count is 0, do NOT proceed to Step 2.5
 
-### 2.5 Choose Execution Path (BLOCKING — decides how Step 3 proceeds)
+### 2.5 Generate Convoy Spec (BLOCKING — decides how Step 3 proceeds)
 
-With the full task list in hand, decide the execution mechanism:
+All project-related work is executed via the convoy engine — regardless of subtask count. This ensures consistent observability, crash recovery, and live progress.
 
-| Condition | Execution path |
-|-----------|----------------|
-| 1–2 subtasks | **Direct delegation** — delegate to sub-agents as today (proceed to Step 3 as-is) |
-| 3+ subtasks | **Convoy execution** — generate a `.convoy.yml` spec using the `generate-convoy` prompt, then hand it to the user |
-
-#### Direct delegation (1–2 subtasks)
-
-Proceed with the normal Step 3 delegation workflow. Sub-agents handle each task inline.
-
-#### Convoy execution (3+ subtasks)
-
-1. **Generate the spec** — use the `generate-convoy` prompt with the decomposed task list as context. The spec IS the implementation plan — no manual per-task delegation is needed.
-2. **Hand the spec to the user** — tell them to run: `npx opencastle run -f <name>.convoy.yml`
-3. **The convoy engine handles** isolated git worktrees, parallel execution, merge queue ordering, and crash recovery automatically.
+1. **Generate the spec** — use the `generate-convoy` prompt with the decomposed task list as context. The spec IS the implementation plan — no manual per-task delegation is needed. Even single-task fixes go through convoy for observability.
+2. **Hand the spec to the user** — tell them to run: `npx opencastle run -f .opencastle/convoys/<name>.convoy.yml`
+3. **The convoy engine handles** isolated git worktrees, parallel execution, merge queue ordering, crash recovery, and structured logging automatically.
 4. **After convoy completes** — proceed to Step 4 (validation) and Step 5 (delivery/PR). The convoy engine will have created its own commits on the configured branch.
 
-> **Why convoy for 3+ tasks?** Parallel worktree isolation prevents file conflicts. The merge queue ensures safe ordering. Crash recovery means a failing task doesn't block others. Manual delegation of 3+ parallel tasks risks conflicts and is harder to monitor.
+> **Why always convoy?** Convoy execution is the only path that guarantees observability logging, crash recovery, gate validation, and live progress. Direct sub-agent delegation produces no structured logs and cannot be resumed if interrupted.
 
 ### 3. Implementation Rules
 
-> **For convoy execution (3+ subtasks):** The convoy spec file IS the implementation plan — skip the manual delegation workflow below and jump to Step 4 after the user runs the convoy. The convoy engine delegates tasks internally using the agents and prompts defined in the spec.
+> **Convoy execution:** The convoy spec file IS the implementation plan — skip the manual delegation workflow below and jump to Step 4 after the user runs the convoy. The convoy engine delegates tasks internally using the agents and prompts defined in the spec.
 
 #### Issue Traceability
 
@@ -117,7 +106,7 @@ Every subtask must pass ALL gates before being marked Done:
 
 Follow the **Delivery Outcome** defined in the **git-workflow** skill — commit, push, open PR (not merged), and link to the tracker.
 
-> **For convoy execution:** The convoy engine creates commits on the configured `branch` directly. After validation passes, open the PR from that branch. No additional commits from the Team Lead are needed unless gates failed and required manual fixes.
+> The convoy engine creates commits on the configured `branch` directly. After validation passes, open the PR from that branch. No additional commits from the Team Lead are needed unless gates failed and required manual fixes.
 
 ### 6. Documentation & Traceability
 

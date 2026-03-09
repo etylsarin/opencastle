@@ -114,7 +114,7 @@ const commands = [
     description: 'Reads a YAML convoy spec (<code>convoy.yml</code>), builds a dependency-aware execution plan, and runs tasks in isolated git worktrees. Each worker operates in its own worktree with SQLite-backed state persistence. Legacy <code>opencastle.tasks.yml</code> specs without <code>version: 1</code> still work via the legacy executor.',
     usage: 'npx opencastle run [options]',
     options: [
-      { flag: '--file, -f <path>', desc: 'Convoy spec file (default: opencastle.tasks.yml, or convoy.yml if present)' },
+      { flag: '--file, -f <path>', desc: 'Convoy spec file (default: convoy.yml if present)' },
       { flag: '--dry-run', desc: 'Show execution plan without running tasks' },
       { flag: '--concurrency, -c <n>', desc: 'Override max parallel tasks' },
       { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude-code, copilot, cursor, opencode)' },

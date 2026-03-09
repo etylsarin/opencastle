@@ -14,6 +14,7 @@ import type { TaskRecord, ConvoyStatus } from './types.js'
 import { buildPhases, formatDuration } from '../run/executor.js'
 import { parseTimeout } from '../run/schema.js'
 import { getAdapter, detectAdapter } from '../run/adapters/index.js'
+import { c } from '../prompt.js'
 
 const execFile = promisify(execFileCb)
 
@@ -37,7 +38,7 @@ export interface ConvoyResult {
   status: ConvoyStatus
   summary: { total: number; done: number; failed: number; skipped: number; timedOut: number }
   duration: string
-  gateResults?: Array<{ command: string; exitCode: number; passed: boolean }>
+  gateResults?: Array<{ command: string; exitCode: number; passed: boolean; output?: string }>
   cost?: { total_tokens: number }
 }
 
@@ -95,6 +96,8 @@ async function runConvoy(
   verbose: boolean,
   startTime: number,
 ): Promise<ConvoyResult> {
+  const totalTasks = spec.tasks?.length ?? 0
+  let completedCount = 0
   const activeTaskMap = new Map<string, Task>()
   const taskAdapterMap = new Map<string, AgentAdapter>()
 
@@ -123,7 +126,7 @@ async function runConvoy(
     const task = allTasks.find(t => t.id === taskId)
     if (!task || task.status !== 'pending') return
     store.updateTaskStatus(taskId, convoyId, 'skipped', { output: reason })
-    if (verbose) process.stdout.write(`\u2298 ${taskId}\n`)
+    process.stdout.write(`  ${c.dim('⊘')} ${c.bold(`[${taskId}]`)} skipped\n`)
     events.emit('task_skipped', { reason }, { convoy_id: convoyId, task_id: taskId })
     for (const t of allTasks) {
       const deps = t.depends_on ? (JSON.parse(t.depends_on) as string[]) : []
@@ -206,7 +209,7 @@ async function runConvoy(
     const task = taskRecordToTask(taskRecord)
     activeTaskMap.set(taskRecord.id, task)
 
-    if (verbose) process.stdout.write(`\u25b6 ${taskRecord.id}\n`)
+    process.stdout.write(`  ${c.cyan('▶')} ${c.bold(`[${taskRecord.id}]`)} ${taskRecord.agent}${worktreePath ? c.dim(' (worktree)') : ''}\n`)
     events.emit(
       'task_started',
       { worker_id: workerId },
@@ -252,11 +255,7 @@ async function runConvoy(
           finished_at: null,
         })
         store.updateWorkerStatus(workerId, 'killed', { finished_at: finishedAt })
-        if (verbose) {
-          process.stdout.write(
-            `\u23f1 ${taskRecord.id}  retry ${freshRecord.retries + 1}/${freshRecord.max_retries}\n`,
-          )
-        }
+        process.stdout.write(`  ${c.yellow('⟳')} ${c.bold(`[${taskRecord.id}]`)} timed out, retry ${freshRecord.retries + 1}/${freshRecord.max_retries}\n`)
       } else {
         store.withTransaction(() => {
           store.updateTaskStatus(taskRecord.id, convoyId, 'timed-out', {
@@ -265,7 +264,8 @@ async function runConvoy(
           })
           store.updateWorkerStatus(workerId, 'failed', { finished_at: finishedAt })
         })
-        if (verbose) process.stdout.write(`\u23f1 ${taskRecord.id}\n`)
+        completedCount++
+        process.stdout.write(`  ${c.red('⏱')} ${c.bold(`[${taskRecord.id}]`)} timed out ${c.dim(`[${completedCount}/${totalTasks}]`)}\n`)
         events.emit(
           'task_failed',
           { reason: 'timeout', worker_id: workerId },
@@ -308,7 +308,8 @@ async function runConvoy(
         })
         store.updateWorkerStatus(workerId, 'done', { finished_at: finishedAt })
       })
-      if (verbose) process.stdout.write(`\u2713 ${taskRecord.id}  ${elapsed}\n`)
+      completedCount++
+      process.stdout.write(`  ${c.green('✓')} ${c.bold(`[${taskRecord.id}]`)} ${elapsed} ${c.dim(`[${completedCount}/${totalTasks}]`)}\n`)
       events.emit(
         'task_done',
         { exit_code: result.exitCode, worker_id: workerId },
@@ -332,11 +333,7 @@ async function runConvoy(
         finished_at: null,
       })
       store.updateWorkerStatus(workerId, 'failed', { finished_at: finishedAt })
-      if (verbose) {
-        process.stdout.write(
-          `\u2717 ${taskRecord.id}  retry ${freshRecord.retries + 1}/${freshRecord.max_retries}\n`,
-        )
-      }
+      process.stdout.write(`  ${c.yellow('⟳')} ${c.bold(`[${taskRecord.id}]`)} retry ${freshRecord.retries + 1}/${freshRecord.max_retries}\n`)
     } else {
       store.withTransaction(() => {
         store.updateTaskStatus(taskRecord.id, convoyId, 'failed', {
@@ -346,7 +343,12 @@ async function runConvoy(
         })
         store.updateWorkerStatus(workerId, 'failed', { finished_at: finishedAt })
       })
-      if (verbose) process.stdout.write(`\u2717 ${taskRecord.id}\n`)
+      completedCount++
+      process.stdout.write(`  ${c.red('✗')} ${c.bold(`[${taskRecord.id}]`)} failed ${elapsed} ${c.dim(`[${completedCount}/${totalTasks}]`)}\n`)
+      if (verbose) {
+        const outputPreview = result.output.split('\n').slice(0, 5).join('\n')
+        process.stdout.write(`${outputPreview}\n`)
+      }
       events.emit(
         'task_failed',
         { reason: 'error', exit_code: result.exitCode, worker_id: workerId },
@@ -359,10 +361,19 @@ async function runConvoy(
 
   // ── Main execution loop ───────────────────────────────────────────────────
 
+  let lastPhase = -1
   try {
     let ready = store.getReadyTasks(convoyId)
     const concurrency = spec.concurrency ?? 1
     while (ready.length > 0) {
+      for (const t of ready) {
+        if (t.phase !== lastPhase) {
+          lastPhase = t.phase
+          const tasksInPhase = ready.filter(r => r.phase === t.phase)
+          const ids = tasksInPhase.map(r => r.id).join(', ')
+          process.stdout.write(`\n  ${c.bold(`Phase ${t.phase + 1}:`)} ${c.dim(ids)}\n`)
+        }
+      }
       for (let i = 0; i < ready.length; i += concurrency) {
         await Promise.all(ready.slice(i, i + concurrency).map(t => executeOneTask(t)))
       }
@@ -374,19 +385,65 @@ async function runConvoy(
 
   // ── Validation gates ──────────────────────────────────────────────────────
 
-  const gateResults: Array<{ command: string; exitCode: number; passed: boolean }> = []
-  if (spec.gates && spec.gates.length > 0) {
+  const maxGateRetries = spec.gate_retries ?? 0
+  let gateAttempt = 0
+  let gateResults: Array<{ command: string; exitCode: number; passed: boolean; output?: string }> = []
+
+  while (gateAttempt <= maxGateRetries) {
+    if (!spec.gates || spec.gates.length === 0) break
+
+    gateResults = []
+    process.stdout.write(`\n  ${c.bold(gateAttempt === 0 ? 'Gates:' : `Gates (retry ${gateAttempt}/${maxGateRetries}):`)}\n`)
+
     for (const command of spec.gates) {
       try {
         await execFile('sh', ['-c', command], { cwd: basePath })
         gateResults.push({ command, exitCode: 0, passed: true })
+        process.stdout.write(`  ${c.green('✓')} ${c.dim(command)}\n`)
       } catch (err) {
-        const code =
-          typeof (err as { code?: unknown }).code === 'number'
-            ? (err as { code: number }).code
-            : 1
-        gateResults.push({ command, exitCode: code, passed: false })
+        const execErr = err as Error & { code?: unknown; stderr?: string; stdout?: string }
+        const code = typeof execErr.code === 'number' ? execErr.code : 1
+        const output = execErr.stderr || execErr.stdout || execErr.message || ''
+        gateResults.push({ command, exitCode: code, passed: false, output })
+        process.stdout.write(`  ${c.red('✗')} ${c.dim(command)}\n`)
       }
+    }
+
+    const failedGates = gateResults.filter(g => !g.passed)
+    if (failedGates.length === 0) break // All gates passed
+
+    // Can we retry?
+    if (gateAttempt >= maxGateRetries) break // No more retries
+
+    // Create and execute a fix task
+    gateAttempt++
+    const failureSummary = failedGates
+      .map(g => `Command: ${g.command}\nExit code: ${g.exitCode}\nOutput:\n${g.output ?? '(no output)'}`)
+      .join('\n\n---\n\n')
+
+    const fixPrompt = `The following validation gates failed after all convoy tasks completed. Fix the issues so these commands pass.\n\n${failureSummary}`
+    const fixTaskId = `gate-fix-${gateAttempt}`
+
+    process.stdout.write(`\n  ${c.yellow('⟳')} ${c.bold(`[${fixTaskId}]`)} fixing gate failures (attempt ${gateAttempt}/${maxGateRetries})\n`)
+
+    const fixTask: Task = {
+      id: fixTaskId,
+      prompt: fixPrompt,
+      agent: spec.defaults?.agent ?? 'developer',
+      timeout: spec.defaults?.timeout ?? '30m',
+      depends_on: [],
+      files: [],
+      description: `Auto-fix gate failures (attempt ${gateAttempt})`,
+      max_retries: 0,
+    }
+
+    const fixResult = await adapter.execute(fixTask, { verbose, cwd: basePath })
+
+    if (fixResult.success) {
+      process.stdout.write(`  ${c.green('✓')} ${c.bold(`[${fixTaskId}]`)} fix applied\n`)
+    } else {
+      process.stdout.write(`  ${c.red('✗')} ${c.bold(`[${fixTaskId}]`)} fix failed\n`)
+      break // Don't retry if the fix task itself fails
     }
   }
 

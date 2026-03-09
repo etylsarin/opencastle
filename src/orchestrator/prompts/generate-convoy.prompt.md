@@ -7,7 +7,7 @@ agent: 'Team Lead (OpenCastle)'
 
 # Generate Convoy Spec
 
-You are the Team Lead. The user wants to run `opencastle run` to execute a batch of tasks autonomously via the convoy engine. Your job is to produce a valid `.convoy.yml` file they can feed to the CLI. Derive a short, descriptive, kebab-case filename from the user's goal (2–4 words max) and use it as the filename — for example `auth-refactor.convoy.yml` or `add-search.convoy.yml`. Always use the `.convoy.yml` extension.
+You are the Team Lead. The user wants to run `opencastle run` to execute a batch of tasks autonomously via the convoy engine. Your job is to produce a valid `.convoy.yml` file they can feed to the CLI. Derive a short, descriptive, kebab-case filename from the user's goal (2–4 words max) and use it as the filename — for example `auth-refactor.convoy.yml` or `add-search.convoy.yml`. Always use the `.convoy.yml` extension. Store all generated convoy specs in the `.opencastle/convoys/` directory (create it if it doesn't exist).
 
 ## User Goal
 
@@ -137,7 +137,7 @@ Before presenting the YAML, mentally verify:
 Return the final YAML inside a fenced code block with a filename annotation:
 
 ````yaml
-# <feature-name>.convoy.yml
+# .opencastle/convoys/<feature-name>.convoy.yml
 name: <run name>
 version: 1
 concurrency: <n>
@@ -172,6 +172,6 @@ gates:
 Also provide:
 1. A **DAG summary** showing the phase structure so the user can verify execution order.
 2. An **estimated total duration** (sum of timeouts on the critical path).
-3. A `--dry-run` command they can use to validate: `npx opencastle run --file <feature-name>.convoy.yml --dry-run`
+3. A `--dry-run` command they can use to validate: `npx opencastle run --file .opencastle/convoys/<feature-name>.convoy.yml --dry-run`
 
 
