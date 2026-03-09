@@ -5,6 +5,7 @@ import { parseTaskSpecText, isConvoySpec, isPipelineSpec } from './run/schema.js
 import { createExecutor, buildPhases } from './run/executor.js'
 import { getAdapter, detectAdapter } from './run/adapters/index.js'
 import { createReporter, printExecutionPlan } from './run/reporter.js'
+import { c } from './prompt.js'
 import type { CliContext, RunOptions } from './types.js'
 import type { ConvoyResult } from './convoy/engine.js'
 import type { PipelineResult } from './convoy/pipeline.js'
@@ -22,7 +23,7 @@ const HELP = `
   Version 1 specs use the Convoy Engine; legacy specs use the standard executor.
 
   Options:
-    --file, -f <path>        Task spec file (default: opencastle.tasks.yml)
+    --file, -f <path>        Task spec file
     --dry-run                Show execution plan without running
     --concurrency, -c <n>    Override max parallel tasks
     --adapter, -a <name>     Override agent runtime adapter
@@ -38,7 +39,7 @@ const HELP = `
  */
 function parseArgs(args: string[]): RunOptions {
   const opts: RunOptions = {
-    file: 'opencastle.tasks.yml',
+    file: 'convoy.yml',
     dryRun: false,
     concurrency: null,
     adapter: null,
@@ -153,10 +154,15 @@ function printConvoyResult(result: ConvoyResult): void {
   console.log(`\n  ──────────────────────────────────────`)
   console.log(`  Convoy ${result.status}: ${result.duration}`)
   console.log(
-    `  Done: ${result.summary.done} | Failed: ${result.summary.failed} | Skipped: ${result.summary.skipped} | Timed out: ${result.summary.timedOut}`
+    `  Tasks: ${result.summary.done}/${result.summary.total} done` +
+    (result.summary.failed > 0 ? ` | ${result.summary.failed} failed` : '') +
+    (result.summary.skipped > 0 ? ` | ${result.summary.skipped} skipped` : '') +
+    (result.summary.timedOut > 0 ? ` | ${result.summary.timedOut} timed out` : '')
   )
   if (result.gateResults) {
-    console.log(`  Gates:`)
+    const gatesPassed = result.gateResults.filter(g => g.passed).length
+    const gatesFailed = result.gateResults.filter(g => !g.passed).length
+    console.log(`  Gates: ${gatesPassed}/${result.gateResults.length} passed${gatesFailed > 0 ? ` | ${gatesFailed} failed` : ''}`)
     for (const g of result.gateResults) {
       console.log(`    ${g.passed ? '✓' : '✗'} ${g.command}`)
     }
@@ -466,7 +472,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     if (spec.gates?.length) console.log(`  Gates: ${spec.gates.length} validation commands`)
 
     const { startDashboardServer } = await import('./dashboard.js')
-    let pipelineDashboardResult: { server: import('node:http').Server } | null = null
+    let pipelineDashboardResult: { server: import('node:http').Server; port: number; url: string } | null = null
     try {
       pipelineDashboardResult = await startDashboardServer({
         pkgRoot,
@@ -475,6 +481,9 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       })
     } catch {
       // Dashboard failure must not block pipeline
+    }
+    if (pipelineDashboardResult) {
+      console.log(`  ${c.dim('Dashboard:')} ${pipelineDashboardResult.url}`)
     }
 
     const pipelineOrchestrator = createPipelineOrchestrator({
@@ -503,7 +512,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     if (spec.gates?.length) console.log(`  Gates: ${spec.gates.length} validation commands`)
 
     const { startDashboardServer } = await import('./dashboard.js')
-    let dashboardResult: { server: import('node:http').Server } | null = null
+    let dashboardResult: { server: import('node:http').Server; port: number; url: string } | null = null
     try {
       dashboardResult = await startDashboardServer({
         pkgRoot,
@@ -512,6 +521,9 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       })
     } catch {
       // Dashboard failure must not block convoy
+    }
+    if (dashboardResult) {
+      console.log(`  ${c.dim('Dashboard:')} ${dashboardResult.url}`)
     }
 
     const engine = createConvoyEngine({

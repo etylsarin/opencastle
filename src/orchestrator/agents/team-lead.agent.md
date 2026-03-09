@@ -145,14 +145,14 @@ Before EVERY delegation verify: (1) Tracker issue exists, (2) File partition is 
 
 ## Convoy Integration
 
-The convoy engine is the preferred execution mechanism for multi-task work. Use it when a request decomposes into 3 or more subtasks.
+The convoy engine is the **mandatory** execution mechanism for all project-related work — features, bug fixes, and refactors. This ensures consistent observability, crash recovery, and progress visibility.
 
 ### When to use convoy vs. direct delegation
 
-| Task count | Approach |
-|------------|----------|
-| 1–2 subtasks | **Direct delegation** — sub-agents inline, standard workflow |
-| 3+ subtasks | **Convoy execution** — generate spec, hand to user to run |
+| Work type | Approach |
+|-----------|----------|
+| Features, bug fixes, refactors (any subtask count) | **Convoy execution** — always generate a `.convoy.yml` spec, even for 1-task fixes |
+| Utility prompts (`bootstrap-customizations`, `create-skill`, `generate-convoy`, `brainstorm`, `quick-refinement`) | **Direct** — these are meta/tooling operations, not project code changes |
 
 ### How to generate a convoy spec
 
@@ -164,7 +164,7 @@ The convoy engine is the preferred execution mechanism for multi-task work. Use 
 
 Tell the user to run:
 ```
-npx opencastle run -f <name>.convoy.yml
+npx opencastle run -f .opencastle/convoys/<name>.convoy.yml
 ```
 This gives the user control over when execution starts (preferred — supports overnight/unattended runs and manual review of the spec before execution).
 

@@ -222,6 +222,11 @@ export async function startDashboardServer(
   const actualPort = await tryListen(server, port)
   const resolvedUrl = `http://localhost:${actualPort}`
 
+  if (options.openBrowser) {
+    const fullUrl = options.convoyId ? `${resolvedUrl}/?convoy=${options.convoyId}` : resolvedUrl
+    openUrl(fullUrl)
+  }
+
   return { server, port: actualPort, url: resolvedUrl }
 }
 
@@ -245,7 +250,7 @@ export default async function dashboard({
     }
   }
 
-  const dashResult = await startDashboardServer({ port, seed, pkgRoot, convoyId })
+  const dashResult = await startDashboardServer({ port, seed, pkgRoot, convoyId, openBrowser })
 
   console.log('')
   console.log('  \u{1F3F0} OpenCastle Dashboard')
@@ -272,10 +277,6 @@ export default async function dashboard({
   console.log('')
   console.log('  Press Ctrl+C to stop')
   console.log('')
-
-  if (openBrowser) {
-    openUrl(convoyId ? `${dashResult.url}/?convoy=${convoyId}` : dashResult.url)
-  }
 
   // Graceful shutdown
   process.on('SIGINT', () => {

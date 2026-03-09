@@ -1160,3 +1160,54 @@ describe('applyDefaults — pipeline spec (version:2, no tasks)', () => {
     expect(spec.depends_on_convoy).toEqual(['phase-1', 'phase-2'])
   })
 })
+
+// ── validateSpec — gate_retries field ─────────────────────────
+
+describe('validateSpec — gate_retries field', () => {
+  const validSpec = {
+    name: 'test',
+    tasks: [{ id: 'a', prompt: 'do something' }],
+  }
+
+  it('accepts gate_retries as 0', () => {
+    const result = validateSpec({ ...validSpec, gate_retries: 0 })
+    expect(result.valid).toBe(true)
+  })
+
+  it('accepts gate_retries as a positive integer', () => {
+    const result = validateSpec({ ...validSpec, gate_retries: 3 })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects gate_retries as negative', () => {
+    const result = validateSpec({ ...validSpec, gate_retries: -1 })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('gate_retries'))
+  })
+
+  it('rejects gate_retries as a float', () => {
+    const result = validateSpec({ ...validSpec, gate_retries: 1.5 })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('gate_retries'))
+  })
+
+  it('rejects gate_retries as a string', () => {
+    const result = validateSpec({ ...validSpec, gate_retries: 'two' })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('gate_retries'))
+  })
+})
+
+// ── applyDefaults — gate_retries default ───────────────────────
+
+describe('applyDefaults — gate_retries default', () => {
+  it('defaults gate_retries to 0', () => {
+    const spec = applyDefaults({ name: 'test', tasks: [{ id: 'a', prompt: 'p' }] })
+    expect(spec.gate_retries).toBe(0)
+  })
+
+  it('preserves explicit gate_retries value', () => {
+    const spec = applyDefaults({ name: 'test', tasks: [{ id: 'a', prompt: 'p' }], gate_retries: 2 })
+    expect(spec.gate_retries).toBe(2)
+  })
+})

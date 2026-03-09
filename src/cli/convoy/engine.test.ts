@@ -1649,3 +1649,243 @@ describe('cost tracking', () => {
     expect(result.cost).toBeUndefined()
   })
 })
+
+// ── 22. Progress reporting (always-on output) ─────────────────────────────────
+
+describe('progress reporting', () => {
+  let stdoutSpy: ReturnType<typeof vi.spyOn>
+  let writtenChunks: string[]
+
+  beforeEach(() => {
+    writtenChunks = []
+    stdoutSpy = vi.spyOn(process.stdout, 'write').mockImplementation((data) => {
+      writtenChunks.push(String(data))
+      return true
+    })
+  })
+
+  afterEach(() => {
+    stdoutSpy.mockRestore()
+  })
+
+  it('prints task start message without verbose flag', async () => {
+    const adapter = makeAdapter()
+    const engine = createConvoyEngine({
+      spec: makeSpec(),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    await engine.run()
+
+    const written = writtenChunks.join('')
+    expect(written).toContain('[task-1]')
+    expect(written).toMatch(/▶/)
+  })
+
+  it('prints task completion with counter', async () => {
+    const adapter = makeAdapter()
+    const engine = createConvoyEngine({
+      spec: makeSpec(),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    await engine.run()
+
+    const written = writtenChunks.join('')
+    expect(written).toContain('[1/1]')
+    expect(written).toMatch(/✓/)
+  })
+
+  it('prints task failure with counter', async () => {
+    const adapter = makeAdapter()
+    adapter.execute.mockResolvedValue({ success: false, output: 'boom', exitCode: 1 })
+
+    const engine = createConvoyEngine({
+      spec: makeSpec({}, [{ id: 'task-1', max_retries: 0 }]),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    await engine.run()
+
+    const written = writtenChunks.join('')
+    expect(written).toContain('[1/1]')
+    expect(written).toMatch(/✗/)
+  })
+
+  it('prints phase headers when tasks span multiple phases', async () => {
+    const adapter = makeAdapter()
+    const spec = makeSpec({}, [
+      { id: 'task-a', depends_on: [] },
+      { id: 'task-b', depends_on: ['task-a'] },
+    ])
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    await engine.run()
+
+    const written = writtenChunks.join('')
+    expect(written).toContain('Phase 1:')
+    expect(written).toContain('Phase 2:')
+  })
+
+  it('prints gate results with pass/fail indicators', async () => {
+    const adapter = makeAdapter()
+    const spec = makeSpec({ gates: ['echo gate-ok', 'false'] }, [{ id: 'task-1' }])
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    await engine.run()
+
+    const written = writtenChunks.join('')
+    expect(written).toContain('Gates:')
+    expect(written).toContain('echo gate-ok')
+    expect(written).toContain('false')
+  })
+
+  it('prints retry messages when a task fails and is retried', async () => {
+    const adapter = makeAdapter()
+    adapter.execute
+      .mockImplementationOnce(async () => {
+        await new Promise(r => setTimeout(r, 5))
+        return { success: false, output: 'fail', exitCode: 1 }
+      })
+      .mockImplementationOnce(async () => {
+        await new Promise(r => setTimeout(r, 5))
+        return { success: true, output: 'ok', exitCode: 0 }
+      })
+
+    const engine = createConvoyEngine({
+      spec: makeSpec({}, [{ id: 'task-1', max_retries: 1 }]),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+
+    await engine.run()
+
+    const written = writtenChunks.join('')
+    expect(written).toMatch(/⟳/)
+    expect(written).toContain('retry 1/1')
+  })
+})
+
+// ── 23. Gate retry mechanism ──────────────────────────────────────────────────
+
+describe('gate retry mechanism', () => {
+  let tmpDir: string
+  let adapter: MockAdapter
+  let wtManager: MockWorktreeManager
+  let mergeQueue: MockMergeQueue
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'convoy-gate-retry-'))
+    adapter = makeAdapter()
+    wtManager = makeWorktreeManager()
+    mergeQueue = makeMergeQueue()
+  })
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true })
+  })
+
+  it('gates pass on first attempt when gate_retries > 0 — no fix task run', async () => {
+    const spec = makeSpec(
+      { gates: [`node -e "process.exit(0)"`], gate_retries: 1 },
+      [{ id: 'task-1' }],
+    )
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: 'name: test',
+      adapter,
+      basePath: tmpDir,
+      _worktreeManager: wtManager,
+      _mergeQueue: mergeQueue,
+    })
+    const result = await engine.run()
+    expect(result.status).toBe('done')
+    // Only task-1 executed, no fix task needed
+    expect(adapter.execute).toHaveBeenCalledTimes(1)
+  })
+
+  it('defaults gate_retries to 0 (no retry on gate failure)', async () => {
+    const spec = makeSpec({ gates: ['false'] }, [{ id: 'task-1' }])
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: 'name: test',
+      adapter,
+      basePath: tmpDir,
+      _worktreeManager: wtManager,
+      _mergeQueue: mergeQueue,
+    })
+    const result = await engine.run()
+    expect(result.status).toBe('gate-failed')
+    // No fix task attempted — only task-1 was executed
+    expect(adapter.execute).toHaveBeenCalledTimes(1)
+  })
+
+  it('calls adapter.execute with fix prompt when gates fail and retries available', async () => {
+    const spec = makeSpec({ gates: ['false'], gate_retries: 1 }, [{ id: 'task-1' }])
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: 'name: test',
+      adapter,
+      basePath: tmpDir,
+      _worktreeManager: wtManager,
+      _mergeQueue: mergeQueue,
+    })
+    const result = await engine.run()
+    // The fix task should have been called (adapter.execute called for task-1 + gate-fix-1)
+    expect(adapter.execute).toHaveBeenCalledTimes(2)
+    // The second call should be the fix task
+    const fixCall = adapter.execute.mock.calls[1] as [Task]
+    expect(fixCall[0].id).toBe('gate-fix-1')
+    expect(fixCall[0].prompt).toContain('validation gates failed')
+    // Gates still fail after fix, so final status is gate-failed
+    expect(result.status).toBe('gate-failed')
+  })
+
+  it('stops retrying when fix task fails', async () => {
+    adapter.execute
+      .mockResolvedValueOnce({ success: true, output: 'ok', exitCode: 0 }) // task-1
+      .mockResolvedValueOnce({ success: false, output: 'fix failed', exitCode: 1 }) // gate-fix-1
+    const spec = makeSpec({ gates: ['false'], gate_retries: 2 }, [{ id: 'task-1' }])
+    const engine = createConvoyEngine({
+      spec,
+      specYaml: 'name: test',
+      adapter,
+      basePath: tmpDir,
+      _worktreeManager: wtManager,
+      _mergeQueue: mergeQueue,
+    })
+    const result = await engine.run()
+    // Only 2 adapter calls: task-1 + one failed fix attempt (no second retry)
+    expect(adapter.execute).toHaveBeenCalledTimes(2)
+    expect(result.status).toBe('gate-failed')
+  })
+})

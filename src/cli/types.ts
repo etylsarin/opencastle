@@ -164,6 +164,8 @@ export interface TaskSpec {
   defaults?: TaskDefaults;
   /** Shell commands run after all tasks complete; each must exit 0. */
   gates?: string[];
+  /** How many times to retry failing gates with an auto-fix task (default: 0). */
+  gate_retries?: number;
   /** Git feature branch name. */
   branch?: string;
   /** Other convoy spec names to run before this one (version: 2 pipeline specs). */

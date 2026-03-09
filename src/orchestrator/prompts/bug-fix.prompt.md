@@ -83,9 +83,13 @@ Find WHY the bug happens, not just WHERE:
 
 ### 4. Implement the Fix
 
-Delegate to the appropriate specialist agent via **sub-agent** (inline). For bugs that are clearly isolated and well-understood, a single delegation is usually sufficient.
+All bug fixes are executed via the convoy engine — even single-task fixes — to ensure observability and crash recovery.
 
-#### Delegation Prompt Must Include
+1. **Generate a convoy spec** — use the `generate-convoy` prompt with the root cause analysis, fix approach, and file paths as context.
+2. **Hand the spec to the user** — tell them to run: `npx opencastle run -f .opencastle/convoys/<name>.convoy.yml`
+3. **After convoy completes** — proceed to Step 5 (validation).
+
+#### Convoy Task Prompt Must Include
 
 - **Tracker issue ID and title** — e.g., `TAS-XX — [Bug] Description`
 - **Root cause** — What's wrong and why
