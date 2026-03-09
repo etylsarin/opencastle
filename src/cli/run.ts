@@ -122,7 +122,7 @@ function printAdapterError(detectionFailed: boolean, adapterName: string): void 
     )
   } else {
     const hints: Record<string, string> = {
-      'claude-code':
+      'claude':
         '    Install: npm install -g @anthropic-ai/claude-code\n' +
         '    Docs:    https://docs.anthropic.com/en/docs/claude-code',
       copilot:
@@ -137,7 +137,7 @@ function printAdapterError(detectionFailed: boolean, adapterName: string): void 
         '    Install OpenCode from https://opencode.ai\n' +
         '    Ensure the "opencode" command is on your PATH.',
     }
-    const cliName = adapterName === 'claude-code' ? 'claude' : adapterName === 'cursor' ? 'agent' : adapterName
+    const cliName = adapterName === 'cursor' ? 'agent' : adapterName
     const hint = hints[adapterName] ?? ''
     console.error(
       `  ✗ Adapter "${adapterName}" is not available.\n` +
@@ -313,7 +313,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
           console.log(`  ℹ Auto-detected adapter: ${detected}`)
         } else {
           resumePipelineDetectionFailed = true
-          resumePipelineSpec.adapter = 'claude-code'
+          resumePipelineSpec.adapter = 'claude'
         }
       }
 
@@ -365,7 +365,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
         console.log(`  ℹ Auto-detected adapter: ${detected}`)
       } else {
         resumeDetectionFailed = true
-        resumeSpec.adapter = 'claude-code'
+        resumeSpec.adapter = 'claude'
       }
     }
 
@@ -427,7 +427,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       console.log(`  ℹ Auto-detected adapter: ${detected}`)
     } else {
       detectionFailed = true
-      spec.adapter = 'claude-code' // fallback for availability check below
+      spec.adapter = 'claude' // fallback for availability check below
     }
   }
 
