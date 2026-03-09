@@ -139,6 +139,8 @@ These rules apply to ALL specialist agents automatically. **Do not duplicate the
 - [ ] **Delegations logged** — `events.ndjson` has a `delegation` record for each delegation (Team Lead only)
 - [ ] **Reviews logged** — `events.ndjson` has a `review` record for each fast review (if any)
 - [ ] **Panels logged** — `events.ndjson` has a `panel` record for each panel review (if any)
+- [ ] **Agent expertise updated** — `AGENT-EXPERTISE.md` updated for each delegation (strong/weak areas + file familiarity) (Team Lead only)
+- [ ] **Knowledge graph appended** — `KNOWLEDGE-GRAPH.md` has new rows for file relationships discovered (Team Lead only)
 
 Load the **observability-logging** skill for CLI commands, Base Output Contract, and detailed schemas.
 

@@ -1,4 +1,4 @@
-<!-- Populated by the bootstrap-customizations prompt or manually. -->
+<!-- Populated by `opencastle init` or manually. -->
 
 # Project Roadmap
 

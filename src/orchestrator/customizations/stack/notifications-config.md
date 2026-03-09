@@ -1,6 +1,6 @@
 # Notifications Configuration
 
-<!-- Populated by the `bootstrap-customizations` prompt based on `.opencastle.json` → `stack.teamTools`. -->
+<!-- Populated by `opencastle init` based on `.opencastle.json` → `stack.teamTools`. -->
 
 Project-specific messaging configuration referenced by the `slack-notifications` skill (or Teams equivalent).
 

@@ -3,7 +3,7 @@
 
 Project-specific agent-to-model assignments and scope examples referenced by the `team-lead-reference` skill.
 
-<!-- Populated by the `bootstrap-customizations` prompt based on project structure. -->
+<!-- Populated by `opencastle init` based on project structure. -->
 
 ## Specialist Agent Registry
 

@@ -1,7 +1,7 @@
 # CMS Configuration
 
-<!-- Populated by the `bootstrap-customizations` prompt based on detected CMS.
-     Rename this file to match your CMS: sanity-config.md, contentful-config.md, strapi-config.md, etc. -->
+<!-- Populated by `opencastle init` based on detected CMS.
+     Renamed to match your CMS: sanity-config.md, contentful-config.md, strapi-config.md, etc. -->
 
 Project-specific CMS details referenced by the corresponding CMS skill (e.g., `sanity-cms`).
 

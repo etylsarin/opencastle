@@ -1,6 +1,6 @@
 # Data Pipeline Configuration
 
-<!-- Populated by the `bootstrap-customizations` prompt based on detected ETL/scraping infrastructure. -->
+<!-- Populated by `opencastle init` based on detected ETL/scraping infrastructure. -->
 
 Project-specific pipeline details referenced by the `data-engineering` skill.
 

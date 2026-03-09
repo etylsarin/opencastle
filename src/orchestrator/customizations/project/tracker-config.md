@@ -1,6 +1,6 @@
 # Task Tracker Configuration
 
-<!-- Populated by the `bootstrap-customizations` prompt.
+<!-- Populated by `opencastle init`.
      Rename this file to match your tracker: linear-config.md, jira-config.md, etc. -->
 
 Project-specific task tracker details referenced by task management workflows.

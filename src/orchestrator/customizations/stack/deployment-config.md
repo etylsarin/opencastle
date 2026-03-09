@@ -1,6 +1,6 @@
 # Deployment Configuration
 
-<!-- Populated by the `bootstrap-customizations` prompt based on detected deployment config. -->
+<!-- Populated by `opencastle init` based on detected deployment config. -->
 
 Project-specific deployment infrastructure referenced by the `deployment-infrastructure` skill.
 
