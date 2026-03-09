@@ -72,3 +72,39 @@ export async function updateGitignore(
   await writeFile(gitignorePath, existing + separator + block + '\n', 'utf8')
   return 'updated'
 }
+
+/**
+ * Remove the OpenCastle managed block from `.gitignore`.
+ *
+ * - No-op if no `.gitignore` exists or no block is present.
+ * - Cleans up resulting double blank lines.
+ * - Deletes `.gitignore` if the file becomes empty after removal.
+ * - Returns 'removed' or 'unchanged'.
+ */
+export async function removeGitignoreBlock(
+  projectRoot: string
+): Promise<'removed' | 'unchanged'> {
+  const gitignorePath = resolve(projectRoot, '.gitignore')
+  if (!existsSync(gitignorePath)) return 'unchanged'
+
+  const existing = await readFile(gitignorePath, 'utf8')
+  const startIdx = existing.indexOf(START_MARKER)
+  const endIdx = existing.indexOf(END_MARKER)
+
+  if (startIdx === -1 || endIdx === -1) return 'unchanged'
+
+  const before = existing.slice(0, startIdx)
+  const after = existing.slice(endIdx + END_MARKER.length)
+
+  // Collapse consecutive blank lines left by removal
+  const updated = (before + after).replace(/\n{3,}/g, '\n\n').trimEnd()
+
+  if (!updated) {
+    const { unlink } = await import('node:fs/promises')
+    await unlink(gitignorePath)
+    return 'removed'
+  }
+
+  await writeFile(gitignorePath, updated + '\n', 'utf8')
+  return 'removed'
+}

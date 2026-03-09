@@ -21,7 +21,9 @@ const HELP = `
     init        Set up OpenCastle in your project
     update      Update framework files (preserves customizations)
     eject       Remove dependency, keep all files standalone
+    destroy     Remove ALL OpenCastle files (reverse of init)
     run         Process a task queue from a spec file autonomously
+    plan        Generate a convoy spec from a task description file
     dashboard   View agent observability dashboard in your browser
     doctor      Validate your OpenCastle setup
     log         Append a structured event to the observability log
@@ -50,7 +52,9 @@ const commands = {
   init: () => import('../dist/cli/init.js'),
   update: () => import('../dist/cli/update.js'),
   eject: () => import('../dist/cli/eject.js'),
+  destroy: () => import('../dist/cli/destroy.js'),
   run: () => import('../dist/cli/run.js'),
+  plan: () => import('../dist/cli/plan.js'),
   dashboard: () => import('../dist/cli/dashboard.js'),
   doctor: () => import('../dist/cli/doctor.js'),
   log: () => import('../dist/cli/log.js'),

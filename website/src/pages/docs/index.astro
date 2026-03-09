@@ -16,10 +16,10 @@ const pages = [
   {
     href: '/docs/cli',
     title: 'CLI Reference',
-    description: 'Complete reference for every opencastle command — init, update, eject, run, dashboard, and doctor.',
+    description: 'Complete reference for every opencastle command — init, update, eject, destroy, run, plan, dashboard, and doctor.',
     icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
     sidebarIcon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
-    badge: '6 commands',
+    badge: '8 commands',
   },
   {
     href: '/docs/prompts',
@@ -236,7 +236,7 @@ const pages = [
                       <div class="quickstart__substeps">
                         <div class="quickstart__substep">
                           <span class="quickstart__substep-num">1</span>
-                          <p class="quickstart__desc"><strong>Generate:</strong> Ask the Team Lead to <em>&ldquo;generate a convoy for [your goal]&rdquo;</em>. It produces a <code class="quickstart__code">.convoy.yml</code> file with tasks, dependencies, and validation gates.</p>
+                          <p class="quickstart__desc"><strong>Generate:</strong> Write your goal in a text file and run <code class="quickstart__code">npx opencastle plan -f goal.txt</code>, or ask the Team Lead to <em>&ldquo;generate a convoy for [your goal]&rdquo;</em>. It produces a <code class="quickstart__code">.convoy.yml</code> file with tasks, dependencies, and validation gates.</p>
                         </div>
                         <div class="quickstart__substep">
                           <span class="quickstart__substep-num">2</span>
