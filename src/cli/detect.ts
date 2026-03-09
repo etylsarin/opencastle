@@ -1,7 +1,28 @@
 import { resolve } from 'node:path';
 import { readFile, readdir, access } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import type { RepoInfo, StackConfig } from './types.js';
+import type { IdeChoice, RepoInfo, StackConfig } from './types.js';
+
+// ── IDE detection ───────────────────────────────────────────────
+
+/**
+ * Detect which IDE the CLI is running from, based on environment variables.
+ * Returns the IdeChoice value or undefined if unknown.
+ */
+export function detectCurrentIde(): IdeChoice | undefined {
+  const env = process.env;
+
+  // Cursor sets its own TERM_PROGRAM or CURSOR-specific env vars
+  if (env.CURSOR_TRACE_DIR || env.CURSOR_CHANNEL) return 'cursor';
+
+  // VS Code sets TERM_PROGRAM=vscode in its integrated terminal
+  if (env.TERM_PROGRAM === 'vscode') return 'vscode';
+
+  // Claude Code — check for CLAUDE_* env vars set by the CLI
+  if (env.CLAUDE_CODE === '1' || env.CLAUDE_PROJECT_ROOT) return 'claude-code';
+
+  return undefined;
+}
 
 // ── Detection rules ───────────────────────────────────────────
 
