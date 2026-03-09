@@ -107,6 +107,32 @@ const commands = [
     ],
   },
   {
+    id: 'destroy',
+    category: 'lifecycle',
+    name: 'destroy',
+    summary: 'Remove ALL OpenCastle files (reverse of init)',
+    description: 'Completely removes every file and directory that OpenCastle created — framework files, customization files, the <code>.opencastle/</code> directory, and the managed block in <code>.gitignore</code>. Use this when you want a clean slate.',
+    usage: 'npx opencastle destroy [options]',
+    options: [
+      { flag: '--dry-run', desc: 'Preview what would be removed without deleting anything' },
+      { flag: '--help, -h', desc: 'Show help' },
+    ],
+    details: [
+      { heading: 'What gets removed', content: `<ul>
+        <li>All framework-managed paths (instructions, agents, skills, workflows)</li>
+        <li>All customizable paths (lessons, known issues, project config, logs)</li>
+        <li>The <code>.opencastle/</code> directory (including the manifest)</li>
+        <li>Legacy <code>.opencastle.json</code> manifest (if present)</li>
+        <li>The OpenCastle managed block in <code>.gitignore</code></li>
+      </ul>` },
+      { heading: 'Difference from eject', content: `<p><code>eject</code> keeps all generated files and only removes the manifest — you own the files outright. <code>destroy</code> removes <em>everything</em>, restoring the project to its pre-OpenCastle state.</p>` },
+    ],
+    examples: [
+      { cmd: 'npx opencastle destroy', desc: 'Remove all OpenCastle files' },
+      { cmd: 'npx opencastle destroy --dry-run', desc: 'Preview what would be removed' },
+    ],
+  },
+  {
     id: 'run',
     category: 'runtime',
     name: 'run',
@@ -163,6 +189,46 @@ const commands = [
       { cmd: 'npx opencastle run --resume', desc: 'Resume last interrupted convoy' },
       { cmd: 'npx opencastle run --status', desc: 'Check convoy state' },
       { cmd: 'npx opencastle run -c 5 -a claude-code', desc: 'Run with 5 parallel tasks using Claude Code' },
+    ],
+  },
+  {
+    id: 'plan',
+    category: 'runtime',
+    name: 'plan',
+    summary: 'Generate a convoy spec from a task description',
+    description: 'Reads a text file containing a task description, assembles it into the generate-convoy prompt, and sends it to an AI adapter. The AI produces a complete <code>.convoy.yml</code> spec with task decomposition, dependency graph, file partitions, and validation gates. The result is written to <code>.opencastle/convoys/</code>.',
+    usage: 'npx opencastle plan [options]',
+    options: [
+      { flag: '--file, -f <path>', desc: 'Path to a text file with the task description (required)' },
+      { flag: '--context <path>', desc: 'Path to an additional context file' },
+      { flag: '--output, -o <path>', desc: 'Output path for the generated convoy spec' },
+      { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude-code, copilot, cursor, opencode)' },
+      { flag: '--verbose', desc: 'Show full agent output' },
+      { flag: '--dry-run', desc: 'Print the assembled prompt without executing' },
+      { flag: '--help, -h', desc: 'Show help' },
+    ],
+    details: [
+      { heading: 'How it works', content: `<ol>
+        <li><strong>Reads the task file</strong> — loads the text file specified by <code>--file</code></li>
+        <li><strong>Assembles the prompt</strong> — substitutes the task description and optional context into the generate-convoy prompt template</li>
+        <li><strong>Runs the AI adapter</strong> — sends the prompt to the detected (or specified) AI CLI</li>
+        <li><strong>Extracts and validates YAML</strong> — parses the YAML code block from the AI response and validates it against the convoy spec schema</li>
+        <li><strong>Writes the spec file</strong> — saves to <code>.opencastle/convoys/&lt;name&gt;.convoy.yml</code> (or the path specified by <code>--output</code>)</li>
+      </ol>` },
+      { heading: 'Task description file', content: `<p>The input file should be plain text describing what you want to accomplish. Write it in natural language — the more detail you provide, the better the generated spec. Include:</p>
+      <ul>
+        <li>What you want to build, fix, or refactor</li>
+        <li>Which areas of the codebase are involved</li>
+        <li>Any constraints or requirements</li>
+        <li>Testing and validation expectations</li>
+      </ul>` },
+    ],
+    examples: [
+      { cmd: 'npx opencastle plan -f task.txt', desc: 'Generate a convoy spec from a task description' },
+      { cmd: 'npx opencastle plan -f task.txt --context architecture.md', desc: 'Include additional context' },
+      { cmd: 'npx opencastle plan -f task.txt -o my-convoy.yml', desc: 'Write to a custom output path' },
+      { cmd: 'npx opencastle plan -f task.txt --dry-run', desc: 'Preview the prompt without running' },
+      { cmd: 'npx opencastle plan -f task.txt -a claude-code', desc: 'Use a specific adapter' },
     ],
   },
   {
@@ -287,7 +353,9 @@ Commands:
   init        Set up OpenCastle in your project
   update      Update framework files (preserves customizations)
   eject       Remove dependency, keep all files standalone
+  destroy     Remove ALL OpenCastle files (reverse of init)
   run         Run convoy specs — deterministic, crash-recoverable agent orchestration
+  plan        Generate a convoy spec from a task description
   dashboard   View agent observability dashboard in your browser
   doctor      Validate your OpenCastle setup
 
@@ -1091,7 +1159,7 @@ Global options:
         const countEl = document.getElementById('cmd-count');
         if (countEl) {
           if (sectionId === 'all') {
-            countEl.textContent = '6 commands';
+            countEl.textContent = '8 commands';
           } else {
             const visible = document.querySelectorAll(`#${sectionId} .plugin-card`);
             countEl.textContent = `${visible.length} command${visible.length !== 1 ? 's' : ''}`;

@@ -70,6 +70,8 @@ MCP servers are auto-configured for your stack in each IDE's native format.
 | `opencastle init` | Set up agents in your project |
 | `opencastle update` | Update framework files (keeps your customizations) |
 | `opencastle eject` | Remove the dependency, keep all files |
+| `opencastle destroy` | Remove ALL OpenCastle files (reverse of init) |
+| `opencastle plan` | Generate a convoy spec from a task description |
 | `opencastle run` | Run the Convoy Engine (deterministic, crash-recoverable orchestrator) |
 | `opencastle dashboard` | Open the observability dashboard |
 | `opencastle doctor` | Validate your setup and surface issues |
@@ -165,7 +167,11 @@ gates:
 - **Observable** — real-time dashboard auto-starts during execution.
 - **Multi-runtime** — mix Copilot, Claude Code, Cursor, and OpenCode in the same convoy.
 
-TIP: Use the **"Generate Convoy"** prompt to create a `convoy.yml` from a plain description. No YAML by hand.
+Generate a convoy spec from a plain text description — no YAML by hand:
+
+```bash
+npx opencastle plan --file task.txt
+```
 
 📖 [Full Convoy Engine documentation →](https://www.opencastle.dev/docs/cli#run)
 
