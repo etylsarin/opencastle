@@ -62,6 +62,13 @@ export async function exportConvoyToNdjson(
       timedOut: tasks.filter((t) => t.status === 'timed-out').length,
     }
 
+    const durationSec =
+      convoy.started_at && convoy.finished_at
+        ? Math.round(
+            (new Date(convoy.finished_at).getTime() - new Date(convoy.started_at).getTime()) / 1_000,
+          )
+        : undefined
+
     const record = {
       id: convoy.id,
       name: convoy.name,
@@ -70,6 +77,7 @@ export async function exportConvoyToNdjson(
       created_at: convoy.created_at,
       started_at: convoy.started_at,
       finished_at: convoy.finished_at,
+      duration_sec: durationSec,
       summary,
       tasks: tasks.map((t) => ({
         id: t.id,

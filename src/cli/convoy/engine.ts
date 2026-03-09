@@ -271,6 +271,27 @@ async function runConvoy(
           { reason: 'timeout', worker_id: workerId },
           { convoy_id: convoyId, task_id: taskRecord.id, worker_id: workerId },
         )
+        events.emit('session', {
+          agent: taskRecord.agent,
+          model: taskRecord.model ?? taskAdapter.name,
+          task: taskRecord.id,
+          outcome: 'failed',
+          duration_min: Math.round((Date.now() - taskStartTime) / 60_000),
+          files_changed: 0,
+          retries: freshRecord.retries,
+          convoy_id: convoyId,
+        }, { convoy_id: convoyId, task_id: taskRecord.id })
+        events.emit('delegation', {
+          session_id: convoyId,
+          agent: taskRecord.agent,
+          model: taskRecord.model ?? taskAdapter.name,
+          tier: 'standard',
+          mechanism: 'convoy',
+          outcome: 'failed',
+          retries: freshRecord.retries,
+          phase: taskRecord.phase,
+          convoy_id: convoyId,
+        }, { convoy_id: convoyId, task_id: taskRecord.id })
         cascadeFailure(taskRecord.id)
       }
       taskAdapterMap.delete(taskRecord.id)
@@ -315,6 +336,27 @@ async function runConvoy(
         { exit_code: result.exitCode, worker_id: workerId },
         { convoy_id: convoyId, task_id: taskRecord.id, worker_id: workerId },
       )
+      events.emit('session', {
+        agent: taskRecord.agent,
+        model: taskRecord.model ?? taskAdapter.name,
+        task: taskRecord.id,
+        outcome: 'success',
+        duration_min: Math.round((Date.now() - taskStartTime) / 60_000),
+        files_changed: 0,
+        retries: taskRecord.retries,
+        convoy_id: convoyId,
+      }, { convoy_id: convoyId, task_id: taskRecord.id })
+      events.emit('delegation', {
+        session_id: convoyId,
+        agent: taskRecord.agent,
+        model: taskRecord.model ?? taskAdapter.name,
+        tier: 'standard',
+        mechanism: 'convoy',
+        outcome: 'success',
+        retries: taskRecord.retries,
+        phase: taskRecord.phase,
+        convoy_id: convoyId,
+      }, { convoy_id: convoyId, task_id: taskRecord.id })
       taskAdapterMap.delete(taskRecord.id)
       return
     }
@@ -354,6 +396,27 @@ async function runConvoy(
         { reason: 'error', exit_code: result.exitCode, worker_id: workerId },
         { convoy_id: convoyId, task_id: taskRecord.id, worker_id: workerId },
       )
+      events.emit('session', {
+        agent: taskRecord.agent,
+        model: taskRecord.model ?? taskAdapter.name,
+        task: taskRecord.id,
+        outcome: 'failed',
+        duration_min: Math.round((Date.now() - taskStartTime) / 60_000),
+        files_changed: 0,
+        retries: freshRecord.retries,
+        convoy_id: convoyId,
+      }, { convoy_id: convoyId, task_id: taskRecord.id })
+      events.emit('delegation', {
+        session_id: convoyId,
+        agent: taskRecord.agent,
+        model: taskRecord.model ?? taskAdapter.name,
+        tier: 'standard',
+        mechanism: 'convoy',
+        outcome: 'failed',
+        retries: freshRecord.retries,
+        phase: taskRecord.phase,
+        convoy_id: convoyId,
+      }, { convoy_id: convoyId, task_id: taskRecord.id })
       cascadeFailure(taskRecord.id)
     }
     taskAdapterMap.delete(taskRecord.id)
