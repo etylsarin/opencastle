@@ -1,6 +1,6 @@
 # API Configuration
 
-<!-- Populated by the `bootstrap-customizations` prompt based on detected API routes and Server Actions. -->
+<!-- Populated by `opencastle init` based on detected API routes and Server Actions. -->
 
 Project-specific API inventory referenced by the `api-patterns` skill.
 

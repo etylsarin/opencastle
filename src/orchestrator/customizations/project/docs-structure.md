@@ -1,6 +1,6 @@
 # Documentation Structure
 
-<!-- Populated by the `bootstrap-customizations` prompt based on project structure. -->
+<!-- Populated by `opencastle init` based on project structure. -->
 
 Project-specific documentation layout referenced by the `documentation-standards` skill.
 

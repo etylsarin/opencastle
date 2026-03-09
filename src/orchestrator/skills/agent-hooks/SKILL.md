@@ -33,7 +33,8 @@ Session Lifecycle:
 3. **Check pending approvals** — If the checkpoint has a `## Pending Approvals` section, check for replies using the configured messaging provider's MCP tools (e.g., `conversations_replies` for Slack). Read `.opencastle.json` → `stack.teamTools` to determine the provider. If no messaging is configured, skip this step.
 4. **Check dead letter queue** — Scan `.opencastle/AGENT-FAILURES.md` for pending failures related to the current scope.
 5. **Validate skill-matrix bindings** — Open `.opencastle/agents/skill-matrix.json` and check whether the `bindings` object has any slots with non-empty `entries` arrays. If all entries are empty, **warn the user** that the bootstrap hasn't been run and capability slots will not resolve. Suggest running the *"Bootstrap Customizations"* prompt first. Do NOT silently continue with empty bindings.
-6. **Load domain skills** — Based on the task description, load the appropriate skills before writing code. Don't start coding without the relevant skill loaded.
+6. **Check project context** — If `.opencastle/project.instructions.md` has only empty template rows (`| | | |`), warn the user that bootstrap hasn't populated project context.
+7. **Load domain skills** — Based on the task description, load the appropriate skills before writing code. Don't start coding without the relevant skill loaded.
 
 ### Template for Delegation Prompts
 
@@ -99,7 +100,9 @@ Run the 5-point Pre-Delegation Checks from the Team Lead agent file: (1) Tracker
 3. **Check acceptance criteria** — Compare output against the tracker issue's acceptance criteria. Each criterion must be independently verified.
 4. **Discovered issues tracked** — Verify the agent followed the Discovered Issues Policy. If they found issues, check that they're in KNOWN-ISSUES.md or a new tracker ticket.
 5. **Lessons captured** — If the agent retried anything, verify a lesson was added via the **self-improvement** skill.
-6. **Update tracker** — Move the issue to Done (if passing) or add failure notes and re-delegate (if failing).
+6. **Update tracker** — Move the issue to Done (if passing) or add failure notes and re-delegate (if failing). On 3rd failure → log to `.opencastle/AGENT-FAILURES.md` (DLQ format in file header).
+7. **Update agent expertise** — In `.opencastle/AGENT-EXPERTISE.md`: first-attempt success → add strong area; 2+ retries → add weak area. Update file familiarity with touched files.
+8. **Append knowledge graph** — Add file-to-file relationships the agent touched to `.opencastle/KNOWLEDGE-GRAPH.md` (one row per dependency discovered).
 
 ### Quick Checklist
 
@@ -116,6 +119,8 @@ Post-Delegate:
 ☐ Discovered issues tracked (not ignored)
 ☐ Lessons captured (if retries occurred)
 ☐ Issue updated
+☐ Agent expertise updated (AGENT-EXPERTISE.md — strong/weak area + file familiarity)
+☐ Knowledge graph appended (KNOWLEDGE-GRAPH.md — file relationships)
 ```
 
 ---

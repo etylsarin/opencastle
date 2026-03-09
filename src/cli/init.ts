@@ -11,11 +11,7 @@ import { detectRepoInfo, mergeStackIntoRepoInfo, formatRepoInfo, buildDetectedTo
 import { IDE_ADAPTERS } from './adapters/index.js'
 import { IDE_LABELS } from './types.js'
 import type { CliContext, IdeChoice, TechTool, TeamTool, StackConfig } from './types.js'
-
-/** OSC 8 terminal hyperlink — clickable in VS Code integrated terminal and modern terminals */
-function termLink(text: string, url: string): string {
-  return `\x1b]8;;${url}\x07${text}\x1b]8;;\x07`
-}
+import { bootstrapCustomizations } from './bootstrap.js'
 
 export default async function init({ pkgRoot, args }: CliContext): Promise<void> {
   const projectRoot = process.cwd()
@@ -232,6 +228,22 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
     totalSkipped += sub.skipped.length
   }
 
+  // ── Project scan ────────────────────────────────────────────────
+  console.log(`\n  ${c.dim('Configuring project...')}`)
+  const bootstrapResult = await bootstrapCustomizations(projectRoot, combinedRepoInfo, stack)
+
+  if (bootstrapResult.populated.length > 0) {
+    console.log(`  ${c.green('✓')} Populated ${c.bold(String(bootstrapResult.populated.length))} config files`)
+  }
+  if (bootstrapResult.renamed.length > 0) {
+    for (const r of bootstrapResult.renamed) {
+      console.log(`  ${c.dim('→')} Renamed ${r}`)
+    }
+  }
+  if (bootstrapResult.removed.length > 0) {
+    console.log(`  ${c.dim('→')} Removed ${bootstrapResult.removed.length} unused template(s)`)
+  }
+
   // ── Write manifest ──────────────────────────────────────────────
   const manifest = createManifest(pkg.version, ides[0], ides)
   manifest.managedPaths = allManagedPaths
@@ -321,13 +333,6 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
       `  ${step}. Set the environment variable${envVars.length > 1 ? 's' : ''} listed above (in .env or your shell)`
     )
   }
-  step++
-  const bootstrapLabel = ides.includes('vscode')
-    ? termLink(c.cyan('"Bootstrap Customizations"'), 'vscode://GitHub.Copilot-Chat/chat?mode=Team%20Lead%20(OpenCastle)&prompt=%2Fbootstrap-customizations')
-    : c.cyan('"Bootstrap Customizations"')
-  console.log(
-    `  ${step}. Run the ${bootstrapLabel} prompt to configure for your project`
-  )
   step++
   console.log(`  ${step}. Commit the .opencastle/ folder to your repository`)
   console.log()

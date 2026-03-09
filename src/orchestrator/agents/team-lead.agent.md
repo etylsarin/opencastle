@@ -152,7 +152,7 @@ The convoy engine is the **mandatory** execution mechanism for all project-relat
 | Work type | Approach |
 |-----------|----------|
 | Features, bug fixes, refactors (any subtask count) | **Convoy execution** — always generate a `.convoy.yml` spec, even for 1-task fixes |
-| Utility prompts (`bootstrap-customizations`, `create-skill`, `generate-convoy`, `brainstorm`, `quick-refinement`) | **Direct** — these are meta/tooling operations, not project code changes |
+| Utility prompts (`create-skill`, `generate-convoy`, `brainstorm`, `quick-refinement`) | **Direct** — these are meta/tooling operations, not project code changes |
 
 ### How to generate a convoy spec
 
@@ -247,8 +247,10 @@ For each task:
      - High-stakes: panel review (load panel-majority-vote skill)
      - Discovered issues tracked (not silently ignored)
      - Lessons captured (if agent retried anything)
+     - Agent expertise updated (AGENT-EXPERTISE.md)
+     - Knowledge graph appended (KNOWLEDGE-GRAPH.md)
   6. PASS → log review (⛔ hard gate — do NOT proceed until logged), move issue → Done
-     FAIL → re-delegate with failure details (max 3 attempts)
+     FAIL → re-delegate with failure details (max 3 attempts → log DLQ in AGENT-FAILURES.md)
 ```
 
 Fast review auto-PASS: research-only tasks, docs-only, or ≤10 lines across ≤2 files with all deterministic gates passing.

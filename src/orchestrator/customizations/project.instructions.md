@@ -1,8 +1,8 @@
 ```instructions
 # Project Context
 
-<!-- This file is populated by the `bootstrap-customizations` prompt.
-     Run that prompt to auto-discover your project's structure, tech stack, and configuration. -->
+<!-- This file is populated by `opencastle init`.
+     Re-run `npx opencastle init` to refresh the auto-detected configuration. -->
 
 ## Overview
 

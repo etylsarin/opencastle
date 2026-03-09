@@ -1,7 +1,7 @@
 # Database Configuration
 
-<!-- Populated by the `bootstrap-customizations` prompt based on detected database.
-     Rename this file to match your provider: supabase-config.md, prisma-config.md, drizzle-config.md, etc. -->
+<!-- Populated by `opencastle init` based on detected database.
+     Renamed to match your provider: supabase-config.md, prisma-config.md, drizzle-config.md, etc. -->
 
 Project-specific database details referenced by the corresponding database skill (e.g., `supabase-database`).
 

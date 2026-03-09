@@ -32,7 +32,7 @@ Skills reference these files with relative links like `../../.opencastle/stack/a
 
 | File | Purpose |
 |------|---------|
-| _(created by `bootstrap-customizations` prompt based on detected technologies)_ | |
+| _(created by `opencastle init` based on detected technologies)_ | |
 
 ### `project/` — Project management config
 
@@ -41,7 +41,7 @@ Skills reference these files with relative links like `../../.opencastle/stack/a
 | `docs-structure.md` | Project documentation directory tree and practices |
 | `roadmap.md` | Project roadmap with planned features and their status |
 | `decisions.md` | Architecture Decision Records (ADRs) for the project |
-| _(task tracker config created by `bootstrap-customizations` prompt)_ | |
+| _(task tracker config created by `opencastle init`)_ | |
 
 ### `logs/` — Append-only NDJSON session logs
 
@@ -58,4 +58,4 @@ Update these files when the project changes — new tables, new API routes, new 
 
 ## Bootstrap
 
-Run the `bootstrap-customizations` prompt to auto-discover the project's structure and populate these files. It will scan for frameworks, databases, CMS, deployment config, and task tracking, then generate the appropriate `stack/` and `project/` files.
+Run `npx opencastle init` to auto-discover the project's structure and populate these files. It scans for frameworks, databases, CMS, deployment config, and task tracking, then generates the appropriate `stack/` and `project/` files.

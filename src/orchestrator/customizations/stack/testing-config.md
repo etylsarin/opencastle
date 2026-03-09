@@ -1,6 +1,6 @@
 # Testing Configuration
 
-<!-- Populated by the `bootstrap-customizations` prompt based on detected test infrastructure. -->
+<!-- Populated by `opencastle init` based on detected test infrastructure. -->
 
 Project-specific testing details referenced by the `browser-testing` skill.
 
