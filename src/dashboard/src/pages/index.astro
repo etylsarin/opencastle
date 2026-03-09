@@ -332,6 +332,20 @@ const base = import.meta.env.BASE_URL;
     return String(n);
   }
 
+  function formatDuration(startIso, endIso) {
+    if (!startIso || !endIso) return null;
+    const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
+    if (ms < 0) return null;
+    const sec = Math.floor(ms / 1000);
+    if (sec < 60) return sec + 's';
+    const min = Math.floor(sec / 60);
+    const remSec = sec % 60;
+    if (min < 60) return min + 'm ' + remSec + 's';
+    const hr = Math.floor(min / 60);
+    const remMin = min % 60;
+    return hr + 'h ' + remMin + 'm';
+  }
+
   // ── SVG Icon Library (empty states) ────────────────────
 
   const EMPTY_ICONS = {
@@ -1427,6 +1441,20 @@ const base = import.meta.env.BASE_URL;
     if (convoy.total_tokens != null) {
       html += '<div class="convoy-stat"><span class="convoy-stat__label">Tokens</span><span class="convoy-stat__value">' + formatTokens(convoy.total_tokens) + '</span></div>';
     }
+    if (convoy.finished_at) {
+      html += '<div class="convoy-stat"><span class="convoy-stat__label">Finished</span><span class="convoy-stat__value">' + formatTime(convoy.finished_at) + '</span></div>';
+    }
+    const convoyDur = formatDuration(convoy.started_at, convoy.finished_at);
+    if (convoyDur) {
+      html += '<div class="convoy-stat"><span class="convoy-stat__label">Duration</span><span class="convoy-stat__value">' + convoyDur + '</span></div>';
+    }
+    if (convoy.total_cost_usd != null && convoy.total_cost_usd > 0) {
+      html += '<div class="convoy-stat"><span class="convoy-stat__label">Cost</span><span class="convoy-stat__value">$' + convoy.total_cost_usd.toFixed(2) + '</span></div>';
+    }
+    const failedCount = (s.failed || 0) + (s.timedOut || 0);
+    if (failedCount > 0) {
+      html += '<div class="convoy-stat"><span class="convoy-stat__label">Failed</span><span class="convoy-stat__value convoy-stat__value--error">' + failedCount + '</span></div>';
+    }
     html += '</div>';
 
     html += '<div class="convoy-progress">';
@@ -1436,7 +1464,7 @@ const base = import.meta.env.BASE_URL;
 
     if (convoy.tasks && convoy.tasks.length > 0) {
       html += '<table class="sessions-table convoy-tasks">';
-      html += '<thead><tr><th>Task</th><th>Phase</th><th>Agent</th><th>Adapter</th><th>Status</th><th>Retries</th><th>Tokens</th></tr></thead>';
+      html += '<thead><tr><th>Task</th><th>Phase</th><th>Agent</th><th>Adapter</th><th>Status</th><th>Retries</th><th>Tokens</th><th>Duration</th></tr></thead>';
       html += '<tbody>';
       convoy.tasks.forEach(function(t) {
         const tStatus = t.status === 'done' ? 'success'
@@ -1450,6 +1478,7 @@ const base = import.meta.env.BASE_URL;
         html += '<td><span class="outcome-badge outcome-badge--' + tStatus + '">' + escapeHtml(t.status) + '</span></td>';
         html += '<td class="td-num">' + (t.retries || 0) + '</td>';
         html += '<td class="td-num">' + (t.total_tokens != null ? formatTokens(t.total_tokens) : '\u2014') + '</td>';
+        html += '<td class="td-num">' + (formatDuration(t.started_at, t.finished_at) || '\u2014') + '</td>';
         html += '</tr>';
       });
       html += '</tbody></table>';
@@ -1559,6 +1588,17 @@ const base = import.meta.env.BASE_URL;
       html +=
         '<div class="convoy-stat"><span class="convoy-stat__label">Finished</span>' +
         '<span class="convoy-stat__value">' + formatTime(pipeline.finished_at) + '</span></div>';
+    }
+    const pipelineDur = formatDuration(pipeline.started_at, pipeline.finished_at);
+    if (pipelineDur) {
+      html +=
+        '<div class="convoy-stat"><span class="convoy-stat__label">Duration</span>' +
+        '<span class="convoy-stat__value">' + pipelineDur + '</span></div>';
+    }
+    if (pipeline.total_cost_usd != null && pipeline.total_cost_usd > 0) {
+      html +=
+        '<div class="convoy-stat"><span class="convoy-stat__label">Cost</span>' +
+        '<span class="convoy-stat__value">$' + pipeline.total_cost_usd.toFixed(2) + '</span></div>';
     }
     html += '</div>';
 
@@ -1759,8 +1799,25 @@ const base = import.meta.env.BASE_URL;
     links.forEach((link) => {
       link.addEventListener('click', (e) => {
         e.preventDefault();
-        const target = document.getElementById(link.dataset.section);
-        if (target) {
+        const sectionId = link.dataset.section;
+
+        // Auto-select latest convoy/pipeline if section is hidden
+        if (sectionId === 'convoy-section') {
+          const convoySelect = document.getElementById('filter-convoy');
+          if (convoySelect && !convoySelect.value && convoySelect.options.length > 1) {
+            convoySelect.value = convoySelect.options[1].value;
+            applyFilters();
+          }
+        } else if (sectionId === 'convoy-pipeline-section') {
+          const pipelineSelect = document.getElementById('filter-pipeline');
+          if (pipelineSelect && !pipelineSelect.value && pipelineSelect.options.length > 1) {
+            pipelineSelect.value = pipelineSelect.options[1].value;
+            applyFilters();
+          }
+        }
+
+        const target = document.getElementById(sectionId);
+        if (target && target.style.display !== 'none') {
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });

@@ -496,6 +496,8 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     const pipelineResult = await pipelineOrchestrator.run()
     printPipelineResult(pipelineResult)
     if (pipelineDashboardResult) {
+      console.log(`\n  ${c.dim('Results saved to .opencastle/logs/convoys.ndjson')}`)
+      console.log(`  ${c.dim('View again:')} opencastle dashboard`)
       pipelineDashboardResult.server.close()
     }
     process.exit(pipelineResult.status !== 'done' ? 1 : 0)
@@ -536,6 +538,8 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     const result = await engine.run()
     printConvoyResult(result)
     if (dashboardResult) {
+      console.log(`\n  ${c.dim('Results saved to .opencastle/logs/convoys.ndjson')}`)
+      console.log(`  ${c.dim('View again:')} opencastle dashboard`)
       dashboardResult.server.close()
     }
     process.exit(result.status !== 'done' ? 1 : 0)
