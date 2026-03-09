@@ -188,7 +188,7 @@ function selectInteractive(
   options: SelectOption[]
 ): Promise<string> {
   return new Promise<string>((resolve) => {
-    let cursor = 0;
+    let cursor = Math.max(0, options.findIndex((o) => o.selected));
     const maxVisible = Math.max(3, Math.min(options.length, (process.stdout.rows || 24) - 4));
     let lastRenderedLines = 0;
 

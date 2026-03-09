@@ -7,7 +7,7 @@ import { removeDirIfExists, copyDir, getOrchestratorRoot } from './copy.js'
 import { updateGitignore } from './gitignore.js'
 import { getRequiredMcpEnvVars, getCustomizationsTransform } from './stack-config.js'
 import { TECH_PLUGINS, TEAM_PLUGINS } from '../orchestrator/plugins/index.js'
-import { detectRepoInfo, mergeStackIntoRepoInfo, formatRepoInfo, buildDetectedToolsSet } from './detect.js'
+import { detectRepoInfo, mergeStackIntoRepoInfo, formatRepoInfo, buildDetectedToolsSet, detectCurrentIde } from './detect.js'
 import { IDE_ADAPTERS } from './adapters/index.js'
 import { IDE_LABELS } from './types.js'
 import type { CliContext, IdeChoice, TechTool, TeamTool, StackConfig } from './types.js'
@@ -57,26 +57,31 @@ export default async function init({ pkgRoot, args }: CliContext): Promise<void>
 
   // ── IDE (single select) ────────────────────────────────────────
   console.log(`  ${c.bold('── IDEs ──────────────────────────────────────')}`)
+  const detectedIde = detectCurrentIde()
   const selectedIde = await select('Which IDE do you use?', [
     {
       label: 'VS Code',
       hint: 'GitHub Copilot agents, instructions, skills',
       value: 'vscode',
+      ...(detectedIde === 'vscode' && { selected: true }),
     },
     {
       label: 'Cursor',
       hint: '.cursorrules & .cursor/rules/*.mdc',
       value: 'cursor',
+      ...(detectedIde === 'cursor' && { selected: true }),
     },
     {
       label: 'Claude Code',
       hint: 'CLAUDE.md & .claude/ commands, skills',
       value: 'claude-code',
+      ...(detectedIde === 'claude-code' && { selected: true }),
     },
     {
       label: 'OpenCode',
       hint: 'AGENTS.md & opencode.json',
       value: 'opencode',
+      ...(detectedIde === 'opencode' && { selected: true }),
     },
   ])
   const ides = [selectedIde]
