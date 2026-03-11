@@ -1,4 +1,5 @@
 import type { ChildProcess } from 'node:child_process';
+import type { BuiltInGatesConfig, BrowserTestConfig, GuardConfig, CircuitBreakerConfig, TaskStep, Hook, TaskOutput, TaskInput, WatchConfig, MCPServerConfig } from './convoy/types.js';
 
 // ── Stack selection types ──────────────────────────────────────
 
@@ -141,6 +142,15 @@ export const IDE_LABELS: Record<IdeChoice, string> = {
 
 // ── Run command types ──────────────────────────────────────────
 
+/** Heuristics for routing tasks to review levels. */
+export interface ReviewHeuristics {
+  panel_paths?: string[];
+  panel_agents?: string[];
+  auto_pass_agents?: string[];
+  auto_pass_max_lines?: number;
+  auto_pass_max_files?: number;
+}
+
 /** Default values merged into each task for Convoy Engine (version: 1) specs. */
 export interface TaskDefaults {
   timeout?: string;
@@ -148,12 +158,42 @@ export interface TaskDefaults {
   max_retries?: number;
   agent?: string;
   adapter?: string;
+  gates?: string[];
+  built_in_gates?: BuiltInGatesConfig;
+  gate_timeout?: number;
+  on_exhausted?: 'dlq' | 'skip' | 'stop';
+  escalate_to?: string;
+  circuit_breaker?: CircuitBreakerConfig;
+  review?: 'auto' | 'fast' | 'panel' | 'none';
+  reviewer_model?: string;
+  review_budget?: number;
+  on_review_budget_exceeded?: 'skip' | 'downgrade' | 'stop';
+  max_concurrent_reviews?: number;
+  review_heuristics?: ReviewHeuristics;
+  detect_drift?: boolean;
+  on_dispute?: 'continue' | 'stop';
+  /** Enable automated lesson injection into task prompts (Phase 18.1). */
+  inject_lessons?: boolean;
+  /** Enable discovered issues tracking in task prompts (Phase 18.4). */
+  track_discovered_issues?: boolean;
+  /** Skip assigning agent to tasks matching their weak areas (Phase 18.2). */
+  avoid_weak_agents?: boolean;
+  /** Maximum concurrent tasks in swarm mode (default: 8). */
+  max_swarm_concurrency?: number;
+  /** MCP servers available to tasks (Phase 19.7). */
+  mcp_servers?: MCPServerConfig[];
+  /** Auto-approve all MCP tool calls without prompting (Phase 19.7). */
+  mcp_approve_all?: boolean;
+  /** Timeout in seconds for MCP server approval prompts (Phase 19.7). */
+  mcp_server_approval_timeout?: number;
+  /** Browser test gate configuration for default built-in gates. */
+  browser_test?: BrowserTestConfig;
 }
 
 /** Validated task spec from YAML. */
 export interface TaskSpec {
   name: string;
-  concurrency: number;
+  concurrency: number | 'auto';
   on_failure: 'continue' | 'stop';
   adapter: string;
   tasks?: Task[];
@@ -170,6 +210,12 @@ export interface TaskSpec {
   branch?: string;
   /** Other convoy spec names to run before this one (version: 2 pipeline specs). */
   depends_on_convoy?: string[];
+  /** Optional post-convoy guard configuration. */
+  guard?: GuardConfig;
+  /** Post-convoy lifecycle hooks. */
+  hooks?: Hook[];
+  /** Watch mode configuration (Phase 17.1). */
+  watch?: WatchConfig;
 }
 
 /** A single task in the spec. */
@@ -188,6 +234,24 @@ export interface Task {
   max_retries: number;
   /** Per-task adapter override. */
   adapter?: string;
+  /** Per-task gate shell commands run after adapter success. */
+  gates?: string[];
+  /** Multi-step task sub-prompts. */
+  steps?: TaskStep[];
+  /** Review level override for this task. */
+  review?: 'auto' | 'fast' | 'panel' | 'none';
+  /** Lifecycle hooks for this task. */
+  hooks?: Hook[];
+  /** Opt-in drift detection (streaming adapters only). */
+  detect_drift?: boolean;
+  /** Outputs this task produces as named artifacts. */
+  outputs?: TaskOutput[];
+  /** Inputs this task consumes from upstream task artifacts. */
+  inputs?: TaskInput[];
+  /** Whether this task has persistent agent identity (Phase 17.2). */
+  persistent?: boolean;
+  /** Browser test gate configuration for this task. */
+  browser_test?: BrowserTestConfig;
 }
 
 /** Task execution status. */
@@ -196,6 +260,7 @@ export type TaskStatus =
   | 'running'
   | 'done'
   | 'failed'
+  | 'gate-failed'
   | 'skipped'
   | 'timed-out';
 
@@ -233,6 +298,8 @@ export interface AgentAdapter {
   isAvailable(): Promise<boolean>;
   execute(_task: Task, _options?: ExecuteOptions): Promise<ExecuteResult>;
   kill?(_task: Task): void;
+  /** Whether the adapter supports reusing sessions across multi-step task steps. Defaults to false. */
+  supportsSessionContinuity?(): boolean;
 }
 
 /** Options for agent execution. */
@@ -240,6 +307,10 @@ export interface ExecuteOptions {
   verbose?: boolean;
   /** Working directory for the agent process (defaults to process.cwd()). */
   cwd?: string;
+  /** MCP servers to make available during execution (Phase 19.7). */
+  mcpServers?: MCPServerConfig[];
+  /** Automatically approve all MCP permission requests. */
+  mcp_approve_all?: boolean;
 }
 
 /** Token usage data from adapter execution. */
@@ -286,6 +357,20 @@ export interface RunOptions {
   help: boolean;
   resume: boolean;
   status: boolean;
+  retryFailed: boolean;
+  retryFailedTaskIds?: string[];
+  dlqList: boolean;
+  dlqResolve: boolean;
+  dlqResolveId?: string;
+  dlqResolveText?: string;
+  dlqRetry: boolean;
+  dlqRetryId?: string;
+  dlqConvoyFilter?: string;
+  formula: string | null;
+  setVars: Record<string, string>;
+  watch: boolean;
+  watchConfig: string | null;
+  clearScratchpad: boolean;
 }
 
 /** Validation result. */

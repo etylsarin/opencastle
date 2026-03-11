@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { stringify as yamlStringify } from 'yaml'
 import { parseTaskSpecText, isConvoySpec, isPipelineSpec } from './run/schema.js'
 import { createExecutor, buildPhases } from './run/executor.js'
 import { getAdapter, detectAdapter } from './run/adapters/index.js'
@@ -9,6 +10,7 @@ import { c } from './prompt.js'
 import type { CliContext, RunOptions } from './types.js'
 import type { ConvoyResult } from './convoy/engine.js'
 import type { PipelineResult } from './convoy/pipeline.js'
+import { EngineAlreadyRunningError } from './convoy/lock.js'
 
 function formatTokens(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
@@ -24,13 +26,24 @@ const HELP = `
 
   Options:
     --file, -f <path>        Task spec file
+    --formula <path>         Use a formula template (alternative to --file)
+    --set key=value          Set a formula variable (repeatable)
     --dry-run                Show execution plan without running
     --concurrency, -c <n>    Override max parallel tasks
     --adapter, -a <name>     Override agent runtime adapter
     --report-dir <path>      Where to write run reports (default: .opencastle/runs)
     --verbose                Show full agent output
     --resume                 Resume the last interrupted convoy from .opencastle/convoy.db
+    --retry-failed [task-id] Retry failed/gate-failed/timed-out tasks from the last convoy
     --status                 Print the current convoy state from .opencastle/convoy.db
+    --dlq-list               List dead letter queue entries
+    --dlq-resolve <id>       Resolve a DLQ entry (requires --resolution)
+    --dlq-retry <id>         Reset a DLQ task to pending for retry
+    --convoy <id>            Filter by convoy ID (used with --dlq-list)
+    --resolution <text>      Resolution text (used with --dlq-resolve)
+    --watch              Keep running, re-triggering on file changes, cron, or git push
+    --watch-config <p>   Path to watch configuration file (overrides spec watch config)
+    --clear-scratchpad   Clear scratchpad data at watch start
     --help, -h               Show this help
 `
 
@@ -48,6 +61,20 @@ function parseArgs(args: string[]): RunOptions {
     help: false,
     resume: false,
     status: false,
+    retryFailed: false,
+    retryFailedTaskIds: undefined,
+    dlqList: false,
+    dlqResolve: false,
+    dlqResolveId: undefined,
+    dlqResolveText: undefined,
+    dlqRetry: false,
+    dlqRetryId: undefined,
+    dlqConvoyFilter: undefined,
+    formula: null,
+    setVars: {},
+    watch: false,
+    watchConfig: null,
+    clearScratchpad: false,
   }
 
   for (let i = 0; i < args.length; i++) {
@@ -92,8 +119,58 @@ function parseArgs(args: string[]): RunOptions {
       case '--resume':
         opts.resume = true
         break
+      case '--retry-failed':
+        opts.retryFailed = true
+        if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
+          opts.retryFailedTaskIds = [args[++i]]
+        }
+        break
       case '--status':
         opts.status = true
+        break
+      case '--dlq-list':
+        opts.dlqList = true
+        break
+      case '--dlq-resolve':
+        opts.dlqResolve = true
+        if (i + 1 < args.length && !args[i + 1].startsWith('--')) opts.dlqResolveId = args[++i]
+        break
+      case '--dlq-retry':
+        opts.dlqRetry = true
+        if (i + 1 < args.length && !args[i + 1].startsWith('--')) opts.dlqRetryId = args[++i]
+        break
+      case '--resolution':
+        if (i + 1 >= args.length) { console.error('  ✗ --resolution requires text'); process.exit(1) }
+        opts.dlqResolveText = args[++i]
+        break
+      case '--convoy':
+        if (i + 1 >= args.length) { console.error('  ✗ --convoy requires an ID'); process.exit(1) }
+        opts.dlqConvoyFilter = args[++i]
+        break
+      case '--formula':
+        if (i + 1 >= args.length) { console.error('  ✗ --formula requires a path'); process.exit(1) }
+        opts.formula = args[++i]
+        break
+      case '--set': {
+        if (i + 1 >= args.length) { console.error('  ✗ --set requires key=value'); process.exit(1) }
+        const pair = args[++i]
+        const eqIdx = pair.indexOf('=')
+        if (eqIdx < 1) {
+          console.error(`  ✗ --set value must be in key=value format, got: ${pair}`)
+          process.exit(1)
+        }
+        opts.setVars[pair.slice(0, eqIdx)] = pair.slice(eqIdx + 1)
+        break
+      }
+      case '--watch':
+        opts.watch = true
+        break
+      case '--watch-config':
+        if (i + 1 >= args.length) { console.error('  ✗ --watch-config requires a path'); process.exit(1) }
+        opts.watchConfig = args[++i]
+        break
+      case '--clear-scratchpad':
+        opts.clearScratchpad = true
         break
       default:
         console.error(`  ✗ Unknown option: ${arg}`)
@@ -205,6 +282,99 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
 
   const dbPath = resolve(process.cwd(), '.opencastle', 'convoy.db')
 
+  // ── --dlq-list flag ───────────────────────────────────────────
+  if (opts.dlqList) {
+    if (!existsSync(dbPath)) {
+      console.log('  No convoy database found at .opencastle/convoy.db')
+      return
+    }
+    const { createConvoyStore } = await import('./convoy/store.js')
+    const store = createConvoyStore(dbPath)
+    try {
+      const entries = store.listDlqEntries(opts.dlqConvoyFilter)
+      if (entries.length === 0) {
+        console.log('  No DLQ entries found.')
+        return
+      }
+      console.log(`\n  Dead Letter Queue (${entries.length} entries):\n`)
+      for (const e of entries) {
+        const status = e.resolved ? c.green('resolved') : c.red('unresolved')
+        console.log(`  ${e.id}  ${status}`)
+        console.log(`    Task: ${e.task_id} | Agent: ${e.agent} | Type: ${e.failure_type}`)
+        console.log(`    Attempts: ${e.attempts} | Created: ${e.created_at}`)
+        if (e.resolution) console.log(`    Resolution: ${e.resolution}`)
+        console.log()
+      }
+    } finally {
+      store.close()
+    }
+    return
+  }
+
+  // ── --dlq-resolve flag ────────────────────────────────────────
+  if (opts.dlqResolve) {
+    if (!opts.dlqResolveId) {
+      console.error('  \u2717 --dlq-resolve requires a DLQ entry ID')
+      process.exit(1)
+    }
+    if (!opts.dlqResolveText) {
+      console.error('  \u2717 --dlq-resolve requires --resolution "text"')
+      process.exit(1)
+    }
+    if (!existsSync(dbPath)) {
+      console.error('  \u2717 No convoy database found at .opencastle/convoy.db')
+      process.exit(1)
+    }
+    const { createConvoyStore } = await import('./convoy/store.js')
+    const store = createConvoyStore(dbPath)
+    try {
+      store.resolveDlqEntry(opts.dlqResolveId, opts.dlqResolveText)
+      console.log(`  \u2713 DLQ entry ${opts.dlqResolveId} resolved.`)
+    } finally {
+      store.close()
+    }
+    return
+  }
+
+  // ── --dlq-retry flag ──────────────────────────────────────────
+  if (opts.dlqRetry) {
+    if (!opts.dlqRetryId) {
+      console.error('  \u2717 --dlq-retry requires a DLQ entry ID')
+      process.exit(1)
+    }
+    if (!existsSync(dbPath)) {
+      console.error('  \u2717 No convoy database found at .opencastle/convoy.db')
+      process.exit(1)
+    }
+    const { createConvoyStore } = await import('./convoy/store.js')
+    const store = createConvoyStore(dbPath)
+    try {
+      const entries = store.listDlqEntries()
+      const entry = entries.find(e => e.id === opts.dlqRetryId)
+      if (!entry) {
+        console.error(`  \u2717 DLQ entry "${opts.dlqRetryId}" not found`)
+        process.exit(1)
+      }
+      // Reset the task to pending
+      store.updateTaskStatus(entry.task_id, entry.convoy_id, 'pending', {
+        worker_id: null,
+        worktree: null,
+        started_at: null,
+        finished_at: null,
+      })
+      store.resolveDlqEntry(entry.id, 'Retried via CLI')
+      // Reset convoy status to running if needed
+      const convoy = store.getConvoy(entry.convoy_id)
+      if (convoy && (convoy.status === 'failed' || convoy.status === 'done')) {
+        store.updateConvoyStatus(entry.convoy_id, 'running', {})
+      }
+      console.log(`  \u2713 Task ${entry.task_id} reset to pending. Run 'opencastle run --resume' to execute.`)
+    } finally {
+      store.close()
+    }
+    return
+  }
+
   // ── --status flag ─────────────────────────────────────────────
   if (opts.status) {
     if (!existsSync(dbPath)) {
@@ -286,6 +456,70 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       store.close()
     }
     return
+  }
+
+  // ── --retry-failed flag ───────────────────────────────────────
+  if (opts.retryFailed) {
+    if (!existsSync(dbPath)) {
+      console.error('  ✗ No convoy database found at .opencastle/convoy.db')
+      console.error('    Run a convoy spec first: opencastle run convoy.yml')
+      process.exit(1)
+    }
+    const { createConvoyStore } = await import('./convoy/store.js')
+    const store = createConvoyStore(dbPath)
+    const convoy = store.getLatestConvoy()
+    store.close()
+    if (!convoy) {
+      console.error('  ✗ No convoy records found in .opencastle/convoy.db')
+      process.exit(1)
+    }
+
+    const retrySpec = parseTaskSpecText(convoy.spec_yaml)
+    if (opts.concurrency !== null) retrySpec.concurrency = opts.concurrency
+    if (opts.adapter !== null) retrySpec.adapter = opts.adapter
+    if (opts.verbose) retrySpec._verbose = true
+
+    let retryDetectionFailed = false
+    if (!retrySpec.adapter) {
+      const detected = await detectAdapter()
+      if (detected) {
+        retrySpec.adapter = detected
+        console.log(`  ℹ Auto-detected adapter: ${detected}`)
+      } else {
+        retryDetectionFailed = true
+        retrySpec.adapter = 'claude'
+      }
+    }
+
+    const retryAdapter = await getAdapter(retrySpec.adapter)
+    const retryAvailable = await retryAdapter.isAvailable()
+    if (!retryAvailable) {
+      printAdapterError(retryDetectionFailed, retrySpec.adapter)
+      process.exit(1)
+    }
+
+    console.log(`\n  🏰 OpenCastle Convoy (Retry Failed): ${convoy.name}`)
+    console.log(`  Convoy ID: ${convoy.id}`)
+    const { createConvoyEngine } = await import('./convoy/engine.js')
+    const retryEngine = createConvoyEngine({
+      spec: retrySpec,
+      specYaml: convoy.spec_yaml,
+      adapter: retryAdapter,
+      verbose: opts.verbose,
+    })
+    await retryEngine.retryFailed(convoy.id, opts.retryFailedTaskIds)
+    let retryResult: ConvoyResult
+    try {
+      retryResult = await retryEngine.resume(convoy.id)
+    } catch (err) {
+      if (err instanceof EngineAlreadyRunningError) {
+        console.error(`  ✗ ${err.message}`)
+        process.exit(1)
+      }
+      throw err
+    }
+    printConvoyResult(retryResult)
+    process.exit(retryResult.status !== 'done' ? 1 : 0)
   }
 
   // ── --resume flag ─────────────────────────────────────────────
@@ -385,32 +619,83 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       adapter: resumeAdapter,
       verbose: opts.verbose,
     })
-    const resumeResult = await resumeEngine.resume(convoy.id)
+    let resumeResult: ConvoyResult
+    try {
+      resumeResult = await resumeEngine.resume(convoy.id)
+    } catch (err) {
+      if (err instanceof EngineAlreadyRunningError) {
+        console.error(`  ✗ ${err.message}`)
+        process.exit(1)
+      }
+      throw err
+    }
     printConvoyResult(resumeResult)
     process.exit(resumeResult.status !== 'done' ? 1 : 0)
   }
 
-  // ── Read and validate spec ────────────────────────────────────
-  const specPath = resolve(process.cwd(), opts.file)
+  // ── Formula template resolution / Read and validate spec ─────
   let specText = ''
-  try {
-    specText = await readFile(specPath, 'utf8')
-  } catch (err: unknown) {
-    const e = err as Error & { code?: string }
-    if (e.code === 'ENOENT') {
-      console.error(`  ✗ Task spec file not found: ${opts.file}`)
-    } else {
-      console.error(`  ✗ Cannot read task spec file: ${e.message}`)
-    }
-    process.exit(1)
-  }
+  let spec: ReturnType<typeof parseTaskSpecText>
 
-  let spec
-  try {
-    spec = parseTaskSpecText(specText)
-  } catch (err: unknown) {
-    console.error(`  ✗ ${(err as Error).message}`)
-    process.exit(1)
+  if (opts.formula) {
+    const { parseFormula, substituteVariables, validateTemplate } = await import('./convoy/formula.js')
+    const formulaPath = resolve(process.cwd(), opts.formula)
+    let template
+    try {
+      template = parseFormula(formulaPath)
+    } catch (err: unknown) {
+      console.error(`  ✗ ${(err as Error).message}`)
+      process.exit(1)
+    }
+
+    const validation = validateTemplate(template)
+    if (!validation.valid) {
+      console.error(`  ✗ Invalid formula template:\n  • ${validation.errors.join('\n  • ')}`)
+      process.exit(1)
+    }
+
+    if (opts.dryRun) {
+      console.log(`\n  📋 Formula: ${template.name}`)
+      if (template.description) console.log(`  ${template.description}`)
+      console.log(`  Variables:`)
+      for (const [key, val] of Object.entries(opts.setVars)) {
+        console.log(`    ${key} = ${val}`)
+      }
+      for (const [key, def] of Object.entries(template.variables)) {
+        if (!(key in opts.setVars) && !def.required && def.default) {
+          console.log(`    ${key} = ${def.default} (default)`)
+        }
+      }
+    }
+
+    try {
+      spec = substituteVariables(template, opts.setVars)
+    } catch (err: unknown) {
+      console.error(`  ✗ ${(err as Error).message}`)
+      process.exit(1)
+    }
+    specText = yamlStringify(spec)
+  } else {
+    // ── Read and validate spec ──────────────────────────────────
+    const specPath = resolve(process.cwd(), opts.file)
+    try {
+      specText = await readFile(specPath, 'utf8')
+    } catch (err: unknown) {
+      const e = err as Error & { code?: string }
+      if (e.code === 'ENOENT') {
+        console.error(`  ✗ Task spec file not found: ${opts.file}`)
+      } else {
+        console.error(`  ✗ Cannot read task spec file: ${e.message}`)
+      }
+      process.exit(1)
+    }
+
+    try {
+      spec = parseTaskSpecText(specText)
+    } catch (err: unknown) {
+      console.error(`  ✗ ${(err as Error).message}`)
+      process.exit(1)
+    }
   }
 
   // Apply CLI overrides
@@ -493,7 +778,16 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       verbose: opts.verbose,
     })
 
-    const pipelineResult = await pipelineOrchestrator.run()
+    let pipelineResult: PipelineResult
+    try {
+      pipelineResult = await pipelineOrchestrator.run()
+    } catch (err) {
+      if (err instanceof EngineAlreadyRunningError) {
+        console.error(`  ✗ ${err.message}`)
+        process.exit(1)
+      }
+      throw err
+    }
     printPipelineResult(pipelineResult)
     if (pipelineDashboardResult) {
       console.log(`\n  ${c.dim('Results saved to .opencastle/logs/convoys.ndjson')}`)
@@ -535,7 +829,33 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       verbose: opts.verbose,
     })
 
-    const result = await engine.run()
+    if (opts.watch) {
+      const pidPath = resolve(process.cwd(), '.opencastle', 'watch.pid')
+      const { watchLoop } = await import('./watch.js')
+      await watchLoop({
+        spec,
+        specText,
+        specPath: resolve(process.cwd(), opts.file),
+        adapter,
+        verbose: opts.verbose,
+        pidPath,
+        clearScratchpad: opts.clearScratchpad,
+        watchConfigPath: opts.watchConfig ? resolve(process.cwd(), opts.watchConfig) : null,
+        printResult: printConvoyResult,
+      })
+      return
+    }
+
+    let result: ConvoyResult
+    try {
+      result = await engine.run()
+    } catch (err) {
+      if (err instanceof EngineAlreadyRunningError) {
+        console.error(`  ✗ ${err.message}`)
+        process.exit(1)
+      }
+      throw err
+    }
     printConvoyResult(result)
     if (dashboardResult) {
       console.log(`\n  ${c.dim('Results saved to .opencastle/logs/convoys.ndjson')}`)

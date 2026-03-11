@@ -1,9 +1,9 @@
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, realpathSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { DatabaseSync } from 'node:sqlite'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { createConvoyStore } from './store.js'
+import { createConvoyStore, migrateSchema, FieldSizeLimitError } from './store.js'
 import type { ConvoyStore } from './store.js'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
@@ -13,7 +13,7 @@ let dbPath: string
 let store: ConvoyStore
 
 beforeEach(() => {
-  tmpDir = mkdtempSync(join(tmpdir(), 'convoy-test-'))
+  tmpDir = realpathSync(mkdtempSync(join(tmpdir(), 'convoy-test-')))
   dbPath = join(tmpDir, 'test.db')
   store = createConvoyStore(dbPath)
 })
@@ -52,8 +52,9 @@ function makeTask(overrides: Partial<Parameters<ConvoyStore['insertTask']>[0]> =
     max_retries: 1,
     files: null,
     depends_on: null,
+    gates: null as string | null,
     ...overrides,
-  }
+  } as Parameters<ConvoyStore['insertTask']>[0]
 }
 
 function makeWorker(overrides: Partial<Parameters<ConvoyStore['insertWorker']>[0]> = {}) {
@@ -98,11 +99,11 @@ describe('DB creation', () => {
     expect(row.journal_mode).toBe('wal')
   })
 
-  it('sets schema version to 4', () => {
+  it('sets schema version to 9', () => {
     const db = new DatabaseSync(dbPath)
     const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
     db.close()
-    expect(row.user_version).toBe(4)
+    expect(row.user_version).toBe(9)
   })
 
   it('creates all required tables', () => {
@@ -117,6 +118,8 @@ describe('DB creation', () => {
     expect(names).toContain('worker')
     expect(names).toContain('event')
     expect(names).toContain('pipeline')
+    expect(names).toContain('artifact')
+    expect(names).toContain('agent_identity')
   })
 
   it('reopening an existing DB does not reset schema version', () => {
@@ -128,11 +131,9 @@ describe('DB creation', () => {
     store2.close()
     // Reassign so afterEach does not double-close
     store = createConvoyStore(dbPath)
-    expect(row.user_version).toBe(4)
+    expect(row.user_version).toBe(9)
   })
 })
-
-// ── schema migration ─────────────────────────────────────────────────────────
 
 describe('schema migration', () => {
   it('schema migration v1 to v2 adds adapter column', () => {
@@ -207,8 +208,8 @@ describe('schema migration', () => {
     verifyDb.close()
 
     expect(cols.map(c => c.name)).toContain('adapter')
-    // v1 chains through v2→v3→v4 in one init, so final version is 4
-    expect(version.user_version).toBe(4)
+    // v1 chains through v2→v3→v4→...→v7→v8→v9 in one init, so final version is 9
+    expect(version.user_version).toBe(9)
   })
 
   it('schema migration v2 to v3 adds cost columns', () => {
@@ -294,7 +295,7 @@ describe('schema migration', () => {
     expect(convoyColNames).toContain('total_tokens')
     expect(convoyColNames).toContain('total_cost_usd')
 
-    expect(version.user_version).toBe(4)
+    expect(version.user_version).toBe(9)
   })
 
   it('schema migration v1 to v3 chains correctly in a single init', () => {
@@ -380,7 +381,7 @@ describe('schema migration', () => {
     expect(convoyColNames).toContain('total_tokens')
     expect(convoyColNames).toContain('total_cost_usd')
 
-    expect(version.user_version).toBe(4)
+    expect(version.user_version).toBe(9)
   })
 
   it('schema migration v3 to v4 creates pipeline table and adds pipeline_id to convoy', () => {
@@ -463,7 +464,7 @@ describe('schema migration', () => {
 
     expect(convoyCols.map(c => c.name)).toContain('pipeline_id')
     expect(tables.map(t => t.name)).toContain('pipeline')
-    expect(version.user_version).toBe(4)
+    expect(version.user_version).toBe(9)
   })
 })
 
@@ -976,5 +977,1502 @@ describe('close', () => {
   it('closes without error when DB is open', () => {
     const freshStore = createConvoyStore(join(tmpDir, 'fresh.db'))
     expect(() => freshStore.close()).not.toThrow()
+  })
+})
+
+// ── v4 schema helper ──────────────────────────────────────────────────────────
+
+function createV4Db(path: string): DatabaseSync {
+  const db = new DatabaseSync(path)
+  db.exec(`
+    CREATE TABLE convoy (
+      id          TEXT PRIMARY KEY,
+      name        TEXT NOT NULL,
+      spec_hash   TEXT NOT NULL,
+      status      TEXT NOT NULL DEFAULT 'pending',
+      branch      TEXT,
+      created_at  TEXT NOT NULL,
+      started_at  TEXT,
+      finished_at    TEXT,
+      spec_yaml      TEXT NOT NULL,
+      total_tokens   INTEGER,
+      total_cost_usd TEXT,
+      pipeline_id    TEXT
+    );
+    CREATE TABLE pipeline (
+      id              TEXT PRIMARY KEY,
+      name            TEXT NOT NULL,
+      status          TEXT NOT NULL DEFAULT 'pending',
+      branch          TEXT,
+      spec_yaml       TEXT NOT NULL,
+      convoy_specs    TEXT NOT NULL,
+      created_at      TEXT NOT NULL,
+      started_at      TEXT,
+      finished_at     TEXT,
+      total_tokens    INTEGER,
+      total_cost_usd  TEXT
+    );
+    CREATE TABLE task (
+      id          TEXT PRIMARY KEY,
+      convoy_id   TEXT NOT NULL REFERENCES convoy(id),
+      phase       INTEGER NOT NULL,
+      prompt      TEXT NOT NULL,
+      agent       TEXT NOT NULL DEFAULT 'developer',
+      adapter     TEXT,
+      model       TEXT,
+      timeout_ms  INTEGER NOT NULL DEFAULT 1800000,
+      status      TEXT NOT NULL DEFAULT 'pending',
+      worker_id   TEXT,
+      worktree    TEXT,
+      output      TEXT,
+      exit_code   INTEGER,
+      started_at  TEXT,
+      finished_at TEXT,
+      retries           INTEGER NOT NULL DEFAULT 0,
+      max_retries       INTEGER NOT NULL DEFAULT 1,
+      files             TEXT,
+      depends_on        TEXT,
+      prompt_tokens     INTEGER,
+      completion_tokens INTEGER,
+      total_tokens      INTEGER,
+      cost_usd          TEXT
+    );
+    CREATE TABLE worker (
+      id             TEXT PRIMARY KEY,
+      task_id        TEXT REFERENCES task(id),
+      adapter        TEXT NOT NULL,
+      pid            INTEGER,
+      session_id     TEXT,
+      status         TEXT NOT NULL DEFAULT 'spawned',
+      worktree       TEXT,
+      created_at     TEXT NOT NULL,
+      finished_at    TEXT,
+      last_heartbeat TEXT
+    );
+    CREATE TABLE event (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      convoy_id  TEXT REFERENCES convoy(id),
+      task_id    TEXT,
+      worker_id  TEXT,
+      type       TEXT NOT NULL,
+      data       TEXT,
+      created_at TEXT NOT NULL
+    );
+  `)
+  db.exec('PRAGMA user_version = 4')
+  return db
+}
+
+// ── schema migration v4 → v5 ──────────────────────────────────────────────────
+
+describe('schema migration v4 → v5', () => {
+  it('happy path: migrates from v4 to v5 and sets user_version to 5', () => {
+    const v4DbPath = join(tmpDir, 'v4-happy.db')
+    const db = createV4Db(v4DbPath)
+    migrateSchema(db, v4DbPath, 4, 5)
+    const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
+    db.close()
+    expect(row.user_version).toBe(5)
+  })
+
+  it('new task columns exist after migration', () => {
+    const v4DbPath = join(tmpDir, 'v4-task-cols.db')
+    const db = createV4Db(v4DbPath)
+    migrateSchema(db, v4DbPath, 4, 5)
+    const cols = db.prepare('PRAGMA table_info(task)').all() as Array<{ name: string }>
+    db.close()
+    const names = cols.map(c => c.name)
+    expect(names).toContain('gates')
+    expect(names).toContain('on_exhausted')
+    expect(names).toContain('injected')
+    expect(names).toContain('provenance')
+    expect(names).toContain('idempotency_key')
+  })
+
+  it('circuit_state column exists on convoy after migration', () => {
+    const v4DbPath = join(tmpDir, 'v4-convoy-col.db')
+    const db = createV4Db(v4DbPath)
+    migrateSchema(db, v4DbPath, 4, 5)
+    const cols = db.prepare('PRAGMA table_info(convoy)').all() as Array<{ name: string }>
+    db.close()
+    expect(cols.map(c => c.name)).toContain('circuit_state')
+  })
+
+  it('dlq table created with correct columns after migration', () => {
+    const v4DbPath = join(tmpDir, 'v4-dlq.db')
+    const db = createV4Db(v4DbPath)
+    migrateSchema(db, v4DbPath, 4, 5)
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all() as Array<{ name: string }>
+    const dlqCols = db.prepare('PRAGMA table_info(dlq)').all() as Array<{ name: string }>
+    db.close()
+    expect(tables.map(t => t.name)).toContain('dlq')
+    const colNames = dlqCols.map(c => c.name)
+    expect(colNames).toContain('id')
+    expect(colNames).toContain('convoy_id')
+    expect(colNames).toContain('task_id')
+    expect(colNames).toContain('agent')
+    expect(colNames).toContain('failure_type')
+    expect(colNames).toContain('error_output')
+    expect(colNames).toContain('attempts')
+    expect(colNames).toContain('tokens_spent')
+    expect(colNames).toContain('resolved')
+    expect(colNames).toContain('resolution')
+    expect(colNames).toContain('created_at')
+    expect(colNames).toContain('resolved_at')
+  })
+
+  it('idx_task_idempotency partial unique index created after migration', () => {
+    const v4DbPath = join(tmpDir, 'v4-index.db')
+    const db = createV4Db(v4DbPath)
+    migrateSchema(db, v4DbPath, 4, 5)
+    const indexes = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='index' AND name='idx_task_idempotency'")
+      .all() as Array<{ name: string }>
+    db.close()
+    expect(indexes).toHaveLength(1)
+    expect(indexes[0].name).toBe('idx_task_idempotency')
+  })
+
+  it('existing data intact after migration', () => {
+    const v4DbPath = join(tmpDir, 'v4-data.db')
+    const db = createV4Db(v4DbPath)
+    db.prepare(
+      `INSERT INTO convoy (id, name, spec_hash, status, branch, created_at, spec_yaml)
+       VALUES ('convoy-test', 'Test', 'hash', 'pending', NULL, '2026-01-01T00:00:00.000Z', 'name: test')`
+    ).run()
+    db.prepare(
+      `INSERT INTO task (id, convoy_id, phase, prompt, agent, timeout_ms, status, retries, max_retries)
+       VALUES ('task-test', 'convoy-test', 0, 'Do something', 'developer', 1800000, 'pending', 0, 1)`
+    ).run()
+    migrateSchema(db, v4DbPath, 4, 5)
+    const convoyCount = db.prepare('SELECT COUNT(*) as cnt FROM convoy').get() as { cnt: number }
+    const taskCount = db.prepare('SELECT COUNT(*) as cnt FROM task').get() as { cnt: number }
+    const convoy = db.prepare('SELECT id FROM convoy WHERE id = :id').get({ id: 'convoy-test' }) as { id: string }
+    db.close()
+    expect(convoyCount.cnt).toBe(1)
+    expect(taskCount.cnt).toBe(1)
+    expect(convoy.id).toBe('convoy-test')
+  })
+
+  it('backup file created before migration', () => {
+    const v4DbPath = join(tmpDir, 'v4-backup.db')
+    const db = createV4Db(v4DbPath)
+    migrateSchema(db, v4DbPath, 4, 5)
+    db.close()
+    expect(existsSync(`${v4DbPath}.v4.bak`)).toBe(true)
+  })
+
+  it('failure mode: rolls back on error, version stays at 4 and backup exists', () => {
+    const v4DbPath = join(tmpDir, 'v4-fail.db')
+    const db = createV4Db(v4DbPath)
+    // Pre-add gates column so the first ALTER in migration will fail with duplicate column
+    db.exec('ALTER TABLE task ADD COLUMN gates TEXT')
+    expect(() => migrateSchema(db, v4DbPath, 4, 5)).toThrow()
+    const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
+    expect(row.user_version).toBe(4)
+    expect(existsSync(`${v4DbPath}.v4.bak`)).toBe(true)
+    db.close()
+  })
+
+  it('rolls back and preserves backup on mid-migration failure', () => {
+    const v4Path = join(tmpDir, 'v4-fail-rb.db')
+    const v4db = createV4Db(v4Path)
+    // Insert a test row to verify data integrity after rollback
+    v4db
+      .prepare(
+        "INSERT INTO convoy (id, name, spec_hash, status, created_at, spec_yaml) VALUES ('test-c', 'Test', 'hash', 'pending', '2026-01-01', 'yaml')",
+      )
+      .run()
+    // Sabotage: add a column that migration v4→v5 will try to add, causing it to fail
+    v4db.exec('ALTER TABLE task ADD COLUMN gates TEXT')
+
+    // Attempt migration — should fail because 'gates' column already exists
+    expect(() => migrateSchema(v4db, v4Path, 4, 5)).toThrow(/Migration v4→v5 failed/)
+
+    // Verify: user_version unchanged (still 4)
+    const version = (
+      v4db.prepare('PRAGMA user_version').get() as { user_version: number }
+    ).user_version
+    expect(version).toBe(4)
+
+    // Verify: backup file exists and is a valid SQLite database
+    const backupPath = `${v4Path}.v4.bak`
+    expect(existsSync(backupPath)).toBe(true)
+
+    const backupDb = new DatabaseSync(backupPath)
+    const backupRow = backupDb
+      .prepare("SELECT id FROM convoy WHERE id = 'test-c'")
+      .get() as { id: string } | undefined
+    expect(backupRow?.id).toBe('test-c')
+    backupDb.close()
+
+    // Verify: original data intact in main DB (rollback preserved it)
+    const origRow = v4db
+      .prepare("SELECT id FROM convoy WHERE id = 'test-c'")
+      .get() as { id: string } | undefined
+    expect(origRow?.id).toBe('test-c')
+
+    v4db.close()
+  })
+})
+
+// ── helper: build a v5 database ───────────────────────────────────────────────
+
+function createV5Db(path: string): DatabaseSync {
+  // v5 = v4 schema + gates/on_exhausted/injected/provenance/idempotency_key on task
+  //       + circuit_state on convoy + dlq table
+  const db = new DatabaseSync(path)
+  db.exec(`
+    CREATE TABLE convoy (
+      id              TEXT PRIMARY KEY,
+      name            TEXT NOT NULL,
+      spec_hash       TEXT NOT NULL,
+      status          TEXT NOT NULL DEFAULT 'pending',
+      branch          TEXT,
+      created_at      TEXT NOT NULL,
+      started_at      TEXT,
+      finished_at     TEXT,
+      spec_yaml       TEXT NOT NULL,
+      total_tokens    INTEGER,
+      total_cost_usd  TEXT,
+      pipeline_id     TEXT,
+      circuit_state   TEXT
+    );
+    CREATE TABLE pipeline (
+      id              TEXT PRIMARY KEY,
+      name            TEXT NOT NULL,
+      status          TEXT NOT NULL DEFAULT 'pending',
+      branch          TEXT,
+      spec_yaml       TEXT NOT NULL,
+      convoy_specs    TEXT NOT NULL,
+      created_at      TEXT NOT NULL,
+      started_at      TEXT,
+      finished_at     TEXT,
+      total_tokens    INTEGER,
+      total_cost_usd  TEXT
+    );
+    CREATE TABLE task (
+      id                TEXT PRIMARY KEY,
+      convoy_id         TEXT NOT NULL REFERENCES convoy(id),
+      phase             INTEGER NOT NULL,
+      prompt            TEXT NOT NULL,
+      agent             TEXT NOT NULL DEFAULT 'developer',
+      adapter           TEXT,
+      model             TEXT,
+      timeout_ms        INTEGER NOT NULL DEFAULT 1800000,
+      status            TEXT NOT NULL DEFAULT 'pending',
+      worker_id         TEXT,
+      worktree          TEXT,
+      output            TEXT,
+      exit_code         INTEGER,
+      started_at        TEXT,
+      finished_at       TEXT,
+      retries           INTEGER NOT NULL DEFAULT 0,
+      max_retries       INTEGER NOT NULL DEFAULT 1,
+      files             TEXT,
+      depends_on        TEXT,
+      prompt_tokens     INTEGER,
+      completion_tokens INTEGER,
+      total_tokens      INTEGER,
+      cost_usd          TEXT,
+      gates             TEXT,
+      on_exhausted      TEXT NOT NULL DEFAULT 'dlq',
+      injected          INTEGER NOT NULL DEFAULT 0,
+      provenance        TEXT,
+      idempotency_key   TEXT
+    );
+    CREATE UNIQUE INDEX idx_task_idempotency ON task(convoy_id, idempotency_key)
+      WHERE idempotency_key IS NOT NULL;
+    CREATE TABLE worker (
+      id             TEXT PRIMARY KEY,
+      task_id        TEXT REFERENCES task(id),
+      adapter        TEXT NOT NULL,
+      pid            INTEGER,
+      session_id     TEXT,
+      status         TEXT NOT NULL DEFAULT 'spawned',
+      worktree       TEXT,
+      created_at     TEXT NOT NULL,
+      finished_at    TEXT,
+      last_heartbeat TEXT
+    );
+    CREATE TABLE event (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      convoy_id  TEXT REFERENCES convoy(id),
+      task_id    TEXT,
+      worker_id  TEXT,
+      type       TEXT NOT NULL,
+      data       TEXT,
+      created_at TEXT NOT NULL
+    );
+    CREATE TABLE dlq (
+      id                TEXT PRIMARY KEY,
+      convoy_id         TEXT NOT NULL REFERENCES convoy(id),
+      task_id           TEXT NOT NULL REFERENCES task(id),
+      agent             TEXT NOT NULL,
+      failure_type      TEXT NOT NULL,
+      error_output      TEXT,
+      attempts          INTEGER NOT NULL,
+      tokens_spent      INTEGER,
+      escalation_task_id TEXT,
+      resolved          INTEGER NOT NULL DEFAULT 0,
+      resolution        TEXT,
+      created_at        TEXT NOT NULL,
+      resolved_at       TEXT
+    );
+  `)
+  db.exec('PRAGMA user_version = 5')
+  return db
+}
+
+// ── schema migration v5 → v6 ──────────────────────────────────────────────────
+
+describe('schema migration v5 → v6', () => {
+  it('happy path: migrates from v5 to v6 and sets user_version to 6', () => {
+    const v5DbPath = join(tmpDir, 'v5-happy.db')
+    const db = createV5Db(v5DbPath)
+    migrateSchema(db, v5DbPath, 5, 6)
+    const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
+    db.close()
+    expect(row.user_version).toBe(6)
+  })
+
+  it('task_step table created with correct columns after migration', () => {
+    const v5DbPath = join(tmpDir, 'v5-task-step.db')
+    const db = createV5Db(v5DbPath)
+    migrateSchema(db, v5DbPath, 5, 6)
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all() as Array<{ name: string }>
+    const stepCols = db.prepare('PRAGMA table_info(task_step)').all() as Array<{ name: string }>
+    db.close()
+    expect(tables.map(t => t.name)).toContain('task_step')
+    const colNames = stepCols.map(c => c.name)
+    expect(colNames).toContain('id')
+    expect(colNames).toContain('task_id')
+    expect(colNames).toContain('step_index')
+    expect(colNames).toContain('prompt')
+    expect(colNames).toContain('gates')
+    expect(colNames).toContain('status')
+    expect(colNames).toContain('exit_code')
+    expect(colNames).toContain('output')
+    expect(colNames).toContain('started_at')
+    expect(colNames).toContain('finished_at')
+  })
+
+  it('new task columns added after migration', () => {
+    const v5DbPath = join(tmpDir, 'v5-task-cols.db')
+    const db = createV5Db(v5DbPath)
+    migrateSchema(db, v5DbPath, 5, 6)
+    const cols = db.prepare('PRAGMA table_info(task)').all() as Array<{ name: string }>
+    db.close()
+    const names = cols.map(c => c.name)
+    expect(names).toContain('current_step')
+    expect(names).toContain('total_steps')
+    expect(names).toContain('review_level')
+    expect(names).toContain('review_verdict')
+    expect(names).toContain('review_tokens')
+    expect(names).toContain('review_model')
+    expect(names).toContain('panel_attempts')
+    expect(names).toContain('dispute_id')
+  })
+
+  it('new convoy columns added after migration', () => {
+    const v5DbPath = join(tmpDir, 'v5-convoy-cols.db')
+    const db = createV5Db(v5DbPath)
+    migrateSchema(db, v5DbPath, 5, 6)
+    const cols = db.prepare('PRAGMA table_info(convoy)').all() as Array<{ name: string }>
+    db.close()
+    const names = cols.map(c => c.name)
+    expect(names).toContain('review_tokens_total')
+    expect(names).toContain('review_budget')
+  })
+
+  it('existing data survives migration intact', () => {
+    const v5DbPath = join(tmpDir, 'v5-data.db')
+    const db = createV5Db(v5DbPath)
+    db.prepare(
+      `INSERT INTO convoy (id, name, spec_hash, status, branch, created_at, spec_yaml)
+       VALUES ('convoy-v5', 'Test V5', 'hash5', 'pending', NULL, '2026-01-01T00:00:00.000Z', 'name: test')`,
+    ).run()
+    db.prepare(
+      `INSERT INTO task (id, convoy_id, phase, prompt, agent, timeout_ms, status, retries, max_retries)
+       VALUES ('task-v5', 'convoy-v5', 0, 'Do something', 'developer', 1800000, 'pending', 0, 1)`,
+    ).run()
+    migrateSchema(db, v5DbPath, 5, 6)
+    const convoyCount = db.prepare('SELECT COUNT(*) as cnt FROM convoy').get() as { cnt: number }
+    const taskCount = db.prepare('SELECT COUNT(*) as cnt FROM task').get() as { cnt: number }
+    const convoy = db.prepare('SELECT id FROM convoy WHERE id = :id').get({ id: 'convoy-v5' }) as { id: string }
+    const task = db.prepare('SELECT id FROM task WHERE id = :id').get({ id: 'task-v5' }) as { id: string }
+    db.close()
+    expect(convoyCount.cnt).toBe(1)
+    expect(taskCount.cnt).toBe(1)
+    expect(convoy.id).toBe('convoy-v5')
+    expect(task.id).toBe('task-v5')
+  })
+
+  it('backup file created before migration', () => {
+    const v5DbPath = join(tmpDir, 'v5-backup.db')
+    const db = createV5Db(v5DbPath)
+    migrateSchema(db, v5DbPath, 5, 6)
+    db.close()
+    expect(existsSync(`${v5DbPath}.v5.bak`)).toBe(true)
+  })
+
+  it('createConvoyStore on v5 database auto-migrates to v6', () => {
+    const v5DbPath = join(tmpDir, 'v5-auto.db')
+    const v5Db = createV5Db(v5DbPath)
+    v5Db.prepare(
+      `INSERT INTO convoy (id, name, spec_hash, status, branch, created_at, spec_yaml)
+       VALUES ('convoy-auto', 'Auto', 'hash', 'pending', NULL, '2026-01-01T00:00:00.000Z', 'name: auto')`,
+    ).run()
+    v5Db.prepare(
+      `INSERT INTO task (id, convoy_id, phase, prompt, agent, timeout_ms, status, retries, max_retries)
+       VALUES ('task-auto', 'convoy-auto', 0, 'Do it', 'developer', 1800000, 'pending', 0, 1)`,
+    ).run()
+    v5Db.close()
+
+    const migratedStore = createConvoyStore(v5DbPath)
+    const v5Verify = new DatabaseSync(v5DbPath)
+    const row = v5Verify.prepare('PRAGMA user_version').get() as { user_version: number }
+    const taskStepTable = v5Verify.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='task_step'",
+    ).get() as { name: string } | undefined
+    const convoy = migratedStore.getConvoy('convoy-auto')
+    const task = migratedStore.getTask('task-auto', 'convoy-auto')
+    v5Verify.close()
+    migratedStore.close()
+
+    expect(row.user_version).toBe(9)
+    expect(taskStepTable?.name).toBe('task_step')
+    expect(convoy?.id).toBe('convoy-auto')
+    expect(task?.id).toBe('task-auto')
+  })
+
+  it('failure mode: rolls back on error and version stays at 5', () => {
+    const v5DbPath = join(tmpDir, 'v5-fail.db')
+    const db = createV5Db(v5DbPath)
+    // Pre-add current_step to trigger duplicate column error
+    db.exec('ALTER TABLE task ADD COLUMN current_step INTEGER')
+    expect(() => migrateSchema(db, v5DbPath, 5, 6)).toThrow()
+    const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
+    expect(row.user_version).toBe(5)
+    expect(existsSync(`${v5DbPath}.v5.bak`)).toBe(true)
+    db.close()
+  })
+})
+
+// ── updateTaskReview ──────────────────────────────────────────────────────────
+
+describe('updateTaskReview', () => {
+  beforeEach(() => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+  })
+
+  it('persists review_level and review_verdict', () => {
+    store.updateTaskReview('task-1', 'convoy-1', {
+      review_level: 'fast',
+      review_verdict: 'pass',
+    })
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.review_level).toBe('fast')
+    expect(task.review_verdict).toBe('pass')
+  })
+
+  it('persists review_tokens and review_model', () => {
+    store.updateTaskReview('task-1', 'convoy-1', {
+      review_tokens: 123,
+      review_model: 'gpt-4',
+    })
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.review_tokens).toBe(123)
+    expect(task.review_model).toBe('gpt-4')
+  })
+
+  it('increments panel_attempts correctly', () => {
+    store.updateTaskReview('task-1', 'convoy-1', { panel_attempts: 1 })
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.panel_attempts).toBe(1)
+  })
+
+  it('persists dispute_id', () => {
+    store.updateTaskReview('task-1', 'convoy-1', { dispute_id: 'dispute-42' })
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.dispute_id).toBe('dispute-42')
+  })
+
+  it('is a no-op when updates is empty', () => {
+    store.updateTaskReview('task-1', 'convoy-1', {})
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.review_level).toBeNull()
+  })
+
+  it('does not throw for non-existent task', () => {
+    expect(() => store.updateTaskReview('ghost', 'convoy-1', { review_level: 'fast' })).not.toThrow()
+  })
+})
+
+// ── updateConvoyReviewTokens ──────────────────────────────────────────────────
+
+describe('updateConvoyReviewTokens', () => {
+  beforeEach(() => {
+    store.insertConvoy(makeConvoy())
+  })
+
+  it('sets review_tokens_total on the convoy', () => {
+    store.updateConvoyReviewTokens('convoy-1', 500)
+    const convoy = store.getConvoy('convoy-1')!
+    expect(convoy.review_tokens_total).toBe(500)
+  })
+
+  it('overwrites with updated total on subsequent calls', () => {
+    store.updateConvoyReviewTokens('convoy-1', 100)
+    store.updateConvoyReviewTokens('convoy-1', 350)
+    const convoy = store.getConvoy('convoy-1')!
+    expect(convoy.review_tokens_total).toBe(350)
+  })
+
+  it('review_tokens_total starts as null before any call', () => {
+    const convoy = store.getConvoy('convoy-1')!
+    expect(convoy.review_tokens_total).toBeNull()
+  })
+})
+
+// ── schema migration v6→v7 ────────────────────────────────────────────────────
+
+describe('schema migration v6→v7 (drift detection columns)', () => {
+  function createV6Db(dbPath: string) {
+    const db = new DatabaseSync(dbPath)
+    db.exec(`
+      CREATE TABLE convoy (
+        id TEXT PRIMARY KEY, name TEXT NOT NULL, spec_hash TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending', branch TEXT, created_at TEXT NOT NULL,
+        started_at TEXT, finished_at TEXT, spec_yaml TEXT NOT NULL,
+        total_tokens INTEGER, total_cost_usd TEXT, pipeline_id TEXT,
+        circuit_state TEXT, review_tokens_total INTEGER, review_budget INTEGER
+      );
+      CREATE TABLE task (
+        id TEXT PRIMARY KEY, convoy_id TEXT NOT NULL, phase INTEGER NOT NULL,
+        prompt TEXT NOT NULL, agent TEXT NOT NULL DEFAULT 'developer', adapter TEXT,
+        model TEXT, timeout_ms INTEGER NOT NULL DEFAULT 1800000,
+        status TEXT NOT NULL DEFAULT 'pending', worker_id TEXT, worktree TEXT,
+        output TEXT, exit_code INTEGER, started_at TEXT, finished_at TEXT,
+        retries INTEGER NOT NULL DEFAULT 0, max_retries INTEGER NOT NULL DEFAULT 1,
+        files TEXT, depends_on TEXT, prompt_tokens INTEGER, completion_tokens INTEGER,
+        total_tokens INTEGER, cost_usd TEXT, gates TEXT,
+        on_exhausted TEXT NOT NULL DEFAULT 'dlq', injected INTEGER NOT NULL DEFAULT 0,
+        provenance TEXT, idempotency_key TEXT, current_step INTEGER, total_steps INTEGER,
+        review_level TEXT, review_verdict TEXT, review_tokens INTEGER, review_model TEXT,
+        panel_attempts INTEGER NOT NULL DEFAULT 0, dispute_id TEXT
+      );
+      CREATE TABLE worker (
+        id TEXT PRIMARY KEY, task_id TEXT, adapter TEXT NOT NULL, pid INTEGER,
+        session_id TEXT, status TEXT NOT NULL DEFAULT 'spawned', worktree TEXT,
+        created_at TEXT NOT NULL, finished_at TEXT, last_heartbeat TEXT
+      );
+      CREATE TABLE event (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, convoy_id TEXT, task_id TEXT,
+        worker_id TEXT, type TEXT NOT NULL, data TEXT, created_at TEXT NOT NULL
+      );
+      CREATE TABLE task_step (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL, step_index INTEGER NOT NULL,
+        prompt TEXT NOT NULL, gates TEXT, status TEXT NOT NULL DEFAULT 'pending',
+        exit_code INTEGER, output TEXT, started_at TEXT, finished_at TEXT
+      );
+      CREATE TABLE dlq (
+        id TEXT PRIMARY KEY, convoy_id TEXT NOT NULL, task_id TEXT NOT NULL,
+        agent TEXT NOT NULL, failure_type TEXT NOT NULL, error_output TEXT,
+        attempts INTEGER NOT NULL, tokens_spent INTEGER, escalation_task_id TEXT,
+        resolved INTEGER NOT NULL DEFAULT 0, resolution TEXT, created_at TEXT NOT NULL,
+        resolved_at TEXT
+      );
+      CREATE TABLE pipeline (
+        id TEXT PRIMARY KEY, name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending',
+        branch TEXT, spec_yaml TEXT NOT NULL, convoy_specs TEXT NOT NULL,
+        created_at TEXT NOT NULL, started_at TEXT, finished_at TEXT,
+        total_tokens INTEGER, total_cost_usd TEXT
+      );
+    `)
+    db.exec('PRAGMA user_version = 6')
+    return db
+  }
+
+  it('migration v6→v7 adds drift_score and drift_retried columns to task table', () => {
+    const v6DbPath = join(tmpDir, 'v6.db')
+    const db = createV6Db(v6DbPath)
+    db.close()
+
+    const migratedStore = createConvoyStore(v6DbPath)
+    migratedStore.close()
+
+    const verifyDb = new DatabaseSync(v6DbPath)
+    const cols = verifyDb.prepare('PRAGMA table_info(task)').all() as Array<{ name: string }>
+    const version = verifyDb.prepare('PRAGMA user_version').get() as { user_version: number }
+    verifyDb.close()
+
+    expect(cols.map(c => c.name)).toContain('drift_score')
+    expect(cols.map(c => c.name)).toContain('drift_retried')
+    expect(version.user_version).toBe(9)
+  })
+
+  it('new databases include drift_score and drift_retried in CREATE TABLE', () => {
+    const cols = new DatabaseSync(dbPath)
+      .prepare('PRAGMA table_info(task)')
+      .all() as Array<{ name: string; dflt_value: string | null; notnull: number }>
+    const driftScore = cols.find(c => c.name === 'drift_score')
+    const driftRetried = cols.find(c => c.name === 'drift_retried')
+    expect(driftScore).toBeDefined()
+    expect(driftRetried).toBeDefined()
+  })
+
+  it('failure mode: rolls back on error, version stays at 6 and backup exists', () => {
+    const v6DbPath = join(tmpDir, 'v6-fail.db')
+    const db = createV6Db(v6DbPath)
+    // Pre-add drift_score to cause duplicate column error on migration
+    db.exec('ALTER TABLE task ADD COLUMN drift_score REAL')
+    expect(() => migrateSchema(db, v6DbPath, 6, 7)).toThrow()
+    const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
+    expect(row.user_version).toBe(6)
+    expect(existsSync(`${v6DbPath}.v6.bak`)).toBe(true)
+    db.close()
+  })
+})
+
+// ── updateTaskDrift ───────────────────────────────────────────────────────────
+
+describe('updateTaskDrift', () => {
+  beforeEach(() => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+  })
+
+  it('sets drift_score on the task', () => {
+    store.updateTaskDrift('task-1', 'convoy-1', { drift_score: 0.72 })
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.drift_score).toBeCloseTo(0.72)
+  })
+
+  it('sets drift_retried on the task', () => {
+    store.updateTaskDrift('task-1', 'convoy-1', { drift_retried: 1 })
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.drift_retried).toBe(1)
+  })
+
+  it('updates both fields at once', () => {
+    store.updateTaskDrift('task-1', 'convoy-1', { drift_score: 0.4, drift_retried: 1 })
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.drift_score).toBeCloseTo(0.4)
+    expect(task.drift_retried).toBe(1)
+  })
+
+  it('no-op when called with empty updates', () => {
+    const before = store.getTask('task-1', 'convoy-1')!
+    expect(() => store.updateTaskDrift('task-1', 'convoy-1', {})).not.toThrow()
+    const after = store.getTask('task-1', 'convoy-1')!
+    expect(after.drift_score).toBe(before.drift_score)
+  })
+
+  it('drift_score and drift_retried start at NULL/0 for new tasks', () => {
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.drift_score).toBeNull()
+    expect(task.drift_retried).toBe(0)
+  })
+})
+
+// ── updateTaskDisputeStatus ───────────────────────────────────────────────────
+
+describe('updateTaskDisputeStatus', () => {
+  beforeEach(() => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+  })
+
+  it('sets task status to disputed', () => {
+    store.updateTaskDisputeStatus('task-1', 'convoy-1', 'disputed', 'dispute-task-1-123')
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.status).toBe('disputed')
+  })
+
+  it('sets dispute_id on the task', () => {
+    store.updateTaskDisputeStatus('task-1', 'convoy-1', 'disputed', 'dispute-task-1-123')
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.dispute_id).toBe('dispute-task-1-123')
+  })
+
+  it('is idempotent when called twice with same dispute_id', () => {
+    store.updateTaskDisputeStatus('task-1', 'convoy-1', 'disputed', 'dispute-task-1-abc')
+    store.updateTaskDisputeStatus('task-1', 'convoy-1', 'disputed', 'dispute-task-1-abc')
+    const task = store.getTask('task-1', 'convoy-1')!
+    expect(task.status).toBe('disputed')
+    expect(task.dispute_id).toBe('dispute-task-1-abc')
+  })
+})
+
+// ── Artifact CRUD ──────────────────────────────────────────────────────────────
+
+describe('artifact CRUD', () => {
+  it('inserts and retrieves an artifact', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+    store.insertArtifact({
+      id: 'art-1',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      name: 'migration-sql',
+      type: 'file',
+      content: 'CREATE TABLE foo (id INT);',
+      created_at: new Date().toISOString(),
+    })
+    const art = store.getArtifact('convoy-1', 'migration-sql')
+    expect(art).toBeDefined()
+    expect(art!.name).toBe('migration-sql')
+    expect(art!.content).toBe('CREATE TABLE foo (id INT);')
+  })
+
+  it('enforces unique artifact name per convoy', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+    store.insertArtifact({
+      id: 'art-1',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      name: 'dup-name',
+      type: 'file',
+      content: 'first',
+      created_at: new Date().toISOString(),
+    })
+    expect(() => store.insertArtifact({
+      id: 'art-2',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      name: 'dup-name',
+      type: 'file',
+      content: 'second',
+      created_at: new Date().toISOString(),
+    })).toThrow()
+  })
+
+  it('enforces max 50 artifacts per convoy', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+    for (let i = 0; i < 50; i++) {
+      store.insertArtifact({
+        id: `art-${i}`,
+        convoy_id: 'convoy-1',
+        task_id: 'task-1',
+        name: `artifact-${i}`,
+        type: 'summary',
+        content: `content-${i}`,
+        created_at: new Date().toISOString(),
+      })
+    }
+    expect(() => store.insertArtifact({
+      id: 'art-51',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      name: 'artifact-50',
+      type: 'summary',
+      content: 'over limit',
+      created_at: new Date().toISOString(),
+    })).toThrow(/maximum of 50 artifacts/)
+  })
+
+  it('retrieves artifacts by task', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+    store.insertArtifact({
+      id: 'art-1',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      name: 'a',
+      type: 'file',
+      content: 'file content',
+      created_at: new Date().toISOString(),
+    })
+    const arts = store.getArtifactsByTask('task-1')
+    expect(arts).toHaveLength(1)
+  })
+
+  it('deletes artifacts older than N days', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+    store.insertArtifact({
+      id: 'art-old',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      name: 'old-artifact',
+      type: 'summary',
+      content: 'old',
+      created_at: new Date().toISOString(),
+    })
+    // Mark convoy as done with a finished_at in the past
+    store.updateConvoyStatus('convoy-1', 'done', {
+      finished_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+    })
+    const deleted = store.deleteArtifactsOlderThan(30)
+    expect(deleted).toBe(1)
+  })
+})
+
+// ── migration full chain v4→v9 ────────────────────────────────────────────────
+
+describe('migration full chain v4→v9', () => {
+  it('migrates a seeded v4 database to v9, preserving data and adding all tables/columns', () => {
+    const chainDbPath = join(tmpDir, 'v4-chain.db')
+    const v4Db = createV4Db(chainDbPath)
+    // Seed realistic v4 data
+    v4Db.prepare(
+      `INSERT INTO convoy (id, name, spec_hash, status, branch, created_at, spec_yaml)
+       VALUES ('convoy-chain', 'Chain Test', 'hash-chain', 'pending', NULL, '2026-01-01T00:00:00.000Z', 'name: chain')`,
+    ).run()
+    v4Db.prepare(
+      `INSERT INTO task (id, convoy_id, phase, prompt, agent, timeout_ms, status, retries, max_retries)
+       VALUES ('task-chain', 'convoy-chain', 0, 'Do chain work', 'developer', 1800000, 'pending', 0, 1)`,
+    ).run()
+    v4Db.prepare(
+      `INSERT INTO worker (id, task_id, adapter, status, created_at)
+       VALUES ('worker-chain', 'task-chain', 'vscode', 'spawned', '2026-01-01T00:00:00.000Z')`,
+    ).run()
+    v4Db.prepare(
+      `INSERT INTO event (convoy_id, task_id, type, created_at)
+       VALUES ('convoy-chain', 'task-chain', 'task_started', '2026-01-01T00:00:00.000Z')`,
+    ).run()
+    v4Db.close()
+
+    // Trigger the full v4→v9 migration chain
+    const migratedStore = createConvoyStore(chainDbPath)
+    migratedStore.close()
+
+    const verifyDb = new DatabaseSync(chainDbPath)
+
+    // Verify user_version = 9
+    const version = (verifyDb.prepare('PRAGMA user_version').get() as { user_version: number }).user_version
+    expect(version).toBe(9)
+
+    // Verify all new tables exist
+    const tables = (verifyDb.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as Array<{ name: string }>).map(t => t.name)
+    for (const table of ['task_step', 'dlq', 'artifact', 'agent_identity', 'scratchpad']) {
+      expect(tables).toContain(table)
+    }
+
+    // Verify all new columns on task
+    const taskCols = (verifyDb.prepare('PRAGMA table_info(task)').all() as Array<{ name: string }>).map(c => c.name)
+    for (const col of [
+      'gates', 'on_exhausted', 'injected', 'provenance', 'idempotency_key',
+      'current_step', 'total_steps', 'review_level', 'review_verdict', 'review_tokens',
+      'review_model', 'panel_attempts', 'dispute_id', 'drift_score', 'drift_retried',
+      'outputs', 'inputs', 'discovered_issues',
+    ]) {
+      expect(taskCols).toContain(col)
+    }
+
+    // Verify all new columns on convoy
+    const convoyCols = (verifyDb.prepare('PRAGMA table_info(convoy)').all() as Array<{ name: string }>).map(c => c.name)
+    for (const col of ['circuit_state', 'review_tokens_total', 'review_budget']) {
+      expect(convoyCols).toContain(col)
+    }
+
+    // Verify seed data is intact
+    const convoy = verifyDb.prepare('SELECT id FROM convoy WHERE id = :id').get({ id: 'convoy-chain' }) as { id: string } | undefined
+    expect(convoy?.id).toBe('convoy-chain')
+    const task = verifyDb.prepare('SELECT id FROM task WHERE id = :id').get({ id: 'task-chain' }) as { id: string } | undefined
+    expect(task?.id).toBe('task-chain')
+    const worker = verifyDb.prepare('SELECT id FROM worker WHERE id = :id').get({ id: 'worker-chain' }) as { id: string } | undefined
+    expect(worker?.id).toBe('worker-chain')
+    const eventCount = (verifyDb.prepare('SELECT COUNT(*) AS cnt FROM event WHERE convoy_id = :id').get({ id: 'convoy-chain' }) as { cnt: number }).cnt
+    expect(eventCount).toBe(1)
+
+    // Verify FK constraints work: insert a task_step referencing the seeded task_id
+    expect(() => {
+      verifyDb.prepare(
+        `INSERT INTO task_step (task_id, step_index, prompt, gates, status)
+         VALUES ('task-chain', 0, 'Step prompt', NULL, 'pending')`,
+      ).run()
+    }).not.toThrow()
+
+    verifyDb.close()
+  })
+})
+
+// ── Agent Identity ────────────────────────────────────────────────────────────
+
+describe('agent identity', () => {
+  it('inserts an agent identity record without error', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+    expect(() => store.insertAgentIdentity({
+      id: 'ai-1',
+      agent: 'developer',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      summary: 'Implemented the feature successfully',
+      created_at: new Date().toISOString(),
+      retention_days: 90,
+    })).not.toThrow()
+  })
+})
+
+describe('agent identity persistence', () => {
+  it('deleteAgentIdentitiesOlderThan removes expired identities', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+
+    const oldCreatedAt = new Date(Date.now() - 100 * 24 * 60 * 60 * 1000).toISOString()
+    const recentCreatedAt = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
+
+    store.insertAgentIdentity({
+      id: 'ai-old',
+      agent: 'Developer',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      summary: 'old identity',
+      created_at: oldCreatedAt,
+      retention_days: 90,
+    })
+    store.insertAgentIdentity({
+      id: 'ai-recent',
+      agent: 'Developer',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      summary: 'recent identity',
+      created_at: recentCreatedAt,
+      retention_days: 90,
+    })
+
+    const deleted = store.deleteAgentIdentitiesOlderThan(90)
+    expect(deleted).toBe(1)
+
+    const identities = store.getAgentIdentities('Developer', 10)
+    expect(identities).toHaveLength(1)
+    expect(identities[0].id).toBe('ai-recent')
+  })
+
+  it('deleteAgentIdentitiesOlderThan respects per-record retention_days', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+
+    const createdAt35DaysAgo = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000).toISOString()
+
+    store.insertAgentIdentity({
+      id: 'ai-30d',
+      agent: 'Developer',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      summary: 'expires early',
+      created_at: createdAt35DaysAgo,
+      retention_days: 30,
+    })
+    store.insertAgentIdentity({
+      id: 'ai-180d',
+      agent: 'Developer',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      summary: 'kept longer',
+      created_at: createdAt35DaysAgo,
+      retention_days: 180,
+    })
+
+    const deleted = store.deleteAgentIdentitiesOlderThan(90)
+    expect(deleted).toBe(1)
+
+    const identities = store.getAgentIdentities('Developer', 10)
+    const ids = identities.map((i) => i.id)
+    expect(ids).not.toContain('ai-30d')
+    expect(ids).toContain('ai-180d')
+  })
+
+  it('stores summaries up to 4096 characters', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+
+    const summary = 'x'.repeat(4096)
+    store.insertAgentIdentity({
+      id: 'ai-4kb',
+      agent: 'Developer',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      summary,
+      created_at: new Date().toISOString(),
+      retention_days: 90,
+    })
+
+    const identities = store.getAgentIdentities('Developer', 10)
+    expect(identities).toHaveLength(1)
+    expect(identities[0].summary).toBe(summary)
+    expect(identities[0].summary.length).toBe(4096)
+  })
+
+  it('listAgentIdentitySummary returns counts per agent', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+
+    for (let i = 0; i < 3; i++) {
+      store.insertAgentIdentity({
+        id: `ai-dev-${i}`,
+        agent: 'Developer',
+        convoy_id: 'convoy-1',
+        task_id: 'task-1',
+        summary: `dev-${i}`,
+        created_at: new Date(Date.now() + i).toISOString(),
+        retention_days: 90,
+      })
+    }
+
+    for (let i = 0; i < 2; i++) {
+      store.insertAgentIdentity({
+        id: `ai-rev-${i}`,
+        agent: 'Reviewer',
+        convoy_id: 'convoy-1',
+        task_id: 'task-1',
+        summary: `review-${i}`,
+        created_at: new Date(Date.now() + 10 + i).toISOString(),
+        retention_days: 90,
+      })
+    }
+
+    const summary = store.listAgentIdentitySummary()
+    const byAgent = Object.fromEntries(summary.map((row) => [row.agent, row]))
+
+    expect(byAgent.Developer).toBeDefined()
+    expect(byAgent.Developer.task_count).toBe(3)
+    expect(byAgent.Reviewer).toBeDefined()
+    expect(byAgent.Reviewer.task_count).toBe(2)
+  })
+
+  it('purgeAgentIdentities removes all identities for a specific agent', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+
+    store.insertAgentIdentity({
+      id: 'ai-dev-1',
+      agent: 'Developer',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      summary: 'dev one',
+      created_at: new Date().toISOString(),
+      retention_days: 90,
+    })
+    store.insertAgentIdentity({
+      id: 'ai-dev-2',
+      agent: 'Developer',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      summary: 'dev two',
+      created_at: new Date().toISOString(),
+      retention_days: 90,
+    })
+    store.insertAgentIdentity({
+      id: 'ai-rev-1',
+      agent: 'Reviewer',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      summary: 'review one',
+      created_at: new Date().toISOString(),
+      retention_days: 90,
+    })
+
+    const deleted = store.purgeAgentIdentities('Developer')
+    expect(deleted).toBe(2)
+    expect(store.getAgentIdentities('Developer', 10)).toHaveLength(0)
+    expect(store.getAgentIdentities('Reviewer', 10)).toHaveLength(1)
+  })
+
+  it('truncates summaries longer than 4096 characters to exactly 4096 chars', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+
+    const longSummary = 'a'.repeat(5000)
+    store.insertAgentIdentity({
+      id: 'ai-trunc',
+      agent: 'Developer',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      summary: longSummary,
+      created_at: new Date().toISOString(),
+      retention_days: 90,
+    })
+
+    const identities = store.getAgentIdentities('Developer', 10)
+    const stored = identities.find(i => i.id === 'ai-trunc')
+    expect(stored).toBeDefined()
+    expect(stored!.summary.length).toBe(4096)
+  })
+})
+
+// ── Schema v7→v8 migration ──────────────────────────────────────────────────
+
+function createV7Db(dbPath: string): DatabaseSync {
+  // v7 = v6 schema + drift_score/drift_retried columns on task (before outputs/inputs/discovered_issues)
+  const db = new DatabaseSync(dbPath)
+  db.exec(`
+    CREATE TABLE convoy (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, spec_hash TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending', branch TEXT, created_at TEXT NOT NULL,
+      started_at TEXT, finished_at TEXT, spec_yaml TEXT NOT NULL,
+      total_tokens INTEGER, total_cost_usd TEXT, pipeline_id TEXT,
+      circuit_state TEXT, review_tokens_total INTEGER, review_budget INTEGER
+    );
+    CREATE TABLE task (
+      id TEXT PRIMARY KEY, convoy_id TEXT NOT NULL REFERENCES convoy(id),
+      phase INTEGER NOT NULL, prompt TEXT NOT NULL,
+      agent TEXT NOT NULL DEFAULT 'developer', adapter TEXT,
+      model TEXT, timeout_ms INTEGER NOT NULL DEFAULT 1800000,
+      status TEXT NOT NULL DEFAULT 'pending', worker_id TEXT, worktree TEXT,
+      output TEXT, exit_code INTEGER, started_at TEXT, finished_at TEXT,
+      retries INTEGER NOT NULL DEFAULT 0, max_retries INTEGER NOT NULL DEFAULT 1,
+      files TEXT, depends_on TEXT, prompt_tokens INTEGER, completion_tokens INTEGER,
+      total_tokens INTEGER, cost_usd TEXT, gates TEXT,
+      on_exhausted TEXT NOT NULL DEFAULT 'dlq', injected INTEGER NOT NULL DEFAULT 0,
+      provenance TEXT, idempotency_key TEXT, current_step INTEGER, total_steps INTEGER,
+      review_level TEXT, review_verdict TEXT, review_tokens INTEGER, review_model TEXT,
+      panel_attempts INTEGER NOT NULL DEFAULT 0, dispute_id TEXT,
+      drift_score REAL, drift_retried INTEGER NOT NULL DEFAULT 0
+    );
+    PRAGMA user_version = 7;
+  `)
+  return db
+}
+
+describe('v7→v8 migration', () => {
+  it('creates artifact and agent_identity tables idempotently', () => {
+    const migDir = realpathSync(mkdtempSync(join(tmpdir(), 'mig-test-')))
+    const migDb = join(migDir, 'mig.db')
+
+    const db = new DatabaseSync(migDb)
+    db.exec('PRAGMA journal_mode = WAL')
+    db.exec(`
+      CREATE TABLE convoy (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        spec_hash TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        branch TEXT,
+        created_at TEXT NOT NULL,
+        started_at TEXT,
+        finished_at TEXT,
+        spec_yaml TEXT NOT NULL,
+        total_tokens INTEGER,
+        total_cost_usd TEXT,
+        pipeline_id TEXT,
+        circuit_state TEXT,
+        review_tokens_total INTEGER,
+        review_budget INTEGER
+      );
+      CREATE TABLE task (
+        id TEXT PRIMARY KEY,
+        convoy_id TEXT NOT NULL REFERENCES convoy(id),
+        phase INTEGER NOT NULL,
+        prompt TEXT NOT NULL,
+        agent TEXT NOT NULL DEFAULT 'developer',
+        adapter TEXT,
+        model TEXT,
+        timeout_ms INTEGER NOT NULL DEFAULT 1800000,
+        status TEXT NOT NULL DEFAULT 'pending',
+        worker_id TEXT,
+        worktree TEXT,
+        output TEXT,
+        exit_code INTEGER,
+        started_at TEXT,
+        finished_at TEXT,
+        retries INTEGER NOT NULL DEFAULT 0,
+        max_retries INTEGER NOT NULL DEFAULT 1,
+        files TEXT,
+        depends_on TEXT,
+        prompt_tokens INTEGER,
+        completion_tokens INTEGER,
+        total_tokens INTEGER,
+        cost_usd TEXT,
+        gates TEXT,
+        on_exhausted TEXT NOT NULL DEFAULT 'dlq',
+        injected INTEGER NOT NULL DEFAULT 0,
+        provenance TEXT,
+        idempotency_key TEXT,
+        current_step INTEGER,
+        total_steps INTEGER,
+        review_level TEXT,
+        review_verdict TEXT,
+        review_tokens INTEGER,
+        review_model TEXT,
+        panel_attempts INTEGER NOT NULL DEFAULT 0,
+        dispute_id TEXT,
+        drift_score REAL DEFAULT NULL,
+        drift_retried INTEGER NOT NULL DEFAULT 0
+      );
+      PRAGMA user_version = 7;
+    `)
+
+    migrateSchema(db, migDb, 7, 8)
+
+    // Verify artifact table exists
+    const artInfo = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='artifact'").get()
+    expect(artInfo).toBeDefined()
+
+    // Verify agent_identity table exists
+    const aiInfo = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='agent_identity'").get()
+    expect(aiInfo).toBeDefined()
+
+    // Verify new task columns exist
+    const taskCols = db.prepare('PRAGMA table_info(task)').all() as Array<{ name: string }>
+    const colNames = taskCols.map(c => c.name)
+    expect(colNames).toContain('outputs')
+    expect(colNames).toContain('inputs')
+    expect(colNames).toContain('discovered_issues')
+
+    // Verify artifact.id is TEXT PRIMARY KEY (not INTEGER AUTOINCREMENT)
+    type ColInfo = { name: string; type: string; pk: number }
+    const artCols = db.prepare('PRAGMA table_info(artifact)').all() as ColInfo[]
+    const idCol = artCols.find(c => c.name === 'id')
+    expect(idCol).toBeDefined()
+    expect(idCol!.type.toUpperCase()).toBe('TEXT')
+    expect(idCol!.pk).toBe(1)
+
+    // Verify version bumped to 8
+    const version = (db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version
+    expect(version).toBe(8)
+
+    db.close()
+    rmSync(migDir, { recursive: true, force: true })
+  })
+
+  it('failure mode: rolls back on error, version stays at 7 and backup exists', () => {
+    const v7DbPath = join(tmpDir, 'v7-fail.db')
+    const db = createV7Db(v7DbPath)
+    // Pre-add outputs column to cause duplicate column error on migration
+    db.exec('ALTER TABLE task ADD COLUMN outputs TEXT')
+    expect(() => migrateSchema(db, v7DbPath, 7, 8)).toThrow()
+    const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
+    expect(row.user_version).toBe(7)
+    expect(existsSync(`${v7DbPath}.v7.bak`)).toBe(true)
+    db.close()
+  })
+})
+
+describe('v8→v9 migration', () => {
+  it('creates scratchpad table', () => {
+    const migDir = realpathSync(mkdtempSync(join(tmpdir(), 'mig-v9-test-')))
+    const migDb = join(migDir, 'mig.db')
+
+    const db = new DatabaseSync(migDb)
+    db.exec('PRAGMA journal_mode = WAL')
+    db.exec(`
+      CREATE TABLE convoy (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        spec_hash TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        branch TEXT,
+        created_at TEXT NOT NULL,
+        started_at TEXT,
+        finished_at TEXT,
+        spec_yaml TEXT NOT NULL,
+        total_tokens INTEGER,
+        total_cost_usd TEXT,
+        pipeline_id TEXT,
+        circuit_state TEXT,
+        review_tokens_total INTEGER,
+        review_budget INTEGER
+      );
+      CREATE TABLE task (
+        id TEXT PRIMARY KEY,
+        convoy_id TEXT NOT NULL REFERENCES convoy(id),
+        phase INTEGER NOT NULL,
+        prompt TEXT NOT NULL,
+        agent TEXT NOT NULL DEFAULT 'developer',
+        adapter TEXT,
+        model TEXT,
+        timeout_ms INTEGER NOT NULL DEFAULT 1800000,
+        status TEXT NOT NULL DEFAULT 'pending',
+        worker_id TEXT,
+        worktree TEXT,
+        output TEXT,
+        exit_code INTEGER,
+        started_at TEXT,
+        finished_at TEXT,
+        retries INTEGER NOT NULL DEFAULT 0,
+        max_retries INTEGER NOT NULL DEFAULT 1,
+        files TEXT,
+        depends_on TEXT,
+        prompt_tokens INTEGER,
+        completion_tokens INTEGER,
+        total_tokens INTEGER,
+        cost_usd TEXT,
+        gates TEXT,
+        on_exhausted TEXT NOT NULL DEFAULT 'dlq',
+        injected INTEGER NOT NULL DEFAULT 0,
+        provenance TEXT,
+        idempotency_key TEXT,
+        current_step INTEGER,
+        total_steps INTEGER,
+        review_level TEXT,
+        review_verdict TEXT,
+        review_tokens INTEGER,
+        review_model TEXT,
+        panel_attempts INTEGER NOT NULL DEFAULT 0,
+        dispute_id TEXT,
+        drift_score REAL,
+        drift_retried INTEGER NOT NULL DEFAULT 0,
+        outputs TEXT,
+        inputs TEXT,
+        discovered_issues TEXT
+      );
+      CREATE TABLE worker (
+        id TEXT PRIMARY KEY,
+        task_id TEXT REFERENCES task(id),
+        adapter TEXT NOT NULL,
+        pid INTEGER,
+        session_id TEXT,
+        status TEXT NOT NULL DEFAULT 'spawned',
+        worktree TEXT,
+        created_at TEXT NOT NULL,
+        finished_at TEXT,
+        last_heartbeat TEXT
+      );
+      CREATE TABLE event (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        convoy_id TEXT REFERENCES convoy(id),
+        task_id TEXT,
+        worker_id TEXT,
+        type TEXT NOT NULL,
+        data TEXT,
+        created_at TEXT NOT NULL
+      );
+      CREATE TABLE dlq (
+        id TEXT PRIMARY KEY,
+        convoy_id TEXT NOT NULL REFERENCES convoy(id),
+        task_id TEXT NOT NULL REFERENCES task(id),
+        agent TEXT NOT NULL,
+        failure_type TEXT NOT NULL,
+        error_output TEXT,
+        attempts INTEGER NOT NULL,
+        tokens_spent INTEGER,
+        escalation_task_id TEXT,
+        resolved INTEGER NOT NULL DEFAULT 0,
+        resolution TEXT,
+        created_at TEXT NOT NULL,
+        resolved_at TEXT
+      );
+      CREATE TABLE task_step (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_id TEXT NOT NULL REFERENCES task(id),
+        step_index INTEGER NOT NULL,
+        prompt TEXT NOT NULL,
+        gates TEXT,
+        status TEXT NOT NULL DEFAULT 'pending',
+        exit_code INTEGER,
+        output TEXT,
+        started_at TEXT,
+        finished_at TEXT
+      );
+      CREATE TABLE artifact (
+        id TEXT PRIMARY KEY,
+        convoy_id TEXT NOT NULL REFERENCES convoy(id),
+        task_id TEXT NOT NULL REFERENCES task(id),
+        name TEXT NOT NULL,
+        type TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE(convoy_id, name)
+      );
+      CREATE TABLE agent_identity (
+        id TEXT PRIMARY KEY,
+        agent TEXT NOT NULL,
+        convoy_id TEXT NOT NULL,
+        task_id TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        retention_days INTEGER NOT NULL DEFAULT 90
+      );
+      PRAGMA user_version = 8;
+    `)
+
+    migrateSchema(db, migDb, 8, 9)
+
+    const scratchpadInfo = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='scratchpad'").get()
+    expect(scratchpadInfo).toBeDefined()
+
+    const scratchpadCols = db.prepare('PRAGMA table_info(scratchpad)').all() as Array<{ name: string }>
+    const colNames = scratchpadCols.map(c => c.name)
+    expect(colNames).toContain('key')
+    expect(colNames).toContain('value')
+    expect(colNames).toContain('updated_at')
+
+    const version = (db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version
+    expect(version).toBe(9)
+
+    db.close()
+    rmSync(migDir, { recursive: true, force: true })
+  })
+})
+
+describe('size limit enforcement', () => {
+  it('insertConvoy rejects spec_yaml exceeding 256KB', () => {
+    const bigSpecYaml = 'x'.repeat(256 * 1024 + 1)
+    expect(() => store.insertConvoy(makeConvoy({ spec_yaml: bigSpecYaml })))
+      .toThrow(FieldSizeLimitError)
+  })
+
+  it('insertConvoy accepts spec_yaml at exactly 256KB', () => {
+    const exactSpecYaml = 'x'.repeat(256 * 1024)
+    expect(() => store.insertConvoy(makeConvoy({ id: 'convoy-exact', spec_yaml: exactSpecYaml }))).not.toThrow()
+  })
+
+  it('insertEvent rejects data exceeding 64KB', () => {
+    store.insertConvoy(makeConvoy())
+    const bigData = 'y'.repeat(64 * 1024 + 1)
+    expect(() =>
+      store.insertEvent({
+        convoy_id: 'convoy-1',
+        task_id: null,
+        worker_id: null,
+        type: 'test',
+        data: bigData,
+        created_at: new Date().toISOString(),
+      }),
+    ).toThrow(FieldSizeLimitError)
+  })
+
+  it('updateTaskStatus truncates output exceeding 1MB', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+    const bigOutput = 'z'.repeat(3 * 1024 * 1024)  // 3 MB — well over the 1 MB limit
+    store.updateTaskStatus('task-1', 'convoy-1', 'done', { output: bigOutput })
+    const task = store.getTask('task-1', 'convoy-1')
+    expect(task?.output).toBeDefined()
+    expect(task!.output!.length).toBeLessThan(bigOutput.length)
+    expect(task!.output).toContain('[truncated:')
+  })
+
+  it('insertAgentIdentity truncates summary exceeding 4KB', () => {
+    store.insertConvoy(makeConvoy())
+    store.insertTask(makeTask())
+    const bigSummary = 's'.repeat(4097)
+    store.insertAgentIdentity({
+      id: 'identity-1',
+      agent: 'developer',
+      convoy_id: 'convoy-1',
+      task_id: 'task-1',
+      summary: bigSummary,
+      created_at: new Date().toISOString(),
+      retention_days: 90,
+    })
+    const identities = store.getAgentIdentities('developer', 10)
+    expect(identities[0].summary.length).toBeLessThanOrEqual(4096)
+  })
+
+  it('insertPipeline rejects spec_yaml exceeding 256KB', () => {
+    const bigSpecYaml = 'p'.repeat(256 * 1024 + 1)
+    expect(() =>
+      store.insertPipeline({
+        id: 'pipeline-1',
+        name: 'Test Pipeline',
+        status: 'pending',
+        branch: null,
+        spec_yaml: bigSpecYaml,
+        convoy_specs: '[]',
+        created_at: new Date().toISOString(),
+      }),
+    ).toThrow(FieldSizeLimitError)
   })
 })

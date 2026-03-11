@@ -10,6 +10,16 @@ export interface MergeResult {
   message: string
 }
 
+export class MergeConflictError extends Error {
+  constructor(
+    public readonly conflictingFiles: string[],
+    message?: string,
+  ) {
+    super(message ?? `Merge conflict in: ${conflictingFiles.join(', ')}`)
+    this.name = 'MergeConflictError'
+  }
+}
+
 export interface MergeQueue {
   /**
    * Merge a single worktree's changes back onto the target branch.
@@ -78,8 +88,16 @@ export function createMergeQueue(repoPath: string): MergeQueue {
         error.code === 1 &&
         ((error.stderr ?? '').includes('CONFLICT') || (error.stdout ?? '').includes('CONFLICT'))
       if (isConflict) {
+        // Collect conflicting files before aborting
+        let conflictingFiles: string[] = []
+        try {
+          const { stdout: conflictOut } = await execFile('git', [
+            '-C', repoPath, 'diff', '--name-only', '--diff-filter=U',
+          ])
+          conflictingFiles = conflictOut.split('\n').filter(Boolean)
+        } catch { /* ignore — we still abort */ }
         await execFile('git', ['-C', repoPath, 'merge', '--abort'])
-        return { success: false, conflicted: true, message: 'Merge conflict detected; merge aborted' }
+        throw new MergeConflictError(conflictingFiles)
       }
       throw err
     }

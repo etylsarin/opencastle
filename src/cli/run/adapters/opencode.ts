@@ -1,9 +1,12 @@
 import { spawn } from 'node:child_process'
+import { writeFileSync, unlinkSync } from 'node:fs'
+import { join } from 'node:path'
 import type { Task, ExecuteOptions, ExecuteResult, TokenUsage } from '../../types.js'
 
 /** Adapter name */
 export const name = 'opencode'
 
+export function supportsSessionContinuity(): boolean { return false }
 /**
  * Check if the `opencode` CLI is available on the system PATH.
  */
@@ -27,11 +30,31 @@ export async function execute(task: Task, options: ExecuteOptions = {}): Promise
 
   const args = ['--headless', '-p', prompt]
 
-  return new Promise((resolve) => {
+  const cwd = options?.cwd ?? process.cwd()
+  const mcpJsonPath = join(cwd, 'mcp.json')
+  let wroteJson = false
+
+  if (options.mcpServers?.length) {
+    const mcpJson: Record<string, Record<string, unknown>> = {}
+    for (const server of options.mcpServers) {
+      const entry: Record<string, unknown> = {}
+      if (server.command) entry.command = server.command
+      if (server.args) entry.args = server.args
+      if (server.url) entry.url = server.url
+      if (server.config) Object.assign(entry, server.config)
+      mcpJson[server.name] = entry
+    }
+    writeFileSync(mcpJsonPath, JSON.stringify({ mcpServers: mcpJson }, null, 2), 'utf8')
+    args.push('--mcp-config', mcpJsonPath)
+    wroteJson = true
+  }
+
+  try {
+  return await new Promise<ExecuteResult>((resolve) => {
     const proc = spawn('opencode', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env },
-      cwd: options?.cwd ?? process.cwd(),
+      cwd,
     })
 
     let stdout = ''
@@ -83,6 +106,11 @@ export async function execute(task: Task, options: ExecuteOptions = {}): Promise
     // Store process ref for potential timeout kill
     task._process = proc
   })
+  } finally {
+    if (wroteJson) {
+      try { unlinkSync(mcpJsonPath) } catch { /* ignore */ }
+    }
+  }
 }
 
 /**

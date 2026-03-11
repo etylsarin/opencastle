@@ -5,8 +5,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createConvoyStore } from './store.js'
 import type { ConvoyStore } from './store.js'
 import type { ConvoyEventEmitter } from './events.js'
-import { createHealthMonitor } from './health.js'
+import { createHealthMonitor, detectDrift } from './health.js'
 import type { HealthMonitorOptions } from './health.js'
+import type { AgentAdapter } from '../types.js'
 
 // ── fixtures ──────────────────────────────────────────────────────────────────
 
@@ -33,6 +34,7 @@ beforeEach(() => {
     emit(type, data, ids) {
       emittedEvents.push({ type, data, ids })
     },
+    close() {},
   }
   store.insertConvoy({
     id: CONVOY_ID,
@@ -71,8 +73,9 @@ function makeTask(
     max_retries: 1,
     files: null,
     depends_on: null,
+    gates: null as string | null,
     ...overrides,
-  }
+  } as Parameters<ConvoyStore['insertTask']>[0]
 }
 
 function makeWorker(
@@ -453,5 +456,64 @@ describe('event emission', () => {
     expect(ids?.convoy_id).toBe(CONVOY_ID)
     expect(ids?.task_id).toBe('task-1')
     expect(ids?.worker_id).toBe('worker-1')
+  })
+})
+
+// ── detectDrift ───────────────────────────────────────────────────────────────
+
+describe('detectDrift', () => {
+  function makeTaskRecord(adapterName: string | null = null) {
+    store.insertTask(makeTask({ id: 'drift-task', adapter: adapterName }))
+    return store.getTask('drift-task', CONVOY_ID)!
+  }
+
+  function makeAgentAdapter(name: string, output: string): AgentAdapter {
+    return {
+      name,
+      isAvailable: vi.fn().mockResolvedValue(true),
+      execute: vi.fn().mockResolvedValue({ success: true, output, exitCode: 0 }),
+    } as unknown as AgentAdapter
+  }
+
+  it('non-streaming adapter returns score 1.0, drifted=false, and emits a warning', async () => {
+    const taskRecord = makeTaskRecord(null)
+    const adapter = makeAgentAdapter('vscode', 'ok')
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    try {
+      const result = await detectDrift(taskRecord, adapter)
+      expect(result.score).toBe(1.0)
+      expect(result.drifted).toBe(false)
+      expect(result.explanation).toContain('non-streaming adapter')
+      expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining('drift detection skipped'))
+    } finally {
+      stderrSpy.mockRestore()
+    }
+  })
+
+  it('streaming adapter with high confidence score returns drifted=false', async () => {
+    const taskRecord = makeTaskRecord('copilot')
+    const adapter = makeAgentAdapter('copilot', '{"score": 0.95, "explanation": "very confident"}')
+    const result = await detectDrift(taskRecord, adapter)
+    expect(result.score).toBe(0.95)
+    expect(result.drifted).toBe(false)
+    expect(result.explanation).toBe('very confident')
+  })
+
+  it('streaming adapter with low confidence score returns drifted=true', async () => {
+    const taskRecord = makeTaskRecord('copilot')
+    const adapter = makeAgentAdapter('copilot', '{"score": 0.4, "explanation": "not confident"}')
+    const result = await detectDrift(taskRecord, adapter)
+    expect(result.score).toBe(0.4)
+    expect(result.drifted).toBe(true)
+    expect(result.threshold).toBe(0.8)
+  })
+
+  it('parse failure returns score 0.5 and drifted=true (below default threshold)', async () => {
+    const taskRecord = makeTaskRecord('copilot')
+    const adapter = makeAgentAdapter('copilot', 'I cannot rate myself')
+    const result = await detectDrift(taskRecord, adapter)
+    expect(result.score).toBe(0.5)
+    expect(result.drifted).toBe(true)
+    expect(result.explanation).toContain('Could not parse')
   })
 })

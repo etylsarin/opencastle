@@ -1,10 +1,13 @@
 import { spawn } from 'node:child_process'
+import { writeFileSync, unlinkSync } from 'node:fs'
+import { join } from 'node:path'
 import { parseTimeout } from '../schema.js'
 import type { Task, ExecuteOptions, ExecuteResult, TokenUsage } from '../../types.js'
 
 // Adapter name
 export const name = 'claude'
 
+export function supportsSessionContinuity(): boolean { return false }
 // Module-level state for mode selection
 let mode: 'sdk' | 'cli' | null = null
 
@@ -100,6 +103,8 @@ async function executeViaSdk(task: Task, options: ExecuteOptions = {}): Promise<
     },
     infiniteSessions: { enabled: false },
     ...(options.verbose ? { streaming: true } : {}),
+    // mcpServers is forward-compatible: field will be recognised by future SDK versions
+    ...(options.mcpServers?.length ? { mcpServers: options.mcpServers } : {}),
   })
   activeSessions.set(task.id, session)
   if (options.verbose) {
@@ -108,12 +113,21 @@ async function executeViaSdk(task: Task, options: ExecuteOptions = {}): Promise<
       process.stdout.write(event.data.deltaContent)
     })
   }
+  interface SdkResponse {
+    data?: {
+      content?: string
+      usage?: Record<string, number>
+    }
+    usage?: Record<string, number>
+  }
+
   try {
     const timeoutMs = parseTimeout(task.timeout)
     const response = await session.sendAndWait({ prompt }, timeoutMs)
-    const data = (response as any)?.data as Record<string, unknown> | undefined
+    const typed = response as SdkResponse
+    const data = typed?.data
     const output = (data?.content as string | undefined) ?? ''
-    const rawUsage = data?.usage ?? (response as any)?.usage
+    const rawUsage = data?.usage ?? typed?.usage
     const u = rawUsage as Record<string, number> | undefined
     const usageResult = u
       ? {
@@ -150,7 +164,7 @@ function killSdk(task: Task): void {
 }
 
 // --- CLI implementation (from claude-code.ts) ---
-async function executeViaCli(task: Task, options: ExecuteOptions = {}): Promise<ExecuteResult> {
+export async function executeViaCli(task: Task, options: ExecuteOptions = {}): Promise<ExecuteResult> {
   let prompt = `You are a ${task.agent}. ${task.prompt}`
   if (task.files && task.files.length > 0) {
     prompt += `\n\nOnly modify files under: ${task.files.join(', ')}`
@@ -163,11 +177,32 @@ async function executeViaCli(task: Task, options: ExecuteOptions = {}): Promise<
     '--max-turns',
     '50',
   ]
-  return new Promise((resolve) => {
+  const cwd = options?.cwd ?? process.cwd()
+  const mcpJsonPath = join(cwd, 'mcp.json')
+  let wroteJson = false
+  if (options.mcpServers?.length) {
+    const mcpJson: Record<string, Record<string, unknown>> = {}
+    for (const server of options.mcpServers) {
+      const entry: Record<string, unknown> = {}
+      if (server.command) entry.command = server.command
+      if (server.args) entry.args = server.args
+      if (server.url) entry.url = server.url
+      if (server.config) Object.assign(entry, server.config)
+      mcpJson[server.name] = entry
+    }
+    writeFileSync(mcpJsonPath, JSON.stringify({ mcpServers: mcpJson }, null, 2), 'utf8')
+    args.push('--mcp-config', mcpJsonPath)
+    wroteJson = true
+  }
+  if (options.mcp_approve_all) {
+    args.push('--approve-mcps')
+  }
+  try {
+  return await new Promise<ExecuteResult>((resolve) => {
     const proc = spawn('claude', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env },
-      cwd: options?.cwd ?? process.cwd(),
+      cwd,
     })
     let stdout = ''
     let stderr = ''
@@ -212,6 +247,11 @@ async function executeViaCli(task: Task, options: ExecuteOptions = {}): Promise<
     })
     task._process = proc
   })
+  } finally {
+    if (wroteJson) {
+      try { unlinkSync(mcpJsonPath) } catch { /* ignore */ }
+    }
+  }
 }
 
 function killCli(task: Task): void {

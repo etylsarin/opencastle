@@ -1,12 +1,15 @@
 
 import { spawn } from 'node:child_process'
-import type { CopilotClient as CopilotClientType, CopilotSession, PermissionHandler } from '@github/copilot-sdk'
+import { writeFileSync, unlinkSync } from 'node:fs'
+import { join } from 'node:path'
+import type { CopilotClient as CopilotClientType, CopilotSession, PermissionHandler, SessionConfig } from '@github/copilot-sdk'
 import { parseTimeout } from '../schema.js'
 import type { Task, ExecuteOptions, ExecuteResult, TokenUsage } from '../../types.js'
 
 // Adapter name
 export const name = 'copilot'
 
+export function supportsSessionContinuity(): boolean { return true }
 // --- Unified adapter: SDK first, fallback to CLI ---
 let mode: 'sdk' | 'cli' | null = null
 
@@ -83,7 +86,9 @@ async function executeViaSdk(task: Task, options: ExecuteOptions = {}): Promise<
     },
     infiniteSessions: { enabled: false },
     ...(options.verbose ? { streaming: true } : {}),
-  })
+    // mcpServers is forward-compatible: field will be recognised by future SDK versions
+    ...(options.mcpServers?.length ? { mcpServers: options.mcpServers } : {}),
+  } as SessionConfig)
   activeSessions.set(task.id, session)
   if (options.verbose) {
     session.on('assistant.message_delta', (event: { data: { deltaContent: string } }) => {
@@ -143,11 +148,31 @@ async function executeViaCli(task: Task, options: ExecuteOptions = {}): Promise<
     '--max-turns',
     '50',
   ]
-  return new Promise((resolve) => {
+  const cwd = options?.cwd ?? process.cwd()
+  const mcpJsonPath = join(cwd, 'mcp.json')
+  let wroteJson = false
+  if (options.mcpServers?.length) {
+    const mcpJson: Record<string, Record<string, unknown>> = {}
+    for (const server of options.mcpServers) {
+      const entry: Record<string, unknown> = {}
+      if (server.command) entry.command = server.command
+      if (server.args) entry.args = server.args
+      if (server.url) entry.url = server.url
+      if (server.config) Object.assign(entry, server.config)
+      mcpJson[server.name] = entry
+    }
+    writeFileSync(mcpJsonPath, JSON.stringify({ mcpServers: mcpJson }, null, 2), 'utf8')
+    wroteJson = true
+  }
+  if (options.mcp_approve_all) {
+    args.push('--approve-mcps')
+  }
+  try {
+  return await new Promise<ExecuteResult>((resolve) => {
     const proc = spawn('copilot', args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       env: { ...process.env },
-      cwd: options?.cwd ?? process.cwd(),
+      cwd,
     })
     let stdout = ''
     let stderr = ''
@@ -192,6 +217,11 @@ async function executeViaCli(task: Task, options: ExecuteOptions = {}): Promise<
     })
     task._process = proc
   })
+  } finally {
+    if (wroteJson) {
+      try { unlinkSync(mcpJsonPath) } catch { /* ignore */ }
+    }
+  }
 }
 
 function killCli(task: Task): void {

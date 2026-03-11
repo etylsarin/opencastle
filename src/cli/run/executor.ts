@@ -190,7 +190,7 @@ export function createExecutor(
       reporter.onPhaseStart(phaseIdx + 1, eligible)
 
       // Process eligible tasks in batches limited by concurrency
-      const concurrency = spec.concurrency
+      const concurrency = spec.concurrency === 'auto' ? eligible.length : spec.concurrency
       for (let i = 0; i < eligible.length; i += concurrency) {
         if (halted) break
         const batch = eligible.slice(i, i + concurrency)

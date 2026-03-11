@@ -23,7 +23,10 @@ const HELP = `
     eject       Remove dependency, keep all files standalone
     destroy     Remove ALL OpenCastle files (reverse of init)
     run         Process a task queue from a spec file autonomously
+    agents      Manage persistent agent identities
+    dispute     Manage convoy dispute resolution
     plan        Generate a convoy spec from a task description file
+    baselines   Manage visual regression baselines
     dashboard   View agent observability dashboard in your browser
     doctor      Validate your OpenCastle setup
     log         Append a structured event to the observability log
@@ -59,6 +62,9 @@ const commands = {
   doctor: () => import('../dist/cli/doctor.js'),
   log: () => import('../dist/cli/log.js'),
   lesson: () => import('../dist/cli/lesson.js'),
+  agents: () => import('../dist/cli/agents.js'),
+  dispute: () => import('../dist/cli/dispute.js'),
+  baselines: () => import('../dist/cli/baselines.js'),
 }
 
 if (!commands[command]) {
