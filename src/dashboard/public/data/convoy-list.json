@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "id": "demo-convoy-2",
+    "name": "Demo Convoy Beta",
+    "status": "running",
+    "created_at": "2026-01-15T10:05:00.000Z",
+    "finished_at": null,
+    "total_tokens": null,
+    "total_cost_usd": null
+  },
+  {
+    "id": "demo-convoy-1",
+    "name": "Demo Convoy Alpha",
+    "status": "done",
+    "created_at": "2026-01-15T10:00:00.000Z",
+    "finished_at": "2026-01-15T10:00:33.000Z",
+    "total_tokens": 8432,
+    "total_cost_usd": 0.84
+  }
+]

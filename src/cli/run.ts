@@ -6,7 +6,7 @@ import { parseTaskSpecText, isConvoySpec, isPipelineSpec } from './run/schema.js
 import { createExecutor, buildPhases } from './run/executor.js'
 import { getAdapter, detectAdapter } from './run/adapters/index.js'
 import { createReporter, printExecutionPlan } from './run/reporter.js'
-import { c } from './prompt.js'
+import { c, confirm, closePrompts } from './prompt.js'
 import type { CliContext, RunOptions } from './types.js'
 import type { ConvoyResult } from './convoy/engine.js'
 import type { PipelineResult } from './convoy/pipeline.js'
@@ -807,6 +807,31 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     if (spec.branch) console.log(`  Branch: ${spec.branch}`)
     if (spec.gates?.length) console.log(`  Gates: ${spec.gates.length} validation commands`)
 
+    // ── Pre-flight: handle uncommitted changes before branch switch ──
+    let didStash = false
+    if (spec.branch) {
+      const { execFile: execFileCb } = await import('node:child_process')
+      const { promisify } = await import('node:util')
+      const execFile = promisify(execFileCb)
+      const { stdout: statusOut } = await execFile('git', ['status', '--porcelain'], {
+        cwd: process.cwd(),
+      })
+      if (statusOut.trim()) {
+        console.log(`\n  ${c.yellow('⚠')} Uncommitted changes detected.`)
+        const shouldStash = await confirm('Stash changes and continue?', true)
+        if (!shouldStash) {
+          console.log('  Aborted. Commit or stash your changes manually, then retry.')
+          closePrompts()
+          process.exit(1)
+        }
+        await execFile('git', ['stash', 'push', '-m', 'opencastle: auto-stash before convoy'], {
+          cwd: process.cwd(),
+        })
+        didStash = true
+        console.log(`  ${c.green('✓')} Changes stashed.`)
+      }
+    }
+
     const { startDashboardServer } = await import('./dashboard.js')
     let dashboardResult: { server: import('node:http').Server; port: number; url: string } | null = null
     try {
@@ -861,6 +886,17 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       console.log(`\n  ${c.dim('Results saved to .opencastle/logs/convoys.ndjson')}`)
       console.log(`  ${c.dim('View again:')} opencastle dashboard`)
       dashboardResult.server.close()
+    }
+    if (didStash) {
+      const { execFile: execFileCb } = await import('node:child_process')
+      const { promisify } = await import('node:util')
+      const execFile = promisify(execFileCb)
+      try {
+        await execFile('git', ['stash', 'pop'], { cwd: process.cwd() })
+        console.log(`  ${c.green('✓')} Stashed changes restored.`)
+      } catch {
+        console.log(`  ${c.yellow('⚠')} Could not restore stash automatically. Run \`git stash pop\` manually.`)
+      }
     }
     process.exit(result.status !== 'done' ? 1 : 0)
   }

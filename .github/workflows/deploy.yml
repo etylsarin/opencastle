@@ -29,6 +29,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Generate demo convoy DB for dashboard
+        run: npm run dashboard:generate-demo-db
+
+      - name: Run dashboard ETL to produce demo JSON
+        run: npm run dashboard:etl
+
       - name: Type-check CLI
         run: npx tsc --noEmit
 
@@ -43,8 +49,8 @@ jobs:
         env:
           DASHBOARD_BASE: /dashboard/
 
-      - name: Copy seed data into dashboard build output
-        run: mkdir -p src/dashboard/dist/data && cp src/dashboard/seed-data/*.ndjson src/dashboard/dist/data/
+      - name: Copy ETL data into dashboard build output
+        run: mkdir -p src/dashboard/dist/data && cp -r src/dashboard/public/data/* src/dashboard/dist/data/ || true
 
       - name: Merge dashboard into website output
         run: mkdir -p website/dist/dashboard && cp -r src/dashboard/dist/* website/dist/dashboard/
