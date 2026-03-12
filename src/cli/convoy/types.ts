@@ -29,7 +29,7 @@ export interface ConvoyRecord {
   finished_at: string | null
   spec_yaml: string
   total_tokens: number | null
-  total_cost_usd: string | null
+  total_cost_usd: number | null
   pipeline_id: string | null
   circuit_state: string | null
   review_tokens_total: number | null
@@ -59,7 +59,7 @@ export interface TaskRecord {
   prompt_tokens: number | null
   completion_tokens: number | null
   total_tokens: number | null
-  cost_usd: string | null
+  cost_usd: number | null
   gates: string | null
   on_exhausted: 'dlq' | 'skip' | 'stop'
   injected: number
@@ -114,7 +114,7 @@ export interface PipelineRecord {
   started_at: string | null
   finished_at: string | null
   total_tokens: number | null
-  total_cost_usd: string | null
+  total_cost_usd: number | null
 }
 
 export interface BuiltInGatesConfig {
@@ -259,3 +259,108 @@ export interface MCPServerConfig {
   url?: string
   config?: Record<string, unknown>
 }
+
+// ---------------------------------------------------------------------------
+// Discriminated union covering every canonical convoy event type.
+// Each variant constrains the `data` shape that callers may pass to emit().
+// ---------------------------------------------------------------------------
+export type ConvoyEventType =
+  | { type: 'convoy_started'; data?: { name?: string } }
+  | { type: 'convoy_finished'; data?: { status: string } }
+  | { type: 'convoy_failed'; data?: { status: string; reason?: string } }
+  | { type: 'convoy_guard'; data?: { checks?: string[]; [key: string]: unknown } }
+  | { type: 'task_started'; data?: { worker_id?: string } }
+  | { type: 'task_done'; data?: { status?: string; retries?: number; worker_id?: string } }
+  | { type: 'task_failed'; data?: { reason: string; worker_id?: string; gate?: string; hook?: string } }
+  | { type: 'task_skipped'; data?: { reason: string } }
+  | { type: 'task_retried'; data?: { previous_status: string } }
+  | { type: 'task_waiting_input'; data?: { task_id?: string; reason?: string } }
+  | { type: 'review_started'; data?: { level: string; task_id?: string; model?: string } }
+  | {
+      type: 'review_verdict'
+      data?: {
+        level: string
+        verdict: string
+        tokens: number
+        model?: string
+        feedback_length?: number
+        budget_exceeded?: boolean
+        budget_downgrade?: boolean
+        budget_skip?: boolean
+        passes?: number
+        blocks?: number
+      }
+    }
+  | { type: 'dispute_opened'; data?: { dispute_id: string; task_id: string; agent?: string; reason?: string } }
+  | { type: 'dlq_entry_created'; data?: { dlq_id: string; task_id: string; agent?: string; attempts?: number } }
+  | { type: 'drift_check_result'; data?: { score?: number; threshold?: number; passed?: boolean } }
+  | { type: 'drift_detected'; data?: { score?: number; files?: string[] } }
+  | { type: 'circuit_breaker_tripped'; data?: { agent?: string; failure_count?: number; threshold?: number } }
+  | { type: 'circuit_breaker_fallback'; data?: { original_agent?: string; fallback_agent?: string; task_id?: string } }
+  | { type: 'circuit_breaker_blocked'; data?: { agent?: string; task_id?: string } }
+  | { type: 'merge_conflict_detected'; data?: { task_id?: string; files?: string[] } }
+  | { type: 'merge_conflict_failed'; data?: { task_id?: string; error?: string } }
+  | { type: 'file_injection_received'; data?: { task_id?: string; from_task?: string; name?: string } }
+  | { type: 'artifact_limit_reached'; data?: { task_id?: string; limit?: number; current?: number } }
+  | { type: 'agent_identity_captured'; data?: { agent?: string; task_id?: string } }
+  | { type: 'agent_identity_rejected'; data?: { agent?: string; task_id?: string; reason?: string } }
+  | { type: 'weak_area_skipped'; data?: { agent?: string; weak_areas?: string[]; task_files?: string[] } }
+  | { type: 'swarm_concurrency_update'; data?: { new_concurrency?: number; reason?: string } }
+  | { type: 'post_convoy_hook_failed'; data?: { hook?: string; error?: string } }
+  | { type: 'session'; data?: { agent?: string; model?: string; task?: string; outcome?: string; duration_min?: number } }
+  | { type: 'delegation'; data?: { agent?: string; model?: string; tier?: string; mechanism?: string; outcome?: string } }
+  | {
+      type: 'secret_leak_prevented'
+      data?: { original_type?: string; patterns?: string[]; task_id?: string; findings_count?: number; context?: string }
+    }
+  | { type: 'ndjson_write_failed'; data?: { original_type?: string } }
+  | { type: 'built_in_gate_result'; data?: { gate: string; passed: boolean; output?: string; level?: string } }
+  | { type: 'watch_started'; data?: { trigger_type?: string; pid?: number } }
+  | { type: 'watch_cycle_start'; data?: { cycle_number?: number; triggered_by?: string } }
+  | { type: 'watch_cycle_end'; data?: { cycle_number?: number; status?: string } }
+  | { type: 'watch_stopped'; data?: { reason?: string } }
+  | { type: 'worker_killed'; data?: { reason?: string; worker_id?: string; task_id?: string } }
+  | { type: 'discovered_issue'; data?: { task_id?: string; title?: string; file?: string; description?: string; severity?: string } }
+
+/** All canonical convoy event type strings. Used for runtime validation. */
+export const KNOWN_EVENT_TYPES: Set<string> = new Set<ConvoyEventType['type']>([
+  'convoy_started',
+  'convoy_finished',
+  'convoy_failed',
+  'convoy_guard',
+  'task_started',
+  'task_done',
+  'task_failed',
+  'task_skipped',
+  'task_retried',
+  'task_waiting_input',
+  'review_started',
+  'review_verdict',
+  'dispute_opened',
+  'dlq_entry_created',
+  'drift_check_result',
+  'drift_detected',
+  'circuit_breaker_tripped',
+  'circuit_breaker_fallback',
+  'circuit_breaker_blocked',
+  'merge_conflict_detected',
+  'merge_conflict_failed',
+  'file_injection_received',
+  'artifact_limit_reached',
+  'agent_identity_captured',
+  'agent_identity_rejected',
+  'weak_area_skipped',
+  'swarm_concurrency_update',
+  'post_convoy_hook_failed',
+  'session',
+  'delegation',
+  'secret_leak_prevented',
+  'ndjson_write_failed',
+  'built_in_gate_result',
+  'watch_started',
+  'watch_cycle_start',
+  'watch_cycle_end',
+  'watch_stopped',
+  'worker_killed',
+  'discovered_issue',
+])

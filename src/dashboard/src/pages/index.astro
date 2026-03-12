@@ -3,9 +3,20 @@ import Layout from '../layouts/Layout.astro';
 import '../styles/dashboard.css';
 
 const base = import.meta.env.BASE_URL;
+let overallStats = null
+let convoyList: unknown[] = []
+try {
+  const statsModule = await import('../../public/data/overall-stats.json')
+  overallStats = statsModule.default ?? statsModule
+  const listModule = await import('../../public/data/convoy-list.json')
+  convoyList = listModule.default ?? listModule
+} catch { /* data not yet generated */ }
 ---
 
 <Layout title="Observability Dashboard — OpenCastle">
+<script define:vars={{ overallStats, convoyList }}>
+  window.__DASHBOARD_DATA__ = { overallStats, convoyList }
+</script>
   <!-- Header -->
   <header class="dash-header">
     <div class="dash-header__inner">
@@ -14,7 +25,13 @@ const base = import.meta.env.BASE_URL;
         <h1 class="dash-header__title">Observability Dashboard</h1>
       </div>
       <div class="dash-header__actions">
-        <button class="dash-btn dash-btn--ghost" id="export-btn" type="button" title="Export data as JSON">
+        <div class="convoy-selector">
+          <label class="convoy-selector__label" for="convoy-select">Convoy</label>
+          <select class="convoy-selector__select" id="convoy-select" aria-label="Select a convoy to view its details">
+            <option value="">Select convoy…</option>
+          </select>
+        </div>
+        <button class="dash-btn dash-btn--ghost" id="export-btn" type="button" title="Export data as JSON" aria-label="Export dashboard data as JSON">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export
         </button>
@@ -26,23 +43,151 @@ const base = import.meta.env.BASE_URL;
     <!-- Sidebar Navigation -->
     <nav class="dash-sidebar" id="dash-sidebar">
       <ul class="dash-sidebar__list">
-        <li><a class="dash-sidebar__link" href="#convoy-section" data-section="convoy-section">Convoy</a></li>
-        <li><a class="dash-sidebar__link" href="#convoy-pipeline-section" data-section="convoy-pipeline-section">Convoy Chain</a></li>
-        <li><a class="dash-sidebar__link dash-sidebar__link--active" href="#kpi-row" data-section="kpi-row">Overview</a></li>
-        <li><a class="dash-sidebar__link" href="#pipeline-section" data-section="pipeline-section">Task Flow</a></li>
-        <li><a class="dash-sidebar__link" href="#agent-section" data-section="agent-section">Agents</a></li>
-        <li><a class="dash-sidebar__link" href="#tier-section" data-section="tier-section">Tiers</a></li>
-        <li><a class="dash-sidebar__link" href="#delegation-section" data-section="delegation-section">Delegations</a></li>
-        <li><a class="dash-sidebar__link" href="#timeline-section" data-section="timeline-section">Timeline</a></li>
-        <li><a class="dash-sidebar__link" href="#model-section" data-section="model-section">Models</a></li>
-        <li><a class="dash-sidebar__link" href="#execution-section" data-section="execution-section">Exec Log</a></li>
-        <li><a class="dash-sidebar__link" href="#panel-section" data-section="panel-section">Panels</a></li>
-        <li><a class="dash-sidebar__link" href="#reviews-section" data-section="reviews-section">Reviews</a></li>
-        <li><a class="dash-sidebar__link" href="#sessions-section" data-section="sessions-section">Sessions</a></li>
+        <li><a class="dash-sidebar__link dash-sidebar__link--active" href="#overall-section" data-section="overall-section" aria-label="Overview section">Overview</a></li>
+        <li><a class="dash-sidebar__link" href="#convoy-section" data-section="convoy-section" aria-label="Convoy section">Convoy</a></li>
+        <li><a class="dash-sidebar__link" href="#tasks-section" data-section="tasks-section" aria-label="Tasks section">Tasks</a></li>
+        <li><a class="dash-sidebar__link" href="#quality-section" data-section="quality-section" aria-label="Quality section">Quality</a></li>
+        <li><a class="dash-sidebar__link" href="#reliability-section" data-section="reliability-section" aria-label="Reliability section">Reliability</a></li>
+        <li><a class="dash-sidebar__link" href="#drift-section" data-section="drift-section" aria-label="Drift section">Drift</a></li>
+        <li><a class="dash-sidebar__link" href="#outputs-section" data-section="outputs-section" aria-label="Outputs section">Outputs</a></li>
+        <li><a class="dash-sidebar__link" href="#event-timeline-section" data-section="event-timeline-section" aria-label="Event Log section">Event Log</a></li>
       </ul>
     </nav>
 
   <main class="dash-main">
+    <!-- Overall Stats Section -->
+    <section class="overall-stats" id="overall-section" data-nav-section>
+      <div class="overall-stats__header">
+        <h2 class="overall-stats__title">Overall Stats</h2>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: How all runs behave across your project." data-tooltip="How all runs behave across your project.">ℹ️</span>
+      </div>
+      <div class="overall-stats__grid">
+        <div class="overall-kpi" id="overall-total-runs">
+          <span class="overall-kpi__label">Total Runs <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Number of convoy runs executed" data-tooltip="Number of convoy runs executed">ℹ️</span></span>
+          <span class="overall-kpi__value">&mdash;</span>
+        </div>
+        <div class="overall-kpi" id="overall-running">
+          <span class="overall-kpi__label">Running Now</span>
+          <span class="overall-kpi__value">&mdash;</span>
+        </div>
+        <div class="overall-kpi" id="overall-success-rate">
+          <span class="overall-kpi__label">Success Rate</span>
+          <span class="overall-kpi__value">&mdash;</span>
+        </div>
+        <div class="overall-kpi" id="overall-avg-duration">
+          <span class="overall-kpi__label">Avg Duration</span>
+          <span class="overall-kpi__value">&mdash;</span>
+        </div>
+        <div class="overall-kpi" id="overall-total-tokens">
+          <span class="overall-kpi__label">Total Tokens</span>
+          <span class="overall-kpi__value">&mdash;</span>
+        </div>
+        <div class="overall-kpi" id="overall-total-cost">
+          <span class="overall-kpi__label">Total Cost</span>
+          <span class="overall-kpi__value">&mdash;</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Selected Convoy Header -->
+    <section class="convoy-detail-header" id="convoy-detail-header">
+      <div class="convoy-detail-header__top">
+        <h2 class="convoy-detail-header__name" id="selected-convoy-name">No convoy selected</h2>
+        <span class="status-badge" id="selected-convoy-status" role="status"></span>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: A convoy is a set of AI tasks working together on one goal." data-tooltip="A convoy is a set of AI tasks working together on one goal.">ℹ️</span>
+      </div>
+      <p class="convoy-status-explanation" id="convoy-status-explanation" role="status" aria-live="polite"></p>
+      <div class="convoy-detail-header__meta" id="selected-convoy-meta">
+        <!-- Populated by JS: branch, timestamps, duration, tokens, cost -->
+      </div>
+    </section>
+
+    <!-- Tasks Section -->
+    <section class="chart-card" id="tasks-section" data-nav-section style="display:none">
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Tasks</h2>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Individual units of work in this convoy." data-tooltip="Individual units of work in this convoy.">ℹ️</span>
+        <p class="chart-card__desc" id="tasks-section-desc">Task breakdown for the selected convoy</p>
+      </div>
+      <div class="chart-card__body" id="tasks-section-body">
+        <div id="task-summary-cards" class="task-summary-cards"></div>
+        <div id="phase-breakdown" class="phase-breakdown"></div>
+        <div id="task-table-wrap" class="task-table-wrap"></div>
+      </div>
+    </section>
+
+    <!-- Quality Section -->
+    <section class="chart-card" id="quality-section" data-nav-section style="display:none">
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Quality / Review</h2>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Code review results and dispute resolution." data-tooltip="Code review results and dispute resolution.">ℹ️</span>
+        <p class="chart-card__desc">Code review results and quality gate outcomes for the selected convoy</p>
+      </div>
+      <div class="chart-card__body">
+        <div id="quality-cards" class="task-summary-cards"></div>
+        <div id="quality-review-table"></div>
+      </div>
+    </section>
+
+    <!-- Reliability Section -->
+    <section class="chart-card" id="reliability-section" data-nav-section style="display:none">
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Reliability</h2>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Errors, retry attempts, and safety mechanisms." data-tooltip="Errors, retry attempts, and safety mechanisms.">ℹ️</span>
+        <p class="chart-card__desc">Retry queue and error overview for the selected convoy</p>
+      </div>
+      <div class="chart-card__body">
+        <div id="reliability-dlq-card"></div>
+        <div id="reliability-dlq-table"></div>
+        <div style="margin-top:24px">
+          <h3 style="font-size:1rem;font-weight:600;color:var(--text-secondary);margin:0 0 12px">Error Overview</h3>
+          <div id="reliability-error-overview"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Drift Section -->
+    <section class="chart-card" id="drift-section" data-nav-section style="display:none">
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Drift</h2>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: How far the actual work deviated from the original plan." data-tooltip="How far the actual work deviated from the original plan.">ℹ️</span>
+        <p class="chart-card__desc">Plan adherence and deviation metrics for the selected convoy</p>
+      </div>
+      <div class="chart-card__body">
+        <div id="drift-cards" class="task-summary-cards"></div>
+        <div id="drift-secret-banner" style="display:none"></div>
+      </div>
+    </section>
+
+    <!-- Outputs Section -->
+    <section class="chart-card" id="outputs-section" data-nav-section style="display:none">
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Outputs &amp; Artifacts</h2>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Files, data, and summaries produced by this convoy." data-tooltip="Files, data, and summaries produced by this convoy.">ℹ️</span>
+        <p class="chart-card__desc">Files, summaries, and structured data produced by tasks in this convoy</p>
+      </div>
+      <div class="chart-card__body">
+        <div id="outputs-cards" class="task-summary-cards"></div>
+        <div id="artifact-table-wrap"></div>
+      </div>
+    </section>
+
+    <!-- Event Timeline Section -->
+    <section class="chart-card" id="event-timeline-section" data-nav-section style="display:none">
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Event Timeline</h2>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Chronological log of everything that happened during this run." data-tooltip="Chronological log of everything that happened during this run.">ℹ️</span>
+        <p class="chart-card__desc">Convoy events in reverse chronological order</p>
+      </div>
+      <div class="chart-card__body">
+        <div id="event-timeline-filters" class="timeline-filters"></div>
+        <div id="event-timeline-list"></div>
+        <div id="event-timeline-load-more" style="display:none;text-align:center;padding:16px">
+          <button class="dash-btn dash-btn--ghost" id="event-timeline-more-btn" type="button">Load more</button>
+        </div>
+      </div>
+    </section>
+
     <!-- Filter Bar -->
     <div class="filter-bar" id="filter-bar">
       <div class="filter-group">
@@ -1674,9 +1819,684 @@ const base = import.meta.env.BASE_URL;
     });
   }
 
+  // ── Overall Stats Rendering ──────────────────────────────
+
+  function renderOverallStats() {
+    const data = window.__DASHBOARD_DATA__;
+    if (!data || !data.overallStats) return;
+    const stats = data.overallStats;
+    const cc = stats.convoyCounts || {};
+    const tc = stats.tokenCostTotals || {};
+    const ds = stats.durationStats || {};
+
+    setKpiValue('overall-total-runs', String(cc.total || 0));
+    setKpiValue('overall-running', String(cc.running || 0));
+
+    const total = cc.total || 0;
+    const success = cc.done || 0;
+    const rate = total > 0 ? ((success / total) * 100).toFixed(1) + '%' : '\u2014';
+    setKpiValue('overall-success-rate', rate);
+
+    const avgSec = ds.avg_sec;
+    setKpiValue('overall-avg-duration', avgSec != null ? formatDurationSec(avgSec) : '\u2014');
+    setKpiValue('overall-total-tokens', formatTokens(tc.total_tokens || 0));
+    setKpiValue('overall-total-cost', '$' + (tc.total_cost_usd || 0).toFixed(2));
+  }
+
+  function setKpiValue(id, value) {
+    const el = document.getElementById(id);
+    if (el) {
+      const valEl = el.querySelector('.overall-kpi__value');
+      if (valEl) valEl.textContent = value;
+    }
+  }
+
+  function formatDurationSec(sec) {
+    if (sec < 60) return Math.round(sec) + 's';
+    const min = Math.floor(sec / 60);
+    const remSec = Math.round(sec % 60);
+    if (min < 60) return min + 'm ' + remSec + 's';
+    const hr = Math.floor(min / 60);
+    const remMin = min % 60;
+    return hr + 'h ' + remMin + 'm';
+  }
+
+  // ── Convoy Selector ──────────────────────────────────────
+
+  function populateConvoySelector() {
+    const data = window.__DASHBOARD_DATA__;
+    const select = document.getElementById('convoy-select');
+    if (!select || !data || !data.convoyList) return;
+
+    select.innerHTML = '<option value="">Select convoy\u2026</option>';
+    const list = data.convoyList;
+    for (const c of list) {
+      const opt = document.createElement('option');
+      opt.value = c.id;
+      const dateStr = c.created_at ? c.created_at.slice(0, 10) : '';
+      opt.textContent = (c.name || c.id) + ' \u2014 ' + c.status + ' (' + dateStr + ')';
+      select.appendChild(opt);
+    }
+
+    // Default: select latest (first in list)
+    if (list.length > 0) {
+      select.value = list[0].id;
+      loadConvoyDetail(list[0].id);
+    }
+  }
+
+  async function loadConvoyDetail(convoyId) {
+    if (!convoyId) {
+      renderConvoyDetailHeader(null);
+      ['quality-section', 'reliability-section', 'drift-section', 'outputs-section', 'event-timeline-section'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      return;
+    }
+    try {
+      const resp = await fetch(base + 'data/convoys/' + encodeURIComponent(convoyId) + '.json');
+      if (!resp.ok) throw new Error('Failed to load convoy detail');
+      const detail = await resp.json();
+      renderConvoyDetailHeader(detail);
+      window.__SELECTED_CONVOY__ = detail;
+      renderTaskSummaryCards(detail.tasks || []);
+      renderTaskTable(detail.tasks || []);
+      renderPhaseBreakdown(detail.tasks || []);
+      const tasksSection = document.getElementById('tasks-section');
+      if (tasksSection) tasksSection.style.display = '';
+      renderQualitySection(detail);
+      renderReliabilitySection(detail);
+      renderDriftSection(detail);
+      renderOutputsSection(detail);
+      renderEventTimeline(detail);
+    } catch (e) {
+      console.error('Failed to load convoy detail:', e);
+      renderConvoyDetailHeader(null);
+      ['quality-section', 'reliability-section', 'drift-section', 'outputs-section', 'event-timeline-section'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+    }
+  }
+
+  function renderConvoyDetailHeader(detail) {
+    const nameEl = document.getElementById('selected-convoy-name');
+    const statusEl = document.getElementById('selected-convoy-status');
+    const metaEl = document.getElementById('selected-convoy-meta');
+
+    if (!detail || !detail.convoy) {
+      if (nameEl) nameEl.textContent = 'No convoy selected';
+      if (statusEl) { statusEl.textContent = ''; statusEl.className = 'status-badge'; }
+      if (metaEl) metaEl.innerHTML = '';
+      ['tasks-section', 'quality-section', 'reliability-section', 'drift-section', 'outputs-section', 'event-timeline-section'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      return;
+    }
+
+    const c = detail.convoy;
+    if (nameEl) nameEl.textContent = c.name || c.id;
+    if (statusEl) {
+      statusEl.textContent = c.status;
+      statusEl.className = 'status-badge status-badge--' + c.status;
+    }
+    // Status explanation
+    const statusExplanations = {
+      'running': 'This run is still in progress; some tasks are being executed.',
+      'done': 'This run completed successfully; all tasks finished.',
+      'failed': 'This run stopped because at least one task could not recover.',
+      'gate-failed': 'This run stopped because a quality check failed.',
+      'hook-failed': 'This run stopped because a lifecycle script failed.',
+    };
+    const explanationEl = document.getElementById('convoy-status-explanation');
+    if (explanationEl) {
+      explanationEl.textContent = statusExplanations[c.status] || '';
+      explanationEl.style.display = statusExplanations[c.status] ? '' : 'none';
+    }
+    if (metaEl) {
+      let html = '';
+      if (c.branch) html += '<span class="convoy-meta__item">🌿 ' + escapeHtml(c.branch) + '</span>';
+      if (c.created_at) html += '<span class="convoy-meta__item">\u25B6 ' + formatTime(c.created_at) + '</span>';
+      if (c.finished_at) html += '<span class="convoy-meta__item">\u25A0 ' + formatTime(c.finished_at) + '</span>';
+      if (c.created_at && c.finished_at) {
+        const dur = formatDuration(c.created_at, c.finished_at);
+        if (dur) html += '<span class="convoy-meta__item">\u23F1 ' + dur + '</span>';
+      }
+      if (c.total_tokens != null) html += '<span class="convoy-meta__item">\uD83D\uDD24 ' + formatTokens(c.total_tokens) + ' tokens</span>';
+      if (c.total_cost_usd != null) html += '<span class="convoy-meta__item">\uD83D\uDCB0 $' + c.total_cost_usd.toFixed(2) + '</span>';
+      metaEl.innerHTML = html;
+    }
+  }
+
+  // ── Task Section ─────────────────────────────────────────
+
+  const STATUS_TOOLTIPS = {
+    'done': 'Finished successfully.',
+    'running': 'Currently executing.',
+    'pending': 'Waiting to start.',
+    'assigned': 'Assigned to a worker, starting soon.',
+    'failed': 'Stopped due to an error.',
+    'gate-failed': 'A quality check did not pass.',
+    'timed-out': 'Exceeded the time limit.',
+    'review-blocked': 'Paused because a reviewer requested changes.',
+    'skipped': 'Skipped because a dependency failed.',
+    'hook-failed': 'A pre/post-task script encountered an error.',
+    'disputed': 'Under dispute after review disagreement.',
+    'wait-for-input': 'Paused \u2014 needs your input.',
+  };
+
+  let taskSortCol = 'phase';
+  let taskSortAsc = true;
+
+  function renderTaskSummaryCards(tasks) {
+    const el = document.getElementById('task-summary-cards');
+    if (!el) return;
+    if (!tasks || tasks.length === 0) { el.innerHTML = ''; return; }
+    const done = tasks.filter(t => t.status === 'done').length;
+    const waiting = tasks.filter(t => t.status === 'pending' || t.status === 'assigned').length;
+    const running = tasks.filter(t => t.status === 'running').length;
+    const errors = tasks.filter(t => ['failed', 'gate-failed', 'timed-out', 'hook-failed'].includes(t.status)).length;
+    const waitInput = tasks.filter(t => t.status === 'wait-for-input').length;
+    const cards = [
+      { label: 'Tasks Completed', value: done, tooltip: 'Tasks that finished successfully.', mod: 'done' },
+      { label: 'Tasks Waiting', value: waiting, tooltip: 'Tasks not yet started.', mod: 'waiting' },
+      { label: 'Tasks Running', value: running, tooltip: 'Tasks currently being executed.', mod: 'running' },
+      { label: 'Tasks With Errors', value: errors, tooltip: 'Tasks that stopped due to errors.', mod: 'errors' },
+      { label: 'Waiting For Input', value: waitInput, tooltip: 'Tasks paused until you provide input.', mod: 'input' },
+    ];
+    el.innerHTML = cards.map(card =>
+      '<div class="task-summary-card task-summary-card--' + card.mod + '">' +
+        '<span class="task-summary-card__label">' + escapeHtml(card.label) +
+          ' <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: ' + escapeHtml(card.tooltip) + '" data-tooltip="' + escapeHtml(card.tooltip) + '">\u2139\uFE0F</span>' +
+        '</span>' +
+        '<span class="task-summary-card__value">' + card.value + '</span>' +
+      '</div>'
+    ).join('');
+  }
+
+  function renderTaskTable(tasks) {
+    const el = document.getElementById('task-table-wrap');
+    if (!el) return;
+    if (!tasks || tasks.length === 0) {
+      el.innerHTML = emptyStateHtml('pipeline', 'No tasks', 'This convoy has no tasks recorded.');
+      return;
+    }
+    const cols = [
+      { key: 'phase', label: 'Phase' },
+      { key: 'agent', label: 'Agent' },
+      { key: 'status', label: 'Status' },
+      { key: 'duration', label: 'Duration' },
+      { key: 'retries', label: 'Retries' },
+      { key: 'files', label: 'Files' },
+      { key: 'total_tokens', label: 'Tokens' },
+    ];
+    const sorted = tasks.slice().sort((a, b) => {
+      let av, bv;
+      if (taskSortCol === 'duration') {
+        av = (a.started_at && a.finished_at) ? (new Date(a.finished_at) - new Date(a.started_at)) : -1;
+        bv = (b.started_at && b.finished_at) ? (new Date(b.finished_at) - new Date(b.started_at)) : -1;
+      } else if (taskSortCol === 'files') {
+        av = a.files ? a.files.length : 0;
+        bv = b.files ? b.files.length : 0;
+      } else {
+        av = a[taskSortCol] != null ? a[taskSortCol] : '';
+        bv = b[taskSortCol] != null ? b[taskSortCol] : '';
+      }
+      if (av < bv) return taskSortAsc ? -1 : 1;
+      if (av > bv) return taskSortAsc ? 1 : -1;
+      return 0;
+    });
+    const thead = '<thead><tr>' + cols.map(col => {
+      const isActive = col.key === taskSortCol;
+      const indicator = isActive ? (taskSortAsc ? ' \u25B2' : ' \u25BC') : ' \u25B6';
+      const ariaSort = isActive ? (taskSortAsc ? 'ascending' : 'descending') : 'none';
+      return '<th class="sortable-th' + (isActive ? ' sortable-th--active' : '') + '" data-sort-key="' + col.key + '" scope="col" aria-sort="' + ariaSort + '">' +
+        escapeHtml(col.label) +
+        '<span class="sort-indicator">' + indicator + '</span>' +
+        '</th>';
+    }).join('') + '</tr></thead>';
+    const tbody = '<tbody>' + sorted.map(t => {
+      const statusTip = STATUS_TOOLTIPS[t.status] || '';
+      const statusBadge = '<span class="status-badge status-badge--' + escapeHtml(t.status) + '" title="' + escapeHtml(statusTip) + '" role="status">' + escapeHtml(t.status) + '</span>';
+      const dur = formatDuration(t.started_at, t.finished_at) || '\u2014';
+      const fileCount = t.files ? t.files.length : 0;
+      const fileTip = t.files && t.files.length > 0 ? t.files.join('\n') : '';
+      const filesCell = fileCount > 0
+        ? '<span class="tooltip-trigger" data-tooltip="' + escapeHtml(fileTip) + '">' + fileCount + ' file' + (fileCount !== 1 ? 's' : '') + '</span>'
+        : '<span style="opacity:0.4">\u2014</span>';
+      const tokens = t.total_tokens != null ? formatTokens(t.total_tokens) : '\u2014';
+      return '<tr>' +
+        '<td>' + (t.phase != null ? t.phase : '\u2014') + '</td>' +
+        '<td class="td-agent">' + escapeHtml(t.agent || '\u2014') + '</td>' +
+        '<td>' + statusBadge + '</td>' +
+        '<td>' + dur + '</td>' +
+        '<td class="td-num">' + t.retries + '</td>' +
+        '<td>' + filesCell + '</td>' +
+        '<td class="td-num">' + tokens + '</td>' +
+        '</tr>';
+    }).join('') + '</tbody>';
+    el.innerHTML = '<table class="sessions-table task-table">' + thead + tbody + '</table>';
+    el.querySelectorAll('.sortable-th').forEach(th => {
+      th.addEventListener('click', function() {
+        const key = this.dataset.sortKey;
+        if (key === taskSortCol) {
+          taskSortAsc = !taskSortAsc;
+        } else {
+          taskSortCol = key;
+          taskSortAsc = true;
+        }
+        const convoy = window.__SELECTED_CONVOY__;
+        renderTaskTable((convoy && convoy.tasks) ? convoy.tasks : []);
+      });
+    });
+  }
+
+  function renderPhaseBreakdown(tasks) {
+    const el = document.getElementById('phase-breakdown');
+    if (!el) return;
+    if (!tasks || tasks.length === 0) { el.innerHTML = ''; return; }
+    const phaseMap = {};
+    for (const t of tasks) {
+      const p = t.phase != null ? String(t.phase) : '0';
+      if (!phaseMap[p]) phaseMap[p] = { done: 0, running: 0, waiting: 0, failed: 0 };
+      if (t.status === 'done') phaseMap[p].done++;
+      else if (t.status === 'running') phaseMap[p].running++;
+      else if (t.status === 'pending' || t.status === 'assigned') phaseMap[p].waiting++;
+      else phaseMap[p].failed++;
+    }
+    const phases = Object.keys(phaseMap).sort((a, b) => Number(a) - Number(b));
+    if (phases.length === 0) { el.innerHTML = ''; return; }
+    const html = phases.map(p => {
+      const d = phaseMap[p];
+      const total = d.done + d.running + d.waiting + d.failed;
+      if (total === 0) return '';
+      const pct = v => Math.round((v / total) * 100);
+      const segments = [
+        { cls: 'done', v: d.done },
+        { cls: 'running', v: d.running },
+        { cls: 'waiting', v: d.waiting },
+        { cls: 'failed', v: d.failed },
+      ].filter(s => s.v > 0);
+      return '<div class="phase-breakdown__row">' +
+        '<span class="phase-breakdown__label">Phase ' + escapeHtml(p) + '</span>' +
+        '<div class="phase-breakdown__bar">' +
+          segments.map(s =>
+            '<div class="phase-breakdown__seg phase-breakdown__seg--' + s.cls + '" style="width:' + pct(s.v) + '%" title="' + s.cls + ': ' + s.v + '"></div>'
+          ).join('') +
+        '</div>' +
+        '<span class="phase-breakdown__count">' + total + ' task' + (total !== 1 ? 's' : '') + '</span>' +
+      '</div>';
+    }).join('');
+    el.innerHTML = html;
+  }
+
+  // ── Quality Section ──────────────────────────────────────
+
+  function renderQualitySection(detail) {
+    var section = document.getElementById('quality-section');
+    if (!section) return;
+    section.style.display = '';
+
+    var q = detail.quality || {};
+    var qCards = [
+      { label: 'Tasks Reviewed', value: q.reviewed_tasks != null ? q.reviewed_tasks : 0, tooltip: 'Tasks that completed a code review check.', mod: 'done' },
+      { label: 'Blocked by Review', value: q.review_blocked_tasks != null ? q.review_blocked_tasks : 0, tooltip: 'Tasks paused because a reviewer requested changes.', mod: 'errors' },
+      { label: 'Disputes Opened', value: q.disputed_tasks != null ? q.disputed_tasks : 0, tooltip: 'Tasks where reviewers disagreed and opened a formal dispute.', mod: 'waiting' },
+      { label: 'Panel Reviews', value: q.panel_reviews != null ? q.panel_reviews : 0, tooltip: 'Tasks that went to a 3-reviewer panel vote for a final decision.', mod: 'running' },
+    ];
+
+    var cardsEl = document.getElementById('quality-cards');
+    if (cardsEl) {
+      cardsEl.innerHTML = qCards.map(function(card) {
+        return '<div class="task-summary-card task-summary-card--' + card.mod + '">' +
+          '<span class="task-summary-card__label">' + escapeHtml(card.label) +
+          ' <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: ' + escapeHtml(card.tooltip) + '" data-tooltip="' + escapeHtml(card.tooltip) + '">\u2139\uFE0F</span>' +
+          '</span>' +
+          '<span class="task-summary-card__value">' + card.value + '</span>' +
+          '</div>';
+      }).join('');
+    }
+
+    var reviewTasks = (detail.tasks || []).filter(function(t) { return t.review_level != null; });
+    var tableEl = document.getElementById('quality-review-table');
+    if (!tableEl) return;
+
+    if (reviewTasks.length === 0) {
+      tableEl.innerHTML = emptyStateHtml('panels', 'No reviewed tasks', 'Tasks with code reviews will appear here.');
+      return;
+    }
+
+    tableEl.innerHTML =
+      '<table class="sessions-table" style="margin-top:16px">' +
+      '<thead><tr>' +
+      '<th scope="col">Task ID</th>' +
+      '<th scope="col">Review Level</th>' +
+      '<th scope="col">Verdict</th>' +
+      '<th scope="col">Reviewer Model</th>' +
+      '<th scope="col">Review Tokens</th>' +
+      '<th scope="col">Panel Attempts</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+      reviewTasks.map(function(t) {
+        var verdictUpper = t.review_verdict ? t.review_verdict.toUpperCase() : '';
+        var verdictBadge = t.review_verdict
+          ? '<span class="status-badge status-badge--' + (verdictUpper === 'PASS' ? 'done' : 'failed') + '">' + escapeHtml(t.review_verdict) + '</span>'
+          : '<span style="opacity:0.4">\u2014</span>';
+        return '<tr>' +
+          '<td class="td-task">' + escapeHtml(t.id || '\u2014') + '</td>' +
+          '<td>' + escapeHtml(t.review_level || '\u2014') + '</td>' +
+          '<td>' + verdictBadge + '</td>' +
+          '<td>' + escapeHtml(t.review_model || '\u2014') + '</td>' +
+          '<td class="td-num">' + (t.review_tokens != null ? formatTokens(t.review_tokens) : '\u2014') + '</td>' +
+          '<td class="td-num">' + (t.panel_attempts != null ? t.panel_attempts : '\u2014') + '</td>' +
+          '</tr>';
+      }).join('') +
+      '</tbody></table>';
+  }
+
+  // ── Reliability Section ──────────────────────────────────
+
+  function renderReliabilitySection(detail) {
+    var section = document.getElementById('reliability-section');
+    if (!section) return;
+    section.style.display = '';
+
+    var dlqCount = detail.dlq_count || 0;
+    var dlqEntries = detail.dlq_entries || [];
+
+    var dlqCardEl = document.getElementById('reliability-dlq-card');
+    if (dlqCardEl) {
+      dlqCardEl.innerHTML =
+        '<div class="task-summary-card task-summary-card--' + (dlqCount > 0 ? 'errors' : 'done') + '">' +
+        '<span class="task-summary-card__label">Retry Queue <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Tasks that failed too many times and need manual attention. Also known as Dead Letter Queue (DLQ)." data-tooltip="Tasks that failed too many times and need manual attention. Also known as Dead Letter Queue (DLQ).">\u2139\uFE0F</span></span>' +
+        '<span class="task-summary-card__value">' + dlqCount + '</span>' +
+        '</div>';
+    }
+
+    var dlqTableEl = document.getElementById('reliability-dlq-table');
+    if (dlqTableEl) {
+      if (dlqEntries.length === 0) {
+        dlqTableEl.innerHTML = '<p class="reliability-empty">No retry queue entries \u2014 all tasks completed without exceeding retry limits.</p>';
+      } else {
+        dlqTableEl.innerHTML =
+          '<table class="sessions-table" style="margin-top:16px">' +
+          '<thead><tr>' +
+          '<th scope="col">Task ID</th><th scope="col">Agent</th><th scope="col">Failure Type</th><th scope="col">Attempts</th><th scope="col">Resolved</th>' +
+          '</tr></thead>' +
+          '<tbody>' +
+          dlqEntries.map(function(e) {
+            return '<tr>' +
+              '<td class="td-task">' + escapeHtml(e.task_id || '\u2014') + '</td>' +
+              '<td class="td-agent">' + escapeHtml(e.agent || '\u2014') + '</td>' +
+              '<td>' + escapeHtml(e.failure_type || '\u2014') + '</td>' +
+              '<td class="td-num">' + (e.attempts != null ? e.attempts : '\u2014') + '</td>' +
+              '<td class="td-num">' + (e.resolved ? '\u2713' : '\u2014') + '</td>' +
+              '</tr>';
+          }).join('') +
+          '</tbody></table>';
+      }
+    }
+
+    var errorEl = document.getElementById('reliability-error-overview');
+    if (errorEl) {
+      var tasks = detail.tasks || [];
+      var errorCategories = [
+        { key: 'failed', label: 'Failed', color: '#ef4444' },
+        { key: 'gate-failed', label: 'Quality Check Failed', color: '#f59e0b' },
+        { key: 'timed-out', label: 'Timed Out', color: '#a78bfa' },
+        { key: 'hook-failed', label: 'Lifecycle Script Failed', color: '#64748b' },
+      ];
+      var counts = errorCategories.map(function(cat) {
+        return { key: cat.key, label: cat.label, color: cat.color, count: tasks.filter(function(t) { return t.status === cat.key; }).length };
+      });
+      var maxCount = Math.max(1, counts.reduce(function(m, c) { return Math.max(m, c.count); }, 0));
+      var hasErrors = counts.some(function(c) { return c.count > 0; });
+
+      if (!hasErrors) {
+        errorEl.innerHTML = '<p class="reliability-empty">\u2713 No errors in this convoy.</p>';
+      } else {
+        errorEl.innerHTML = counts.map(function(cat) {
+          return '<div class="bar-row">' +
+            '<span class="bar-label">' + escapeHtml(cat.label) + '</span>' +
+            '<div class="bar-track">' +
+            '<div class="bar-segment" style="width: ' + ((cat.count / maxCount) * 100).toFixed(1) + '%; background: ' + cat.color + '"></div>' +
+            '</div>' +
+            '<span class="bar-value">' + cat.count + '</span>' +
+            '</div>';
+        }).join('');
+      }
+    }
+  }
+
+  // ── Drift Section ────────────────────────────────────────
+
+  function renderDriftSection(detail) {
+    var section = document.getElementById('drift-section');
+    if (!section) return;
+    section.style.display = '';
+
+    var d = detail.drift || {};
+    var maxScore = d.max_drift_score != null ? Math.round(d.max_drift_score * 100) : 0;
+    var driftCards = [
+      { label: 'Tasks With Drift', value: d.tasks_with_drift != null ? d.tasks_with_drift : 0, tooltip: 'Tasks where the agent deviated from the original plan or instructions.', mod: 'waiting' },
+      { label: 'Max Drift Score', value: maxScore + '%', tooltip: 'The highest drift score recorded. 0% = on-track, 100% = fully off-plan.', mod: 'errors' },
+      { label: 'Drift Retried', value: d.drift_retried_tasks != null ? d.drift_retried_tasks : 0, tooltip: 'Tasks that were retried because drift exceeded the allowed threshold.', mod: 'running' },
+    ];
+
+    var cardsEl = document.getElementById('drift-cards');
+    if (cardsEl) {
+      cardsEl.innerHTML = driftCards.map(function(card) {
+        return '<div class="task-summary-card task-summary-card--' + card.mod + '">' +
+          '<span class="task-summary-card__label">' + escapeHtml(String(card.label)) +
+          ' <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: ' + escapeHtml(card.tooltip) + '" data-tooltip="' + escapeHtml(card.tooltip) + '">\u2139\uFE0F</span>' +
+          '</span>' +
+          '<span class="task-summary-card__value">' + card.value + '</span>' +
+          '</div>';
+      }).join('');
+    }
+
+    var bannerEl = document.getElementById('drift-secret-banner');
+    if (bannerEl) {
+      var events = detail.events || [];
+      var leakEvents = events.filter(function(e) { return e.type === 'secret_leak_prevented'; });
+      if (leakEvents.length > 0) {
+        bannerEl.style.display = '';
+        bannerEl.innerHTML =
+          '<div class="secret-leak-banner">' +
+          '<span class="secret-leak-banner__icon">\u26A0\uFE0F</span>' +
+          '<div class="secret-leak-banner__text">' +
+          '<strong>' + leakEvents.length + ' secret leak' + (leakEvents.length !== 1 ? 's' : '') + ' prevented</strong>' +
+          '<span>The security gate blocked credentials or tokens from being exposed. No action needed \u2014 the agent handled it correctly.</span>' +
+          '</div>' +
+          '</div>';
+      } else {
+        bannerEl.style.display = 'none';
+      }
+    }
+  }
+
+  // ── Outputs Section ────────────────────────────────────
+  function renderOutputsSection(detail) {
+    var section = document.getElementById('outputs-section');
+    if (!section) return;
+    section.style.display = '';
+
+    var artifactCount = detail.artifact_count != null ? detail.artifact_count : 0;
+    var artifacts = detail.artifacts || [];
+
+    var cardsEl = document.getElementById('outputs-cards');
+    if (cardsEl) {
+      cardsEl.innerHTML =
+        '<div class="task-summary-card task-summary-card--done">' +
+        '<span class="task-summary-card__label">Outputs Produced ' +
+        '<span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Files, data, and summaries produced by this convoy." data-tooltip="Files, data, and summaries produced by this convoy.">\u2139\uFE0F</span>' +
+        '</span>' +
+        '<span class="task-summary-card__value">' + artifactCount + '</span>' +
+        '</div>';
+    }
+
+    var tableEl = document.getElementById('artifact-table-wrap');
+    if (!tableEl) return;
+
+    if (artifacts.length === 0) {
+      tableEl.innerHTML = emptyStateHtml('pipeline', 'No artifacts', 'Artifacts produced by tasks will appear here.');
+      return;
+    }
+
+    var TYPE_BADGE_COLORS = { file: '#64748b', summary: '#3b82f6', json: '#a78bfa' };
+
+    tableEl.innerHTML =
+      '<table class="sessions-table" style="margin-top:16px">' +
+      '<thead><tr><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Task</th><th scope="col">Created At</th></tr></thead>' +
+      '<tbody>' +
+      artifacts.map(function(a) {
+        var badgeColor = TYPE_BADGE_COLORS[a.type] || '#64748b';
+        var typeBadge = '<span class="artifact-type-badge" style="background:' + badgeColor + '">' + escapeHtml(a.type) + '</span>';
+        var taskCell = a.task_id ? escapeHtml(a.task_id) : '<span style="opacity:0.4">—</span>';
+        var created = a.created_at ? formatTime(a.created_at) : '—';
+        return '<tr>' +
+          '<td>' + escapeHtml(a.name) + '</td>' +
+          '<td>' + typeBadge + '</td>' +
+          '<td class="td-task">' + taskCell + '</td>' +
+          '<td>' + created + '</td>' +
+          '</tr>';
+      }).join('') +
+      '</tbody></table>';
+  }
+
+  // ── Event Timeline Section ─────────────────────────────
+  var eventTimelinePageSize = 50;
+  var eventTimelineCurrentPage = 1;
+  var eventTimelineActiveFilter = 'all';
+  var eventTimelineAllEvents = [];
+
+  var EVENT_CATEGORIES = {
+    lifecycle: ['convoy_started', 'convoy_finished', 'convoy_failed'],
+    tasks: ['task_started', 'task_done', 'task_failed', 'task_assigned', 'task_skipped', 'task_retried', 'task_timed_out', 'task_gate_failed', 'task_hook_failed', 'task_wait_input'],
+    reviews: ['review_started', 'review_verdict', 'panel_started', 'panel_verdict'],
+    system: ['circuit_breaker_open', 'circuit_breaker_close', 'circuit_breaker_half_open', 'merge_conflict_detected', 'merge_conflict_resolved', 'watch_started', 'watch_stopped', 'watch_cycle_start', 'watch_cycle_end', 'discovered_issue', 'secret_leak_prevented'],
+    errors: []
+  };
+
+  var EVENT_TYPE_COLORS = {};
+  EVENT_CATEGORIES.lifecycle.forEach(function(t) { EVENT_TYPE_COLORS[t] = '#3b82f6'; });
+  EVENT_CATEGORIES.tasks.forEach(function(t) { EVENT_TYPE_COLORS[t] = t.includes('fail') || t.includes('timed') ? '#ef4444' : '#10b981'; });
+  EVENT_CATEGORIES.reviews.forEach(function(t) { EVENT_TYPE_COLORS[t] = '#a78bfa'; });
+  EVENT_CATEGORIES.system.forEach(function(t) { EVENT_TYPE_COLORS[t] = '#f59e0b'; });
+
+  function getEventCategory(type) {
+    if (EVENT_CATEGORIES.lifecycle.includes(type)) return 'lifecycle';
+    if (EVENT_CATEGORIES.tasks.includes(type)) return 'tasks';
+    if (EVENT_CATEGORIES.reviews.includes(type)) return 'reviews';
+    if (EVENT_CATEGORIES.system.includes(type)) return 'system';
+    return 'meta';
+  }
+
+  function isErrorEvent(evt) {
+    var type = evt.type || '';
+    return type.includes('fail') || type.includes('block') || type.includes('error') || type.includes('timed_out') || type.includes('circuit_breaker_open');
+  }
+
+  function renderEventTimeline(detail) {
+    var section = document.getElementById('event-timeline-section');
+    if (!section) return;
+    section.style.display = '';
+
+    eventTimelineAllEvents = detail.events || [];
+    eventTimelineCurrentPage = 1;
+    eventTimelineActiveFilter = 'all';
+
+    renderEventTimelineFilters();
+    renderEventTimelineList();
+  }
+
+  function renderEventTimelineFilters() {
+    var el = document.getElementById('event-timeline-filters');
+    if (!el) return;
+
+    var filters = [
+      { key: 'all', label: 'All' },
+      { key: 'lifecycle', label: 'Lifecycle' },
+      { key: 'tasks', label: 'Tasks' },
+      { key: 'reviews', label: 'Reviews' },
+      { key: 'system', label: 'System' },
+      { key: 'errors', label: 'Errors' },
+    ];
+
+    el.innerHTML = filters.map(function(f) {
+      var active = f.key === eventTimelineActiveFilter ? ' timeline-filter-chip--active' : '';
+      return '<button class="timeline-filter-chip' + active + '" data-filter="' + f.key + '" type="button" aria-label="Filter events: ' + escapeHtml(f.label) + '">' + escapeHtml(f.label) + '</button>';
+    }).join('');
+
+    el.querySelectorAll('.timeline-filter-chip').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        eventTimelineActiveFilter = this.dataset.filter;
+        eventTimelineCurrentPage = 1;
+        renderEventTimelineFilters();
+        renderEventTimelineList();
+      });
+    });
+  }
+
+  function getFilteredEvents() {
+    if (eventTimelineActiveFilter === 'all') return eventTimelineAllEvents;
+    if (eventTimelineActiveFilter === 'errors') return eventTimelineAllEvents.filter(isErrorEvent);
+    var cats = EVENT_CATEGORIES[eventTimelineActiveFilter];
+    if (!cats) return eventTimelineAllEvents;
+    return eventTimelineAllEvents.filter(function(evt) { return cats.includes(evt.type); });
+  }
+
+  function renderEventTimelineList() {
+    var el = document.getElementById('event-timeline-list');
+    if (!el) return;
+
+    var filtered = getFilteredEvents();
+    var visible = filtered.slice(0, eventTimelineCurrentPage * eventTimelinePageSize);
+
+    if (filtered.length === 0) {
+      el.innerHTML = emptyStateHtml('timeline', 'No events', 'Events from this convoy will appear here.');
+      document.getElementById('event-timeline-load-more').style.display = 'none';
+      return;
+    }
+
+    el.innerHTML = visible.map(function(evt, idx) {
+      var typeColor = EVENT_TYPE_COLORS[evt.type] || '#64748b';
+      var ts = evt.created_at ? formatTime(evt.created_at) : '—';
+      var taskInfo = evt.task_id ? '<span class="event-timeline-context">' + escapeHtml(evt.task_id) + '</span>' : '';
+      var dataJson = evt.data ? JSON.stringify(evt.data, null, 2) : null;
+
+      return '<div class="event-timeline-row" data-event-idx="' + idx + '" role="button" tabindex="0" aria-label="Event: ' + escapeHtml(evt.type) + (evt.task_id ? ', task: ' + escapeHtml(evt.task_id) : '') + '">' +
+        '<div class="event-timeline-row__main">' +
+          '<span class="event-timeline-ts">' + ts + '</span>' +
+          '<span class="event-type-badge" style="background:' + typeColor + '">' + escapeHtml(evt.type) + '</span>' +
+          taskInfo +
+        '</div>' +
+        (dataJson
+          ? '<div class="event-timeline-detail" style="display:none"><pre class="event-timeline-json">' + escapeHtml(dataJson) + '</pre></div>'
+          : '') +
+      '</div>';
+    }).join('');
+
+    el.querySelectorAll('.event-timeline-row').forEach(function(row) {
+      row.addEventListener('click', function() {
+        var detailEl = this.querySelector('.event-timeline-detail');
+        if (detailEl) {
+          detailEl.style.display = detailEl.style.display === 'none' ? '' : 'none';
+          this.classList.toggle('event-timeline-row--expanded');
+        }
+      });
+    });
+
+    var loadMoreEl = document.getElementById('event-timeline-load-more');
+    if (loadMoreEl) {
+      loadMoreEl.style.display = visible.length < filtered.length ? '' : 'none';
+    }
+  }
+
   async function main() {
     const events = await loadNdjson(base + 'data/events.ndjson');
-    const convoys = await loadNdjson(base + 'data/convoys.ndjson');
     const pipelines = await loadNdjson(base + 'data/pipelines.ndjson');
 
     const sessions = events.filter((e) => e.type === 'session');
@@ -1715,6 +2535,25 @@ const base = import.meta.env.BASE_URL;
 
     // Apply convoy param after initial render (shows convoy section if needed)
     if (convoyParam) applyFilters();
+
+    // ── Overall stats + convoy selector ──────────────────
+    renderOverallStats();
+    populateConvoySelector();
+
+    const convoySelectEl = document.getElementById('convoy-select');
+    if (convoySelectEl) {
+      convoySelectEl.addEventListener('change', function() {
+        loadConvoyDetail(this.value);
+      });
+    }
+
+    var loadMoreBtn = document.getElementById('event-timeline-more-btn');
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', function() {
+        eventTimelineCurrentPage++;
+        renderEventTimelineList();
+      });
+    }
 
     // ── Filter event listeners ────────────────────────────
     document.getElementById('filter-date-from')?.addEventListener('change', applyFilters);

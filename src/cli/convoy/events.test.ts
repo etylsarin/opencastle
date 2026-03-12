@@ -2,10 +2,10 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync, existsSync, mkdirSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { realpathSync } from 'node:fs'
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { createConvoyStore } from './store.js'
-import { createEventEmitter } from './events.js'
-import { recoverNdjson } from './engine.js'
+import { createEventEmitter, ndjsonPathForConvoy, recoverNdjson, validateEventType } from './events.js'
+import { KNOWN_EVENT_TYPES } from './types.js'
 import type { ConvoyStore } from './store.js'
 
 let tmpDir: string
@@ -34,6 +34,13 @@ afterEach(() => {
 })
 
 describe('createEventEmitter', () => {
+  it('throws TypeError when options is a string', () => {
+    expect(() => createEventEmitter(store, 'bad' as unknown as any)).toThrow(TypeError)
+    expect(() => createEventEmitter(store, 'bad' as unknown as any)).toThrow(
+      'createEventEmitter options must be an object, not a string',
+    )
+  })
+
   it('inserts the event into SQLite', () => {
     const emitter = createEventEmitter(store)
     emitter.emit('task_started', { msg: 'started' }, { convoy_id: 'c1' })
@@ -126,6 +133,33 @@ describe('createEventEmitter', () => {
     const emitter = createEventEmitter(store, { ndjsonPath })
     emitter.close()
     expect(() => emitter.close()).not.toThrow()
+  })
+
+  it('sanitizes reserved keys from caller data before NDJSON write', () => {
+    const emitter = createEventEmitter(store, { ndjsonPath })
+    emitter.emit(
+      'task_started',
+      {
+        convoy_id: 'attacker',
+        timestamp: 'fake',
+        _event_id: 999,
+        type: 'evil',
+        task_id: 'injected',
+        worker_id: 'hacker',
+        custom_field: 'ok',
+      },
+      { convoy_id: 'c1', task_id: 't1', worker_id: 'w1' },
+    )
+    emitter.close()
+    const content = readFileSync(ndjsonPath, 'utf8')
+    const line = JSON.parse(content.trim())
+    expect(line.convoy_id).toBe('c1')
+    expect(line.task_id).toBe('t1')
+    expect(line.worker_id).toBe('w1')
+    expect(line.type).toBe('task_started')
+    expect(line._event_id).not.toBe(999)
+    expect(line.timestamp).not.toBe('fake')
+    expect(line.custom_field).toBe('ok')
   })
 })
 
@@ -254,6 +288,176 @@ describe('crash resilience', () => {
     recoverNdjson(store, 'c1', ndjsonPath)
     const linesAfter = readFileSync(ndjsonPath, 'utf8').split('\n').filter(l => l.trim())
     expect(linesAfter).toHaveLength(count)
+  })
+
+  it('6. canonical-field protection: event.data cannot override DB row fields', () => {
+    // Insert an event whose data contains attacker-controlled reserved keys
+    store.insertEvent({
+      convoy_id: 'c1',
+      task_id: 'legit-task',
+      worker_id: 'legit-worker',
+      type: 'task_done',
+      data: JSON.stringify({
+        convoy_id: 'attacker',
+        timestamp: 'fake',
+        _event_id: 9999,
+        type: 'evil',
+        task_id: 'injected',
+        worker_id: 'hacker',
+        safe_field: 'this-is-fine',
+      }),
+      created_at: new Date().toISOString(),
+    })
+
+    recoverNdjson(store, 'c1', ndjsonPath)
+
+    const lines = readFileSync(ndjsonPath, 'utf8').split('\n').filter(l => l.trim())
+    expect(lines).toHaveLength(1)
+    const record = JSON.parse(lines[0]) as Record<string, unknown>
+
+    // Canonical fields must come from the DB row, not from data
+    expect(record.convoy_id).toBe('c1')
+    expect(record.task_id).toBe('legit-task')
+    expect(record.worker_id).toBe('legit-worker')
+    expect(record.type).toBe('task_done')
+    expect(record._event_id).not.toBe(9999)
+    expect(record.timestamp).not.toBe('fake')
+
+    // Attacker values must not appear
+    expect(record.convoy_id).not.toBe('attacker')
+    expect(record.type).not.toBe('evil')
+    expect(record.task_id).not.toBe('injected')
+    expect(record.worker_id).not.toBe('hacker')
+
+    // Safe non-reserved fields are preserved
+    expect(record.safe_field).toBe('this-is-fine')
+  })
+})
+
+describe('KNOWN_EVENT_TYPES', () => {
+  it('contains all canonical event types', () => {
+    const canonical = [
+      'convoy_started', 'convoy_finished', 'convoy_failed', 'convoy_guard',
+      'task_started', 'task_done', 'task_failed', 'task_skipped', 'task_retried', 'task_waiting_input',
+      'review_started', 'review_verdict', 'dispute_opened', 'dlq_entry_created',
+      'drift_check_result', 'drift_detected',
+      'circuit_breaker_tripped', 'circuit_breaker_fallback', 'circuit_breaker_blocked',
+      'merge_conflict_detected', 'merge_conflict_failed',
+      'file_injection_received', 'artifact_limit_reached',
+      'agent_identity_captured', 'agent_identity_rejected',
+      'weak_area_skipped', 'swarm_concurrency_update', 'post_convoy_hook_failed',
+      'session', 'delegation',
+      'secret_leak_prevented', 'ndjson_write_failed', 'built_in_gate_result',
+      'watch_started', 'watch_cycle_start', 'watch_cycle_end', 'watch_stopped',
+      'worker_killed', 'discovered_issue',
+    ]
+    for (const type of canonical) {
+      expect(KNOWN_EVENT_TYPES.has(type)).toBe(true)
+    }
+  })
+
+  it('has no duplicates (Set size matches array)', () => {
+    expect(KNOWN_EVENT_TYPES.size).toBeGreaterThanOrEqual(37)
+  })
+})
+
+describe('ndjsonPathForConvoy', () => {
+  it('returns correct per-convoy path with default basePath', () => {
+    const result = ndjsonPathForConvoy('abc-123')
+    expect(result).toBe(join(process.cwd(), '.opencastle', 'logs', 'convoys', 'abc-123.ndjson'))
+  })
+
+  it('returns correct per-convoy path with custom basePath', () => {
+    const result = ndjsonPathForConvoy('xyz-456', '/custom/base')
+    expect(result).toBe(join('/custom/base', '.opencastle', 'logs', 'convoys', 'xyz-456.ndjson'))
+  })
+})
+
+describe('createEventEmitter directory creation', () => {
+  it('creates parent directory when ndjsonPath is in a non-existent directory', () => {
+    const nestedPath = join(tmpDir, 'nested', 'dir', 'events.ndjson')
+    const emitter = createEventEmitter(store, { ndjsonPath: nestedPath })
+    emitter.emit('convoy_started', { name: 'test' }, { convoy_id: 'c1' })
+    emitter.close()
+    expect(existsSync(nestedPath)).toBe(true)
+    const content = readFileSync(nestedPath, 'utf8')
+    const line = JSON.parse(content.trim())
+    expect(line.type).toBe('convoy_started')
+  })
+})
+
+describe('validateEventType', () => {
+  it('returns true for known event types', () => {
+    expect(validateEventType('convoy_started')).toBe(true)
+    expect(validateEventType('task_done')).toBe(true)
+    expect(validateEventType('watch_stopped')).toBe(true)
+  })
+
+  it('returns false for unknown event types', () => {
+    expect(validateEventType('unknown_event')).toBe(false)
+    expect(validateEventType('')).toBe(false)
+    expect(validateEventType('convoy_start')).toBe(false)
+  })
+})
+
+describe('emit-time data validation', () => {
+  let warnSpy: ReturnType<typeof vi.spyOn>
+
+  beforeEach(() => {
+    warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    warnSpy.mockRestore()
+  })
+
+  it('valid data passes without warning', () => {
+    const emitter = createEventEmitter(store)
+    emitter.emit('convoy_finished', { status: 'done' }, { convoy_id: 'c1' })
+    emitter.close()
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
+
+  it('invalid data shape warns with correct message', () => {
+    const emitter = createEventEmitter(store)
+    emitter.emit('convoy_finished', { status: 123 } as unknown as Record<string, unknown>, { convoy_id: 'c1' })
+    emitter.close()
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid data for event type "convoy_finished"'),
+    )
+  })
+
+  it('missing required field warns', () => {
+    const emitter = createEventEmitter(store)
+    // task_failed requires reason: string — passing {} should fail
+    emitter.emit('task_failed', {} as Record<string, unknown>, { convoy_id: 'c1' })
+    emitter.close()
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid data for event type "task_failed"'),
+    )
+  })
+
+  it('extra fields are allowed (no warning)', () => {
+    const emitter = createEventEmitter(store)
+    emitter.emit('convoy_started', { name: 'test', extra: true } as Record<string, unknown>, { convoy_id: 'c1' })
+    emitter.close()
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
+
+  it('undefined data is valid', () => {
+    const emitter = createEventEmitter(store)
+    emitter.emit('convoy_started', undefined, { convoy_id: 'c1' })
+    emitter.close()
+    expect(warnSpy).not.toHaveBeenCalled()
+  })
+
+  it('unknown event type bypasses data validation (only one warning)', () => {
+    const emitter = createEventEmitter(store)
+    emitter.emit('unknown_type_xyz', { any: 'data' }, { convoy_id: 'c1' })
+    emitter.close()
+    expect(warnSpy).toHaveBeenCalledTimes(1)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown event type: "unknown_type_xyz"'))
+    expect(warnSpy).not.toHaveBeenCalledWith(expect.stringContaining('Invalid data'))
   })
 })
 

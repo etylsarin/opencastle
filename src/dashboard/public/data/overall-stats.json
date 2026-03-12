@@ -1,0 +1,24 @@
+{
+  "convoyCounts": {
+    "total": 0,
+    "running": 0,
+    "done": 0,
+    "failed": 0,
+    "gate_failed": 0
+  },
+  "durationStats": {
+    "avg_sec": null,
+    "p95_sec": null,
+    "max_sec": null
+  },
+  "tokenCostTotals": {
+    "total_tokens": 0,
+    "total_cost_usd": 0
+  },
+  "topAgents": [],
+  "topModels": [],
+  "dlqSummary": {
+    "count": 0,
+    "top_failure_types": []
+  }
+}

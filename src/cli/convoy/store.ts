@@ -1,5 +1,6 @@
 import { copyFileSync } from 'node:fs'
 import { DatabaseSync } from 'node:sqlite'
+import type { DashboardConvoyDetail } from './dashboard-types.js'
 import type {
   ConvoyRecord,
   ConvoyStatus,
@@ -16,7 +17,7 @@ import type {
   TaskStepRecord,
 } from './types.js'
 
-const SCHEMA_VERSION = 9
+const SCHEMA_VERSION = 10
 
 // ── Size limits (bytes) ────────────────────────────────────────────────────────
 const LIMIT_SPEC_YAML = 256 * 1024      // 256 KB
@@ -70,7 +71,7 @@ export interface ConvoyStore {
   updateConvoyStatus(
     id: string,
     status: ConvoyStatus,
-    extra?: { started_at?: string; finished_at?: string; total_tokens?: number | null; total_cost_usd?: string | null },
+    extra?: { started_at?: string; finished_at?: string; total_tokens?: number | null; total_cost_usd?: number | null },
   ): void
   updateConvoyReviewTokens(convoyId: string, tokens: number): void
   updateConvoyCircuitState(convoyId: string, state: string | null): void
@@ -135,6 +136,7 @@ export interface ConvoyStore {
   insertArtifact(record: ArtifactRecord): void
   getArtifact(convoyId: string, name: string): ArtifactRecord | undefined
   getArtifactsByTask(taskId: string): ArtifactRecord[]
+  getArtifactsByConvoy(convoyId: string): ArtifactRecord[]
   deleteArtifactsOlderThan(days: number): number
   insertAgentIdentity(record: AgentIdentityRecord): void
   getAgentIdentities(agent: string, limit: number): AgentIdentityRecord[]
@@ -151,9 +153,18 @@ export interface ConvoyStore {
   updatePipelineStatus(
     id: string,
     status: PipelineStatus,
-    extra?: { started_at?: string; finished_at?: string; total_tokens?: number | null; total_cost_usd?: string | null },
+    extra?: { started_at?: string; finished_at?: string; total_tokens?: number | null; total_cost_usd?: number | null },
   ): void
   getConvoysByPipeline(pipelineId: string): ConvoyRecord[]
+  getConvoyCounts(): { total: number; running: number; done: number; failed: number; gate_failed: number }
+  getConvoyDurationStats(): { avg_sec: number | null; p95_sec: number | null; max_sec: number | null }
+  getTokenAndCostTotals(): { total_tokens: number; total_cost_usd: number }
+  getTopAgents(limit: number): Array<{ agent: string; task_count: number; total_tokens: number }>
+  getTopModels(limit: number): Array<{ model: string; task_count: number; total_tokens: number }>
+  getDlqSummary(): { count: number; top_failure_types: Array<{ type: string; count: number }> }
+  getConvoyTaskSummary(convoyId: string): { total: number; done: number; running: number; failed: number; review_blocked: number; disputed: number; reviewed: number; panel_reviewed: number; tasks_with_drift: number; max_drift_score: number | null; drift_retried: number }
+  getConvoyList(limit: number, offset: number): ConvoyRecord[]
+  getConvoyDetails(convoyId: string): DashboardConvoyDetail | null
   withTransaction<T>(fn: () => T): T
   close(): void
 }
@@ -186,6 +197,7 @@ class ConvoyStoreImpl implements ConvoyStore {
           spec_yaml            TEXT NOT NULL,
           total_tokens         INTEGER,
           total_cost_usd       TEXT,
+          total_cost_usd_num   REAL,
           pipeline_id          TEXT,
           circuit_state        TEXT,
           review_tokens_total  INTEGER,
@@ -203,7 +215,8 @@ class ConvoyStoreImpl implements ConvoyStore {
           started_at      TEXT,
           finished_at     TEXT,
           total_tokens    INTEGER,
-          total_cost_usd  TEXT
+          total_cost_usd  TEXT,
+          total_cost_usd_num REAL
         );
 
         CREATE TABLE IF NOT EXISTS task (
@@ -230,6 +243,7 @@ class ConvoyStoreImpl implements ConvoyStore {
           completion_tokens INTEGER,
           total_tokens      INTEGER,
           cost_usd          TEXT,
+          cost_usd_num      REAL,
           gates             TEXT,
           on_exhausted      TEXT NOT NULL DEFAULT 'dlq',
           injected          INTEGER NOT NULL DEFAULT 0,
@@ -398,6 +412,10 @@ class ConvoyStoreImpl implements ConvoyStore {
       migrateSchema(this.db, this.dbPath, 8, 9)
       version = 9
     }
+    if (version === 9) {
+      migrateSchema(this.db, this.dbPath, 9, 10)
+      version = 10
+    }
   }
 
   insertConvoy(
@@ -422,20 +440,20 @@ class ConvoyStoreImpl implements ConvoyStore {
 
   getConvoy(id: string): ConvoyRecord | undefined {
     return this.db
-      .prepare('SELECT * FROM convoy WHERE id = :id')
+      .prepare('SELECT *, total_cost_usd_num AS total_cost_usd FROM convoy WHERE id = :id')
       .get({ id }) as ConvoyRecord | undefined
   }
 
   getLatestConvoy(): ConvoyRecord | undefined {
     return this.db
-      .prepare('SELECT * FROM convoy ORDER BY created_at DESC LIMIT 1')
+      .prepare('SELECT *, total_cost_usd_num AS total_cost_usd FROM convoy ORDER BY created_at DESC LIMIT 1')
       .get() as ConvoyRecord | undefined
   }
 
   updateConvoyStatus(
     id: string,
     status: ConvoyStatus,
-    extra?: { started_at?: string; finished_at?: string; total_tokens?: number | null; total_cost_usd?: string | null },
+    extra?: { started_at?: string; finished_at?: string; total_tokens?: number | null; total_cost_usd?: number | null },
   ): void {
     const sets = ['status = :status']
     const params: Record<string, string | number | null> = { id, status }
@@ -453,8 +471,10 @@ class ConvoyStoreImpl implements ConvoyStore {
       params.total_tokens = extra.total_tokens
     }
     if (extra?.total_cost_usd !== undefined) {
-      sets.push('total_cost_usd = :total_cost_usd')
-      params.total_cost_usd = extra.total_cost_usd
+      sets.push('total_cost_usd = :total_cost_usd_text')
+      sets.push('total_cost_usd_num = :total_cost_usd_num')
+      params.total_cost_usd_text = extra.total_cost_usd !== null ? String(extra.total_cost_usd) : null
+      params.total_cost_usd_num = extra.total_cost_usd
     }
 
     this.db.prepare(`UPDATE convoy SET ${sets.join(', ')} WHERE id = :id`).run(params)
@@ -530,36 +550,36 @@ class ConvoyStoreImpl implements ConvoyStore {
 
   getTask(id: string, convoyId: string): TaskRecord | undefined {
     return this.db
-      .prepare('SELECT * FROM task WHERE id = :id AND convoy_id = :convoy_id')
+      .prepare('SELECT *, cost_usd_num AS cost_usd FROM task WHERE id = :id AND convoy_id = :convoy_id')
       .get({ id, convoy_id: convoyId }) as TaskRecord | undefined
   }
 
   getTasksByConvoy(convoyId: string): TaskRecord[] {
     return this.db
-      .prepare('SELECT * FROM task WHERE convoy_id = :convoy_id ORDER BY phase, id')
+      .prepare('SELECT *, cost_usd_num AS cost_usd FROM task WHERE convoy_id = :convoy_id ORDER BY phase, id')
       .all({ convoy_id: convoyId }) as unknown as TaskRecord[]
   }
 
   getTaskByIdempotencyKey(convoyId: string, key: string): TaskRecord | undefined {
     return this.db
-      .prepare('SELECT * FROM task WHERE convoy_id = :convoy_id AND idempotency_key = :key')
+      .prepare('SELECT *, cost_usd_num AS cost_usd FROM task WHERE convoy_id = :convoy_id AND idempotency_key = :key')
       .get({ convoy_id: convoyId, key }) as TaskRecord | undefined
   }
 
   getTaskByDisputeId(disputeId: string): TaskRecord | undefined {
     return this.db
-      .prepare('SELECT * FROM task WHERE dispute_id = :dispute_id LIMIT 1')
+      .prepare('SELECT *, cost_usd_num AS cost_usd FROM task WHERE dispute_id = :dispute_id LIMIT 1')
       .get({ dispute_id: disputeId }) as TaskRecord | undefined
   }
 
   getDisputedTasks(convoyId?: string): TaskRecord[] {
     if (convoyId) {
       return this.db
-        .prepare("SELECT * FROM task WHERE status = 'disputed' AND convoy_id = :convoy_id ORDER BY phase, id")
+        .prepare("SELECT *, cost_usd_num AS cost_usd FROM task WHERE status = 'disputed' AND convoy_id = :convoy_id ORDER BY phase, id")
         .all({ convoy_id: convoyId }) as unknown as TaskRecord[]
     }
     return this.db
-      .prepare("SELECT * FROM task WHERE status = 'disputed' ORDER BY convoy_id, phase, id")
+      .prepare("SELECT *, cost_usd_num AS cost_usd FROM task WHERE status = 'disputed' ORDER BY convoy_id, phase, id")
       .all({}) as unknown as TaskRecord[]
   }
 
@@ -591,6 +611,10 @@ class ConvoyStoreImpl implements ConvoyStore {
           sets.push(`${field} = :${field}`)
           params[field] = extra[field] as string | number | null
         }
+      }
+      if ('cost_usd' in extra && extra.cost_usd !== undefined) {
+        sets.push('cost_usd_num = :cost_usd_num')
+        params.cost_usd_num = extra.cost_usd
       }
     }
 
@@ -816,6 +840,12 @@ class ConvoyStoreImpl implements ConvoyStore {
       .all({ task_id: taskId }) as unknown as ArtifactRecord[]
   }
 
+  getArtifactsByConvoy(convoyId: string): ArtifactRecord[] {
+    return this.db
+      .prepare('SELECT * FROM artifact WHERE convoy_id = :convoy_id ORDER BY created_at')
+      .all({ convoy_id: convoyId }) as unknown as ArtifactRecord[]
+  }
+
   deleteArtifactsOlderThan(days: number): number {
     const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
     const result = this.db
@@ -920,20 +950,20 @@ class ConvoyStoreImpl implements ConvoyStore {
 
   getPipeline(id: string): PipelineRecord | undefined {
     return this.db
-      .prepare('SELECT * FROM pipeline WHERE id = :id')
+      .prepare('SELECT *, total_cost_usd_num AS total_cost_usd FROM pipeline WHERE id = :id')
       .get({ id }) as PipelineRecord | undefined
   }
 
   getLatestPipeline(): PipelineRecord | undefined {
     return this.db
-      .prepare('SELECT * FROM pipeline ORDER BY created_at DESC LIMIT 1')
+      .prepare('SELECT *, total_cost_usd_num AS total_cost_usd FROM pipeline ORDER BY created_at DESC LIMIT 1')
       .get() as PipelineRecord | undefined
   }
 
   updatePipelineStatus(
     id: string,
     status: PipelineStatus,
-    extra?: { started_at?: string; finished_at?: string; total_tokens?: number | null; total_cost_usd?: string | null },
+    extra?: { started_at?: string; finished_at?: string; total_tokens?: number | null; total_cost_usd?: number | null },
   ): void {
     const sets = ['status = :status']
     const params: Record<string, string | number | null> = { id, status }
@@ -951,8 +981,10 @@ class ConvoyStoreImpl implements ConvoyStore {
       params.total_tokens = extra.total_tokens
     }
     if (extra?.total_cost_usd !== undefined) {
-      sets.push('total_cost_usd = :total_cost_usd')
-      params.total_cost_usd = extra.total_cost_usd
+      sets.push('total_cost_usd = :total_cost_usd_text')
+      sets.push('total_cost_usd_num = :total_cost_usd_num')
+      params.total_cost_usd_text = extra.total_cost_usd !== null ? String(extra.total_cost_usd) : null
+      params.total_cost_usd_num = extra.total_cost_usd
     }
 
     this.db.prepare(`UPDATE pipeline SET ${sets.join(', ')} WHERE id = :id`).run(params)
@@ -960,8 +992,219 @@ class ConvoyStoreImpl implements ConvoyStore {
 
   getConvoysByPipeline(pipelineId: string): ConvoyRecord[] {
     return this.db
-      .prepare('SELECT * FROM convoy WHERE pipeline_id = :pipeline_id ORDER BY created_at')
+      .prepare('SELECT *, total_cost_usd_num AS total_cost_usd FROM convoy WHERE pipeline_id = :pipeline_id ORDER BY created_at')
       .all({ pipeline_id: pipelineId }) as unknown as ConvoyRecord[]
+  }
+
+  getConvoyCounts(): { total: number; running: number; done: number; failed: number; gate_failed: number } {
+    const rows = this.db
+      .prepare('SELECT status, COUNT(*) AS cnt FROM convoy GROUP BY status')
+      .all() as Array<{ status: string; cnt: number }>
+    const map: Record<string, number> = {}
+    for (const row of rows) map[row.status] = row.cnt
+    return {
+      total: rows.reduce((s, r) => s + r.cnt, 0),
+      running: map['running'] ?? 0,
+      done: map['done'] ?? 0,
+      failed: (map['failed'] ?? 0),
+      gate_failed: (map['gate-failed'] ?? 0) + (map['hook-failed'] ?? 0),
+    }
+  }
+
+  getConvoyDurationStats(): { avg_sec: number | null; p95_sec: number | null; max_sec: number | null } {
+    const statsRow = this.db.prepare(
+      `SELECT
+         AVG((julianday(finished_at) - julianday(started_at)) * 86400) AS avg_sec,
+         MAX((julianday(finished_at) - julianday(started_at)) * 86400) AS max_sec,
+         COUNT(*) AS cnt
+       FROM convoy
+       WHERE finished_at IS NOT NULL AND started_at IS NOT NULL`,
+    ).get() as { avg_sec: number | null; max_sec: number | null; cnt: number } | undefined
+    if (!statsRow || statsRow.cnt === 0) return { avg_sec: null, p95_sec: null, max_sec: null }
+    const offset = Math.max(0, Math.floor(statsRow.cnt * 0.95) - 1)
+    const p95Row = this.db.prepare(
+      `SELECT (julianday(finished_at) - julianday(started_at)) * 86400 AS duration
+       FROM convoy
+       WHERE finished_at IS NOT NULL AND started_at IS NOT NULL
+       ORDER BY duration
+       LIMIT 1 OFFSET :offset`,
+    ).get({ offset }) as { duration: number } | undefined
+    return {
+      avg_sec: statsRow.avg_sec,
+      p95_sec: p95Row?.duration ?? null,
+      max_sec: statsRow.max_sec,
+    }
+  }
+
+  getTokenAndCostTotals(): { total_tokens: number; total_cost_usd: number } {
+    const row = this.db.prepare(
+      `SELECT COALESCE(SUM(total_tokens), 0) AS total_tokens,
+              COALESCE(SUM(total_cost_usd_num), 0) AS total_cost_usd
+       FROM convoy`,
+    ).get() as { total_tokens: number; total_cost_usd: number }
+    return { total_tokens: row.total_tokens, total_cost_usd: row.total_cost_usd }
+  }
+
+  getTopAgents(limit: number): Array<{ agent: string; task_count: number; total_tokens: number }> {
+    return this.db.prepare(
+      `SELECT agent,
+              COUNT(*) AS task_count,
+              COALESCE(SUM(total_tokens), 0) AS total_tokens
+       FROM task
+       GROUP BY agent
+       ORDER BY task_count DESC
+       LIMIT :limit`,
+    ).all({ limit }) as Array<{ agent: string; task_count: number; total_tokens: number }>
+  }
+
+  getTopModels(limit: number): Array<{ model: string; task_count: number; total_tokens: number }> {
+    return this.db.prepare(
+      `SELECT model,
+              COUNT(*) AS task_count,
+              COALESCE(SUM(total_tokens), 0) AS total_tokens
+       FROM task
+       WHERE model IS NOT NULL
+       GROUP BY model
+       ORDER BY task_count DESC
+       LIMIT :limit`,
+    ).all({ limit }) as Array<{ model: string; task_count: number; total_tokens: number }>
+  }
+
+  getDlqSummary(): { count: number; top_failure_types: Array<{ type: string; count: number }> } {
+    const countRow = this.db.prepare('SELECT COUNT(*) AS cnt FROM dlq').get() as { cnt: number }
+    const typeRows = this.db.prepare(
+      `SELECT failure_type AS type, COUNT(*) AS count
+       FROM dlq
+       GROUP BY failure_type
+       ORDER BY count DESC`,
+    ).all() as Array<{ type: string; count: number }>
+    return { count: countRow.cnt, top_failure_types: typeRows }
+  }
+
+  getConvoyTaskSummary(convoyId: string): { total: number; done: number; running: number; failed: number; review_blocked: number; disputed: number; reviewed: number; panel_reviewed: number; tasks_with_drift: number; max_drift_score: number | null; drift_retried: number } {
+    const row = this.db.prepare(
+      `SELECT
+         COUNT(*) AS total,
+         SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS done,
+         SUM(CASE WHEN status IN ('running', 'assigned') THEN 1 ELSE 0 END) AS running,
+         SUM(CASE WHEN status IN ('failed', 'gate-failed', 'timed-out', 'hook-failed') THEN 1 ELSE 0 END) AS failed,
+         SUM(CASE WHEN status = 'review-blocked' THEN 1 ELSE 0 END) AS review_blocked,
+         SUM(CASE WHEN status = 'disputed' THEN 1 ELSE 0 END) AS disputed,
+         SUM(CASE WHEN review_verdict IS NOT NULL THEN 1 ELSE 0 END) AS reviewed,
+         SUM(CASE WHEN panel_attempts > 0 THEN 1 ELSE 0 END) AS panel_reviewed,
+         SUM(CASE WHEN drift_score IS NOT NULL THEN 1 ELSE 0 END) AS tasks_with_drift,
+         MAX(drift_score) AS max_drift_score,
+         SUM(CASE WHEN drift_retried = 1 THEN 1 ELSE 0 END) AS drift_retried
+       FROM task
+       WHERE convoy_id = :convoy_id`,
+    ).get({ convoy_id: convoyId }) as { total: number; done: number; running: number; failed: number; review_blocked: number; disputed: number; reviewed: number; panel_reviewed: number; tasks_with_drift: number; max_drift_score: number | null; drift_retried: number } | undefined
+    if (!row || row.total === 0) {
+      return { total: 0, done: 0, running: 0, failed: 0, review_blocked: 0, disputed: 0, reviewed: 0, panel_reviewed: 0, tasks_with_drift: 0, max_drift_score: null, drift_retried: 0 }
+    }
+    return {
+      total: row.total ?? 0,
+      done: row.done ?? 0,
+      running: row.running ?? 0,
+      failed: row.failed ?? 0,
+      review_blocked: row.review_blocked ?? 0,
+      disputed: row.disputed ?? 0,
+      reviewed: row.reviewed ?? 0,
+      panel_reviewed: row.panel_reviewed ?? 0,
+      tasks_with_drift: row.tasks_with_drift ?? 0,
+      max_drift_score: row.max_drift_score ?? null,
+      drift_retried: row.drift_retried ?? 0,
+    }
+  }
+
+  getConvoyList(limit: number, offset: number): ConvoyRecord[] {
+    return this.db.prepare(
+      `SELECT *, total_cost_usd_num AS total_cost_usd
+       FROM convoy
+       ORDER BY created_at DESC
+       LIMIT :limit OFFSET :offset`,
+    ).all({ limit, offset }) as unknown as ConvoyRecord[]
+  }
+
+  getConvoyDetails(convoyId: string): DashboardConvoyDetail | null {
+    const convoy = this.getConvoy(convoyId)
+    if (!convoy) return null
+
+    const tasks = this.getTasksByConvoy(convoyId)
+    const taskSummary = this.getConvoyTaskSummary(convoyId)
+    const dlqEntries = this.listDlqEntries(convoyId)
+    const rawEvents = this.getEvents(convoyId)
+    const artifacts = this.getArtifactsByConvoy(convoyId)
+    const limitedEvents = rawEvents.slice().reverse().slice(0, 500)
+
+    return {
+      convoy: {
+        id: convoy.id,
+        name: convoy.name,
+        status: convoy.status,
+        created_at: convoy.created_at,
+        finished_at: convoy.finished_at,
+        branch: convoy.branch,
+        total_tokens: convoy.total_tokens,
+        total_cost_usd: convoy.total_cost_usd,
+      },
+      taskSummary,
+      quality: {
+        reviewed_tasks: taskSummary.reviewed,
+        review_blocked_tasks: taskSummary.review_blocked,
+        disputed_tasks: taskSummary.disputed,
+        panel_reviews: taskSummary.panel_reviewed,
+      },
+      drift: {
+        tasks_with_drift: taskSummary.tasks_with_drift,
+        max_drift_score: taskSummary.max_drift_score,
+        drift_retried_tasks: taskSummary.drift_retried,
+      },
+      dlq_count: dlqEntries.length,
+      dlq_entries: dlqEntries.map(d => ({
+        id: d.id,
+        task_id: d.task_id,
+        agent: d.agent,
+        failure_type: d.failure_type,
+        attempts: d.attempts,
+        resolved: d.resolved,
+      })),
+      artifact_count: artifacts.length,
+      artifacts: artifacts.map(a => ({
+        id: a.id,
+        name: a.name,
+        type: a.type,
+        task_id: a.task_id,
+        created_at: a.created_at,
+      })),
+      has_more_events: rawEvents.length > 500,
+      events: limitedEvents.map(e => ({
+        type: e.type,
+        task_id: e.task_id,
+        data: e.data ? (() => { try { return JSON.parse(e.data as string) } catch { return e.data } })() : null,
+        created_at: e.created_at,
+      })),
+      tasks: tasks.map(t => ({
+        id: t.id,
+        phase: t.phase,
+        agent: t.agent,
+        model: t.model,
+        status: t.status,
+        retries: t.retries,
+        started_at: t.started_at,
+        finished_at: t.finished_at,
+        total_tokens: t.total_tokens,
+        cost_usd: t.cost_usd,
+        review_level: t.review_level,
+        review_verdict: t.review_verdict,
+        review_tokens: t.review_tokens,
+        review_model: t.review_model,
+        panel_attempts: t.panel_attempts,
+        dispute_id: t.dispute_id,
+        drift_score: t.drift_score,
+        drift_retried: t.drift_retried,
+        files: t.files ? (() => { try { return JSON.parse(t.files as string) } catch { return null } })() : null,
+      })),
+    }
   }
 
   withTransaction<T>(fn: () => T): T {
@@ -1079,6 +1322,16 @@ export function migrateSchema(db: DatabaseSync, dbPath: string, fromVersion: num
             value      TEXT NOT NULL,
             updated_at TEXT NOT NULL
           );
+        `)
+      }
+      if (v === 9) {
+        db.exec(`
+          ALTER TABLE convoy ADD COLUMN total_cost_usd_num REAL;
+          ALTER TABLE task ADD COLUMN cost_usd_num REAL;
+          ALTER TABLE pipeline ADD COLUMN total_cost_usd_num REAL;
+          UPDATE convoy SET total_cost_usd_num = CAST(total_cost_usd AS REAL) WHERE total_cost_usd IS NOT NULL;
+          UPDATE task SET cost_usd_num = CAST(cost_usd AS REAL) WHERE cost_usd IS NOT NULL;
+          UPDATE pipeline SET total_cost_usd_num = CAST(total_cost_usd AS REAL) WHERE total_cost_usd IS NOT NULL;
         `)
       }
       db.exec('COMMIT')

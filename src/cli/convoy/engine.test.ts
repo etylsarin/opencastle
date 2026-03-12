@@ -2,7 +2,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { createConvoyEngine, evaluateReviewLevel, recoverNdjson, runConvoyGuard } from './engine.js'
+import { createConvoyEngine, evaluateReviewLevel, runConvoyGuard } from './engine.js'
+import { recoverNdjson, createEventEmitter } from './events.js'
 import type { ConvoyEngineOptions, DiffStats } from './engine.js'
 import { createConvoyStore } from './store.js'
 import type { AgentAdapter, Task, TaskSpec, ExecuteResult, ExecuteOptions } from '../types.js'
@@ -3656,5 +3657,102 @@ describe('circuit breaker', () => {
     const record = store.getLatestConvoy()
     expect(record?.circuit_state).not.toBeNull()
     store.close()
+  })
+})
+
+describe('convoy lifecycle events', () => {
+  it('emits convoy_finished event on successful run', async () => {
+    const adapter = makeAdapter()
+    const engine = makeEngine({
+      spec: makeSpec(),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+    const result = await engine.run()
+    expect(result.status).toBe('done')
+
+    const store = createConvoyStore(dbPath)
+    const events = store.getEvents(result.convoyId)
+    store.close()
+
+    const finishedEvent = events.find(e => e.type === 'convoy_finished')
+    expect(finishedEvent).toBeDefined()
+    expect(finishedEvent!.convoy_id).toBe(result.convoyId)
+    expect(JSON.parse(finishedEvent!.data as string).status).toBe('done')
+  })
+
+  it('emits convoy_failed event when a task fails', async () => {
+    const adapter = makeAdapter()
+    adapter.execute.mockResolvedValue({
+      success: false,
+      output: 'error',
+      exitCode: 1,
+    })
+    const engine = makeEngine({
+      spec: makeSpec({}, [{ id: 'fail-task', max_retries: 0 }]),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+    const result = await engine.run()
+    expect(result.status).toBe('failed')
+
+    const store = createConvoyStore(dbPath)
+    const events = store.getEvents(result.convoyId)
+    store.close()
+
+    const failedEvent = events.find(e => e.type === 'convoy_failed')
+    expect(failedEvent).toBeDefined()
+    expect(failedEvent!.convoy_id).toBe(result.convoyId)
+    expect(JSON.parse(failedEvent!.data as string).status).toBe('failed')
+  })
+
+  it('emits convoy_failed with gate-failed status when gates fail', async () => {
+    const adapter = makeAdapter()
+    const engine = makeEngine({
+      spec: makeSpec({ gates: ['false'] }),
+      specYaml: 'name: test',
+      adapter,
+      dbPath,
+      _worktreeManager: makeWorktreeManager(),
+      _mergeQueue: makeMergeQueue(),
+    })
+    const result = await engine.run()
+    expect(result.status).toBe('gate-failed')
+
+    const store = createConvoyStore(dbPath)
+    const events = store.getEvents(result.convoyId)
+    store.close()
+
+    const failedEvent = events.find(e => e.type === 'convoy_failed')
+    expect(failedEvent).toBeDefined()
+    expect(JSON.parse(failedEvent!.data as string).status).toBe('gate-failed')
+  })
+})
+
+describe('createEventEmitter callsite safety', () => {
+  it('rejects a raw string argument', () => {
+    const testStore = createConvoyStore(dbPath)
+    expect(() => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      createEventEmitter(testStore, 'some-path' as any)
+    }).toThrow('createEventEmitter options must be an object, not a string')
+    testStore.close()
+  })
+
+  it('accepts an options object with ndjsonPath', () => {
+    const testStore = createConvoyStore(dbPath)
+    const testNdjsonPath = join(tmpDir, 'callsite-test.ndjson')
+    const emitter = createEventEmitter(testStore, { ndjsonPath: testNdjsonPath })
+    expect(emitter).toBeDefined()
+    expect(typeof emitter.emit).toBe('function')
+    expect(typeof emitter.close).toBe('function')
+    emitter.close()
+    testStore.close()
   })
 })

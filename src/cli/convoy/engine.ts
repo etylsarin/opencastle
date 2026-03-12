@@ -18,7 +18,7 @@ import { promisify } from 'node:util'
 import type { Task, TaskSpec, AgentAdapter, ExecuteResult, ReviewHeuristics } from '../types.js'
 import { createConvoyStore, ConvoyArtifactLimitError, type ConvoyStore } from './store.js'
 import { acquireEngineLock } from './lock.js'
-import { createEventEmitter, type ConvoyEventEmitter } from './events.js'
+import { createEventEmitter, ndjsonPathForConvoy, recoverNdjson, type ConvoyEventEmitter } from './events.js'
 import { createWorktreeManager, type WorktreeManager } from './worktree.js'
 import { createMergeQueue, MergeConflictError, type MergeQueue } from './merge.js'
 import { createHealthMonitor, detectDrift } from './health.js'
@@ -222,84 +222,6 @@ export async function ensureBranch(branchName: string, basePath: string): Promis
   }
 }
 
-// ── Internal helpers ──────────────────────────────────────────────────────────
-
-/**
- * Truncate any trailing partial line in the NDJSON file, then replay any SQLite
- * events for the given convoy that are missing from the file.
- * Exported for unit testing.
- */
-function safeJsonParse(raw: string): Record<string, unknown> {
-  try {
-    return JSON.parse(raw) as Record<string, unknown>
-  } catch {
-    return {}
-  }
-}
-
-export function recoverNdjson(store: ConvoyStore, convoyId: string, ndjsonPath: string): void {
-  // 1. Read the NDJSON file (if it exists)
-  let fileContent: string
-  try {
-    fileContent = readFileSync(ndjsonPath, 'utf8')
-  } catch {
-    fileContent = ''
-  }
-
-  // 2. Truncate any partial trailing line (no \n terminator)
-  if (fileContent.length > 0 && !fileContent.endsWith('\n')) {
-    const lastNewline = fileContent.lastIndexOf('\n')
-    if (lastNewline === -1) {
-      writeFileSync(ndjsonPath, '')
-      fileContent = ''
-    } else {
-      writeFileSync(ndjsonPath, fileContent.slice(0, lastNewline + 1))
-      fileContent = fileContent.slice(0, lastNewline + 1)
-    }
-  }
-
-  // 3. Count valid NDJSON event IDs for this convoy
-  const ndjsonIds = new Set<number>()
-  for (const line of fileContent.split('\n')) {
-    if (!line.trim()) continue
-    try {
-      const parsed = JSON.parse(line) as Record<string, unknown>
-      if (parsed.convoy_id === convoyId && parsed._event_id != null) {
-        ndjsonIds.add(parsed._event_id as number)
-      }
-    } catch {
-      // Skip unparseable lines
-    }
-  }
-
-  // 4. Get all SQLite events for this convoy
-  const sqliteEvents = store.getEvents(convoyId)
-
-  // 5. Replay missing events (those in SQLite but not in NDJSON)
-  const missing = sqliteEvents.filter(e => e.id != null && !ndjsonIds.has(e.id!))
-  if (missing.length > 0) {
-    const fd = openSync(ndjsonPath, 'a')
-    try {
-      for (const event of missing) {
-        const parsedData = event.data ? safeJsonParse(event.data) : {}
-        const record = {
-          ...parsedData,
-          _event_id: event.id,
-          timestamp: event.created_at,
-          type: event.type,
-          convoy_id: event.convoy_id,
-          task_id: event.task_id,
-          worker_id: event.worker_id,
-        }
-        appendFileSync(fd, JSON.stringify(record) + '\n')
-      }
-      fsyncSync(fd)
-    } finally {
-      closeSync(fd)
-    }
-  }
-}
-
 // ── Convoy guard ──────────────────────────────────────────────────────────────
 
 export interface ConvoyGuardResult {
@@ -336,12 +258,10 @@ export function runConvoyGuard(
   try {
     const content = readFileSync(ndjsonPath, 'utf8')
     const lines = content.split('\n').filter(l => l.trim())
-    const convoyLines = lines.filter(l => {
-      try { return (JSON.parse(l) as Record<string, unknown>).convoy_id === convoyId } catch { return false }
-    })
-    if (convoyLines.length < completedTasks.length) {
+    // Per-convoy file — all records belong to this convoy, no need to filter by convoy_id
+    if (lines.length < completedTasks.length) {
       warnings.push(
-        `NDJSON record count (${convoyLines.length}) < completed tasks (${completedTasks.length})`,
+        `NDJSON record count (${lines.length}) < completed tasks (${completedTasks.length})`,
       )
     }
   } catch {
@@ -365,9 +285,16 @@ export function runConvoyGuard(
   }
 
   // Check 4: Gate results recorded for all gates that ran
-  const gateEvents = events.filter(e =>
-    e.type === 'built_in_gate_result' || (e.data != null && e.data.includes('gate')),
-  )
+  const gateEvents = events.filter(e => {
+    if (e.type === 'built_in_gate_result') return true
+    if (e.data == null) return false
+    try {
+      const parsed = JSON.parse(e.data) as Record<string, unknown>
+      return 'gate' in parsed
+    } catch {
+      return false
+    }
+  })
   const tasksWithGates = tasks.filter(t => t.gates)
   if (tasksWithGates.length > 0 && gateEvents.length === 0) {
     warnings.push('Tasks have gates configured but no gate result events found')
@@ -1065,6 +992,7 @@ async function runConvoy(
         skipTask(t.id, `on_exhausted: stop — task "${taskRecord.id}" exhausted retries`)
       }
       store.updateConvoyStatus(convoyId, 'failed')
+      events.emit('convoy_failed', { status: 'failed', reason: `on_exhausted: stop — task "${taskRecord.id}" exhausted retries` }, { convoy_id: convoyId })
     } else if (exhausted === 'dlq' || exhausted === 'skip') {
       // Default behavior: cascade failure to dependents only
       cascadeFailure(taskRecord.id)
@@ -2603,6 +2531,12 @@ async function runConvoy(
     total_tokens: convoyTotalTokens,
   })
 
+  if (finalStatus === 'done') {
+    events.emit('convoy_finished', { status: 'done' }, { convoy_id: convoyId })
+  } else {
+    events.emit('convoy_failed', { status: finalStatus, reason: finalStatus === 'gate-failed' ? 'Gate check failed' : 'One or more tasks failed' }, { convoy_id: convoyId })
+  }
+
   // Run convoy guard checks
   const guardResult = runConvoyGuard(store, convoyId, wtManager, ndjsonPath, spec.guard)
   if (guardResult.warnings.length > 0) {
@@ -2690,9 +2624,8 @@ export function createConvoyEngine(options: ConvoyEngineOptions): ConvoyEngine {
 
     const store = createConvoyStore(dbPath)
     const ndjsonPath = options.logsDir
-      ? join(options.logsDir, 'convoy-events.ndjson')
-      : join(basePath, '.opencastle', 'logs', 'convoy-events.ndjson')
-    mkdirSync(dirname(ndjsonPath), { recursive: true })
+      ? join(options.logsDir, 'convoys', `${convoyId}.ndjson`)
+      : ndjsonPathForConvoy(convoyId, basePath)
     const events = createEventEmitter(store, { ndjsonPath })
     const wtManager = options._worktreeManager ?? createWorktreeManager(basePath)
     const mergeQueue = options._mergeQueue ?? createMergeQueue(basePath)
@@ -2807,9 +2740,8 @@ export function createConvoyEngine(options: ConvoyEngineOptions): ConvoyEngine {
 
     const store = createConvoyStore(dbPath)
     const ndjsonPath = options.logsDir
-      ? join(options.logsDir, 'convoy-events.ndjson')
-      : join(basePath, '.opencastle', 'logs', 'convoy-events.ndjson')
-    mkdirSync(dirname(ndjsonPath), { recursive: true })
+      ? join(options.logsDir, 'convoys', `${convoyId}.ndjson`)
+      : ndjsonPathForConvoy(convoyId, basePath)
     const events = createEventEmitter(store, { ndjsonPath })
     const wtManager = options._worktreeManager ?? createWorktreeManager(basePath)
     const mergeQueue = options._mergeQueue ?? createMergeQueue(basePath)
@@ -2876,9 +2808,8 @@ export function createConvoyEngine(options: ConvoyEngineOptions): ConvoyEngine {
     mkdirSync(dirname(dbPath), { recursive: true })
     const store = createConvoyStore(dbPath)
     const ndjsonPath = options.logsDir
-      ? join(options.logsDir, 'convoy-events.ndjson')
-      : join(basePath, '.opencastle', 'logs', 'convoy-events.ndjson')
-    mkdirSync(dirname(ndjsonPath), { recursive: true })
+      ? join(options.logsDir, 'convoys', `${convoyId}.ndjson`)
+      : ndjsonPathForConvoy(convoyId, basePath)
     const events = createEventEmitter(store, { ndjsonPath })
     try {
       const allTasks = store.getTasksByConvoy(convoyId)
