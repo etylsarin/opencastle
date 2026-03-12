@@ -1,5 +1,7 @@
 import type { ConvoyStore } from './store.js'
 import type { ConvoyEventEmitter } from './events.js'
+import type { TaskRecord } from './types.js'
+import type { AgentAdapter } from '../types.js'
 
 export interface HealthMonitorOptions {
   store: ConvoyStore
@@ -22,8 +24,7 @@ export interface HealthMonitor {
   check(): void
 }
 
-export function createHealthMonitor(options: HealthMonitorOptions): HealthMonitor {
-  const {
+export function createHealthMonitor(options: HealthMonitorOptions): HealthMonitor {  const {
     store,
     events,
     convoyId,
@@ -107,5 +108,82 @@ export function createHealthMonitor(options: HealthMonitorOptions): HealthMonito
       }
     },
     check,
+  }
+}
+
+// ── Drift detection ───────────────────────────────────────────────────────────
+
+export interface DriftCheckResult {
+  score: number
+  explanation: string
+  drifted: boolean
+  threshold: number
+}
+
+export async function detectDrift(
+  taskRecord: TaskRecord,
+  adapter: AgentAdapter,
+  options?: { threshold?: number },
+): Promise<DriftCheckResult> {
+  // Streaming adapters: copilot (vscode adapter), cursor
+  const streamingAdapters = ['copilot', 'cursor']
+  const adapterName = taskRecord.adapter ?? adapter.name
+
+  if (!streamingAdapters.includes(adapterName)) {
+    process.stderr.write(
+      `Warning: drift detection skipped for non-streaming adapter "${adapterName}"\n`,
+    )
+    return {
+      score: 1.0,
+      explanation: 'Drift detection skipped: non-streaming adapter',
+      drifted: false,
+      threshold: options?.threshold ?? 0.8,
+    }
+  }
+
+  const threshold = options?.threshold ?? 0.8
+
+  const confidencePrompt = `Review the work you just completed for task "${taskRecord.id}". Rate your confidence that the implementation is correct and complete on a scale of 0.0 to 1.0. Respond with ONLY a JSON object: {"score": <number>, "explanation": "<brief explanation>"}`
+
+  const confidenceTask = {
+    id: `drift-check-${taskRecord.id}`,
+    prompt: confidencePrompt,
+    agent: taskRecord.agent,
+    timeout: '2m',
+    depends_on: [] as string[],
+    files: [] as string[],
+    description: 'Drift confidence check',
+    max_retries: 0,
+  }
+
+  try {
+    const result = await adapter.execute(confidenceTask, { verbose: false })
+
+    const jsonMatch = result.output.match(/\{[^}]*"score"\s*:\s*([\d.]+)[^}]*"explanation"\s*:\s*"([^"]*)"[^}]*\}/)
+    if (jsonMatch) {
+      const score = Math.max(0, Math.min(1, parseFloat(jsonMatch[1])))
+      const explanation = jsonMatch[2]
+      return { score, explanation, drifted: score < threshold, threshold }
+    }
+
+    const numberMatch = result.output.match(/(0\.\d+|1\.0|1)/)
+    if (numberMatch) {
+      const score = Math.max(0, Math.min(1, parseFloat(numberMatch[1])))
+      return { score, explanation: 'Parsed from raw output', drifted: score < threshold, threshold }
+    }
+
+    return {
+      score: 0.5,
+      explanation: 'Could not parse confidence score from adapter response',
+      drifted: 0.5 < threshold,
+      threshold,
+    }
+  } catch (err) {
+    return {
+      score: 0.5,
+      explanation: `Confidence check failed: ${(err as Error).message}`,
+      drifted: 0.5 < threshold,
+      threshold,
+    }
   }
 }

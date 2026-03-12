@@ -92,6 +92,8 @@ function makeEngineFactory(runResults: ConvoyResult[]) {
     return {
       run: vi.fn().mockResolvedValue(result),
       resume: vi.fn().mockResolvedValue(makeConvoyResult()),
+      retryFailed: vi.fn(),
+      injectTask: vi.fn(),
     }
   })
 }
@@ -443,6 +445,8 @@ describe('pipeline record persistence', () => {
         return makeConvoyResult()
       }),
       resume: vi.fn(),
+      retryFailed: vi.fn(),
+      injectTask: vi.fn(),
     }))
 
     const result = await createPipelineOrchestrator({
@@ -653,6 +657,8 @@ describe('pipeline resume', () => {
     const mockEngine: ConvoyEngine = {
       run: vi.fn().mockResolvedValue(makeConvoyResult()),
       resume: vi.fn().mockResolvedValue(resumedResult),
+      retryFailed: vi.fn(),
+      injectTask: vi.fn(),
     }
     const factory = vi.fn().mockReturnValue(mockEngine)
 

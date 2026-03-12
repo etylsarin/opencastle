@@ -1211,3 +1211,761 @@ describe('applyDefaults — gate_retries default', () => {
     expect(spec.gate_retries).toBe(2)
   })
 })
+
+// ── guard config validation ─────────────────────────────────────
+
+describe('guard config', () => {
+  const baseSpec = {
+    name: 'test-run',
+    tasks: [{ id: 'task-1', prompt: 'Do something' }],
+  }
+
+  it('accepts a valid guard config', () => {
+    const result = validateSpec({
+      ...baseSpec,
+      guard: { enabled: true, agent: 'session-guard', checks: ['observability', 'cleanup'] },
+    })
+    expect(result.valid).toBe(true)
+    expect(result.errors).toHaveLength(0)
+  })
+
+  it('accepts guard with only enabled: false', () => {
+    const result = validateSpec({ ...baseSpec, guard: { enabled: false } })
+    expect(result.valid).toBe(true)
+  })
+
+  it('accepts guard with no fields (all optional)', () => {
+    const result = validateSpec({ ...baseSpec, guard: {} })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects guard.enabled that is not a boolean', () => {
+    const result = validateSpec({ ...baseSpec, guard: { enabled: 'yes' } })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('guard.enabled'))
+  })
+
+  it('rejects guard.agent that is not a string', () => {
+    const result = validateSpec({ ...baseSpec, guard: { agent: 42 } })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('guard.agent'))
+  })
+
+  it('rejects guard.checks that is not an array', () => {
+    const result = validateSpec({ ...baseSpec, guard: { checks: 'observability' } })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('guard.checks'))
+  })
+
+  it('rejects guard.checks with empty string entries', () => {
+    const result = validateSpec({ ...baseSpec, guard: { checks: ['valid', ''] } })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('guard.checks'))
+  })
+})
+
+// ── review field validation ────────────────────────────────────────────────────
+
+describe('review defaults validation', () => {
+  const baseV1Spec = {
+    name: 'test',
+    version: 1,
+    tasks: [{ id: 't1', prompt: 'Do it' }],
+  }
+
+  it('accepts valid defaults.review values', () => {
+    for (const r of ['auto', 'fast', 'panel', 'none']) {
+      const result = validateSpec({ ...baseV1Spec, defaults: { review: r } })
+      expect(result.valid).toBe(true)
+    }
+  })
+
+  it('rejects invalid defaults.review value', () => {
+    const result = validateSpec({ ...baseV1Spec, defaults: { review: 'always' } })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('defaults.review'))
+  })
+
+  it('accepts defaults.reviewer_model string', () => {
+    const result = validateSpec({ ...baseV1Spec, defaults: { reviewer_model: 'gpt-4' } })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects defaults.reviewer_model non-string', () => {
+    const result = validateSpec({ ...baseV1Spec, defaults: { reviewer_model: 42 } })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('defaults.reviewer_model'))
+  })
+
+  it('accepts defaults.review_budget positive integer', () => {
+    const result = validateSpec({ ...baseV1Spec, defaults: { review_budget: 1000 } })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects defaults.review_budget of 0', () => {
+    const result = validateSpec({ ...baseV1Spec, defaults: { review_budget: 0 } })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('defaults.review_budget'))
+  })
+
+  it('accepts valid on_review_budget_exceeded values', () => {
+    for (const v of ['skip', 'downgrade', 'stop']) {
+      const result = validateSpec({ ...baseV1Spec, defaults: { on_review_budget_exceeded: v } })
+      expect(result.valid).toBe(true)
+    }
+  })
+
+  it('rejects invalid on_review_budget_exceeded', () => {
+    const result = validateSpec({ ...baseV1Spec, defaults: { on_review_budget_exceeded: 'ignore' } })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('defaults.on_review_budget_exceeded'))
+  })
+
+  it('accepts defaults.max_concurrent_reviews positive integer', () => {
+    const result = validateSpec({ ...baseV1Spec, defaults: { max_concurrent_reviews: 3 } })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects defaults.max_concurrent_reviews of 0', () => {
+    const result = validateSpec({ ...baseV1Spec, defaults: { max_concurrent_reviews: 0 } })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('defaults.max_concurrent_reviews'))
+  })
+
+  it('accepts valid review_heuristics object', () => {
+    const result = validateSpec({
+      ...baseV1Spec,
+      defaults: {
+        review_heuristics: {
+          panel_paths: ['auth/', 'security/'],
+          panel_agents: ['security-expert'],
+          auto_pass_agents: ['copywriter'],
+          auto_pass_max_lines: 20,
+          auto_pass_max_files: 3,
+        },
+      },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects review_heuristics as non-object', () => {
+    const result = validateSpec({ ...baseV1Spec, defaults: { review_heuristics: 'fast' } })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('defaults.review_heuristics'))
+  })
+
+  it('rejects review_heuristics.panel_paths with non-string entries', () => {
+    const result = validateSpec({ ...baseV1Spec, defaults: { review_heuristics: { panel_paths: [1, 2] } } })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('review_heuristics.panel_paths'))
+  })
+
+  it('rejects review_heuristics.auto_pass_max_lines of 0', () => {
+    const result = validateSpec({ ...baseV1Spec, defaults: { review_heuristics: { auto_pass_max_lines: 0 } } })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('auto_pass_max_lines'))
+  })
+})
+
+describe('per-task review field validation', () => {
+  const taskBase = { name: 'test', tasks: [{ id: 't1', prompt: 'Do it' }] }
+
+  it('accepts valid per-task review values', () => {
+    for (const r of ['auto', 'fast', 'panel', 'none']) {
+      const result = validateSpec({ ...taskBase, tasks: [{ id: 't1', prompt: 'Do it', review: r }] })
+      expect(result.valid).toBe(true)
+    }
+  })
+
+  it('rejects invalid per-task review value', () => {
+    const result = validateSpec({ ...taskBase, tasks: [{ id: 't1', prompt: 'Do it', review: 'always' }] })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('tasks[0]'))
+    expect(result.errors).toContainEqual(expect.stringContaining('review'))
+  })
+})
+
+describe('applyDefaults review merge', () => {
+  it('merges defaults.review into tasks when task has no review set', () => {
+    const spec = applyDefaults({
+      name: 'test',
+      version: 1,
+      tasks: [{ id: 't1', prompt: 'Do it' }],
+      defaults: { review: 'panel' },
+    })
+    expect((spec.tasks![0] as unknown as Record<string, unknown>).review).toBe('panel')
+  })
+
+  it('task-level review overrides defaults.review', () => {
+    const spec = applyDefaults({
+      name: 'test',
+      version: 1,
+      tasks: [{ id: 't1', prompt: 'Do it', review: 'none' }],
+      defaults: { review: 'panel' },
+    })
+    expect((spec.tasks![0] as unknown as Record<string, unknown>).review).toBe('none')
+  })
+
+  it('review remains undefined when not set in defaults or task', () => {
+    const spec = applyDefaults({
+      name: 'test',
+      version: 1,
+      tasks: [{ id: 't1', prompt: 'Do it' }],
+      defaults: {},
+    })
+    expect((spec.tasks![0] as unknown as Record<string, unknown>).review).toBeUndefined()
+  })
+})
+
+describe('concurrency: auto (swarm mode)', () => {
+  it('accepts concurrency: auto', () => {
+    const result = validateSpec({
+      name: 'test',
+      concurrency: 'auto',
+      tasks: [{ id: 't1', prompt: 'do stuff' }],
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('accepts concurrency: 1', () => {
+    const result = validateSpec({
+      name: 'test',
+      concurrency: 1,
+      tasks: [{ id: 't1', prompt: 'do stuff' }],
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects concurrency: 0', () => {
+    const result = validateSpec({
+      name: 'test',
+      concurrency: 0,
+      tasks: [{ id: 't1', prompt: 'do stuff' }],
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors[0]).toContain('concurrency')
+  })
+
+  it('rejects concurrency: 51', () => {
+    const result = validateSpec({
+      name: 'test',
+      concurrency: 51,
+      tasks: [{ id: 't1', prompt: 'do stuff' }],
+    })
+    expect(result.valid).toBe(false)
+  })
+
+  it('rejects concurrency: "invalid"', () => {
+    const result = validateSpec({
+      name: 'test',
+      concurrency: 'invalid',
+      tasks: [{ id: 't1', prompt: 'do stuff' }],
+    })
+    expect(result.valid).toBe(false)
+  })
+})
+
+describe('defaults.max_swarm_concurrency', () => {
+  it('accepts valid max_swarm_concurrency', () => {
+    const result = validateSpec({
+      name: 'test',
+      version: 1,
+      defaults: { max_swarm_concurrency: 8 },
+      tasks: [{ id: 't1', prompt: 'do stuff' }],
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects max_swarm_concurrency: 0', () => {
+    const result = validateSpec({
+      name: 'test',
+      version: 1,
+      defaults: { max_swarm_concurrency: 0 },
+      tasks: [{ id: 't1', prompt: 'do stuff' }],
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors[0]).toContain('max_swarm_concurrency')
+  })
+
+  it('rejects max_swarm_concurrency: 51', () => {
+    const result = validateSpec({
+      name: 'test',
+      version: 1,
+      defaults: { max_swarm_concurrency: 51 },
+      tasks: [{ id: 't1', prompt: 'do stuff' }],
+    })
+    expect(result.valid).toBe(false)
+  })
+})
+
+// ── validateSpec — MCP server config in defaults ──────────────
+
+describe('validateSpec — MCP server config in defaults', () => {
+  const validSpec = {
+    name: 'test-run',
+    version: 1,
+    tasks: [{ id: 'task-1', prompt: 'Do something' }],
+  }
+
+  it('accepts valid mcp_servers in defaults', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [
+          { name: 'github', type: 'stdio', command: 'npx', args: ['-y', '@modelcontextprotocol/server-github'] },
+        ],
+      },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('accepts mcp_servers with all optional fields', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [
+          { name: 'remote', type: 'sse', url: 'https://mcp.example.com', local: false, config: { key: 'val' } },
+        ],
+      },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('accepts empty mcp_servers array', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { mcp_servers: [] },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects mcp_servers as non-array', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { mcp_servers: 'not-array' },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('mcp_servers'))
+  })
+
+  it('rejects mcp_server entry without name', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [{ type: 'stdio' }],
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('name'))
+  })
+
+  it('rejects mcp_server entry without type', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [{ name: 'github' }],
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('type'))
+  })
+
+  it('rejects mcp_server entry with non-string name', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [{ name: 123, type: 'stdio' }],
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('name'))
+  })
+
+  it('rejects mcp_server entry with non-boolean local', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [{ name: 'x', type: 'stdio', local: 'yes' }],
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('local'))
+  })
+
+  it('rejects mcp_server entry with non-string command', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [{ name: 'x', type: 'stdio', command: 42 }],
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('command'))
+  })
+
+  it('rejects mcp_server entry with non-array args', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [{ name: 'x', type: 'stdio', args: 'not-array' }],
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('args'))
+  })
+
+  it('rejects mcp_server entry with non-string args items', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [{ name: 'x', type: 'stdio', args: [1, 2] }],
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('args'))
+  })
+
+  it('rejects mcp_server entry with non-string url', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [{ name: 'x', type: 'sse', url: 42 }],
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('url'))
+  })
+
+  it('rejects mcp_server entry with non-object config', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [{ name: 'x', type: 'stdio', config: 'not-object' }],
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('config'))
+  })
+
+  it('rejects mcp_server entry with array config', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [{ name: 'x', type: 'stdio', config: [1, 2] }],
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('config'))
+  })
+
+  it('validates multiple mcp_server entries independently', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: [
+          { name: 'valid', type: 'stdio' },
+          { name: 123, type: 'stdio' },
+        ],
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('mcp_servers[1].name'))
+  })
+
+  it('rejects non-object mcp_server entry', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        mcp_servers: ['not-an-object'],
+      },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('mcp_servers[0]'))
+  })
+})
+
+// ── validateSpec — mcp_approve_all in defaults ────────────────
+
+describe('validateSpec — mcp_approve_all in defaults', () => {
+  const validSpec = {
+    name: 'test-run',
+    version: 1,
+    tasks: [{ id: 'task-1', prompt: 'Do something' }],
+  }
+
+  it('accepts mcp_approve_all as true', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { mcp_approve_all: true },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('accepts mcp_approve_all as false', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { mcp_approve_all: false },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects mcp_approve_all as string', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { mcp_approve_all: 'yes' },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('mcp_approve_all'))
+  })
+
+  it('rejects mcp_approve_all as number', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { mcp_approve_all: 1 },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('mcp_approve_all'))
+  })
+})
+
+// ── validateSpec — mcp_server_approval_timeout in defaults ────
+
+describe('validateSpec — mcp_server_approval_timeout in defaults', () => {
+  const validSpec = {
+    name: 'test-run',
+    version: 1,
+    tasks: [{ id: 'task-1', prompt: 'Do something' }],
+  }
+
+  it('accepts valid mcp_server_approval_timeout', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { mcp_server_approval_timeout: 30 },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects mcp_server_approval_timeout of 0', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { mcp_server_approval_timeout: 0 },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('mcp_server_approval_timeout'))
+  })
+
+  it('rejects negative mcp_server_approval_timeout', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { mcp_server_approval_timeout: -5 },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('mcp_server_approval_timeout'))
+  })
+
+  it('rejects non-number mcp_server_approval_timeout', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { mcp_server_approval_timeout: '30s' },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('mcp_server_approval_timeout'))
+  })
+})
+
+describe('validateSpec — built_in_gates config', () => {
+  const validSpec = {
+    name: 'test-run',
+    version: 1,
+    tasks: [{ id: 'task-1', prompt: 'Do something' }],
+  }
+
+  it('accepts valid built_in_gates with boolean fields', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { built_in_gates: { secret_scan: true, blast_radius: false } },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('accepts built_in_gates with "auto" value', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { built_in_gates: { dependency_audit: 'auto', browser_test: 'auto' } },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects built_in_gates with invalid field value', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { built_in_gates: { secret_scan: 'yes' } },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('built_in_gates.secret_scan'))
+  })
+
+  it('rejects built_in_gates that is not an object', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { built_in_gates: 'enabled' },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('built_in_gates'))
+  })
+
+  it('accepts valid gate_timeout', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { built_in_gates: { gate_timeout: 300 } },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects gate_timeout of 0', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { built_in_gates: { gate_timeout: 0 } },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('gate_timeout'))
+  })
+})
+
+describe('validateSpec — browser_test config', () => {
+  const validSpec = {
+    name: 'test-run',
+    version: 1,
+    tasks: [{ id: 'task-1', prompt: 'Do something' }],
+  }
+
+  it('accepts valid browser_test config in defaults', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        browser_test: { urls: ['http://localhost:3000'] },
+      },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('accepts browser_test with all optional fields', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: {
+        browser_test: {
+          urls: ['http://localhost:3000'],
+          check_console_errors: true,
+          visual_diff_threshold: 0.1,
+          a11y: true,
+          severity_threshold: 'serious',
+        },
+      },
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects browser_test with missing urls', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { browser_test: { check_console_errors: true } },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('browser_test.urls'))
+  })
+
+  it('rejects browser_test with empty urls array', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { browser_test: { urls: [] } },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('browser_test.urls'))
+  })
+
+  it('rejects browser_test with non-string urls elements', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { browser_test: { urls: [42, 'http://localhost:3000'] } },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('browser_test.urls'))
+  })
+
+  it('rejects browser_test with invalid severity_threshold', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { browser_test: { urls: ['http://localhost:3000'], severity_threshold: 'fatal' } },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('severity_threshold'))
+  })
+
+  it('rejects browser_test that is not an object', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { browser_test: 'http://localhost:3000' },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('browser_test'))
+  })
+
+  it('accepts valid task-level browser_test config', () => {
+    const result = validateSpec({
+      ...validSpec,
+      tasks: [{
+        id: 'task-1',
+        prompt: 'Do something',
+        browser_test: { urls: ['http://localhost:4000'] },
+      }],
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects invalid task-level browser_test config', () => {
+    const result = validateSpec({
+      ...validSpec,
+      tasks: [{
+        id: 'task-1',
+        prompt: 'Do something',
+        browser_test: { urls: [] },
+      }],
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('browser_test.urls'))
+  })
+
+  it('accepts valid task-level built_in_gates', () => {
+    const result = validateSpec({
+      ...validSpec,
+      tasks: [{
+        id: 'task-1',
+        prompt: 'Do something',
+        built_in_gates: { browser_test: true },
+      }],
+    })
+    expect(result.valid).toBe(true)
+  })
+
+  it('rejects invalid task-level built_in_gates', () => {
+    const result = validateSpec({
+      ...validSpec,
+      tasks: [{
+        id: 'task-1',
+        prompt: 'Do something',
+        built_in_gates: { browser_test: 'enable' },
+      }],
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('built_in_gates.browser_test'))
+  })
+
+  it('rejects browser_test with non-string baselines_dir', () => {
+    const result = validateSpec({
+      ...validSpec,
+      defaults: { browser_test: { urls: ['http://localhost:3000'], baselines_dir: 123 } },
+    })
+    expect(result.valid).toBe(false)
+    expect(result.errors).toContainEqual(expect.stringContaining('baselines_dir'))
+  })
+})

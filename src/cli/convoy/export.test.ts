@@ -49,6 +49,7 @@ function insertTask(
     max_retries: 1,
     files: null,
     depends_on: null,
+    gates: null,
   })
   if (status !== 'pending') {
     store.updateTaskStatus(taskId, convoyId, status, {

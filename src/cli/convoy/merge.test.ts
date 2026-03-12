@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { execFile as execFileCb } from 'node:child_process'
 import { promisify } from 'node:util'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { createMergeQueue } from './merge.js'
+import { createMergeQueue, MergeConflictError } from './merge.js'
 import type { MergeQueue } from './merge.js'
 
 const execFile = promisify(execFileCb)
@@ -103,7 +103,7 @@ describe('merge - no changes', () => {
 // ── merge conflict ────────────────────────────────────────────────────────────
 
 describe('merge - conflict', () => {
-  it('returns conflicted: true and aborts when two worktrees edit the same file', async () => {
+  it('throws MergeConflictError and aborts when two worktrees edit the same file', async () => {
     const worktree1 = await addWorktree(repoPath, 'worker1', featureBranch)
     const worktree2 = await addWorktree(repoPath, 'worker2', featureBranch)
 
@@ -113,10 +113,8 @@ describe('merge - conflict', () => {
     const first = await queue.merge(worktree1, 'convoy-worker1', featureBranch)
     expect(first).toEqual({ success: true, conflicted: false, message: 'Merged successfully' })
 
-    const second = await queue.merge(worktree2, 'convoy-worker2', featureBranch)
-    expect(second.success).toBe(false)
-    expect(second.conflicted).toBe(true)
-    expect(second.message).toContain('conflict')
+    await expect(queue.merge(worktree2, 'convoy-worker2', featureBranch))
+      .rejects.toThrow(MergeConflictError)
   })
 
   it('leaves the repo in a clean state (no pending merge) after aborting a conflict', async () => {
@@ -127,7 +125,8 @@ describe('merge - conflict', () => {
     writeFileSync(join(worktree2, 'shared.txt'), 'content from worker 2')
 
     await queue.merge(worktree1, 'convoy-worker1', featureBranch)
-    await queue.merge(worktree2, 'convoy-worker2', featureBranch)
+    await expect(queue.merge(worktree2, 'convoy-worker2', featureBranch))
+      .rejects.toBeInstanceOf(MergeConflictError)
 
     // --untracked-files=no excludes the .opencastle/worktrees/ dir from the check;
     // we only want to verify there is no pending merge (no staged/modified tracked files).
