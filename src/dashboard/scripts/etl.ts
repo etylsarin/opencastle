@@ -95,12 +95,25 @@ export async function runEtl(options: EtlOptions): Promise<EtlResult> {
   }
 }
 
+function parseArgs(): { db?: string; out?: string } {
+  const args = process.argv.slice(2)
+  const result: Record<string, string> = {}
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]
+    if (a === '--db' && args[i+1]) { result.db = args[++i] }
+    else if (a === '--out' && args[i+1]) { result.out = args[++i] }
+  }
+  return result
+}
+
 const isMain =
   process.argv[1] != null &&
   fileURLToPath(import.meta.url) === resolve(process.argv[1])
+
 if (isMain) {
-  const dbPath = resolve(process.cwd(), '.opencastle', 'convoy.db')
-  const outputDir = resolve(__dirname, '..', 'public', 'data')
+  const parsed = parseArgs()
+  const dbPath = parsed.db != null ? resolve(process.cwd(), parsed.db) : resolve(process.cwd(), '.opencastle', 'convoy.db')
+  const outputDir = parsed.out != null ? resolve(process.cwd(), parsed.out) : resolve(__dirname, '..', 'public', 'data')
   runEtl({ dbPath, outputDir }).catch((err: unknown) => {
     console.error('ETL failed:', (err as Error).message)
     process.exit(1)
