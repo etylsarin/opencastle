@@ -36,6 +36,8 @@
   "scripts": {
     "cli:build": "tsc",
     "test": "vitest run",
+    "dashboard:etl": "tsx src/dashboard/scripts/etl.ts",
+    "dashboard:test": "tsx src/dashboard/scripts/integration-test.ts",
     "dashboard:dev": "astro dev --root src/dashboard --port 4300",
     "dashboard:build": "astro build --root src/dashboard",
     "dashboard:preview": "astro preview --root src/dashboard --port 4300",
@@ -54,11 +56,13 @@
     "@vitest/coverage-v8": "^4.0.18",
     "astro": "^5.5.0",
     "playwright": "^1.58.2",
+    "tsx": "^4.19.0",
     "typescript": "^5.7.0",
     "vitest": "^4.0.18"
   },
   "dependencies": {
     "@github/copilot-sdk": "^0.1.30",
+    "valibot": "^1.2.0",
     "yaml": "^2.8.2"
   },
   "peerDependencies": {

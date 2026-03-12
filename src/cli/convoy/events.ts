@@ -1,6 +1,20 @@
-import { appendFileSync, closeSync, fsyncSync, openSync } from 'node:fs'
+import { appendFileSync, closeSync, fsyncSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import type { ConvoyStore } from './store.js'
+import { KNOWN_EVENT_TYPES } from './types.js'
+import { validateEventData } from './event-schemas.js'
+
+const RESERVED_KEYS = new Set(['_event_id', 'convoy_id', 'task_id', 'worker_id', 'timestamp', 'type'])
 import { scanForSecrets } from './gates.js'
+
+export function validateEventType(type: string): boolean {
+  return KNOWN_EVENT_TYPES.has(type)
+}
+
+export function ndjsonPathForConvoy(convoyId: string, basePath?: string): string {
+  const base = basePath ?? process.cwd()
+  return join(base, '.opencastle', 'logs', 'convoys', `${convoyId}.ndjson`)
+}
 
 export interface ConvoyEventEmitter {
   emit(
@@ -15,8 +29,13 @@ export function createEventEmitter(
   store: ConvoyStore,
   options?: { ndjsonPath?: string },
 ): ConvoyEventEmitter {
+  if (typeof options === 'string') {
+    throw new TypeError('createEventEmitter options must be an object, not a string')
+  }
+
   let fd: number | null = null
   if (options?.ndjsonPath) {
+    mkdirSync(dirname(options.ndjsonPath), { recursive: true })
     fd = openSync(options.ndjsonPath, 'a')
   }
 
@@ -30,6 +49,12 @@ export function createEventEmitter(
     eventId: number,
     currentFd: number,
   ): Promise<void> {
+    const safeData: Record<string, unknown> = {}
+    if (data) {
+      for (const [k, v] of Object.entries(data)) {
+        if (!RESERVED_KEYS.has(k)) safeData[k] = v
+      }
+    }
     const record = {
       _event_id: eventId,
       timestamp: now,
@@ -37,7 +62,7 @@ export function createEventEmitter(
       convoy_id: ids?.convoy_id ?? null,
       task_id: ids?.task_id ?? null,
       worker_id: ids?.worker_id ?? null,
-      ...(data ?? {}),
+      ...safeData,
     }
     const jsonLine = JSON.stringify(record) + '\n'
 
@@ -80,9 +105,16 @@ export function createEventEmitter(
 
   return {
     emit(type, data, ids) {
-      // Event data is NOT secret-scanned here because all user-generated content
-      // (task output, DLQ entries) is scanned at its source before reaching the
-      // event emitter. Re-scanning would be redundant. See MF-4 in panel report.
+      // SQLite insert is not scanned; NDJSON write is scanned via writeNdjson().
+      // User-generated content (task output, DLQ entries) is scanned at its source
+      // before reaching the event emitter. See MF-4 in panel report.
+      if (!validateEventType(type)) {
+        console.warn(`[convoy] Unknown event type: "${type}"`)
+      }
+      const dataValidation = validateEventData(type, data)
+      if (!dataValidation.valid) {
+        console.warn(`[convoy] Invalid data for event type "${type}": ${dataValidation.issues?.join(', ')}`)
+      }
       const now = new Date().toISOString()
 
       const eventId = store.insertEvent({
@@ -109,5 +141,87 @@ export function createEventEmitter(
         fd = null
       }
     },
+  }
+}
+
+function safeJsonParse(raw: string): Record<string, unknown> {
+  try {
+    return JSON.parse(raw) as Record<string, unknown>
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Truncate any trailing partial line in the NDJSON file, then replay any SQLite
+ * events for the given convoy that are missing from the file.
+ * Exported for unit testing.
+ */
+export function recoverNdjson(store: ConvoyStore, convoyId: string, ndjsonPath: string): void {
+  // 1. Read the NDJSON file (if it exists)
+  let fileContent: string
+  try {
+    fileContent = readFileSync(ndjsonPath, 'utf8')
+  } catch {
+    fileContent = ''
+  }
+
+  // 2. Truncate any partial trailing line (no \n terminator)
+  if (fileContent.length > 0 && !fileContent.endsWith('\n')) {
+    const lastNewline = fileContent.lastIndexOf('\n')
+    if (lastNewline === -1) {
+      writeFileSync(ndjsonPath, '')
+      fileContent = ''
+    } else {
+      writeFileSync(ndjsonPath, fileContent.slice(0, lastNewline + 1))
+      fileContent = fileContent.slice(0, lastNewline + 1)
+    }
+  }
+
+  // 3. Count valid NDJSON event IDs for this convoy
+  const ndjsonIds = new Set<number>()
+  for (const line of fileContent.split('\n')) {
+    if (!line.trim()) continue
+    try {
+      const parsed = JSON.parse(line) as Record<string, unknown>
+      if (parsed.convoy_id === convoyId && parsed._event_id != null) {
+        ndjsonIds.add(parsed._event_id as number)
+      }
+    } catch {
+      // Skip unparseable lines
+    }
+  }
+
+  // 4. Get all SQLite events for this convoy
+  const sqliteEvents = store.getEvents(convoyId)
+
+  // 5. Replay missing events (those in SQLite but not in NDJSON)
+  const missing = sqliteEvents.filter(e => e.id != null && !ndjsonIds.has(e.id!))
+  if (missing.length > 0) {
+    const fd = openSync(ndjsonPath, 'a')
+    try {
+      for (const event of missing) {
+        const parsedData = event.data ? safeJsonParse(event.data) : {}
+        // Strip reserved keys from event.data to prevent attacker-controlled
+        // values from overriding canonical fields from the DB row.
+        const safeData: Record<string, unknown> = {}
+        for (const [key, value] of Object.entries(parsedData)) {
+          if (!RESERVED_KEYS.has(key)) safeData[key] = value
+        }
+        const record = {
+          ...safeData,
+          _event_id: event.id,
+          timestamp: event.created_at,
+          type: event.type,
+          convoy_id: event.convoy_id,
+          task_id: event.task_id,
+          worker_id: event.worker_id,
+        }
+        appendFileSync(fd, JSON.stringify(record) + '\n')
+      }
+      fsyncSync(fd)
+    } finally {
+      closeSync(fd)
+    }
   }
 }

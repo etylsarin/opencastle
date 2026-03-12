@@ -99,11 +99,11 @@ describe('DB creation', () => {
     expect(row.journal_mode).toBe('wal')
   })
 
-  it('sets schema version to 9', () => {
+  it('sets schema version to 10', () => {
     const db = new DatabaseSync(dbPath)
     const row = db.prepare('PRAGMA user_version').get() as { user_version: number }
     db.close()
-    expect(row.user_version).toBe(9)
+    expect(row.user_version).toBe(10)
   })
 
   it('creates all required tables', () => {
@@ -131,7 +131,7 @@ describe('DB creation', () => {
     store2.close()
     // Reassign so afterEach does not double-close
     store = createConvoyStore(dbPath)
-    expect(row.user_version).toBe(9)
+    expect(row.user_version).toBe(10)
   })
 })
 
@@ -208,8 +208,8 @@ describe('schema migration', () => {
     verifyDb.close()
 
     expect(cols.map(c => c.name)).toContain('adapter')
-    // v1 chains through v2→v3→v4→...→v7→v8→v9 in one init, so final version is 9
-    expect(version.user_version).toBe(9)
+    // v1 chains through v2→v3→v4→...→v7→v8→v9→v10 in one init, so final version is 10
+    expect(version.user_version).toBe(10)
   })
 
   it('schema migration v2 to v3 adds cost columns', () => {
@@ -295,7 +295,7 @@ describe('schema migration', () => {
     expect(convoyColNames).toContain('total_tokens')
     expect(convoyColNames).toContain('total_cost_usd')
 
-    expect(version.user_version).toBe(9)
+    expect(version.user_version).toBe(10)
   })
 
   it('schema migration v1 to v3 chains correctly in a single init', () => {
@@ -381,7 +381,7 @@ describe('schema migration', () => {
     expect(convoyColNames).toContain('total_tokens')
     expect(convoyColNames).toContain('total_cost_usd')
 
-    expect(version.user_version).toBe(9)
+    expect(version.user_version).toBe(10)
   })
 
   it('schema migration v3 to v4 creates pipeline table and adds pipeline_id to convoy', () => {
@@ -464,7 +464,7 @@ describe('schema migration', () => {
 
     expect(convoyCols.map(c => c.name)).toContain('pipeline_id')
     expect(tables.map(t => t.name)).toContain('pipeline')
-    expect(version.user_version).toBe(9)
+    expect(version.user_version).toBe(10)
   })
 })
 
@@ -523,11 +523,11 @@ describe('convoy CRUD', () => {
     store.updateConvoyStatus('convoy-1', 'done', {
       finished_at: '2026-01-01T01:00:00.000Z',
       total_tokens: 5000,
-      total_cost_usd: '0.015000',
+      total_cost_usd: 0.015,
     })
     const retrieved = store.getConvoy('convoy-1')!
     expect(retrieved.total_tokens).toBe(5000)
-    expect(retrieved.total_cost_usd).toBe('0.015000')
+    expect(retrieved.total_cost_usd).toBe(0.015)
   })
 })
 
@@ -618,13 +618,13 @@ describe('task CRUD', () => {
       prompt_tokens: 1200,
       completion_tokens: 800,
       total_tokens: 2000,
-      cost_usd: '0.006000',
+      cost_usd: 0.006,
     })
     const task = store.getTask('task-1', 'convoy-1')!
     expect(task.prompt_tokens).toBe(1200)
     expect(task.completion_tokens).toBe(800)
     expect(task.total_tokens).toBe(2000)
-    expect(task.cost_usd).toBe('0.006000')
+    expect(task.cost_usd).toBe(0.006)
   })
 })
 
@@ -897,11 +897,11 @@ describe('pipeline CRUD', () => {
     store.updatePipelineStatus('pipeline-1', 'done', {
       finished_at: '2026-01-01T01:00:00.000Z',
       total_tokens: 12000,
-      total_cost_usd: '0.036000',
+      total_cost_usd: 0.036,
     })
     const p = store.getPipeline('pipeline-1')!
     expect(p.total_tokens).toBe(12000)
-    expect(p.total_cost_usd).toBe('0.036000')
+    expect(p.total_cost_usd).toBe(0.036)
   })
 
   it('pipeline status can transition through all states', () => {
@@ -1444,7 +1444,7 @@ describe('schema migration v5 → v6', () => {
     v5Verify.close()
     migratedStore.close()
 
-    expect(row.user_version).toBe(9)
+    expect(row.user_version).toBe(10)
     expect(taskStepTable?.name).toBe('task_step')
     expect(convoy?.id).toBe('convoy-auto')
     expect(task?.id).toBe('task-auto')
@@ -1614,7 +1614,7 @@ describe('schema migration v6→v7 (drift detection columns)', () => {
 
     expect(cols.map(c => c.name)).toContain('drift_score')
     expect(cols.map(c => c.name)).toContain('drift_retried')
-    expect(version.user_version).toBe(9)
+    expect(version.user_version).toBe(10)
   })
 
   it('new databases include drift_score and drift_retried in CREATE TABLE', () => {
@@ -1816,10 +1816,10 @@ describe('artifact CRUD', () => {
   })
 })
 
-// ── migration full chain v4→v9 ────────────────────────────────────────────────
+// ── migration full chain v4→v10 ────────────────────────────────────────────────
 
-describe('migration full chain v4→v9', () => {
-  it('migrates a seeded v4 database to v9, preserving data and adding all tables/columns', () => {
+describe('migration full chain v4→v10', () => {
+  it('migrates a seeded v4 database to v10, preserving data and adding all tables/columns', () => {
     const chainDbPath = join(tmpDir, 'v4-chain.db')
     const v4Db = createV4Db(chainDbPath)
     // Seed realistic v4 data
@@ -1841,15 +1841,15 @@ describe('migration full chain v4→v9', () => {
     ).run()
     v4Db.close()
 
-    // Trigger the full v4→v9 migration chain
+    // Trigger the full v4→v10 migration chain
     const migratedStore = createConvoyStore(chainDbPath)
     migratedStore.close()
 
     const verifyDb = new DatabaseSync(chainDbPath)
 
-    // Verify user_version = 9
+    // Verify user_version = 10
     const version = (verifyDb.prepare('PRAGMA user_version').get() as { user_version: number }).user_version
-    expect(version).toBe(9)
+    expect(version).toBe(10)
 
     // Verify all new tables exist
     const tables = (verifyDb.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as Array<{ name: string }>).map(t => t.name)
@@ -2406,6 +2406,147 @@ describe('v8→v9 migration', () => {
   })
 })
 
+describe('v9→v10 migration', () => {
+  it('adds numeric cost columns and backfills data from TEXT columns', () => {
+    const migDir = realpathSync(mkdtempSync(join(tmpdir(), 'mig-v10-test-')))
+    const migDb = join(migDir, 'mig.db')
+
+    const db = new DatabaseSync(migDb)
+    db.exec('PRAGMA journal_mode = WAL')
+    db.exec(`
+      CREATE TABLE convoy (
+        id TEXT PRIMARY KEY, name TEXT NOT NULL, spec_hash TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending', branch TEXT,
+        created_at TEXT NOT NULL, started_at TEXT, finished_at TEXT,
+        spec_yaml TEXT NOT NULL, total_tokens INTEGER, total_cost_usd TEXT,
+        pipeline_id TEXT, circuit_state TEXT, review_tokens_total INTEGER, review_budget INTEGER
+      );
+      CREATE TABLE pipeline (
+        id TEXT PRIMARY KEY, name TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending',
+        branch TEXT, spec_yaml TEXT NOT NULL, convoy_specs TEXT NOT NULL,
+        created_at TEXT NOT NULL, started_at TEXT, finished_at TEXT,
+        total_tokens INTEGER, total_cost_usd TEXT
+      );
+      CREATE TABLE task (
+        id TEXT PRIMARY KEY, convoy_id TEXT NOT NULL REFERENCES convoy(id),
+        phase INTEGER NOT NULL, prompt TEXT NOT NULL, agent TEXT NOT NULL DEFAULT 'developer',
+        adapter TEXT, model TEXT, timeout_ms INTEGER NOT NULL DEFAULT 1800000,
+        status TEXT NOT NULL DEFAULT 'pending', worker_id TEXT, worktree TEXT, output TEXT,
+        exit_code INTEGER, started_at TEXT, finished_at TEXT,
+        retries INTEGER NOT NULL DEFAULT 0, max_retries INTEGER NOT NULL DEFAULT 1,
+        files TEXT, depends_on TEXT, prompt_tokens INTEGER, completion_tokens INTEGER,
+        total_tokens INTEGER, cost_usd TEXT, gates TEXT,
+        on_exhausted TEXT NOT NULL DEFAULT 'dlq', injected INTEGER NOT NULL DEFAULT 0,
+        provenance TEXT, idempotency_key TEXT, current_step INTEGER, total_steps INTEGER,
+        review_level TEXT, review_verdict TEXT, review_tokens INTEGER, review_model TEXT,
+        panel_attempts INTEGER NOT NULL DEFAULT 0, dispute_id TEXT,
+        drift_score REAL, drift_retried INTEGER NOT NULL DEFAULT 0,
+        outputs TEXT, inputs TEXT, discovered_issues TEXT
+      );
+      CREATE TABLE worker (
+        id TEXT PRIMARY KEY, task_id TEXT REFERENCES task(id), adapter TEXT NOT NULL,
+        pid INTEGER, session_id TEXT, status TEXT NOT NULL DEFAULT 'spawned',
+        worktree TEXT, created_at TEXT NOT NULL, finished_at TEXT, last_heartbeat TEXT
+      );
+      CREATE TABLE event (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, convoy_id TEXT REFERENCES convoy(id),
+        task_id TEXT, worker_id TEXT, type TEXT NOT NULL, data TEXT, created_at TEXT NOT NULL
+      );
+      CREATE TABLE dlq (
+        id TEXT PRIMARY KEY, convoy_id TEXT NOT NULL REFERENCES convoy(id),
+        task_id TEXT NOT NULL REFERENCES task(id), agent TEXT NOT NULL,
+        failure_type TEXT NOT NULL, error_output TEXT, attempts INTEGER NOT NULL,
+        tokens_spent INTEGER, escalation_task_id TEXT, resolved INTEGER NOT NULL DEFAULT 0,
+        resolution TEXT, created_at TEXT NOT NULL, resolved_at TEXT
+      );
+      CREATE TABLE task_step (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, task_id TEXT NOT NULL REFERENCES task(id),
+        step_index INTEGER NOT NULL, prompt TEXT NOT NULL, gates TEXT,
+        status TEXT NOT NULL DEFAULT 'pending', exit_code INTEGER, output TEXT,
+        started_at TEXT, finished_at TEXT
+      );
+      CREATE TABLE artifact (
+        id TEXT PRIMARY KEY, convoy_id TEXT NOT NULL REFERENCES convoy(id),
+        task_id TEXT NOT NULL REFERENCES task(id), name TEXT NOT NULL, type TEXT NOT NULL,
+        content TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE(convoy_id, name)
+      );
+      CREATE TABLE agent_identity (
+        id TEXT PRIMARY KEY, agent TEXT NOT NULL, convoy_id TEXT NOT NULL,
+        task_id TEXT NOT NULL, summary TEXT NOT NULL, created_at TEXT NOT NULL,
+        retention_days INTEGER NOT NULL DEFAULT 90
+      );
+      CREATE TABLE scratchpad (
+        key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+      PRAGMA user_version = 9;
+    `)
+
+    // Seed data with TEXT cost values (pre-migration state)
+    db.prepare(
+      `INSERT INTO convoy (id, name, spec_hash, status, created_at, spec_yaml, total_cost_usd)
+       VALUES ('c-1', 'Test', 'hash1', 'done', '2026-01-01T00:00:00.000Z', 'name: test', '1.23')`,
+    ).run()
+    db.prepare(
+      `INSERT INTO convoy (id, name, spec_hash, status, created_at, spec_yaml, total_cost_usd)
+       VALUES ('c-null', 'NullCost', 'hash2', 'pending', '2026-01-01T00:00:00.000Z', 'name: test', NULL)`,
+    ).run()
+    db.prepare(
+      `INSERT INTO task (id, convoy_id, phase, prompt, agent, timeout_ms, status, retries, max_retries, cost_usd)
+       VALUES ('t-1', 'c-1', 0, 'Do it', 'developer', 1800000, 'done', 0, 1, '0.45')`,
+    ).run()
+    db.prepare(
+      `INSERT INTO task (id, convoy_id, phase, prompt, agent, timeout_ms, status, retries, max_retries, cost_usd)
+       VALUES ('t-null', 'c-null', 0, 'Do it', 'developer', 1800000, 'pending', 0, 1, NULL)`,
+    ).run()
+    db.close()
+
+    // Open with createConvoyStore — triggers v9→v10 migration
+    const migratedStore = createConvoyStore(migDb)
+
+    // Verify convoy cost is numeric
+    const convoy = migratedStore.getConvoy('c-1')!
+    expect(convoy.total_cost_usd).toBe(1.23)
+    expect((convoy.total_cost_usd as number).toFixed(2)).toBe('1.23')
+    expect(convoy.total_cost_usd! > 0).toBe(true)
+
+    // Verify null preservation
+    const convoyNull = migratedStore.getConvoy('c-null')!
+    expect(convoyNull.total_cost_usd).toBeNull()
+
+    // Verify task cost is numeric
+    const task = migratedStore.getTask('t-1', 'c-1')!
+    expect(task.cost_usd).toBe(0.45)
+    expect((task.cost_usd as number).toFixed(2)).toBe('0.45')
+    expect(task.cost_usd! > 0).toBe(true)
+
+    // Verify task null preservation
+    const taskNull = migratedStore.getTask('t-null', 'c-null')!
+    expect(taskNull.cost_usd).toBeNull()
+
+    migratedStore.close()
+
+    // Verify version = 10
+    const verifyDb = new DatabaseSync(migDb)
+    const version = (verifyDb.prepare('PRAGMA user_version').get() as { user_version: number }).user_version
+    expect(version).toBe(10)
+
+    // Verify new REAL columns exist
+    const convoyCols = (verifyDb.prepare('PRAGMA table_info(convoy)').all() as Array<{ name: string }>).map(c => c.name)
+    expect(convoyCols).toContain('total_cost_usd_num')
+    const taskCols = (verifyDb.prepare('PRAGMA table_info(task)').all() as Array<{ name: string }>).map(c => c.name)
+    expect(taskCols).toContain('cost_usd_num')
+    const pipelineCols = (verifyDb.prepare('PRAGMA table_info(pipeline)').all() as Array<{ name: string }>).map(c => c.name)
+    expect(pipelineCols).toContain('total_cost_usd_num')
+
+    verifyDb.close()
+
+    // Verify backup was created
+    expect(existsSync(`${migDb}.v9.bak`)).toBe(true)
+
+    rmSync(migDir, { recursive: true, force: true })
+  })
+})
+
 describe('size limit enforcement', () => {
   it('insertConvoy rejects spec_yaml exceeding 256KB', () => {
     const bigSpecYaml = 'x'.repeat(256 * 1024 + 1)
@@ -2474,5 +2615,387 @@ describe('size limit enforcement', () => {
         created_at: new Date().toISOString(),
       }),
     ).toThrow(FieldSizeLimitError)
+  })
+})
+
+// ── Dashboard aggregate methods ───────────────────────────────────────────────
+
+describe('Dashboard aggregate methods', () => {
+  // Seed helper: inserts 5 convoys, 20 tasks, 3 DLQ entries
+  function seedDashboardData() {
+    // Convoy 1: done, 30s duration
+    store.insertConvoy(makeConvoy({ id: 'dash-c1', name: 'Dash Convoy 1', status: 'pending' as const, created_at: '2026-01-01T10:00:00.000Z' }))
+    store.updateConvoyStatus('dash-c1', 'done', { started_at: '2026-01-01T10:00:00.000Z', finished_at: '2026-01-01T10:00:30.000Z', total_tokens: 1000, total_cost_usd: 0.01 })
+
+    // Convoy 2: done, 60s duration
+    store.insertConvoy(makeConvoy({ id: 'dash-c2', name: 'Dash Convoy 2', status: 'pending' as const, created_at: '2026-01-02T10:00:00.000Z' }))
+    store.updateConvoyStatus('dash-c2', 'done', { started_at: '2026-01-02T10:00:00.000Z', finished_at: '2026-01-02T10:01:00.000Z', total_tokens: 2000, total_cost_usd: 0.02 })
+
+    // Convoy 3: running
+    store.insertConvoy(makeConvoy({ id: 'dash-c3', name: 'Dash Convoy 3', status: 'pending' as const, created_at: '2026-01-03T10:00:00.000Z' }))
+    store.updateConvoyStatus('dash-c3', 'running', { started_at: '2026-01-03T10:00:00.000Z' })
+
+    // Convoy 4: failed, 20s duration
+    store.insertConvoy(makeConvoy({ id: 'dash-c4', name: 'Dash Convoy 4', status: 'pending' as const, created_at: '2026-01-04T10:00:00.000Z' }))
+    store.updateConvoyStatus('dash-c4', 'failed', { started_at: '2026-01-04T10:00:00.000Z', finished_at: '2026-01-04T10:00:20.000Z', total_tokens: 500, total_cost_usd: 0.005 })
+
+    // Convoy 5: pending (no timestamps)
+    store.insertConvoy(makeConvoy({ id: 'dash-c5', name: 'Dash Convoy 5', status: 'pending' as const, created_at: '2026-01-05T10:00:00.000Z' }))
+
+    // Tasks across convoys (20 total)
+    const taskDefs = [
+      { id: 'dt-1', convoy_id: 'dash-c1', agent: 'developer', model: 'gpt-4o', status: 'done' as const, retries: 0, total_tokens: 100 },
+      { id: 'dt-2', convoy_id: 'dash-c1', agent: 'developer', model: 'gpt-4o', status: 'done' as const, retries: 0, total_tokens: 150 },
+      { id: 'dt-3', convoy_id: 'dash-c1', agent: 'reviewer', model: 'gpt-4o-mini', status: 'done' as const, retries: 0, total_tokens: 50 },
+      { id: 'dt-4', convoy_id: 'dash-c1', agent: 'reviewer', model: 'gpt-4o-mini', status: 'done' as const, retries: 1, total_tokens: 60 },
+      { id: 'dt-5', convoy_id: 'dash-c2', agent: 'developer', model: 'gpt-4o', status: 'done' as const, retries: 0, total_tokens: 200 },
+      { id: 'dt-6', convoy_id: 'dash-c2', agent: 'developer', model: 'gpt-4o', status: 'done' as const, retries: 0, total_tokens: 250 },
+      { id: 'dt-7', convoy_id: 'dash-c2', agent: 'developer', model: 'gpt-4o', status: 'done' as const, retries: 2, total_tokens: 300 },
+      { id: 'dt-8', convoy_id: 'dash-c2', agent: 'qa', model: null, status: 'done' as const, retries: 0, total_tokens: 80 },
+      { id: 'dt-9', convoy_id: 'dash-c3', agent: 'developer', model: 'gpt-4o', status: 'running' as const, retries: 0, total_tokens: null },
+      { id: 'dt-10', convoy_id: 'dash-c3', agent: 'developer', model: 'gpt-4o', status: 'assigned' as const, retries: 0, total_tokens: null },
+      { id: 'dt-11', convoy_id: 'dash-c3', agent: 'reviewer', model: 'gpt-4o-mini', status: 'pending' as const, retries: 0, total_tokens: null },
+      { id: 'dt-12', convoy_id: 'dash-c3', agent: 'reviewer', model: 'gpt-4o-mini', status: 'pending' as const, retries: 0, total_tokens: null },
+      { id: 'dt-13', convoy_id: 'dash-c4', agent: 'developer', model: 'gpt-4o', status: 'failed' as const, retries: 3, total_tokens: 120 },
+      { id: 'dt-14', convoy_id: 'dash-c4', agent: 'developer', model: 'gpt-4o', status: 'gate-failed' as const, retries: 0, total_tokens: 90 },
+      { id: 'dt-15', convoy_id: 'dash-c4', agent: 'qa', model: null, status: 'review-blocked' as const, retries: 0, total_tokens: 40 },
+      { id: 'dt-16', convoy_id: 'dash-c4', agent: 'qa', model: null, status: 'disputed' as const, retries: 1, total_tokens: 30 },
+      { id: 'dt-17', convoy_id: 'dash-c5', agent: 'developer', model: 'gpt-4o', status: 'pending' as const, retries: 0, total_tokens: null },
+      { id: 'dt-18', convoy_id: 'dash-c5', agent: 'developer', model: 'gpt-4o', status: 'pending' as const, retries: 0, total_tokens: null },
+      { id: 'dt-19', convoy_id: 'dash-c5', agent: 'reviewer', model: 'gpt-4o-mini', status: 'pending' as const, retries: 0, total_tokens: null },
+      { id: 'dt-20', convoy_id: 'dash-c5', agent: 'qa', model: null, status: 'pending' as const, retries: 0, total_tokens: null },
+    ]
+
+    for (const t of taskDefs) {
+      try {
+        store.insertTask(makeTask({ id: t.id, convoy_id: t.convoy_id, agent: t.agent, model: t.model, retries: t.retries }))
+      } catch {
+        // already exists
+      }
+      if (t.status !== 'pending') {
+        store.updateTaskStatus(t.id, t.convoy_id, t.status, t.total_tokens !== null ? { total_tokens: t.total_tokens } : undefined)
+      }
+    }
+
+    // 3 DLQ entries with different failure_types
+    const dlqEntries = [
+      { id: 'dlq-1', convoy_id: 'dash-c4', task_id: 'dt-13', agent: 'developer', failure_type: 'timeout' },
+      { id: 'dlq-2', convoy_id: 'dash-c4', task_id: 'dt-14', agent: 'developer', failure_type: 'gate_failure' },
+      { id: 'dlq-3', convoy_id: 'dash-c4', task_id: 'dt-15', agent: 'qa', failure_type: 'timeout' },
+    ]
+    for (const d of dlqEntries) {
+      store.insertDlqEntry({
+        id: d.id,
+        convoy_id: d.convoy_id,
+        task_id: d.task_id,
+        agent: d.agent,
+        failure_type: d.failure_type,
+        error_output: null,
+        attempts: 1,
+        tokens_spent: null,
+        escalation_task_id: null,
+        resolved: 0,
+        resolution: null,
+        created_at: new Date().toISOString(),
+        resolved_at: null,
+      })
+    }
+  }
+
+  describe('getConvoyCounts', () => {
+    it('returns all zeros on empty database', () => {
+      const result = store.getConvoyCounts()
+      expect(result).toEqual({ total: 0, running: 0, done: 0, failed: 0, gate_failed: 0 })
+    })
+
+    it('returns correct counts with seeded data', () => {
+      seedDashboardData()
+      const result = store.getConvoyCounts()
+      expect(result.total).toBe(5)
+      expect(result.done).toBe(2)
+      expect(result.running).toBe(1)
+      expect(result.failed).toBe(1)
+    })
+  })
+
+  describe('getConvoyDurationStats', () => {
+    it('returns all null on empty database', () => {
+      const result = store.getConvoyDurationStats()
+      expect(result).toEqual({ avg_sec: null, p95_sec: null, max_sec: null })
+    })
+
+    it('returns reasonable values with seeded data', () => {
+      seedDashboardData()
+      const result = store.getConvoyDurationStats()
+      // 3 convoys have both timestamps: 30s, 60s, 20s — avg = 36.67
+      expect(result.avg_sec).not.toBeNull()
+      expect(result.avg_sec!).toBeGreaterThan(0)
+      expect(result.max_sec).toBeGreaterThanOrEqual(result.avg_sec!)
+      expect(result.p95_sec).not.toBeNull()
+    })
+
+    it('returns correct avg for single completed convoy', () => {
+      store.insertConvoy(makeConvoy({ id: 'single-c', name: 'Single', status: 'pending' as const }))
+      store.updateConvoyStatus('single-c', 'done', {
+        started_at: '2026-01-01T10:00:00.000Z',
+        finished_at: '2026-01-01T10:01:00.000Z',
+      })
+      const result = store.getConvoyDurationStats()
+      expect(result.avg_sec).toBeCloseTo(60, 0)
+      expect(result.p95_sec).toBeCloseTo(60, 0)
+      expect(result.max_sec).toBeCloseTo(60, 0)
+    })
+  })
+
+  describe('getTokenAndCostTotals', () => {
+    it('returns zeros on empty database', () => {
+      const result = store.getTokenAndCostTotals()
+      expect(result).toEqual({ total_tokens: 0, total_cost_usd: 0 })
+    })
+
+    it('returns correct sums with seeded data', () => {
+      seedDashboardData()
+      const result = store.getTokenAndCostTotals()
+      // convoy totals: 1000+2000+500 = 3500 tokens (c3 and c5 have none)
+      expect(result.total_tokens).toBe(3500)
+      // cost: 0.01+0.02+0.005 = 0.035
+      expect(result.total_cost_usd).toBeCloseTo(0.035, 5)
+    })
+  })
+
+  describe('getTopAgents', () => {
+    it('returns empty array on empty database', () => {
+      const result = store.getTopAgents(5)
+      expect(result).toEqual([])
+    })
+
+    it('returns agents ordered by task_count DESC', () => {
+      seedDashboardData()
+      const result = store.getTopAgents(10)
+      expect(result.length).toBeGreaterThan(0)
+      // developer should be top agent (appears most)
+      expect(result[0].agent).toBe('developer')
+      // verify descending order
+      for (let i = 1; i < result.length; i++) {
+        expect(result[i - 1].task_count).toBeGreaterThanOrEqual(result[i].task_count)
+      }
+    })
+
+    it('respects the limit parameter', () => {
+      seedDashboardData()
+      const result = store.getTopAgents(1)
+      expect(result).toHaveLength(1)
+    })
+
+    it('each entry has agent, task_count, total_tokens', () => {
+      seedDashboardData()
+      const result = store.getTopAgents(5)
+      for (const row of result) {
+        expect(typeof row.agent).toBe('string')
+        expect(typeof row.task_count).toBe('number')
+        expect(typeof row.total_tokens).toBe('number')
+      }
+    })
+  })
+
+  describe('getTopModels', () => {
+    it('returns empty array on empty database', () => {
+      const result = store.getTopModels(5)
+      expect(result).toEqual([])
+    })
+
+    it('returns models ordered by task_count DESC', () => {
+      seedDashboardData()
+      const result = store.getTopModels(10)
+      expect(result.length).toBeGreaterThan(0)
+      for (let i = 1; i < result.length; i++) {
+        expect(result[i - 1].task_count).toBeGreaterThanOrEqual(result[i].task_count)
+      }
+    })
+
+    it('excludes tasks with null model', () => {
+      seedDashboardData()
+      const result = store.getTopModels(10)
+      for (const row of result) {
+        expect(row.model).not.toBeNull()
+      }
+    })
+  })
+
+  describe('getDlqSummary', () => {
+    it('returns count=0 and empty array on empty database', () => {
+      const result = store.getDlqSummary()
+      expect(result).toEqual({ count: 0, top_failure_types: [] })
+    })
+
+    it('returns count=3 with seeded data', () => {
+      seedDashboardData()
+      const result = store.getDlqSummary()
+      expect(result.count).toBe(3)
+    })
+
+    it('groups failure types correctly', () => {
+      seedDashboardData()
+      const result = store.getDlqSummary()
+      const timeoutEntry = result.top_failure_types.find(t => t.type === 'timeout')
+      const gateEntry = result.top_failure_types.find(t => t.type === 'gate_failure')
+      expect(timeoutEntry?.count).toBe(2)
+      expect(gateEntry?.count).toBe(1)
+    })
+
+    it('orders failure types by count DESC', () => {
+      seedDashboardData()
+      const result = store.getDlqSummary()
+      for (let i = 1; i < result.top_failure_types.length; i++) {
+        expect(result.top_failure_types[i - 1].count).toBeGreaterThanOrEqual(result.top_failure_types[i].count)
+      }
+    })
+  })
+
+  describe('getConvoyTaskSummary', () => {
+    it('returns all zeros for non-existent convoy', () => {
+      const result = store.getConvoyTaskSummary('nonexistent')
+      expect(result).toEqual({
+        total: 0, done: 0, running: 0, failed: 0,
+        review_blocked: 0, disputed: 0, reviewed: 0, panel_reviewed: 0,
+        tasks_with_drift: 0, max_drift_score: null, drift_retried: 0,
+      })
+    })
+
+    it('returns correct per-status counts (done convoys)', () => {
+      seedDashboardData()
+      const result = store.getConvoyTaskSummary('dash-c1')
+      // c1 has tasks dt-1..dt-4: all done
+      expect(result.total).toBe(4)
+      expect(result.done).toBe(4)
+      expect(result.running).toBe(0)
+      expect(result.failed).toBe(0)
+    })
+
+    it('returns correct counts for running convoy with mixed statuses', () => {
+      seedDashboardData()
+      const result = store.getConvoyTaskSummary('dash-c3')
+      // c3: running(1), assigned(1), pending(2)
+      expect(result.total).toBe(4)
+      expect(result.running).toBe(2) // running + assigned
+    })
+
+    it('returns failed and review_blocked and disputed counts', () => {
+      seedDashboardData()
+      const result = store.getConvoyTaskSummary('dash-c4')
+      // c4: failed(1), gate-failed(1), review-blocked(1), disputed(1)
+      expect(result.failed).toBe(2) // failed + gate-failed
+      expect(result.review_blocked).toBe(1)
+      expect(result.disputed).toBe(1)
+    })
+  })
+
+  describe('getConvoyList', () => {
+    it('returns empty array on empty database', () => {
+      const result = store.getConvoyList(10, 0)
+      expect(result).toEqual([])
+    })
+
+    it('returns convoys ordered by created_at DESC', () => {
+      seedDashboardData()
+      const result = store.getConvoyList(10, 0)
+      expect(result.length).toBeGreaterThan(0)
+      for (let i = 1; i < result.length; i++) {
+        expect(result[i - 1].created_at >= result[i].created_at).toBe(true)
+      }
+    })
+
+    it('respects limit', () => {
+      seedDashboardData()
+      const result = store.getConvoyList(2, 0)
+      expect(result).toHaveLength(2)
+    })
+
+    it('respects offset for pagination', () => {
+      seedDashboardData()
+      const first = store.getConvoyList(5, 0)
+      const second = store.getConvoyList(5, 2)
+      // Items 2+ should appear in second page
+      expect(second[0].id).toBe(first[2].id)
+    })
+
+    it('returns ConvoyRecord with total_cost_usd_num alias', () => {
+      seedDashboardData()
+      const result = store.getConvoyList(5, 0)
+      // Should not throw and should return records with expected shape
+      for (const r of result) {
+        expect(typeof r.id).toBe('string')
+        expect(typeof r.status).toBe('string')
+      }
+    })
+  })
+
+  describe('getConvoyDetails', () => {
+    it('returns null for non-existent convoy', () => {
+      const result = store.getConvoyDetails('nonexistent')
+      expect(result).toBeNull()
+    })
+
+    it('returns full detail object for existing convoy', () => {
+      seedDashboardData()
+      const result = store.getConvoyDetails('dash-c1')
+      expect(result).not.toBeNull()
+      expect(result).toHaveProperty('convoy')
+      expect(result).toHaveProperty('taskSummary')
+      expect(result).toHaveProperty('quality')
+      expect(result).toHaveProperty('drift')
+      expect(result).toHaveProperty('dlq_count')
+      expect(result).toHaveProperty('dlq_entries')
+      expect(result).toHaveProperty('artifact_count')
+      expect(result).toHaveProperty('artifacts')
+      expect(result).toHaveProperty('has_more_events')
+      expect(result).toHaveProperty('events')
+      expect(result).toHaveProperty('tasks')
+    })
+
+    it('convoy sub-object has correct fields', () => {
+      seedDashboardData()
+      const result = store.getConvoyDetails('dash-c1')!
+      expect(result.convoy.id).toBe('dash-c1')
+      expect(result.convoy.name).toBe('Dash Convoy 1')
+      expect(result.convoy.status).toBe('done')
+      expect(result.convoy.total_tokens).toBe(1000)
+      expect(typeof result.convoy.total_cost_usd).toBe('number')
+    })
+
+    it('tasks list matches getTasksByConvoy', () => {
+      seedDashboardData()
+      const detail = store.getConvoyDetails('dash-c1')!
+      const direct = store.getTasksByConvoy('dash-c1')
+      expect(detail.tasks).toHaveLength(direct.length)
+      const detailIds = detail.tasks.map(t => t.id).sort()
+      const directIds = direct.map(t => t.id).sort()
+      expect(detailIds).toEqual(directIds)
+    })
+
+    it('taskSummary matches getConvoyTaskSummary', () => {
+      seedDashboardData()
+      const detail = store.getConvoyDetails('dash-c1')!
+      const direct = store.getConvoyTaskSummary('dash-c1')
+      expect(detail.taskSummary.total).toBe(direct.total)
+      expect(detail.taskSummary.done).toBe(direct.done)
+    })
+
+    it('dlq_count and dlq_entries match listDlqEntries for convoy with DLQ', () => {
+      seedDashboardData()
+      const detail = store.getConvoyDetails('dash-c4')!
+      const direct = store.listDlqEntries('dash-c4')
+      expect(detail.dlq_count).toBe(direct.length)
+      expect(detail.dlq_entries).toHaveLength(direct.length)
+      const detailIds = detail.dlq_entries.map(d => d.id).sort()
+      const directIds = direct.map(d => d.id).sort()
+      expect(detailIds).toEqual(directIds)
+    })
+
+    it('has_more_events is false when no events', () => {
+      seedDashboardData()
+      const result = store.getConvoyDetails('dash-c1')!
+      expect(result.has_more_events).toBe(false)
+    })
   })
 })
