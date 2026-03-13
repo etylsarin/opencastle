@@ -6,6 +6,7 @@ import { getAdapter, detectAdapter } from './run/adapters/index.js'
 import { parseTaskSpecText } from './run/schema.js'
 import { c } from './prompt.js'
 import type { CliContext, Task } from './types.js'
+import type { MCPServerConfig } from './convoy/types.js'
 
 const HELP = `
   opencastle plan [options]
@@ -66,6 +67,8 @@ export interface PromptStepOptions {
   dryRun?: boolean
   /** Absolute path to the opencastle package root (for locating prompt templates) */
   pkgRoot: string
+  /** MCP servers to make available to the AI adapter during execution. */
+  mcpServers?: MCPServerConfig[]
 }
 
 export interface PromptStepResult {
@@ -221,6 +224,34 @@ function parseValidationResult(output: string): { isValid: boolean; errors: stri
   return { isValid: false, errors: errorsMatch ? errorsMatch[1].trim() : trimmed }
 }
 
+const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+
+const TEMPLATE_MESSAGES: Record<string, string> = {
+  'generate-prd': 'Generating PRD…',
+  'generate-convoy': 'Generating convoy spec…',
+  'validate-prd': 'Validating PRD…',
+  'validate-convoy': 'Validating convoy spec…',
+  'fix-prd': 'Fixing PRD…',
+  'fix-convoy': 'Fixing convoy spec…',
+}
+
+/** Show an in-place spinner with elapsed time during a long-running adapter call. Returns a stop function. */
+function startProgress(templateName: string): () => void {
+  const message = TEMPLATE_MESSAGES[templateName] ?? `Running ${templateName}…`
+  const startTime = Date.now()
+  let frame = 0
+  const interval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000)
+    const spinner = SPINNER_FRAMES[frame % SPINNER_FRAMES.length]!
+    process.stdout.write(c.dim(`\r  ${spinner} ${message} (${elapsed}s)`))
+    frame++
+  }, 250)
+  return () => {
+    clearInterval(interval)
+    process.stdout.write('\r' + ' '.repeat(60) + '\r')
+  }
+}
+
 // ── Exported programmatic API ───────────────────────────────────────────────
 
 /**
@@ -303,7 +334,16 @@ export async function runPromptStep(opts: PromptStepOptions): Promise<PromptStep
     max_retries: 1,
   }
 
-  const execResult = await adapter.execute(task, { verbose: opts.verbose ?? false })
+  const stop = opts.verbose ? null : startProgress(templateName)
+  let execResult
+  try {
+    execResult = await adapter.execute(task, {
+      verbose: opts.verbose ?? false,
+      ...(opts.mcpServers?.length ? { mcpServers: opts.mcpServers } : {}),
+    })
+  } finally {
+    stop?.()
+  }
   const rawOutput = execResult.output
 
   if (outputType === 'validation') {
@@ -353,6 +393,48 @@ export async function runPromptStep(opts: PromptStepOptions): Promise<PromptStep
   await writeFile(outputPath, yamlContent + '\n', 'utf8')
 
   return { outputPath, rawOutput, outputType, isValid: schemaValid }
+}
+
+/**
+ * Read MCP server configurations from the project's MCP config file.
+ * Checks in priority order: .vscode/mcp.json, .cursor/mcp.json, .claude/mcp.json, mcp.json
+ */
+export async function readProjectMcpServers(projectRoot: string): Promise<MCPServerConfig[]> {
+  const candidates = [
+    join(projectRoot, '.vscode', 'mcp.json'),
+    join(projectRoot, '.cursor', 'mcp.json'),
+    join(projectRoot, '.claude', 'mcp.json'),
+    join(projectRoot, 'mcp.json'),
+  ]
+
+  for (const filePath of candidates) {
+    if (!existsSync(filePath)) continue
+    try {
+      const raw = await readFile(filePath, 'utf8')
+      const parsed = JSON.parse(raw) as Record<string, unknown>
+
+      // VS Code format: { servers: { name: { type, command, args } } }
+      // Cursor/Claude format: { mcpServers: { name: { command, args } } }
+      const serversMap =
+        (parsed['servers'] as Record<string, unknown> | undefined) ??
+        (parsed['mcpServers'] as Record<string, unknown> | undefined)
+
+      if (!serversMap || typeof serversMap !== 'object') continue
+
+      return Object.entries(serversMap).map(([name, cfg]) => {
+        const c = cfg as Record<string, unknown>
+        const server: MCPServerConfig = { name, type: (c['type'] as string) ?? 'stdio' }
+        if (typeof c['command'] === 'string') server.command = c['command']
+        if (Array.isArray(c['args'])) server.args = c['args'] as string[]
+        if (typeof c['url'] === 'string') server.url = c['url']
+        return server
+      })
+    } catch {
+      return []
+    }
+  }
+
+  return []
 }
 
 // ── CLI argument parsing ────────────────────────────────────────────────────

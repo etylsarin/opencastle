@@ -22,9 +22,12 @@ You are the Team Lead. Convert the feature request below into a structured Produ
 
 ## Research Before Writing
 
-If the feature request involves a specific person, place, organization, topic, or any real-world subject you are not confident you have accurate knowledge about — **you MUST search the internet first** using any available web search or fetch tools (e.g. `fetch_webpage`, web search MCP, or similar). Use the search results to gather accurate facts, names, dates, descriptions, and other details.
+If the feature request involves a specific person, place, organization, topic, or any real-world subject:
 
-**Never fabricate or hallucinate content** about real-world subjects. If you cannot verify a claim through web search, state what is unknown rather than inventing plausible-sounding text. This applies to all content: bios, descriptions, histories, statistics, quotes, and any factual claims.
+1. **Search the internet first** if web search or fetch tools are available (e.g. `fetch_webpage`, web search MCP, or similar). Use the search results to gather accurate facts, names, dates, descriptions, and other details.
+2. **If web search tools are unavailable or return no useful results**, you may use your training knowledge — but clearly mark any such content with:
+   > ℹ️ Content based on training data — verify before launch.
+3. **Never fabricate or hallucinate content.** If you genuinely have no knowledge about a real-world subject and cannot search, state what is unknown and use placeholder text. This applies to all content: bios, descriptions, histories, statistics, quotes, and any factual claims.
 
 ## Required PRD Structure
 
