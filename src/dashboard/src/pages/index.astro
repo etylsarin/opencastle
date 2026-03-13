@@ -44,13 +44,13 @@ try {
     <nav class="dash-sidebar" id="dash-sidebar">
       <ul class="dash-sidebar__list">
         <li><a class="dash-sidebar__link dash-sidebar__link--active" href="#overall-section" data-section="overall-section" aria-label="Overview section">Overview</a></li>
-        <li><a class="dash-sidebar__link" href="#convoy-section" data-section="convoy-section" aria-label="Convoy section">Convoy</a></li>
         <li><a class="dash-sidebar__link" href="#tasks-section" data-section="tasks-section" aria-label="Tasks section">Tasks</a></li>
         <li><a class="dash-sidebar__link" href="#quality-section" data-section="quality-section" aria-label="Quality section">Quality</a></li>
         <li><a class="dash-sidebar__link" href="#reliability-section" data-section="reliability-section" aria-label="Reliability section">Reliability</a></li>
         <li><a class="dash-sidebar__link" href="#drift-section" data-section="drift-section" aria-label="Drift section">Drift</a></li>
         <li><a class="dash-sidebar__link" href="#outputs-section" data-section="outputs-section" aria-label="Outputs section">Outputs</a></li>
         <li><a class="dash-sidebar__link" href="#event-timeline-section" data-section="event-timeline-section" aria-label="Event Log section">Event Log</a></li>
+        <li><a class="dash-sidebar__link" href="#convoy-section" data-section="convoy-section" aria-label="Convoy section">Convoy</a></li>
       </ul>
     </nav>
 
@@ -59,11 +59,11 @@ try {
     <section class="overall-stats" id="overall-section" data-nav-section>
       <div class="overall-stats__header">
         <h2 class="overall-stats__title">Overall Stats</h2>
-        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: How all runs behave across your project." data-tooltip="How all runs behave across your project.">ℹ️</span>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: How all runs behave across your project." data-tooltip="How all runs behave across your project."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
       </div>
       <div class="overall-stats__grid">
         <div class="overall-kpi" id="overall-total-runs">
-          <span class="overall-kpi__label">Total Runs <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Number of convoy runs executed" data-tooltip="Number of convoy runs executed">ℹ️</span></span>
+          <span class="overall-kpi__label">Total Runs <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Number of convoy runs executed" data-tooltip="Number of convoy runs executed"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></span>
           <span class="overall-kpi__value">&mdash;</span>
         </div>
         <div class="overall-kpi" id="overall-running">
@@ -94,7 +94,7 @@ try {
       <div class="convoy-detail-header__top">
         <h2 class="convoy-detail-header__name" id="selected-convoy-name">No convoy selected</h2>
         <span class="status-badge" id="selected-convoy-status" role="status"></span>
-        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: A convoy is a set of AI tasks working together on one goal." data-tooltip="A convoy is a set of AI tasks working together on one goal.">ℹ️</span>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: A convoy is a set of AI tasks working together on one goal." data-tooltip="A convoy is a set of AI tasks working together on one goal."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
       </div>
       <p class="convoy-status-explanation" id="convoy-status-explanation" role="status" aria-live="polite"></p>
       <div class="convoy-detail-header__meta" id="selected-convoy-meta">
@@ -106,7 +106,7 @@ try {
     <section class="chart-card" id="tasks-section" data-nav-section style="display:none">
       <div class="chart-card__header">
         <h2 class="chart-card__title">Tasks</h2>
-        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Individual units of work in this convoy." data-tooltip="Individual units of work in this convoy.">ℹ️</span>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Individual units of work in this convoy." data-tooltip="Individual units of work in this convoy."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
         <p class="chart-card__desc" id="tasks-section-desc">Task breakdown for the selected convoy</p>
       </div>
       <div class="chart-card__body" id="tasks-section-body">
@@ -120,7 +120,7 @@ try {
     <section class="chart-card" id="quality-section" data-nav-section style="display:none">
       <div class="chart-card__header">
         <h2 class="chart-card__title">Quality / Review</h2>
-        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Code review results and dispute resolution." data-tooltip="Code review results and dispute resolution.">ℹ️</span>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Code review results and dispute resolution." data-tooltip="Code review results and dispute resolution."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
         <p class="chart-card__desc">Code review results and quality gate outcomes for the selected convoy</p>
       </div>
       <div class="chart-card__body">
@@ -133,7 +133,7 @@ try {
     <section class="chart-card" id="reliability-section" data-nav-section style="display:none">
       <div class="chart-card__header">
         <h2 class="chart-card__title">Reliability</h2>
-        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Errors, retry attempts, and safety mechanisms." data-tooltip="Errors, retry attempts, and safety mechanisms.">ℹ️</span>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Errors, retry attempts, and safety mechanisms." data-tooltip="Errors, retry attempts, and safety mechanisms."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
         <p class="chart-card__desc">Retry queue and error overview for the selected convoy</p>
       </div>
       <div class="chart-card__body">
@@ -150,7 +150,7 @@ try {
     <section class="chart-card" id="drift-section" data-nav-section style="display:none">
       <div class="chart-card__header">
         <h2 class="chart-card__title">Drift</h2>
-        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: How far the actual work deviated from the original plan." data-tooltip="How far the actual work deviated from the original plan.">ℹ️</span>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: How far the actual work deviated from the original plan." data-tooltip="How far the actual work deviated from the original plan."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
         <p class="chart-card__desc">Plan adherence and deviation metrics for the selected convoy</p>
       </div>
       <div class="chart-card__body">
@@ -163,7 +163,7 @@ try {
     <section class="chart-card" id="outputs-section" data-nav-section style="display:none">
       <div class="chart-card__header">
         <h2 class="chart-card__title">Outputs &amp; Artifacts</h2>
-        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Files, data, and summaries produced by this convoy." data-tooltip="Files, data, and summaries produced by this convoy.">ℹ️</span>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Files, data, and summaries produced by this convoy." data-tooltip="Files, data, and summaries produced by this convoy."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
         <p class="chart-card__desc">Files, summaries, and structured data produced by tasks in this convoy</p>
       </div>
       <div class="chart-card__body">
@@ -176,7 +176,7 @@ try {
     <section class="chart-card" id="event-timeline-section" data-nav-section style="display:none">
       <div class="chart-card__header">
         <h2 class="chart-card__title">Event Timeline</h2>
-        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Chronological log of everything that happened during this run." data-tooltip="Chronological log of everything that happened during this run.">ℹ️</span>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Chronological log of everything that happened during this run." data-tooltip="Chronological log of everything that happened during this run."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
         <p class="chart-card__desc">Convoy events in reverse chronological order</p>
       </div>
       <div class="chart-card__body">
@@ -424,7 +424,20 @@ try {
     }
   }
 
+  async function loadJson(path) {
+    try {
+      const res = await fetch(path);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch {
+      return [];
+    }
+  }
+
   // ── Helpers ───────────────────────────────────────────────
+
+  // ── Info Icon SVG ─────────────────────────────────────
+  const INFO_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
 
   const TIER_COLORS = {
     premium: '#f59e0b',
@@ -2009,7 +2022,7 @@ try {
     el.innerHTML = cards.map(card =>
       '<div class="task-summary-card task-summary-card--' + card.mod + '">' +
         '<span class="task-summary-card__label">' + escapeHtml(card.label) +
-          ' <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: ' + escapeHtml(card.tooltip) + '" data-tooltip="' + escapeHtml(card.tooltip) + '">\u2139\uFE0F</span>' +
+          ' <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: ' + escapeHtml(card.tooltip) + '" data-tooltip="' + escapeHtml(card.tooltip) + '">' + INFO_ICON + '</span>' +
         '</span>' +
         '<span class="task-summary-card__value">' + card.value + '</span>' +
       '</div>'
@@ -2152,7 +2165,7 @@ try {
       cardsEl.innerHTML = qCards.map(function(card) {
         return '<div class="task-summary-card task-summary-card--' + card.mod + '">' +
           '<span class="task-summary-card__label">' + escapeHtml(card.label) +
-          ' <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: ' + escapeHtml(card.tooltip) + '" data-tooltip="' + escapeHtml(card.tooltip) + '">\u2139\uFE0F</span>' +
+          ' <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: ' + escapeHtml(card.tooltip) + '" data-tooltip="' + escapeHtml(card.tooltip) + '">' + INFO_ICON + '</span>' +
           '</span>' +
           '<span class="task-summary-card__value">' + card.value + '</span>' +
           '</div>';
@@ -2210,7 +2223,7 @@ try {
     if (dlqCardEl) {
       dlqCardEl.innerHTML =
         '<div class="task-summary-card task-summary-card--' + (dlqCount > 0 ? 'errors' : 'done') + '">' +
-        '<span class="task-summary-card__label">Retry Queue <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Tasks that failed too many times and need manual attention. Also known as Dead Letter Queue (DLQ)." data-tooltip="Tasks that failed too many times and need manual attention. Also known as Dead Letter Queue (DLQ).">\u2139\uFE0F</span></span>' +
+        '<span class="task-summary-card__label">Retry Queue <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Tasks that failed too many times and need manual attention. Also known as Dead Letter Queue (DLQ)." data-tooltip="Tasks that failed too many times and need manual attention. Also known as Dead Letter Queue (DLQ).">' + INFO_ICON + '</span></span>' +
         '<span class="task-summary-card__value">' + dlqCount + '</span>' +
         '</div>';
     }
@@ -2290,7 +2303,7 @@ try {
       cardsEl.innerHTML = driftCards.map(function(card) {
         return '<div class="task-summary-card task-summary-card--' + card.mod + '">' +
           '<span class="task-summary-card__label">' + escapeHtml(String(card.label)) +
-          ' <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: ' + escapeHtml(card.tooltip) + '" data-tooltip="' + escapeHtml(card.tooltip) + '">\u2139\uFE0F</span>' +
+          ' <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: ' + escapeHtml(card.tooltip) + '" data-tooltip="' + escapeHtml(card.tooltip) + '">' + INFO_ICON + '</span>' +
           '</span>' +
           '<span class="task-summary-card__value">' + card.value + '</span>' +
           '</div>';
@@ -2331,7 +2344,7 @@ try {
       cardsEl.innerHTML =
         '<div class="task-summary-card task-summary-card--done">' +
         '<span class="task-summary-card__label">Outputs Produced ' +
-        '<span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Files, data, and summaries produced by this convoy." data-tooltip="Files, data, and summaries produced by this convoy.">\u2139\uFE0F</span>' +
+        '<span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Files, data, and summaries produced by this convoy." data-tooltip="Files, data, and summaries produced by this convoy.">' + INFO_ICON + '</span>' +
         '</span>' +
         '<span class="task-summary-card__value">' + artifactCount + '</span>' +
         '</div>';
@@ -2498,6 +2511,7 @@ try {
   async function main() {
     const events = await loadNdjson(base + 'data/events.ndjson');
     const pipelines = await loadNdjson(base + 'data/pipelines.ndjson');
+    const convoys = window.__DASHBOARD_DATA__?.convoyList ?? [];
 
     const sessions = events.filter((e) => e.type === 'session');
     const delegations = events.filter((e) => e.type === 'delegation');
@@ -2578,7 +2592,7 @@ try {
       if (refreshInterval) return;
       refreshInterval = setInterval(async () => {
         const freshEvents = await loadNdjson(base + 'data/events.ndjson');
-        const freshConvoys = await loadNdjson(base + 'data/convoys.ndjson');
+        const freshConvoys = await loadJson(base + 'data/convoy-list.json');
         const freshPipelines = await loadNdjson(base + 'data/pipelines.ndjson');
         rawSessions = freshEvents.filter((e) => e.type === 'session');
         rawDelegations = freshEvents.filter((e) => e.type === 'delegation');
@@ -2634,17 +2648,26 @@ try {
 
     sections.forEach((s) => observer.observe(s));
 
+    // Convoy-detail sections that start hidden and need a convoy selected first
+    const CONVOY_DETAIL_SECTIONS = ['tasks-section', 'quality-section', 'reliability-section', 'drift-section', 'outputs-section', 'event-timeline-section'];
+
     // Smooth scroll on click
     links.forEach((link) => {
-      link.addEventListener('click', (e) => {
+      link.addEventListener('click', async (e) => {
         e.preventDefault();
         const sectionId = link.dataset.section;
 
-        // Auto-select latest convoy/pipeline if section is hidden
-        if (sectionId === 'convoy-section') {
-          const convoySelect = document.getElementById('filter-convoy');
-          if (convoySelect && !convoySelect.value && convoySelect.options.length > 1) {
-            convoySelect.value = convoySelect.options[1].value;
+        if (CONVOY_DETAIL_SECTIONS.includes(sectionId)) {
+          // Auto-select and load convoy detail if none selected yet
+          const convoySelectEl = document.getElementById('convoy-select');
+          if (convoySelectEl && !convoySelectEl.value && convoySelectEl.options.length > 1) {
+            convoySelectEl.value = convoySelectEl.options[1].value;
+            await loadConvoyDetail(convoySelectEl.value);
+          }
+        } else if (sectionId === 'convoy-section') {
+          const convoyFilterEl = document.getElementById('filter-convoy');
+          if (convoyFilterEl && !convoyFilterEl.value && convoyFilterEl.options.length > 1) {
+            convoyFilterEl.value = convoyFilterEl.options[1].value;
             applyFilters();
           }
         } else if (sectionId === 'convoy-pipeline-section') {
@@ -2656,7 +2679,7 @@ try {
         }
 
         const target = document.getElementById(sectionId);
-        if (target && target.style.display !== 'none') {
+        if (target) {
           target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });

@@ -426,7 +426,7 @@ function writeDisputeToMarkdown(
   panelResults: ReviewResult[],
   events?: ConvoyEventEmitter | null,
 ): void {
-  const mdPath = join(resolve(process.cwd()), 'DISPUTES.md')
+  const mdPath = join(resolve(process.cwd()), '.opencastle', 'DISPUTES.md')
   const marker = `<!-- dispute:${disputeId} -->`
 
   try {
@@ -443,7 +443,7 @@ function writeDisputeToMarkdown(
 
   const entry = `\n${marker}\n## Dispute: ${task.id}\n\n| Field | Value |\n|-------|-------|\n| Convoy | ${convoyId} |\n| Task | ${task.id} |\n| Date | ${new Date().toISOString()} |\n| Panel attempts | ${task.panel_attempts + 1} |\n| Agent | ${task.agent} |\n| Status | Open |\n\n**Blocking reasons:**\n\n${blockingReasons}\n`
 
-  const scanResult = scanForSecrets(entry, 'DISPUTES.md')
+  const scanResult = scanForSecrets(entry, '.opencastle/DISPUTES.md')
   if (!scanResult.clean) {
     if (events) {
       events.emit(
