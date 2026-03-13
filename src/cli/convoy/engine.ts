@@ -22,7 +22,6 @@ import { createEventEmitter, ndjsonPathForConvoy, recoverNdjson, type ConvoyEven
 import { createWorktreeManager, type WorktreeManager } from './worktree.js'
 import { createMergeQueue, MergeConflictError, type MergeQueue } from './merge.js'
 import { createHealthMonitor, detectDrift } from './health.js'
-import { exportConvoyToNdjson } from './export.js'
 import type { TaskRecord, ConvoyStatus, ConvoyTaskStatus, GuardConfig, CircuitBreakerConfig, TaskStep, Hook, TaskOutput, TaskInput } from './types.js'
 import { buildPhases, formatDuration } from '../run/executor.js'
 import { parseTimeout, parseYaml } from '../run/schema.js'
@@ -2695,7 +2694,6 @@ export function createConvoyEngine(options: ConvoyEngineOptions): ConvoyEngine {
         options._reviewRunner,
       )
     } finally {
-      try { await exportConvoyToNdjson(store, convoyId, options.logsDir) } catch { /* silent */ }
       events.close()
       store.close()
       lock.release()
@@ -2795,7 +2793,6 @@ export function createConvoyEngine(options: ConvoyEngineOptions): ConvoyEngine {
         options._reviewRunner,
       )
     } finally {
-      try { await exportConvoyToNdjson(store, convoyId, options.logsDir) } catch { /* silent */ }
       events.close()
       store.close()
       lock.release()

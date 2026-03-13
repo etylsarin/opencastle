@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, realpathSync, readFileSync, existsSync, mkdirSync } from 'node:fs'
+import { mkdtempSync, rmSync, realpathSync, readFileSync, existsSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -47,14 +47,13 @@ describe('runEtl — no database', () => {
   it('returns zero counts when db is missing', async () => {
     const dbPath = join(tmpDir, 'nonexistent.db')
     const result = await runEtl({ dbPath, outputDir })
-    expect(result).toEqual({ convoyCount: 0, taskCount: 0 })
+    expect(result).toEqual({ convoyCount: 0 })
   })
 
-  it('creates the output directory structure even when db is missing', async () => {
+  it('creates the output directory when db is missing', async () => {
     const dbPath = join(tmpDir, 'nonexistent.db')
     await runEtl({ dbPath, outputDir })
     expect(existsSync(outputDir)).toBe(true)
-    expect(existsSync(join(outputDir, 'convoys'))).toBe(true)
   })
 })
 
@@ -120,10 +119,9 @@ describe('runEtl — with seeded database', () => {
     }
   })
 
-  it('returns correct convoy and task counts', async () => {
+  it('returns correct convoy count', async () => {
     const result = await runEtl({ dbPath, outputDir })
     expect(result.convoyCount).toBe(2)
-    expect(result.taskCount).toBe(2)
   })
 
   it('overall-stats.json has correct convoy counts', async () => {
@@ -150,61 +148,5 @@ describe('runEtl — with seeded database', () => {
       expect(item).toHaveProperty('total_tokens')
       expect(item).toHaveProperty('total_cost_usd')
     }
-  })
-
-  it('creates per-convoy detail JSON files', async () => {
-    await runEtl({ dbPath, outputDir })
-    const detailPath = join(outputDir, 'convoys', 'convoy-abc.json')
-    expect(existsSync(detailPath)).toBe(true)
-    const detail = JSON.parse(readFileSync(detailPath, 'utf8'))
-    expect(detail.convoy.id).toBe('convoy-abc')
-    expect(detail.convoy.name).toBe('Test Convoy')
-    expect(detail.convoy.status).toBe('done')
-    expect(detail.convoy).toHaveProperty('branch')
-    expect(detail.convoy).toHaveProperty('total_tokens')
-    expect(detail.convoy).toHaveProperty('total_cost_usd')
-    expect(detail).toHaveProperty('taskSummary')
-    expect(detail.taskSummary).toHaveProperty('total')
-    expect(Array.isArray(detail.tasks)).toBe(true)
-  })
-
-  it('detail file has correct task fields', async () => {
-    await runEtl({ dbPath, outputDir })
-    const detail = JSON.parse(
-      readFileSync(join(outputDir, 'convoys', 'convoy-abc.json'), 'utf8'),
-    )
-    expect(detail.tasks).toHaveLength(2)
-    for (const task of detail.tasks) {
-      expect(task).toHaveProperty('id')
-      expect(task).toHaveProperty('phase')
-      expect(task).toHaveProperty('agent')
-      expect(task).toHaveProperty('model')
-      expect(task).toHaveProperty('status')
-      expect(task).toHaveProperty('retries')
-      expect(task).toHaveProperty('started_at')
-      expect(task).toHaveProperty('finished_at')
-      expect(task).toHaveProperty('total_tokens')
-      expect(task).toHaveProperty('cost_usd')
-      expect(task).toHaveProperty('review_level')
-      expect(task).toHaveProperty('review_verdict')
-      expect(task).toHaveProperty('drift_score')
-    }
-  })
-
-  it('creates detail file for each convoy', async () => {
-    await runEtl({ dbPath, outputDir })
-    expect(existsSync(join(outputDir, 'convoys', 'convoy-abc.json'))).toBe(true)
-    expect(existsSync(join(outputDir, 'convoys', 'convoy-def.json'))).toBe(true)
-  })
-
-  it('detail file includes artifacts and events fields', async () => {
-    await runEtl({ dbPath, outputDir })
-    const detail = JSON.parse(
-      readFileSync(join(outputDir, 'convoys', 'convoy-abc.json'), 'utf8'),
-    )
-    expect(Array.isArray(detail.artifacts)).toBe(true)
-    expect(typeof detail.artifact_count).toBe('number')
-    expect(typeof detail.has_more_events).toBe('boolean')
-    expect(Array.isArray(detail.events)).toBe(true)
   })
 })

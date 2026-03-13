@@ -7,10 +7,25 @@ import { removeGitignoreBlock } from './gitignore.js'
 import { confirm, closePrompts, c } from './prompt.js'
 import type { CliContext } from './types.js'
 
+const DESTROY_HELP = `
+  opencastle destroy [options]
+
+  Remove ALL OpenCastle files from your project (reverse of init).
+
+  Options:
+    --dry-run       Preview what would be removed without deleting files
+    --help, -h      Show this help
+`
+
 export default async function destroy({
   pkgRoot: _pkgRoot,
   args,
 }: CliContext): Promise<void> {
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(DESTROY_HELP)
+    return
+  }
+
   const projectRoot = process.cwd()
   const dryRun = args.includes('--dry-run') || args.includes('--dryRun')
 

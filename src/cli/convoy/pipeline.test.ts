@@ -747,31 +747,6 @@ describe('getCurrentBranch fallback', () => {
 })
 
 
-describe('NDJSON export', () => {
-  it('writes pipelines.ndjson to logsDir after run', async () => {
-    const factory = makeEngineFactory([makeConvoyResult()])
-    const logsDir = join(tmpDir, 'logs')
-
-    await createPipelineOrchestrator({
-      spec: makePipelineSpec({ depends_on_convoy: ['./a.yaml'] }),
-      specYaml: 'name: pipeline',
-      adapter: makeAdapter(),
-      dbPath,
-      logsDir,
-      _createConvoyEngine: factory,
-    }).run()
-
-    const { existsSync, readFileSync } = await import('node:fs')
-    const ndjsonPath = join(logsDir, 'pipelines.ndjson')
-    expect(existsSync(ndjsonPath)).toBe(true)
-
-    const parsed = JSON.parse(readFileSync(ndjsonPath, 'utf8').trim())
-    expect(parsed.status).toBe('done')
-    expect(typeof parsed.id).toBe('string')
-    expect(Array.isArray(parsed.convoys)).toBe(true)
-  })
-})
-
 // ── 13. Path traversal protection ────────────────────────────────────────────
 
 describe('path traversal protection', () => {

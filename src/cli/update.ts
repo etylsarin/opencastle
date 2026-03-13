@@ -11,10 +11,28 @@ import { rebuildMcpConfig } from './mcp.js'
 import { detectRepoInfo, mergeStackIntoRepoInfo, buildDetectedToolsSet } from './detect.js'
 import type { CliContext, IdeChoice, TechTool, TeamTool, StackConfig } from './types.js'
 
+const UPDATE_HELP = `
+  opencastle update [options]
+
+  Update framework files to the latest version while preserving
+  your customizations in the .opencastle/ directory.
+
+  Options:
+    --dry-run         Preview what would be changed without writing files
+    --force           Overwrite customized files (default: skip)
+    --reconfigure     Re-run IDE selection and reconfigure adapters
+    --help, -h        Show this help
+`
+
 export default async function update({
   pkgRoot,
   args,
 }: CliContext): Promise<void> {
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(UPDATE_HELP)
+    return
+  }
+
   const projectRoot = process.cwd()
 
   await migrateCustomizationsDir(projectRoot)

@@ -159,7 +159,22 @@ export function checkMcpFromPaths(projectRoot: string, mcpPaths: string[]): Chec
 
 // ── Main doctor command ───────────────────────────────────────
 
-export default async function doctor({ args: _args }: CliContext): Promise<void> {
+const DOCTOR_HELP = `
+  opencastle doctor [options]
+
+  Validate your OpenCastle setup — checks manifest, customizations, skills,
+  logs, MCP configuration, and IDE-specific rules.
+
+  Options:
+    --help, -h      Show this help
+`
+
+export default async function doctor({ args }: CliContext): Promise<void> {
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(DOCTOR_HELP)
+    return
+  }
+
   const projectRoot = process.cwd();
 
   console.log(`\n  🏰 ${BOLD('OpenCastle Doctor')}\n`);

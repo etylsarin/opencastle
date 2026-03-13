@@ -790,7 +790,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     }
     printPipelineResult(pipelineResult)
     if (pipelineDashboardResult) {
-      console.log(`\n  ${c.dim('Results saved to .opencastle/logs/convoys.ndjson')}`)
+      console.log(`\n  ${c.dim('Results saved to .opencastle/convoy.db')}`)
       console.log(`  ${c.dim('View again:')} opencastle dashboard`)
       pipelineDashboardResult.server.close()
     }
@@ -883,7 +883,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     }
     printConvoyResult(result)
     if (dashboardResult) {
-      console.log(`\n  ${c.dim('Results saved to .opencastle/logs/convoys.ndjson')}`)
+      console.log(`\n  ${c.dim('Results saved to .opencastle/convoy.db')}`)
       console.log(`  ${c.dim('View again:')} opencastle dashboard`)
       dashboardResult.server.close()
     }

@@ -6,6 +6,14 @@ const description = 'OpenCastle documentation. CLI reference, plugin setup guide
 
 const pages = [
   {
+    href: '/docs/use-cases',
+    title: 'Use Cases',
+    description: 'Cookbook-style recipes for common projects. Follow step-by-step guides to build real applications with your AI agent team.',
+    icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="13" y2="11"/></svg>`,
+    sidebarIcon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="13" y2="11"/></svg>`,
+    badge: '4 recipes',
+  },
+  {
     href: '/docs/agentic-development',
     title: 'Agentic Development',
     description: 'Guide to agentic development and multi-agent orchestration. Vibecoding best practices, prompt patterns, specialist agents, quality gates, and how to coordinate AI agent teams.',
@@ -19,7 +27,7 @@ const pages = [
     description: 'Complete reference for every opencastle command — init, update, eject, destroy, run, plan, dashboard, and doctor.',
     icon: `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
     sidebarIcon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>`,
-    badge: '8 commands',
+    badge: '15 commands',
   },
   {
     href: '/docs/prompts',
@@ -236,15 +244,15 @@ const pages = [
                       <div class="quickstart__substeps">
                         <div class="quickstart__substep">
                           <span class="quickstart__substep-num">1</span>
-                          <p class="quickstart__desc"><strong>Generate:</strong> Write your goal in a text file and run <code class="quickstart__code">npx opencastle plan -f goal.txt</code>, or ask the Team Lead to <em>&ldquo;generate a convoy for [your goal]&rdquo;</em>. It produces a <code class="quickstart__code">.convoy.yml</code> file with tasks, dependencies, and validation gates.</p>
+                          <p class="quickstart__desc"><strong>Generate:</strong> Describe your goal and run the pipeline: <code class="quickstart__code">npx opencastle pipeline -t "Add user reviews to the place detail page"</code>. It generates a PRD, validates it, produces a <code class="quickstart__code">.convoy.yml</code> spec, and validates that too &mdash; all in one command.</p>
                         </div>
                         <div class="quickstart__substep">
                           <span class="quickstart__substep-num">2</span>
-                          <p class="quickstart__desc"><strong>Review:</strong> Open the generated YAML file and verify the task breakdown, file partitions, and dependency order.</p>
+                          <p class="quickstart__desc"><strong>Review:</strong> Open the generated YAML file and verify the task breakdown, file partitions, and dependency order. You can also validate it: <code class="quickstart__code">npx opencastle validate .opencastle/convoys/your-spec.convoy.yml</code></p>
                         </div>
                         <div class="quickstart__substep">
                           <span class="quickstart__substep-num">3</span>
-                          <p class="quickstart__desc"><strong>Execute:</strong> <code class="quickstart__code">npx opencastle run</code></p>
+                          <p class="quickstart__desc"><strong>Execute:</strong> <code class="quickstart__code">npx opencastle run -f .opencastle/convoys/your-spec.convoy.yml</code></p>
                         </div>
                       </div>
                     </div>

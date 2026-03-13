@@ -133,6 +133,48 @@ const commands = [
     ],
   },
   {
+    id: 'pipeline',
+    category: 'runtime',
+    name: 'pipeline',
+    summary: 'Go from idea to convoy spec in one command',
+    description: 'The easiest way to create a convoy spec. Describe your goal in plain text and the pipeline generates a PRD, validates it, converts it to a convoy spec, validates the spec, and auto-fixes any issues — all in one command.',
+    usage: 'npx opencastle pipeline [options]',
+    options: [
+      { flag: '--text, -t <text>', desc: 'Your feature or task description in plain text (required, unless --prd is set)' },
+      { flag: '--prd <path>', desc: 'Skip PRD generation — use an existing PRD file as input' },
+      { flag: '--output-prd <path>', desc: 'Override output path for the generated PRD' },
+      { flag: '--output-spec <path>', desc: 'Override output path for the generated convoy spec' },
+      { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude-code, copilot, cursor, opencode)' },
+      { flag: '--verbose', desc: 'Show full agent output for each step' },
+      { flag: '--dry-run', desc: 'Generate and print the PRD prompt only, then stop' },
+      { flag: '--skip-validation', desc: 'Skip validation steps (steps 2 and 4)' },
+      { flag: '--help, -h', desc: 'Show help' },
+    ],
+    details: [
+      { heading: 'Pipeline steps', content: `<ol>
+        <li><strong>Generate PRD</strong> — converts your text into a structured Product Requirements Document</li>
+        <li><strong>Validate PRD</strong> — checks the PRD for completeness and correctness</li>
+        <li><strong>Generate convoy spec</strong> — converts the PRD into a <code>.convoy.yml</code> with tasks, dependencies, file partitions, and gates</li>
+        <li><strong>Validate convoy spec</strong> — checks the spec against the convoy schema</li>
+        <li><strong>Auto-fix</strong> — if validation fails, attempts to fix the spec automatically (up to 2 retries)</li>
+      </ol>` },
+      { heading: 'After the pipeline completes', content: `<p>The pipeline outputs two files:</p>
+      <ul>
+        <li>A PRD (<code>.prd.md</code>) in <code>.opencastle/convoys/</code></li>
+        <li>A convoy spec (<code>.convoy.yml</code>) in <code>.opencastle/convoys/</code></li>
+      </ul>
+      <p>Review the generated spec, then execute it:</p>
+      <pre><code>npx opencastle run -f .opencastle/convoys/your-spec.convoy.yml</code></pre>` },
+    ],
+    examples: [
+      { cmd: 'npx opencastle pipeline -t "Add user authentication with login and signup pages"', desc: 'Generate a convoy spec from a text description' },
+      { cmd: 'npx opencastle pipeline -t "Fix the broken search feature" --adapter claude-code', desc: 'Use a specific adapter' },
+      { cmd: 'npx opencastle pipeline --prd existing-prd.md', desc: 'Skip PRD generation, use an existing PRD' },
+      { cmd: 'npx opencastle pipeline -t "Refactor the API layer" --skip-validation', desc: 'Skip validation steps for faster generation' },
+      { cmd: 'npx opencastle pipeline -t "Build a contact form" --dry-run', desc: 'Preview the assembled prompt without executing' },
+    ],
+  },
+  {
     id: 'run',
     category: 'runtime',
     name: 'run',
@@ -141,13 +183,24 @@ const commands = [
     usage: 'npx opencastle run [options]',
     options: [
       { flag: '--file, -f <path>', desc: 'Convoy spec file (default: convoy.yml if present)' },
+      { flag: '--formula <path>', desc: 'Use a formula template (alternative to --file)' },
+      { flag: '--set key=value', desc: 'Set a formula variable (repeatable)' },
       { flag: '--dry-run', desc: 'Show execution plan without running tasks' },
       { flag: '--concurrency, -c <n>', desc: 'Override max parallel tasks' },
       { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude-code, copilot, cursor, opencode)' },
       { flag: '--resume', desc: 'Resume the last interrupted convoy from SQLite state' },
+      { flag: '--retry-failed [task-id]', desc: 'Retry failed/gate-failed/timed-out tasks (optionally a specific task)' },
       { flag: '--status', desc: 'Print convoy state summary from SQLite (branch, task breakdown)' },
+      { flag: '--dlq-list', desc: 'List dead letter queue entries' },
+      { flag: '--dlq-resolve <id>', desc: 'Resolve a DLQ entry (requires --resolution)' },
+      { flag: '--dlq-retry <id>', desc: 'Reset a DLQ task to pending for retry' },
+      { flag: '--convoy <id>', desc: 'Filter by convoy ID (used with --dlq-list)' },
+      { flag: '--resolution <text>', desc: 'Resolution text (used with --dlq-resolve)' },
       { flag: '--report-dir <path>', desc: 'Where to write run reports (default: .opencastle/runs)' },
       { flag: '--verbose', desc: 'Show full agent output' },
+      { flag: '--watch', desc: 'Keep running, re-triggering on file changes, cron, or git push' },
+      { flag: '--watch-config <path>', desc: 'Path to watch configuration file (overrides spec watch config)' },
+      { flag: '--clear-scratchpad', desc: 'Clear scratchpad data at watch start' },
       { flag: '--help, -h', desc: 'Show help' },
     ],
     details: [
@@ -195,40 +248,71 @@ const commands = [
     id: 'plan',
     category: 'runtime',
     name: 'plan',
-    summary: 'Generate a convoy spec from a task description',
-    description: 'Reads a text file containing a task description, assembles it into the generate-convoy prompt, and sends it to an AI adapter. The AI produces a complete <code>.convoy.yml</code> spec with task decomposition, dependency graph, file partitions, and validation gates. The result is written to <code>.opencastle/convoys/</code>.',
+    summary: 'Run a single prompt template step',
+    description: 'Lower-level command that runs a single prompt template step via an AI adapter. Use <code>pipeline</code> instead for the full automated workflow. The <code>plan</code> command is useful when you want to run individual steps (generate a PRD, generate a convoy spec, validate, or fix) with full control over inputs and outputs.',
     usage: 'npx opencastle plan [options]',
     options: [
-      { flag: '--file, -f <path>', desc: 'Path to a text file with the task description (required)' },
-      { flag: '--context <path>', desc: 'Path to an additional context file' },
-      { flag: '--output, -o <path>', desc: 'Output path for the generated convoy spec' },
+      { flag: '--file, -f <path>', desc: 'Path to a text file (fills the {{goal}} placeholder in the template)' },
+      { flag: '--text, -t <text>', desc: 'Inline text to use as {{goal}} (alternative to --file)' },
+      { flag: '--template <name>', desc: 'Prompt template to use (default: generate-convoy). Built-in: generate-prd, validate-prd, generate-convoy, validate-convoy, fix-convoy' },
+      { flag: '--context <path>', desc: 'Path to an additional context file (fills {{context}})' },
+      { flag: '--context-text <text>', desc: 'Inline text to fill {{context}} (alternative to --context)' },
+      { flag: '--output, -o <path>', desc: 'Output path for the generated file' },
       { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude-code, copilot, cursor, opencode)' },
       { flag: '--verbose', desc: 'Show full agent output' },
       { flag: '--dry-run', desc: 'Print the assembled prompt without executing' },
       { flag: '--help, -h', desc: 'Show help' },
     ],
     details: [
+      { heading: 'Built-in templates', content: `<table class="plugin-table">
+        <thead><tr><th>Template</th><th>Description</th><th>Output</th></tr></thead>
+        <tbody>
+          <tr><td><code>generate-prd</code></td><td>Write a PRD from a feature prompt</td><td><code>.prd.md</code></td></tr>
+          <tr><td><code>validate-prd</code></td><td>Check a PRD for completeness</td><td>VALID / INVALID verdict</td></tr>
+          <tr><td><code>generate-convoy</code></td><td>Generate a convoy spec from a PRD (default)</td><td><code>.convoy.yml</code></td></tr>
+          <tr><td><code>validate-convoy</code></td><td>Check a convoy spec for correctness</td><td>VALID / INVALID verdict</td></tr>
+          <tr><td><code>fix-convoy</code></td><td>Fix validation errors in a convoy spec</td><td><code>.convoy.yml</code></td></tr>
+        </tbody>
+      </table>` },
       { heading: 'How it works', content: `<ol>
-        <li><strong>Reads the task file</strong> — loads the text file specified by <code>--file</code></li>
-        <li><strong>Assembles the prompt</strong> — substitutes the task description and optional context into the generate-convoy prompt template</li>
-        <li><strong>Runs the AI adapter</strong> — sends the prompt to the detected (or specified) AI CLI</li>
-        <li><strong>Extracts and validates YAML</strong> — parses the YAML code block from the AI response and validates it against the convoy spec schema</li>
-        <li><strong>Writes the spec file</strong> — saves to <code>.opencastle/convoys/&lt;name&gt;.convoy.yml</code> (or the path specified by <code>--output</code>)</li>
+        <li><strong>Loads the template</strong> — reads the prompt template specified by <code>--template</code></li>
+        <li><strong>Fills placeholders</strong> — substitutes <code>{{goal}}</code> from <code>--file</code> or <code>--text</code>, and <code>{{context}}</code> from <code>--context</code> or <code>--context-text</code></li>
+        <li><strong>Runs the AI adapter</strong> — sends the assembled prompt to the detected (or specified) AI CLI</li>
+        <li><strong>Extracts output</strong> — parses the response and writes to <code>.opencastle/convoys/</code> or the path specified by <code>--output</code></li>
       </ol>` },
-      { heading: 'Task description file', content: `<p>The input file should be plain text describing what you want to accomplish. Write it in natural language — the more detail you provide, the better the generated spec. Include:</p>
-      <ul>
-        <li>What you want to build, fix, or refactor</li>
-        <li>Which areas of the codebase are involved</li>
-        <li>Any constraints or requirements</li>
-        <li>Testing and validation expectations</li>
+    ],
+    examples: [
+      { cmd: 'npx opencastle plan -t "Add user reviews" --template generate-prd', desc: 'Generate a PRD from inline text' },
+      { cmd: 'npx opencastle plan -f my-prd.md', desc: 'Generate a convoy spec from a PRD file (default template)' },
+      { cmd: 'npx opencastle plan -f spec.convoy.yml --template validate-convoy', desc: 'Validate an existing convoy spec' },
+      { cmd: 'npx opencastle plan -f task.txt --context architecture.md', desc: 'Include additional context' },
+      { cmd: 'npx opencastle plan -t "Fix the auth bug" --dry-run', desc: 'Preview the assembled prompt' },
+    ],
+  },
+  {
+    id: 'validate',
+    category: 'runtime',
+    name: 'validate',
+    summary: 'Validate a convoy YAML spec file',
+    description: 'Validates a convoy spec file against the schema without executing it. Checks for required fields, valid task IDs, dependency cycles, file partition conflicts, and other structural issues.',
+    usage: 'npx opencastle validate <file>',
+    options: [
+      { flag: '<file>', desc: 'Path to the convoy YAML spec file (required)' },
+      { flag: '--help, -h', desc: 'Show help' },
+    ],
+    details: [
+      { heading: 'What it checks', content: `<ul>
+        <li>YAML syntax is valid</li>
+        <li>Required fields are present (<code>name</code>, <code>version</code>, <code>tasks</code>)</li>
+        <li>Each task has <code>id</code> and <code>prompt</code></li>
+        <li><code>depends_on</code> references point to existing task IDs</li>
+        <li>No dependency cycles exist</li>
+        <li>File partitions don't conflict between parallel tasks</li>
       </ul>` },
     ],
     examples: [
-      { cmd: 'npx opencastle plan -f task.txt', desc: 'Generate a convoy spec from a task description' },
-      { cmd: 'npx opencastle plan -f task.txt --context architecture.md', desc: 'Include additional context' },
-      { cmd: 'npx opencastle plan -f task.txt -o my-convoy.yml', desc: 'Write to a custom output path' },
-      { cmd: 'npx opencastle plan -f task.txt --dry-run', desc: 'Preview the prompt without running' },
-      { cmd: 'npx opencastle plan -f task.txt -a claude-code', desc: 'Use a specific adapter' },
+      { cmd: 'npx opencastle validate convoy.yml', desc: 'Validate a convoy spec' },
+      { cmd: 'npx opencastle validate .opencastle/convoys/auth.convoy.yml', desc: 'Validate a generated spec' },
     ],
   },
   {
@@ -242,15 +326,14 @@ const commands = [
       { flag: '--port <number>', desc: 'Port to listen on (default: 4300, auto-increments if busy)' },
       { flag: '--no-open', desc: 'Don\'t auto-open the browser' },
       { flag: '--seed', desc: 'Show demo data instead of project logs' },
+      { flag: '--convoy <id>', desc: 'Filter dashboard to a specific convoy' },
       { flag: '--help, -h', desc: 'Show help' },
     ],
     details: [
-      { heading: 'Data sources', content: `<p>The dashboard reads NDJSON log files from <code>.github/customizations/logs/</code>:</p>
+      { heading: 'Data sources', content: `<p>The dashboard reads data from two locations:</p>
       <ul>
-        <li><code>sessions.ndjson</code> — agent session records (task, outcome, duration, files changed)</li>
-        <li><code>delegations.ndjson</code> — Team Lead delegation records (agent, model, mechanism)</li>
-        <li><code>reviews.ndjson</code> — fast review results (verdict, issues found)</li>
-        <li><code>panels.ndjson</code> — panel majority vote results (pass/block count)</li>
+        <li><strong><code>.opencastle/logs/</code></strong> (primary) — <code>events.ndjson</code> (unified event log with sessions, delegations, reviews, panels), <code>convoys.ndjson</code>, <code>pipelines.ndjson</code></li>
+        <li><strong><code>.opencastle/convoy.db</code></strong> — SQLite database with convoy execution state, task results, and token usage</li>
       </ul>
       <p>If no log files exist, the dashboard shows empty charts. Use <code>--seed</code> to preview with demo data.</p>` },
       { heading: 'Auto-port', content: `<p>If port 4300 is already in use, the dashboard automatically tries the next port (4301, 4302, etc.) up to 10 attempts.</p>` },
@@ -349,15 +432,26 @@ const commands = [
         <div class="usage-block">
           <pre><code>{`npx opencastle <command> [options]
 
-Commands:
+Project Commands:
   init        Set up OpenCastle in your project
   update      Update framework files (preserves customizations)
   eject       Remove dependency, keep all files standalone
   destroy     Remove ALL OpenCastle files (reverse of init)
-  run         Run convoy specs — deterministic, crash-recoverable agent orchestration
-  plan        Generate a convoy spec from a task description
-  dashboard   View agent observability dashboard in your browser
   doctor      Validate your OpenCastle setup
+
+Convoy Commands:
+  pipeline    Go from idea to convoy spec in one command (recommended)
+  plan        Run a single prompt template step
+  validate    Validate a convoy YAML spec file
+  run         Run convoy specs — deterministic, crash-recoverable agent orchestration
+  dispute     Manage convoy dispute resolution
+
+Observability:
+  dashboard   View agent observability dashboard in your browser
+  agents      Manage persistent agent identities
+  baselines   Manage visual regression baselines
+  log         Append a structured event to the observability log
+  lesson      Append a structured lesson to LESSONS-LEARNED.md
 
 Global options:
   --help, -h       Show help
