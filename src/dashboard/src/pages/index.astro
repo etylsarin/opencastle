@@ -40,11 +40,18 @@ try {
         <li><a class="dash-sidebar__link dash-sidebar__link--active" href="#overall-section" data-section="overall-section" data-view="home" aria-label="Overview section">Overview</a></li>
         <li><a class="dash-sidebar__link" href="#convoy-list-section" data-section="convoy-list-section" data-view="home" aria-label="Convoys section">Convoys</a></li>
         <li><a class="dash-sidebar__link" href="#tasks-section" data-section="tasks-section" data-view="detail" aria-label="Tasks section">Tasks</a></li>
+        <li><a class="dash-sidebar__link" href="#pipeline-section" data-section="pipeline-section" data-view="detail" aria-label="Pipeline section">Pipeline</a></li>
+        <li><a class="dash-sidebar__link" href="#agent-section" data-section="agent-section" data-view="detail" aria-label="Agents section">Agents</a></li>
+        <li><a class="dash-sidebar__link" href="#tier-section" data-section="tier-section" data-view="detail" aria-label="Tiers section">Tiers</a></li>
+        <li><a class="dash-sidebar__link" href="#model-section" data-section="model-section" data-view="detail" aria-label="Models section">Models</a></li>
         <li><a class="dash-sidebar__link" href="#quality-section" data-section="quality-section" data-view="detail" aria-label="Quality section">Quality</a></li>
         <li><a class="dash-sidebar__link" href="#reliability-section" data-section="reliability-section" data-view="detail" aria-label="Reliability section">Reliability</a></li>
         <li><a class="dash-sidebar__link" href="#drift-section" data-section="drift-section" data-view="detail" aria-label="Drift section">Drift</a></li>
         <li><a class="dash-sidebar__link" href="#outputs-section" data-section="outputs-section" data-view="detail" aria-label="Outputs section">Outputs</a></li>
+        <li><a class="dash-sidebar__link" href="#execution-section" data-section="execution-section" data-view="detail" aria-label="Execution Log section">Execution Log</a></li>
         <li><a class="dash-sidebar__link" href="#event-timeline-section" data-section="event-timeline-section" data-view="detail" aria-label="Event Log section">Event Log</a></li>
+        <li><a class="dash-sidebar__link" href="#panel-section" data-section="panel-section" data-view="detail" aria-label="Panel Reviews section">Panel Reviews</a></li>
+        <li><a class="dash-sidebar__link" href="#reviews-section" data-section="reviews-section" data-view="detail" aria-label="Fast Reviews section">Fast Reviews</a></li>
       </ul>
     </nav>
 
@@ -152,6 +159,61 @@ try {
       </div>
     </section>
 
+    <!-- Pipeline View -->
+    <section class="chart-card" id="pipeline-section" data-nav-section>
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Task Pipeline</h2>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Task flow across execution phases." data-tooltip="Task flow across execution phases."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+        <p class="chart-card__desc">Task flow across execution phases</p>
+      </div>
+      <div class="chart-card__body" id="pipeline-view"></div>
+    </section>
+
+    <!-- Charts Row: Agent + Outcomes -->
+    <div class="charts-row" id="agent-section" data-nav-section>
+      <section class="chart-card">
+        <div class="chart-card__header">
+          <h2 class="chart-card__title">Sessions by Agent</h2>
+          <p class="chart-card__desc">Task count per agent, stacked by outcome</p>
+        </div>
+        <div class="chart-card__body" id="agent-chart"></div>
+      </section>
+      <section class="chart-card">
+        <div class="chart-card__header">
+          <h2 class="chart-card__title">Delegation Outcomes</h2>
+          <p class="chart-card__desc">Task outcome distribution</p>
+        </div>
+        <div class="chart-card__body" id="delegation-outcome-chart"></div>
+      </section>
+    </div>
+
+    <!-- Charts Row: Tiers + Mechanism -->
+    <div class="charts-row" id="tier-section" data-nav-section>
+      <section class="chart-card">
+        <div class="chart-card__header">
+          <h2 class="chart-card__title">Tier Distribution</h2>
+          <p class="chart-card__desc">Model tier breakdown</p>
+        </div>
+        <div class="chart-card__body" id="tier-chart"></div>
+      </section>
+      <section class="chart-card">
+        <div class="chart-card__header">
+          <h2 class="chart-card__title">Delegation Mechanism</h2>
+          <p class="chart-card__desc">Sub-agent vs background split</p>
+        </div>
+        <div class="chart-card__body" id="mechanism-chart"></div>
+      </section>
+    </div>
+
+    <!-- Model Usage -->
+    <section class="chart-card" id="model-section" data-nav-section>
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Model Usage</h2>
+        <p class="chart-card__desc">Tasks by model</p>
+      </div>
+      <div class="chart-card__body" id="model-chart"></div>
+    </section>
+
     <!-- Quality Section -->
     <section class="chart-card" id="quality-section" data-nav-section>
       <div class="chart-card__header">
@@ -223,6 +285,37 @@ try {
         </div>
       </div>
     </section>
+
+    <!-- Execution Log -->
+    <section class="chart-card" id="execution-section" data-nav-section>
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Execution Log</h2>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Step-by-step trace of recent task activity." data-tooltip="Step-by-step trace of recent task activity."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+        <p class="chart-card__desc">Recent agent activity, step by step</p>
+      </div>
+      <div class="chart-card__body" id="execution-log"></div>
+    </section>
+
+    <!-- Panel Reviews -->
+    <section class="chart-card" id="panel-section" data-nav-section>
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Panel Reviews</h2>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Quality gate verdicts from majority-vote panels." data-tooltip="Quality gate verdicts from majority-vote panels."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+        <p class="chart-card__desc">Quality gate verdicts and fix items</p>
+      </div>
+      <div class="chart-card__body" id="panel-chart"></div>
+    </section>
+
+    <!-- Fast Reviews -->
+    <section class="chart-card" id="reviews-section" data-nav-section>
+      <div class="chart-card__header">
+        <h2 class="chart-card__title">Fast Reviews</h2>
+        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Single-reviewer quality gate results." data-tooltip="Single-reviewer quality gate results."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+        <p class="chart-card__desc">Single-reviewer quality gate results</p>
+      </div>
+      <div class="chart-card__body chart-card__body--table" id="reviews-table"></div>
+    </section>
+
     </div><!-- .view-convoy-detail -->
 
 
@@ -539,7 +632,7 @@ try {
   async function loadConvoyDetail(convoyId) {
     if (!convoyId) {
       renderConvoyDetailHeader(null);
-      ['quality-section', 'reliability-section', 'drift-section', 'outputs-section', 'event-timeline-section'].forEach(function(id) {
+      ['pipeline-section', 'agent-section', 'tier-section', 'model-section', 'quality-section', 'reliability-section', 'drift-section', 'outputs-section', 'execution-section', 'event-timeline-section', 'panel-section', 'reviews-section'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.style.display = 'none';
       });
@@ -556,15 +649,24 @@ try {
       renderPhaseBreakdown(detail.tasks || []);
       const tasksSection = document.getElementById('tasks-section');
       if (tasksSection) tasksSection.style.display = '';
+      renderDetailPipeline(detail.tasks || []);
+      renderDetailAgentChart(detail.tasks || []);
+      renderDetailOutcomeChart(detail.tasks || []);
+      renderDetailTierChart(detail.tasks || []);
+      renderDetailMechanismChart(detail.events || []);
+      renderDetailModelChart(detail.tasks || []);
       renderQualitySection(detail);
       renderReliabilitySection(detail);
       renderDriftSection(detail);
       renderOutputsSection(detail);
+      renderDetailExecutionLog(detail.tasks || []);
       renderEventTimeline(detail);
+      renderDetailPanelChart(detail.tasks || []);
+      renderDetailReviewsTable(detail.tasks || []);
     } catch (e) {
       console.error('Failed to load convoy detail:', e);
       renderConvoyDetailHeader(null);
-      ['quality-section', 'reliability-section', 'drift-section', 'outputs-section', 'event-timeline-section'].forEach(function(id) {
+      ['pipeline-section', 'agent-section', 'tier-section', 'model-section', 'quality-section', 'reliability-section', 'drift-section', 'outputs-section', 'execution-section', 'event-timeline-section', 'panel-section', 'reviews-section'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.style.display = 'none';
       });
@@ -580,7 +682,7 @@ try {
       if (nameEl) nameEl.textContent = 'No convoy selected';
       if (statusEl) { statusEl.textContent = ''; statusEl.className = 'status-badge'; }
       if (metaEl) metaEl.innerHTML = '';
-      ['tasks-section', 'quality-section', 'reliability-section', 'drift-section', 'outputs-section', 'event-timeline-section'].forEach(function(id) {
+      ['tasks-section', 'pipeline-section', 'agent-section', 'tier-section', 'model-section', 'quality-section', 'reliability-section', 'drift-section', 'outputs-section', 'execution-section', 'event-timeline-section', 'panel-section', 'reviews-section'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) el.style.display = 'none';
       });
@@ -776,6 +878,390 @@ try {
       '</div>';
     }).join('');
     el.innerHTML = html;
+  }
+
+  // ── Convoy Detail: Derive Tier from Model ────────────────
+
+  function deriveTier(model) {
+    if (!model) return 'unknown';
+    var m = model.toLowerCase();
+    if (m.includes('opus')) return 'premium';
+    if (m.includes('sonnet') || m.includes('pro')) return 'standard';
+    if (m.includes('haiku') || m.includes('flash') || m.includes('mini')) return 'economy';
+    return 'utility';
+  }
+
+  // ── Convoy Detail: Pipeline View ─────────────────────────
+
+  function renderDetailPipeline(tasks) {
+    var el = document.getElementById('pipeline-view');
+    if (!el) return;
+
+    if (!tasks || tasks.length === 0) {
+      el.innerHTML = emptyStateHtml('pipeline', 'No pipeline activity yet', 'Tasks will flow through execution phases here.');
+      return;
+    }
+
+    var phases = {};
+    tasks.forEach(function(t) {
+      var p = t.phase != null ? t.phase : 1;
+      if (!phases[p]) phases[p] = 0;
+      phases[p]++;
+    });
+
+    var stageConfig = [
+      { label: 'Foundation', phase: 1, iconClass: 'pending', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>' },
+      { label: 'Integration', phase: 2, iconClass: 'active', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' },
+      { label: 'Validation', phase: 3, iconClass: 'review', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' },
+      { label: 'QA Gate', phase: 4, iconClass: 'done', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>' },
+    ];
+
+    el.innerHTML =
+      '<div class="pipeline">' +
+      stageConfig.map(function(stage, i) {
+        return (i > 0 ? '<div class="pipeline-arrow">\u2192</div>' : '') +
+          '<div class="pipeline-stage">' +
+          '<div class="pipeline-stage__icon pipeline-stage__icon--' + stage.iconClass + '">' + stage.icon + '</div>' +
+          '<span class="pipeline-stage__count">' + (phases[stage.phase] || 0) + '</span>' +
+          '<span class="pipeline-stage__label">' + stage.label + '</span>' +
+          '</div>';
+      }).join('') +
+      '</div>';
+  }
+
+  // ── Convoy Detail: Agent Chart ───────────────────────────
+
+  function renderDetailAgentChart(tasks) {
+    var el = document.getElementById('agent-chart');
+    if (!el) return;
+
+    if (!tasks || tasks.length === 0) {
+      el.innerHTML = emptyStateHtml('agents', 'No agent data yet', 'A breakdown of tasks per agent will appear here.');
+      return;
+    }
+
+    var agentMap = {};
+    tasks.forEach(function(t) {
+      var agent = t.agent || 'unknown';
+      if (!agentMap[agent]) agentMap[agent] = { done: 0, failed: 0, running: 0, other: 0, total: 0 };
+      if (t.status === 'done') agentMap[agent].done++;
+      else if (t.status === 'running') agentMap[agent].running++;
+      else if (['failed', 'gate-failed', 'timed-out', 'hook-failed'].includes(t.status)) agentMap[agent].failed++;
+      else agentMap[agent].other++;
+      agentMap[agent].total++;
+    });
+
+    var agents = Object.entries(agentMap).sort(function(a, b) { return b[1].total - a[1].total; });
+    var maxTotal = Math.max.apply(null, agents.map(function(a) { return a[1].total; }));
+
+    el.innerHTML = agents.map(function(entry) {
+      var name = entry[0];
+      var data = entry[1];
+      return '<div class="bar-row">' +
+        '<span class="bar-label">' + escapeHtml(name) + '</span>' +
+        '<div class="bar-track">' +
+        (data.done > 0 ? '<div class="bar-segment bar--success" style="width: ' + ((data.done / maxTotal) * 100).toFixed(1) + '%"></div>' : '') +
+        (data.running > 0 ? '<div class="bar-segment" style="width: ' + ((data.running / maxTotal) * 100).toFixed(1) + '%; background: #3b82f6"></div>' : '') +
+        (data.failed > 0 ? '<div class="bar-segment bar--failed" style="width: ' + ((data.failed / maxTotal) * 100).toFixed(1) + '%"></div>' : '') +
+        (data.other > 0 ? '<div class="bar-segment" style="width: ' + ((data.other / maxTotal) * 100).toFixed(1) + '%; background: #64748b"></div>' : '') +
+        '</div>' +
+        '<span class="bar-value">' + data.total + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  // ── Convoy Detail: Tier Donut Chart ──────────────────────
+
+  function renderDetailTierChart(tasks) {
+    var el = document.getElementById('tier-chart');
+    if (!el) return;
+
+    if (!tasks || tasks.length === 0) {
+      el.innerHTML = emptyStateHtml('tiers', 'No tier data yet', 'Model tier distribution will be shown as a donut chart.');
+      return;
+    }
+
+    var tierCounts = {};
+    tasks.forEach(function(t) {
+      var tier = deriveTier(t.model);
+      tierCounts[tier] = (tierCounts[tier] || 0) + 1;
+    });
+
+    var order = ['premium', 'standard', 'utility', 'economy', 'unknown'];
+    var tiers = order.filter(function(t) { return tierCounts[t]; }).map(function(t) { return { name: t, count: tierCounts[t] }; });
+    var total = tasks.length;
+    var r = 70;
+    var circumference = 2 * Math.PI * r;
+    var cumOffset = 0;
+
+    var circles = tiers.map(function(t) {
+      var pct = t.count / total;
+      var dashLen = pct * circumference;
+      var linecap = tiers.length === 1 ? 'butt' : 'round';
+      var segment = '<circle cx="90" cy="90" r="' + r + '" fill="none" stroke="' + (TIER_COLORS[t.name] || '#64748b') + '" stroke-width="18" stroke-dasharray="' + dashLen.toFixed(2) + ' ' + (circumference - dashLen).toFixed(2) + '" stroke-dashoffset="' + (-cumOffset).toFixed(2) + '" transform="rotate(-90 90 90)" stroke-linecap="' + linecap + '"/>';
+      cumOffset += dashLen;
+      return segment;
+    });
+
+    var legend = tiers.map(function(t) {
+      return '<div class="legend-item"><span class="legend-dot" style="background: ' + (TIER_COLORS[t.name] || '#64748b') + '"></span><span class="legend-name">' + t.name + '</span><span class="legend-count">' + t.count + ' (' + Math.round((t.count / total) * 100) + '%)</span></div>';
+    }).join('');
+
+    el.innerHTML =
+      '<div class="donut-container"><div class="donut-wrap"><svg viewBox="0 0 180 180" class="donut-svg">' + circles.join('') + '</svg><div class="donut-center"><span class="donut-total">' + total + '</span><span class="donut-total-label">total</span></div></div><div class="donut-legend">' + legend + '</div></div>';
+  }
+
+  // ── Convoy Detail: Mechanism Donut Chart ─────────────────
+
+  function renderDetailMechanismChart(events) {
+    var el = document.getElementById('mechanism-chart');
+    if (!el) return;
+
+    var MECH_COLORS = { 'sub-agent': '#3b82f6', 'background': '#a78bfa', 'unknown': '#64748b' };
+    var MECH_LABELS = { 'sub-agent': 'Sub-agent (inline)', 'background': 'Background (worktree)', 'unknown': 'Unknown' };
+
+    if (!events || events.length === 0) {
+      el.innerHTML = emptyStateHtml('mechanism', 'No delegation data yet', 'The split between sub-agent and background delegations will be shown here.');
+      return;
+    }
+
+    var mechCounts = {};
+    events.forEach(function(e) {
+      if (e.type === 'task_assigned' || e.type === 'task_started') {
+        var mech = (e.data && e.data.mechanism) || 'unknown';
+        mechCounts[mech] = (mechCounts[mech] || 0) + 1;
+      }
+    });
+
+    var mechOrder = ['sub-agent', 'background', 'unknown'];
+    var mechs = mechOrder.filter(function(m) { return mechCounts[m]; }).map(function(m) { return { name: m, count: mechCounts[m] }; });
+
+    if (mechs.length === 0) {
+      el.innerHTML = emptyStateHtml('mechanism', 'No delegation data yet', 'The split between sub-agent and background delegations will be shown here.');
+      return;
+    }
+
+    var total = mechs.reduce(function(s, m) { return s + m.count; }, 0);
+    var r = 70;
+    var circumference = 2 * Math.PI * r;
+    var cumOffset = 0;
+
+    var circles = mechs.map(function(m) {
+      var pct = m.count / total;
+      var dashLen = pct * circumference;
+      var linecap = mechs.length === 1 ? 'butt' : 'round';
+      var segment = '<circle cx="90" cy="90" r="' + r + '" fill="none" stroke="' + (MECH_COLORS[m.name] || '#64748b') + '" stroke-width="18" stroke-dasharray="' + dashLen.toFixed(2) + ' ' + (circumference - dashLen).toFixed(2) + '" stroke-dashoffset="' + (-cumOffset).toFixed(2) + '" transform="rotate(-90 90 90)" stroke-linecap="' + linecap + '"/>';
+      cumOffset += dashLen;
+      return segment;
+    });
+
+    var legend = mechs.map(function(m) {
+      return '<div class="legend-item"><span class="legend-dot" style="background: ' + (MECH_COLORS[m.name] || '#64748b') + '"></span><span class="legend-name">' + (MECH_LABELS[m.name] || m.name) + '</span><span class="legend-count">' + m.count + ' (' + Math.round((m.count / total) * 100) + '%)</span></div>';
+    }).join('');
+
+    el.innerHTML =
+      '<div class="donut-container"><div class="donut-wrap"><svg viewBox="0 0 180 180" class="donut-svg">' + circles.join('') + '</svg><div class="donut-center"><span class="donut-total">' + total + '</span><span class="donut-total-label">total</span></div></div><div class="donut-legend">' + legend + '</div></div>';
+  }
+
+  // ── Convoy Detail: Delegation Outcome Chart ──────────────
+
+  function renderDetailOutcomeChart(tasks) {
+    var el = document.getElementById('delegation-outcome-chart');
+    if (!el) return;
+
+    if (!tasks || tasks.length === 0) {
+      el.innerHTML = emptyStateHtml('outcomes', 'No outcome data yet', 'Task outcome distribution will be shown here.');
+      return;
+    }
+
+    var OUTCOME_COLORS = { done: '#22c55e', running: '#3b82f6', pending: '#64748b', assigned: '#64748b', failed: '#ef4444', 'gate-failed': '#f59e0b', 'timed-out': '#a78bfa', 'hook-failed': '#64748b', 'review-blocked': '#f59e0b', skipped: '#94a3b8' };
+
+    var outcomeCounts = {};
+    tasks.forEach(function(t) {
+      var outcome = t.status || 'unknown';
+      outcomeCounts[outcome] = (outcomeCounts[outcome] || 0) + 1;
+    });
+
+    var outcomes = Object.entries(outcomeCounts).sort(function(a, b) { return b[1] - a[1]; });
+    var maxCount = Math.max.apply(null, outcomes.map(function(o) { return o[1]; }));
+
+    el.innerHTML = outcomes.map(function(entry) {
+      var name = entry[0];
+      var count = entry[1];
+      return '<div class="bar-row">' +
+        '<span class="bar-label">' + escapeHtml(name) + '</span>' +
+        '<div class="bar-track"><div class="bar-segment" style="width: ' + ((count / maxCount) * 100).toFixed(1) + '%; background: ' + (OUTCOME_COLORS[name] || '#64748b') + '"></div></div>' +
+        '<span class="bar-value">' + count + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  // ── Convoy Detail: Model Chart ───────────────────────────
+
+  function renderDetailModelChart(tasks) {
+    var el = document.getElementById('model-chart');
+    if (!el) return;
+
+    if (!tasks || tasks.length === 0) {
+      el.innerHTML = emptyStateHtml('models', 'No model data yet', 'Model utilization across tasks will be shown here.');
+      return;
+    }
+
+    var modelCounts = {};
+    tasks.forEach(function(t) {
+      if (t.model) modelCounts[t.model] = (modelCounts[t.model] || 0) + 1;
+    });
+
+    var models = Object.entries(modelCounts).sort(function(a, b) { return b[1] - a[1]; });
+
+    if (models.length === 0) {
+      el.innerHTML = emptyStateHtml('models', 'No model data yet', 'Model utilization across tasks will be shown here.');
+      return;
+    }
+
+    var maxCount = Math.max.apply(null, models.map(function(m) { return m[1]; }));
+
+    el.innerHTML = models.map(function(entry) {
+      var name = entry[0];
+      var count = entry[1];
+      return '<div class="bar-row">' +
+        '<span class="bar-label">' + escapeHtml(name) + '</span>' +
+        '<div class="bar-track"><div class="bar-segment" style="width: ' + ((count / maxCount) * 100).toFixed(1) + '%; background: ' + (MODEL_COLORS[name] || '#64748b') + '"></div></div>' +
+        '<span class="bar-value">' + count + '</span>' +
+        '</div>';
+    }).join('');
+  }
+
+  // ── Convoy Detail: Execution Log ─────────────────────────
+
+  function renderDetailExecutionLog(tasks) {
+    var el = document.getElementById('execution-log');
+    if (!el) return;
+
+    if (!tasks || tasks.length === 0) {
+      el.innerHTML = emptyStateHtml('execLog', 'No execution history yet', 'A step-by-step trace of task activity will appear here.');
+      return;
+    }
+
+    var sorted = tasks.slice().filter(function(t) { return t.started_at; }).sort(function(a, b) { return new Date(b.started_at) - new Date(a.started_at); }).slice(0, 10);
+
+    if (sorted.length === 0) {
+      el.innerHTML = emptyStateHtml('execLog', 'No execution history yet', 'A step-by-step trace of task activity will appear here.');
+      return;
+    }
+
+    var statusToOutcome = function(s) {
+      if (s === 'done') return 'success';
+      if (['failed', 'gate-failed', 'timed-out', 'hook-failed'].includes(s)) return 'failed';
+      return 'partial';
+    };
+
+    el.innerHTML =
+      '<div class="exec-log">' +
+      sorted.map(function(t, i) {
+        var outcome = statusToOutcome(t.status);
+        var dur = formatDuration(t.started_at, t.finished_at);
+        var fileCount = t.files ? t.files.length : 0;
+        return '<div class="exec-step">' +
+          '<div class="exec-step__indicator">' +
+          '<div class="exec-step__dot exec-step__dot--' + outcome + '">' + (OUTCOME_ICONS[outcome] || '') + '</div>' +
+          (i < sorted.length - 1 ? '<div class="exec-step__line"></div>' : '') +
+          '</div>' +
+          '<div class="exec-step__content">' +
+          '<div class="exec-step__header">' +
+          '<span class="exec-step__agent">' + escapeHtml(t.agent || 'unknown') + '</span>' +
+          '<span class="exec-step__badge exec-step__badge--' + outcome + '">' + escapeHtml(t.status) + '</span>' +
+          '</div>' +
+          '<div class="exec-step__task">' + escapeHtml(t.id) + '</div>' +
+          '<div class="exec-step__meta">' +
+          '<span class="exec-step__meta-item">\uD83D\uDD52 ' + formatTime(t.started_at) + '</span>' +
+          (dur ? '<span class="exec-step__meta-item">\u23F1 ' + dur + '</span>' : '') +
+          (fileCount > 0 ? '<span class="exec-step__meta-item">\uD83D\uDCC1 ' + fileCount + ' files</span>' : '') +
+          (t.model ? '<span class="exec-step__meta-item">\uD83E\uDD16 ' + escapeHtml(t.model) + '</span>' : '') +
+          (t.retries > 0 ? '<span class="exec-step__meta-item">\uD83D\uDD04 ' + t.retries + ' retries</span>' : '') +
+          (t.total_tokens != null ? '<span class="exec-step__meta-item">\uD83D\uDD24 ' + formatTokens(t.total_tokens) + '</span>' : '') +
+          '</div>' +
+          '</div>' +
+          '</div>';
+      }).join('') +
+      '</div>';
+  }
+
+  // ── Convoy Detail: Panel Reviews ─────────────────────────
+
+  function renderDetailPanelChart(tasks) {
+    var el = document.getElementById('panel-chart');
+    if (!el) return;
+
+    var panelTasks = (tasks || []).filter(function(t) { return t.panel_attempts > 0; });
+
+    if (panelTasks.length === 0) {
+      el.innerHTML = emptyStateHtml('panels', 'No panel reviews yet', 'Quality gate verdicts from majority-vote panels will be shown here.');
+      return;
+    }
+
+    el.innerHTML =
+      '<div class="panel-grid">' +
+      panelTasks.map(function(t) {
+        var verdictUpper = t.review_verdict ? t.review_verdict.toUpperCase() : 'PENDING';
+        var verdictClass = verdictUpper === 'PASS' ? 'PASS' : 'BLOCK';
+        return '<div class="panel-item">' +
+          '<div class="panel-item__header">' +
+          '<span class="panel-item__key">' + escapeHtml(t.id) + '</span>' +
+          '<span class="panel-item__verdict panel-item__verdict--' + verdictClass + '">' + verdictUpper + '</span>' +
+          '</div>' +
+          '<div class="panel-item__votes">' +
+          (verdictUpper === 'PASS' ? '<div class="panel-item__vote panel-item__vote--pass">\u2713</div>' : '<div class="panel-item__vote panel-item__vote--block">\u2717</div>') +
+          '</div>' +
+          '<div class="panel-item__meta">' +
+          '<span class="panel-item__meta-item">\uD83E\uDD16 ' + escapeHtml(t.review_model || 'unknown') + '</span>' +
+          (t.panel_attempts > 1 ? '<span class="panel-item__meta-item">\uD83D\uDD04 ' + t.panel_attempts + ' attempts</span>' : '') +
+          (t.review_tokens != null ? '<span class="panel-item__meta-item">\uD83D\uDD24 ' + formatTokens(t.review_tokens) + '</span>' : '') +
+          '</div>' +
+          '</div>';
+      }).join('') +
+      '</div>';
+  }
+
+  // ── Convoy Detail: Fast Reviews ──────────────────────────
+
+  function renderDetailReviewsTable(tasks) {
+    var el = document.getElementById('reviews-table');
+    if (!el) return;
+
+    var reviewedTasks = (tasks || []).filter(function(t) { return t.review_level != null; });
+
+    if (reviewedTasks.length === 0) {
+      el.innerHTML = emptyStateHtml('panels', 'No fast reviews yet', 'Single-reviewer quality gate results will be listed here.');
+      return;
+    }
+
+    el.innerHTML =
+      '<table class="sessions-table">' +
+      '<thead><tr>' +
+      '<th scope="col">Task ID</th>' +
+      '<th scope="col">Agent</th>' +
+      '<th scope="col">Review Level</th>' +
+      '<th scope="col">Verdict</th>' +
+      '<th scope="col">Model</th>' +
+      '<th scope="col">Tokens</th>' +
+      '</tr></thead>' +
+      '<tbody>' +
+      reviewedTasks.map(function(t) {
+        var verdictUpper = t.review_verdict ? t.review_verdict.toUpperCase() : '';
+        var verdictBadge = t.review_verdict
+          ? '<span class="status-badge status-badge--' + (verdictUpper === 'PASS' ? 'done' : 'failed') + '">' + escapeHtml(t.review_verdict) + '</span>'
+          : '<span style="opacity:0.4">\u2014</span>';
+        return '<tr>' +
+          '<td class="td-task">' + escapeHtml(t.id || '\u2014') + '</td>' +
+          '<td class="td-agent">' + escapeHtml(t.agent || '\u2014') + '</td>' +
+          '<td>' + escapeHtml(t.review_level || '\u2014') + '</td>' +
+          '<td>' + verdictBadge + '</td>' +
+          '<td>' + escapeHtml(t.review_model || '\u2014') + '</td>' +
+          '<td class="td-num">' + (t.review_tokens != null ? formatTokens(t.review_tokens) : '\u2014') + '</td>' +
+          '</tr>';
+      }).join('') +
+      '</tbody></table>';
   }
 
   // ── Quality Section ──────────────────────────────────────
@@ -1227,7 +1713,7 @@ try {
 
     sections.forEach((s) => observer.observe(s));
 
-    const CONVOY_DETAIL_SECTIONS = ["tasks-section", "quality-section", "reliability-section", "drift-section", "outputs-section", "event-timeline-section"];
+    const CONVOY_DETAIL_SECTIONS = ["tasks-section", "pipeline-section", "agent-section", "tier-section", "model-section", "quality-section", "reliability-section", "drift-section", "outputs-section", "execution-section", "event-timeline-section", "panel-section", "reviews-section"];
 
     links.forEach((link) => {
       link.addEventListener("click", async (e) => {

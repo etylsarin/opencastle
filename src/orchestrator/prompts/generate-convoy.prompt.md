@@ -309,6 +309,29 @@ For complex tasks, consider using `steps` to break the prompt into sequential su
 >
 > **Strong prompt:** "Write unit tests for `libs/auth/src/server.ts` covering token refresh, expiry edge cases, and invalid signatures. Place tests in `libs/auth/src/__tests__/server.test.ts`. Follow the existing test conventions. Achieve ≥ 95 % coverage for `server.ts`. Run the project's test command with coverage and fix any failures."
 
+### Chain Mode (Subset Generation)
+
+When the `{{context}}` field contains a JSON object with `"mode": "chain_subset"`, you are generating ONE convoy spec that is part of a larger convoy chain. The context will look like:
+
+```json
+{
+  "mode": "chain_subset",
+  "group_name": "database-setup",
+  "group_description": "Schema changes and migrations",
+  "group_phases": [1],
+  "depends_on_groups": [],
+  "total_groups": 3,
+  "group_index": 1
+}
+```
+
+When this context is present:
+- **Only** generate tasks for the phases listed in `group_phases`. Do not include tasks from other phases.
+- Use `version: 1` — this spec is a single convoy, not a pipeline.
+- Derive the convoy `name` from `group_name` (e.g., "Database Setup").
+- Derive the `branch` from the PRD's feature name, but it will be overridden by the pipeline anyway.
+- Keep all other conventions (prompts, files, gates, etc.) the same as for single-spec generation.
+
 ### 6. Validate Before Outputting
 
 Before presenting the YAML, mentally verify:
