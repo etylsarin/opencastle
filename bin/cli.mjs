@@ -17,18 +17,24 @@ const HELP = `
   Usage:
     npx opencastle <command> [options]
 
-  Commands:
+  Project Commands:
     init        Set up OpenCastle in your project
     update      Update framework files (preserves customizations)
     eject       Remove dependency, keep all files standalone
     destroy     Remove ALL OpenCastle files (reverse of init)
-    run         Process a task queue from a spec file autonomously
-    agents      Manage persistent agent identities
-    dispute     Manage convoy dispute resolution
-    plan        Generate a convoy spec from a task description file
-    baselines   Manage visual regression baselines
-    dashboard   View agent observability dashboard in your browser
     doctor      Validate your OpenCastle setup
+
+  Convoy Commands:
+    pipeline    Run the full PRD → validate → convoy → validate → fix pipeline
+    plan        Generate a convoy spec (or PRD) from a task description
+    validate    Validate a convoy YAML spec file
+    run         Process a task queue from a spec file autonomously
+    dispute     Manage convoy dispute resolution
+
+  Observability:
+    dashboard   View agent observability dashboard in your browser
+    agents      Manage persistent agent identities
+    baselines   Manage visual regression baselines
     log         Append a structured event to the observability log
     lesson      Append a structured lesson to LESSONS-LEARNED.md
 
@@ -58,6 +64,7 @@ const commands = {
   destroy: () => import('../dist/cli/destroy.js'),
   run: () => import('../dist/cli/run.js'),
   plan: () => import('../dist/cli/plan.js'),
+  pipeline: () => import('../dist/cli/pipeline.js'),
   dashboard: () => import('../dist/cli/dashboard.js'),
   doctor: () => import('../dist/cli/doctor.js'),
   log: () => import('../dist/cli/log.js'),
@@ -65,6 +72,7 @@ const commands = {
   agents: () => import('../dist/cli/agents.js'),
   dispute: () => import('../dist/cli/dispute.js'),
   baselines: () => import('../dist/cli/baselines.js'),
+  validate: () => import('../dist/cli/validate.js'),
 }
 
 if (!commands[command]) {

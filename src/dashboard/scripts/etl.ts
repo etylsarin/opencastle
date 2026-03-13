@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync, copyFileSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -8,6 +8,7 @@ const __dirname = dirname(__filename)
 export interface EtlOptions {
   dbPath: string
   outputDir: string
+  eventsPath?: string
 }
 
 export interface EtlResult {
@@ -89,19 +90,39 @@ export async function runEtl(options: EtlOptions): Promise<EtlResult> {
     }
 
     console.log(`ETL complete: ${allConvoys.length} convoys exported, ${totalTasks} tasks.`)
+
+    // Copy observability event logs for the live dashboard charts
+    const eventsSource = options.eventsPath
+      ? resolve(process.cwd(), options.eventsPath)
+      : resolve(process.cwd(), '.opencastle', 'logs', 'events.ndjson')
+    if (existsSync(eventsSource)) {
+      copyFileSync(eventsSource, resolve(outputDir, 'events.ndjson'))
+    } else {
+      writeFileSync(resolve(outputDir, 'events.ndjson'), '', 'utf8')
+    }
+
+    // Copy pipelines log (optional, write empty if absent)
+    const pipelinesSource = resolve(process.cwd(), '.opencastle', 'logs', 'pipelines.ndjson')
+    if (existsSync(pipelinesSource)) {
+      copyFileSync(pipelinesSource, resolve(outputDir, 'pipelines.ndjson'))
+    } else {
+      writeFileSync(resolve(outputDir, 'pipelines.ndjson'), '', 'utf8')
+    }
+
     return { convoyCount: allConvoys.length, taskCount: totalTasks }
   } finally {
     store.close()
   }
 }
 
-function parseArgs(): { db?: string; out?: string } {
+function parseArgs(): { db?: string; out?: string; events?: string } {
   const args = process.argv.slice(2)
   const result: Record<string, string> = {}
   for (let i = 0; i < args.length; i++) {
     const a = args[i]
     if (a === '--db' && args[i+1]) { result.db = args[++i] }
     else if (a === '--out' && args[i+1]) { result.out = args[++i] }
+    else if (a === '--events' && args[i+1]) { result.events = args[++i] }
   }
   return result
 }
@@ -114,7 +135,7 @@ if (isMain) {
   const parsed = parseArgs()
   const dbPath = parsed.db != null ? resolve(process.cwd(), parsed.db) : resolve(process.cwd(), '.opencastle', 'convoy.db')
   const outputDir = parsed.out != null ? resolve(process.cwd(), parsed.out) : resolve(__dirname, '..', 'public', 'data')
-  runEtl({ dbPath, outputDir }).catch((err: unknown) => {
+  runEtl({ dbPath, outputDir, eventsPath: parsed.events }).catch((err: unknown) => {
     console.error('ETL failed:', (err as Error).message)
     process.exit(1)
   })

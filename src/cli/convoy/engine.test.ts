@@ -3407,7 +3407,7 @@ describe('secret scan in DLQ/dispute markdown write', () => {
 
   it('emits secret_leak_prevented when dispute markdown write detects secrets', async () => {
     const scanSpy = vi.spyOn(gates, 'scanForSecrets').mockImplementation((content: string, filePath = '') => {
-      if (filePath === 'DISPUTES.md') {
+      if (filePath === '.opencastle/DISPUTES.md') {
         return {
           clean: false,
           findings: [{ pattern: 'Mock Secret', file: filePath, line: 1, snippet: content.slice(0, 20) }],

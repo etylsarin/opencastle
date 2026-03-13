@@ -3,12 +3,12 @@ import { join } from 'node:path'
 import { scanForSecrets } from './gates.js'
 import type { ConvoyEventEmitter } from './events.js'
 
-const DISCOVERED_PATH = 'DISCOVERED-ISSUES.md'
-const KNOWN_PATH = 'KNOWN-ISSUES.md'
+const DISCOVERED_PATH = '.opencastle/DISCOVERED-ISSUES.md'
+const KNOWN_PATH = '.opencastle/KNOWN-ISSUES.md'
 
 const INJECT_INSTRUCTION =
   'IMPORTANT: After completing your task, if you notice any pre-existing bugs or issues ' +
-  'unrelated to your task, append them to DISCOVERED-ISSUES.md in the format:\n\n' +
+  'unrelated to your task, append them to .opencastle/DISCOVERED-ISSUES.md in the format:\n\n' +
   '### ISSUE: [title]\n' +
   '- **File:** [filepath]\n' +
   '- **Description:** [description]\n' +

@@ -37,8 +37,8 @@ The output file must conform to the following schema. Fields marked **(required)
 | `gates` | array of strings | no | — | Shell commands run after all tasks complete; each must exit 0 |
 | `gate_retries` | integer ≥ 0 | no | `0` | How many times to retry failing gates with an auto-fix task |
 | `guard` | object | no | — | Post-convoy guard configuration (see Guard below) |
-| `hooks` | array of Hook | no | — | Post-convoy lifecycle hooks (see Hooks below) |
-| `watch` | object | no | — | Watch mode configuration for continuous re-runs (see Watch below) |
+| `hooks` | array of Hook | no | — | Post-convoy lifecycle hooks. Use `post_convoy` hooks for notifications or cleanup scripts after the run completes. |
+| `watch` | object | no | — | Watch mode configuration for continuous re-runs. Set this when the goal is a recurring workflow (e.g. nightly sync, CI re-run on file change). |
 | `tasks` | list | **yes** | — | Non-empty list of task objects |
 | `depends_on_convoy` | list of strings | no | — | (version 2 only) Other convoy spec names to run before this one |
 
@@ -49,31 +49,21 @@ All fields are optional. Values are merged into each task unless the task overri
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `timeout` | duration | `30m` | Default task timeout (`<n><s\|m\|h>`) |
-| `model` | string | — | AI model override for all tasks |
 | `max_retries` | integer | `1` | Default max retry attempts |
 | `agent` | string | `developer` | Default agent role |
-| `adapter` | string | — | Default adapter override |
-| `gates` | array of strings | — | Per-task gate commands run after adapter success |
+| `gates` | array of strings | — | Gate commands run after every task completes (use for project-wide lint/type-check) |
 | `review` | `auto` \| `fast` \| `panel` \| `none` | — | Review level for completed tasks |
-| `reviewer_model` | string | — | Model used for reviews |
-| `review_budget` | integer | — | Max review token budget |
-| `on_review_budget_exceeded` | `skip` \| `downgrade` \| `stop` | — | Action when review budget exhausted |
-| `max_concurrent_reviews` | integer | — | Parallel review limit |
-| `review_heuristics` | object | — | Auto-routing rules (see Review Heuristics below) |
-| `detect_drift` | boolean | — | Enable drift detection on streaming adapters |
-| `on_dispute` | `continue` \| `stop` | — | Behavior on panel disputes |
-| `on_exhausted` | `dlq` \| `skip` \| `stop` | — | Action when max_retries exhausted |
-| `escalate_to` | string | — | Agent for DLQ escalation |
-| `inject_lessons` | boolean | — | Auto-inject relevant lessons from LESSONS-LEARNED.md into prompts |
-| `track_discovered_issues` | boolean | — | Enable discovered issues tracking in prompts |
-| `avoid_weak_agents` | boolean | — | Skip assigning agents to tasks matching their weak areas |
-| `max_swarm_concurrency` | integer (1–50) | `8` | Max parallel tasks in swarm mode (`concurrency: auto`) |
-| `built_in_gates` | object | — | Built-in gate configuration (see Built-in Gates below) |
-| `browser_test` | object | — | Default browser test gate config (see Browser Test below) |
-| `circuit_breaker` | object | — | Circuit breaker config (see Circuit Breaker below) |
-| `mcp_servers` | array of MCPServer | — | MCP servers available to tasks |
-| `mcp_approve_all` | boolean | — | Auto-approve all MCP tool calls |
-| `mcp_server_approval_timeout` | number | — | Timeout (seconds) for MCP approval prompts |
+| `review_heuristics` | object | — | Auto-routing rules (see Review Heuristics below). Use to automatically assign `panel` review for security-sensitive paths or agents. |
+| `detect_drift` | boolean | — | Enable drift detection on streaming adapters. Set `true` for long-running (>1h) tasks on streaming adapters to catch scope creep early. |
+| `on_exhausted` | `dlq` \| `skip` \| `stop` | — | Action when max_retries exhausted. Use `dlq` for critical tasks in unattended overnight runs so failures are tracked. |
+| `escalate_to` | string | — | Agent for DLQ escalation (e.g. `architect`). Pair with `on_exhausted: dlq`. |
+| `inject_lessons` | boolean | — | Auto-inject relevant lessons from LESSONS-LEARNED.md into prompts. **Always set `true`.** |
+| `track_discovered_issues` | boolean | — | Enable discovered issues tracking in prompts. **Always set `true`.** |
+| `avoid_weak_agents` | boolean | — | Skip assigning agents to tasks matching their weak areas. **Always set `true`.** |
+| `max_swarm_concurrency` | integer (1–50) | `8` | Max parallel tasks in swarm mode. Only relevant when `concurrency: auto`. |
+| `built_in_gates` | object | — | Built-in gate configuration (see Built-in Gates below). Enable `secret_scan: true` for any task writing auth/config/env files; `dependency_audit: true` when the run adds new packages. |
+| `browser_test` | object | — | Default browser test gate config (see Browser Test below). Set when the goal involves UI changes. |
+| `circuit_breaker` | object | — | Circuit breaker config (see Circuit Breaker below). Set for long multi-agent runs to prevent cascading failures. |
 
 ### Built-in Gates
 
@@ -170,21 +160,19 @@ Enables continuous re-execution triggered by file changes, cron, or git push.
 | `agent` | string | no | `developer` | Agent role hint (see Agent Roster below) |
 | `description` | string | no | same as `id` | Short human label shown in progress output |
 | `depends_on` | list of ids | no | `[]` | Task ids that must finish before this one starts |
-| `files` | list of globs | no | `[]` | File scope the agent is allowed to modify |
+| `files` | list of paths | no | `[]` | File scope the agent is allowed to modify. Must be plain file paths or directory paths. **Glob patterns (`*`, `?`, `**`) are not allowed** — use a plain directory path (e.g., `components/`) to cover a whole directory. |
 | `timeout` | duration | no | `30m` | Max wall time (`<number><s\|m\|h>`, e.g. `10m`, `1h`) |
-| `max_retries` | integer | no | from `defaults` or `1` | Max retry attempts for this task |
-| `model` | string | no | — | AI model override for this task |
-| `adapter` | string | no | — | Per-task adapter override |
-| `gates` | list of strings | no | — | Per-task gate commands run after adapter success |
+| `max_retries` | integer | no | from `defaults` or `1` | Max retry attempts for this task. Override to `3` for high-risk tasks (DB migrations, security changes) or `0` for tasks that must not auto-retry. |
+| `gates` | list of strings | no | — | Per-task gate commands when this task needs specific validation beyond global `gates` (e.g. a task-specific test suite or a schema diff check). |
 | `review` | `auto` \| `fast` \| `panel` \| `none` | no | from `defaults` | Review level for this task |
-| `detect_drift` | boolean | no | — | Enable drift detection (streaming adapters only) |
-| `persistent` | boolean | no | — | Enable persistent agent identity across convoy runs |
-| `steps` | list of TaskStep | no | — | Multi-step sub-prompts (see Steps below) |
-| `hooks` | list of Hook | no | — | Per-task lifecycle hooks |
-| `outputs` | list of TaskOutput | no | — | Named artifacts this task produces |
-| `inputs` | list of TaskInput | no | — | Named artifacts this task consumes from upstream tasks |
-| `browser_test` | object | no | — | Per-task browser test config (same schema as defaults) |
-| `built_in_gates` | object | no | — | Per-task built-in gates override |
+| `detect_drift` | boolean | no | — | Enable drift detection (streaming adapters only). Set `true` for long (>1h) streaming-adapter tasks to catch scope creep. |
+| `persistent` | boolean | no | — | Enable persistent agent identity across convoy runs. Set `true` for research, exploration, or multi-session implementation tasks where the agent's accumulated discoveries and decisions should be available in future convoy runs targeting the same workstream. Omit (defaults to `false`) for short, self-contained tasks. |
+| `steps` | list of TaskStep | no | — | Multi-step sub-prompts. Use when a task has distinct sequential phases that need intermediate gates (e.g. step 1: generate migration, gate: dry-run; step 2: apply migration). |
+| `hooks` | list of Hook | no | — | Per-task lifecycle hooks. Uncommon at task level; prefer top-level `hooks` for post-convoy actions. |
+| `outputs` | list of TaskOutput | no | — | Named artifacts this task produces (used with `inputs` for explicit artifact passing between tasks). |
+| `inputs` | list of TaskInput | no | — | Named artifacts this task consumes from upstream tasks. |
+| `browser_test` | object | no | — | Per-task browser test config. Set when only this task's output requires visual/a11y validation. |
+| `built_in_gates` | object | no | — | Per-task built-in gates override. Use to enable `secret_scan: true` for specific tasks writing credentials or keys. |
 
 ### Task Steps
 
@@ -217,18 +205,6 @@ Tasks can produce named artifacts and consume artifacts from upstream tasks.
 | `from` | string | **yes** | Source task id |
 | `name` | string | **yes** | Artifact name from the source task |
 | `as` | string | no | Rename the artifact in the consuming task |
-
-### MCP Server Config
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `name` | string | **yes** | Server identifier |
-| `type` | string | **yes** | Server type (e.g. `stdio`, `http`) |
-| `local` | boolean | no | Whether the server runs locally |
-| `command` | string | no | Command to start the server |
-| `args` | list of strings | no | Arguments for the command |
-| `url` | string | no | URL for HTTP-based servers |
-| `config` | object | no | Additional server configuration |
 
 ### Agent Roster
 
@@ -263,9 +239,16 @@ For each workstream, break it down into the smallest meaningful unit of work tha
 
 1. **Single responsibility** — each task does exactly one thing.
 2. **Self-contained prompt** — the `prompt` field must contain everything the agent needs: objective, file paths, constraints, acceptance criteria. The agent has no other context.
-3. **Explicit file scopes** — list every directory or file the task may touch in `files`. This prevents conflicts between parallel tasks.
-4. **Appropriate agent** — pick the agent whose speciality matches the task (e.g., `testing-expert` for tests, `database-engineer` for migrations).
-5. **Realistic timeouts** — default 30 m is fine for most tasks; use `1h` for large refactors or test suites; use `10m` for small docs or config changes.
+3. **Explicit file scopes** — list every directory or file the task may touch in `files`. Use plain paths only: exact file paths (e.g., `app/page.tsx`) or directory paths with a trailing slash (e.g., `app/about/`). **Glob patterns (`*`, `?`, `**`) are not allowed** — the engine rejects them.
+
+4. **No partition conflicts** — two tasks may not share a `files` entry if they run in parallel (same phase). Resolve conflicts by either:
+   - **Specificity**: replace a broad directory path with the specific files each task actually creates (e.g., instead of both tasks claiming `components/`, one gets `components/Hero.tsx` and the other gets `components/ProjectCard.tsx`)
+   - **Sequencing**: add a `depends_on` edge from the later task to the earlier one, so they run in different phases
+
+   > **Common mistake:** multiple tasks all depending on a single `setup` task will run in parallel and conflict if they share a directory like `components/`, `app/globals.css`, or `app/layout.tsx`. Always use specific file paths or sequence conflicting tasks.
+
+5. **Appropriate agent** — pick the agent whose speciality matches the task (e.g., `testing-expert` for tests, `database-engineer` for migrations).
+6. **Realistic timeouts** — default 30 m is fine for most tasks; use `1h` for large refactors or test suites; use `10m` for small docs or config changes.
 
 ### 3. Define the Dependency Graph (DAG)
 
@@ -287,12 +270,20 @@ For each workstream, break it down into the smallest meaningful unit of work tha
 - `on_failure` — use `continue` (default) when tasks are independent so one failure doesn't waste the whole run. Use `stop` when every subsequent task depends on success.
 - `adapter` — **omit this field** to let the CLI auto-detect the first available adapter. Only set explicitly if the user requests a specific adapter.
 - `branch` — derive from the goal, e.g., `feat/auth-refactor`. Use a descriptive branch name.
-- `defaults` — set sensible defaults for timeout, max_retries, and review. Enable `inject_lessons: true` for self-improving runs, `track_discovered_issues: true` for issue discovery, and `avoid_weak_agents: true` to route around known weaknesses. Model can be left unset for auto-detection.
+- `defaults` — always include `inject_lessons: true`, `track_discovered_issues: true`, and `avoid_weak_agents: true`. Omit `model` and `adapter` to allow auto-detection.
 - `gates` — include standard validation gates (lint, type-check, test) unless the user specifies otherwise.
 - `gate_retries` — set to 1–2 if you want the engine to auto-fix gate failures by spawning a fix-up task.
 - `guard` — enable for post-convoy compliance checks (observability, cleanup, cost reporting).
-- For security-sensitive or database migration tasks, use `review: panel` or set `review_heuristics.panel_paths` to target critical paths.
-- For long-running or unreliable tasks, configure `circuit_breaker` with a `fallback_agent`.
+- `review` / `review_heuristics` — use `review: fast` as the default. Upgrade to `panel` for security, auth, and database migration tasks. Use `review_heuristics.panel_paths` to auto-escalate specific file patterns (e.g. `db/migrations/`, `libs/auth/`) without setting per-task overrides.
+- `built_in_gates` — set `secret_scan: true` in `defaults.built_in_gates` whenever the run touches auth, config, or env files. Set `dependency_audit: true` when adding new packages.
+- `on_exhausted` + `escalate_to` — set `on_exhausted: dlq` and `escalate_to: architect` in `defaults` for unattended overnight runs so exhausted tasks are queued for human review rather than silently skipped.
+- `detect_drift` — set `detect_drift: true` in `defaults` for runs with tasks longer than 1h on streaming adapters.
+- `circuit_breaker` — configure with a `fallback_agent` for long multi-agent runs to prevent one flaky agent from stalling the whole convoy.
+- `persistent` — set `persistent: true` on individual tasks that do research, codebase exploration, or long implementation work where the agent's accumulated discoveries should persist across future convoy runs (e.g. a Researcher task mapping the auth system, or a Database Engineer task discovering schema quirks). Omit for short, self-contained tasks.
+- `steps` — use on a task when it has distinct sequential phases that need intermediate validation gates between them (e.g. generate migration → dry-run gate → apply migration). Do not use `steps` just to split a large prompt; use separate tasks instead.
+- Per-task `gates` — add to a task only when that specific task needs validation gates beyond the global `gates` (e.g. a dedicated test suite for a specific module, a schema diff command).
+- Per-task `max_retries` — override to `3` for high-risk tasks (DB migrations, security changes) or `0` when a task must not auto-retry (e.g. payment processing changes).
+- `hooks` — use top-level `post_convoy` hooks for notifications, changelog generation, or cleanup scripts that should run once after all tasks complete.
 
 ### 5. Write the Prompts
 
@@ -317,7 +308,8 @@ Before presenting the YAML, mentally verify:
 - [ ] Every task has a unique `id`
 - [ ] Every `depends_on` reference points to a valid `id` defined earlier in the list
 - [ ] No dependency cycles exist
-- [ ] No two parallel tasks share the same `files` entries (partition check)
+- [ ] No two parallel tasks share the same `files` entries — group tasks by phase and check each phase for overlaps; resolve with specific file paths or `depends_on` (see Step 2, rule 4)
+- [ ] No `files` entry contains `*`, `?`, or `**` — use plain file paths or directory paths (trailing `/`) only
 - [ ] Prompts are self-contained — an agent with zero context can execute them
 - [ ] Timeouts are reasonable for the scope of each task
 - [ ] `outputs`/`inputs` references are consistent (consuming task depends on producing task)
@@ -347,7 +339,9 @@ tasks:
     description: <short label>
     timeout: <duration>
     files:
-      - <glob>
+      - app/some-file.tsx
+      - components/Hero.tsx
+      - components/Button.tsx
     prompt: |
       <full self-contained instruction>
 
@@ -356,7 +350,8 @@ tasks:
       - <task-id>
     agent: <agent>
     files:
-      - <glob>
+      - app/other-file.tsx
+      - components/OtherComponent.tsx
     prompt: |
       <full self-contained instruction>
 

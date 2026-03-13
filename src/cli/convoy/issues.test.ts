@@ -8,14 +8,15 @@ vi.mock('./gates.js', () => ({
   scanForSecrets: vi.fn(() => ({ clean: true, findings: [] })),
 }))
 
-const DISCOVERED_REL = 'DISCOVERED-ISSUES.md'
-const KNOWN_REL = 'KNOWN-ISSUES.md'
+const DISCOVERED_REL = '.opencastle/DISCOVERED-ISSUES.md'
+const KNOWN_REL = '.opencastle/KNOWN-ISSUES.md'
 
 const DISCOVERED_HEADER = '# Discovered Issues\n\n'
 const KNOWN_HEADER = '# Known Issues\n\n'
 
 function makeBase(): string {
   const dir = realpathSync(mkdtempSync(join(tmpdir(), 'issues-test-')))
+  mkdirSync(join(dir, '.opencastle'), { recursive: true })
   return dir
 }
 

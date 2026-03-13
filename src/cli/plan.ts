@@ -10,22 +10,34 @@ import type { CliContext, Task } from './types.js'
 const HELP = `
   opencastle plan [options]
 
-  Generate a convoy spec from a task description file by running it through the
-  generate-convoy prompt via an AI adapter.
+  Generate a convoy spec (or other AI output) from a task description by running
+  it through a prompt template via an AI adapter.
 
   Options:
-    --file, -f <path>        Path to a text file with the task description (required)
-    --context <path>         Optional path to an additional context file
-    --output, -o <path>      Output path for the generated convoy spec
+    --file, -f <path>        Path to a text file (fills {{goal}} in the template)
+    --text, -t <text>        Inline text to use as {{goal}} (alternative to --file)
+    --template <name>        Prompt template name (default: generate-convoy)
+                             Built-in templates:
+                               generate-prd      — Write a PRD from a feature prompt
+                               validate-prd      — Check a PRD for completeness
+                               generate-convoy   — Generate a convoy spec from a PRD (default)
+                               validate-convoy   — Check a convoy spec for correctness
+                               fix-convoy        — Fix validation errors in a convoy spec
+    --context <path>         Optional path to an additional context file (fills {{context}})
+    --context-text <text>    Inline text to fill {{context}} (alternative to --context)
+    --output, -o <path>      Output path override (skipped for validation output)
     --adapter, -a <name>     Override agent runtime adapter
     --verbose                Show full agent output
-    --dry-run                Print the prompt that would be sent without executing
+    --dry-run                Print the assembled prompt without executing
     --help, -h               Show this help
 `
 
 interface PlanOptions {
   file: string | null
+  text: string | null
+  template: string
   context: string | null
+  contextText: string | null
   output: string | null
   adapter: string | null
   verbose: boolean
@@ -33,10 +45,325 @@ interface PlanOptions {
   help: boolean
 }
 
+// ── Exported types ──────────────────────────────────────────────────────────
+
+export interface PromptStepOptions {
+  /** Template name without extension. Default: 'generate-convoy' */
+  template?: string
+  /** Absolute file path whose content fills {{goal}} */
+  filePath?: string
+  /** Inline text that fills {{goal}} — alternative to filePath */
+  goalText?: string
+  /** File path whose content fills {{context}} */
+  contextPath?: string
+  /** Inline text that fills {{context}} — alternative to contextPath */
+  contextText?: string
+  /** Explicit output path override */
+  outputPath?: string
+  /** Adapter name override */
+  adapterName?: string
+  verbose?: boolean
+  dryRun?: boolean
+  /** Absolute path to the opencastle package root (for locating prompt templates) */
+  pkgRoot: string
+}
+
+export interface PromptStepResult {
+  /** Absolute path the output was written to. null for validation output or dry-run */
+  outputPath: string | null
+  /** Raw text returned by the AI adapter (or assembled prompt on dry-run) */
+  rawOutput: string
+  /** How the output was interpreted */
+  outputType: 'convoy-spec' | 'prd' | 'validation'
+  /** Set when outputType === 'validation' */
+  isValid?: boolean
+  /** Set when outputType === 'validation' and isValid === false */
+  errors?: string
+}
+
+// ── Private helpers ─────────────────────────────────────────────────────────
+
+function printAdapterError(detectionFailed: boolean, adapterName: string): void {
+  if (detectionFailed) {
+    console.error(
+      `  ✗ No agent CLI found on your PATH.\n` +
+        `    Install one of the following adapters:\n` +
+        `    • copilot    — https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n` +
+        `    • claude     — npm install -g @anthropic-ai/claude-code\n` +
+        `    • cursor     — https://cursor.com (Cursor > Install CLI)\n` +
+        `    • opencode   — https://opencode.ai\n` +
+        `\n` +
+        `    Or specify an adapter explicitly: opencastle plan --adapter <name>`
+    )
+  } else {
+    const hints: Record<string, string> = {
+      claude:
+        '    Install: npm install -g @anthropic-ai/claude-code\n' +
+        '    Docs:    https://docs.anthropic.com/en/docs/claude-code',
+      copilot:
+        '    Requires the Copilot CLI installed and authenticated:\n' +
+        '    https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n' +
+        '    Docs:    https://docs.github.com/en/copilot',
+      cursor:
+        '    The Cursor agent CLI ships with the Cursor editor.\n' +
+        '    Install Cursor from https://cursor.com and ensure the\n' +
+        '    "agent" command is on your PATH (Cursor > Install CLI).',
+      opencode:
+        '    Install OpenCode from https://opencode.ai\n' +
+        '    Ensure the "opencode" command is on your PATH.',
+    }
+    const cliName = adapterName === 'cursor' ? 'agent' : adapterName
+    const hint = hints[adapterName] ?? ''
+    console.error(
+      `  ✗ Adapter "${adapterName}" is not available.\n` +
+        `    Make sure the "${cliName}" CLI is installed and on your PATH.\n` +
+        hint
+    )
+  }
+}
+
+/** Strip YAML frontmatter (everything between first and second --- delimiters). */
+function stripFrontmatter(text: string): string {
+  const lines = text.split('\n')
+  if (lines[0]?.trim() !== '---') return text
+  const closingIdx = lines.findIndex((line, i) => i > 0 && line.trim() === '---')
+  if (closingIdx === -1) return text
+  return lines.slice(closingIdx + 1).join('\n').trimStart()
+}
+
+/** Extract key: value pairs from YAML frontmatter (top-level scalar values only). */
+function parseFrontmatter(text: string): Record<string, string> {
+  const result: Record<string, string> = {}
+  const lines = text.split('\n')
+  if (lines[0]?.trim() !== '---') return result
+  const closingIdx = lines.findIndex((line, i) => i > 0 && line.trim() === '---')
+  if (closingIdx === -1) return result
+  for (let i = 1; i < closingIdx; i++) {
+    const match = lines[i].match(/^(\w[\w-]*):\s*['"]?([^'"]+?)['"]?\s*$/)
+    if (match) result[match[1]] = match[2].trim()
+  }
+  return result
+}
+
+/** Extract YAML content from a fenced ```yaml ... ``` block. */
+function extractYamlBlock(text: string): string | null {
+  const match = text.match(/```ya?ml\s*\n([\s\S]*?)```/)
+  if (!match) return null
+  return match[1].trim()
+}
+
+/**
+ * Derive a .convoy.yml filename from YAML content.
+ * Checks for a first-line comment, then falls back to the `name:` field.
+ */
+function deriveOutputFilename(yaml: string): string {
+  const firstLine = yaml.split('\n')[0] ?? ''
+  const commentMatch = firstLine.match(/^#\s*(.+\.convoy\.ya?ml)\s*$/)
+  if (commentMatch) return basename(commentMatch[1])
+  const nameMatch = yaml.match(/^name:\s*['"]?([^'"\n]+)['"]?\s*$/m)
+  if (nameMatch) {
+    const kebab = nameMatch[1].trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    if (kebab) return `${kebab}.convoy.yml`
+  }
+  return 'convoy-plan.convoy.yml'
+}
+
+/**
+ * Derive a .prd.md filename from PRD Markdown content.
+ * Looks for a # Heading to extract a kebab-case name.
+ */
+function derivePrdFilename(content: string): string {
+  const headingMatch = content.match(/^#\s+(.+?)(?:\s*[-—–]+\s*PRD)?\s*$/m)
+  if (headingMatch) {
+    const kebab = headingMatch[1]
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+    if (kebab) return `${kebab}.prd.md`
+  }
+  return `prd-${Date.now()}.prd.md`
+}
+
+/**
+ * Extract Markdown body from AI output.
+ * Strips wrapping ```markdown / ```md fences if present.
+ * If a heading is present but prefixed with preamble, trims to the first heading.
+ */
+function extractMarkdownBody(output: string): string {
+  // Strip explicit markdown fence
+  const mdFenceMatch = output.match(/^```(?:markdown|md)\s*\n([\s\S]*?)```\s*$/m)
+  if (mdFenceMatch) return mdFenceMatch[1].trim()
+
+  const lines = output.trim().split('\n')
+  // Strip plain ``` wrapping (first and last line are fences)
+  if (lines[0]?.startsWith('```') && lines[lines.length - 1]?.trim() === '```') {
+    return lines.slice(1, -1).join('\n').trim()
+  }
+
+  // If there's preamble before the first heading, strip it
+  const headingIdx = lines.findIndex((l) => /^#{1,3}\s/.test(l))
+  if (headingIdx > 0) return lines.slice(headingIdx).join('\n').trim()
+
+  return output.trim()
+}
+
+/**
+ * Parse a validation AI response for VALID / INVALID verdict.
+ * INVALID takes precedence because VALID is a substring of INVALID.
+ */
+function parseValidationResult(output: string): { isValid: boolean; errors: string } {
+  const trimmed = output.trim()
+  const hasInvalid = /\bINVALID\b/.test(trimmed)
+  const hasValid = /\bVALID\b/.test(trimmed)
+  if (hasValid && !hasInvalid) return { isValid: true, errors: '' }
+  const errorsMatch = trimmed.match(/(?:Issues|Errors):\s*\n([\s\S]+)/i)
+  return { isValid: false, errors: errorsMatch ? errorsMatch[1].trim() : trimmed }
+}
+
+// ── Exported programmatic API ───────────────────────────────────────────────
+
+/**
+ * Execute a single prompt template step via an AI adapter.
+ * Used by the pipeline command to chain steps programmatically.
+ */
+export async function runPromptStep(opts: PromptStepOptions): Promise<PromptStepResult> {
+  const templateName = opts.template ?? 'generate-convoy'
+
+  const templatePath = join(
+    opts.pkgRoot,
+    'src',
+    'orchestrator',
+    'prompts',
+    `${templateName}.prompt.md`
+  )
+  if (!existsSync(templatePath)) {
+    throw new Error(`Prompt template not found: ${templatePath}`)
+  }
+
+  const rawTemplate = await readFile(templatePath, 'utf8')
+  const frontmatter = parseFrontmatter(rawTemplate)
+  const outputType = (frontmatter['output'] ?? 'convoy-spec') as 'convoy-spec' | 'prd' | 'validation'
+  const template = stripFrontmatter(rawTemplate)
+
+  let goalContent = opts.goalText ?? ''
+  if (!goalContent && opts.filePath) {
+    if (!existsSync(opts.filePath)) throw new Error(`File not found: ${opts.filePath}`)
+    goalContent = await readFile(opts.filePath, 'utf8')
+  }
+
+  let contextContent = opts.contextText ?? ''
+  if (!contextContent && opts.contextPath) {
+    if (!existsSync(opts.contextPath)) throw new Error(`Context file not found: ${opts.contextPath}`)
+    contextContent = await readFile(opts.contextPath, 'utf8')
+  }
+
+  const assembledPrompt = template
+    .replace(/\{\{goal\}\}/g, goalContent.trim())
+    .replace(/\{\{context\}\}/g, contextContent.trim())
+
+  if (opts.dryRun) {
+    console.log(c.bold(c.cyan(`  [${templateName}] Assembled prompt (dry-run):\n`)))
+    console.log(assembledPrompt)
+    return { outputPath: null, rawOutput: assembledPrompt, outputType }
+  }
+
+  let adapterName = opts.adapterName ?? ''
+  if (!adapterName) {
+    const detected = await detectAdapter()
+    if (!detected) {
+      printAdapterError(true, '')
+      throw new Error('No adapter available')
+    }
+    adapterName = detected
+  }
+
+  let adapter
+  try {
+    adapter = await getAdapter(adapterName)
+  } catch {
+    printAdapterError(false, adapterName)
+    throw new Error(`Adapter "${adapterName}" failed to load`)
+  }
+
+  if (!(await adapter.isAvailable())) {
+    printAdapterError(false, adapterName)
+    throw new Error(`Adapter "${adapterName}" is not available`)
+  }
+
+  const agentField = (frontmatter['agent'] ?? 'team-lead').toLowerCase().replace(/\s+/g, '-')
+  const task: Task = {
+    id: templateName,
+    prompt: assembledPrompt,
+    agent: agentField,
+    timeout: '10m',
+    depends_on: [],
+    files: [],
+    description: frontmatter['description'] ?? templateName,
+    max_retries: 1,
+  }
+
+  const execResult = await adapter.execute(task, { verbose: opts.verbose ?? false })
+  const rawOutput = execResult.output
+
+  if (outputType === 'validation') {
+    const { isValid, errors } = parseValidationResult(rawOutput)
+    return { outputPath: null, rawOutput, outputType, isValid, errors }
+  }
+
+  if (outputType === 'prd') {
+    const content = extractMarkdownBody(rawOutput)
+    let outputPath = opts.outputPath ?? null
+    if (!outputPath) {
+      const prdDir = resolve(process.cwd(), '.opencastle', 'prds')
+      await mkdir(prdDir, { recursive: true })
+      outputPath = join(prdDir, derivePrdFilename(content))
+    }
+    await mkdir(resolve(outputPath, '..'), { recursive: true })
+    await writeFile(outputPath, content + '\n', 'utf8')
+    return { outputPath, rawOutput, outputType }
+  }
+
+  // convoy-spec (default)
+  const yamlContent = extractYamlBlock(rawOutput)
+  if (!yamlContent) {
+    const preview = rawOutput.slice(0, 500)
+    throw new Error(
+      `No YAML code block found in the agent response.\n\nRaw output (truncated):\n${preview}`
+    )
+  }
+
+  let schemaValid = true
+  try {
+    parseTaskSpecText(yamlContent)
+  } catch (err) {
+    schemaValid = false
+    const msg = err instanceof Error ? err.message : String(err)
+    console.warn(c.yellow(`  ⚠ YAML validation warning: ${msg}`))
+    console.warn(c.dim(`    The file will still be written — you may need to edit it before running.\n`))
+  }
+
+  let outputPath = opts.outputPath ?? null
+  if (!outputPath) {
+    const convoyDir = resolve(process.cwd(), '.opencastle', 'convoys')
+    await mkdir(convoyDir, { recursive: true })
+    outputPath = join(convoyDir, deriveOutputFilename(yamlContent))
+  }
+  await mkdir(resolve(outputPath, '..'), { recursive: true })
+  await writeFile(outputPath, yamlContent + '\n', 'utf8')
+
+  return { outputPath, rawOutput, outputType, isValid: schemaValid }
+}
+
+// ── CLI argument parsing ────────────────────────────────────────────────────
+
 function parseArgs(args: string[]): PlanOptions {
   const opts: PlanOptions = {
     file: null,
+    text: null,
+    template: 'generate-convoy',
     context: null,
+    contextText: null,
     output: null,
     adapter: null,
     verbose: false,
@@ -56,9 +383,22 @@ function parseArgs(args: string[]): PlanOptions {
         if (i + 1 >= args.length) { console.error('  ✗ --file requires a path'); process.exit(1) }
         opts.file = args[++i]
         break
+      case '--text':
+      case '-t':
+        if (i + 1 >= args.length) { console.error('  ✗ --text requires a value'); process.exit(1) }
+        opts.text = args[++i]
+        break
+      case '--template':
+        if (i + 1 >= args.length) { console.error('  ✗ --template requires a name'); process.exit(1) }
+        opts.template = args[++i]
+        break
       case '--context':
         if (i + 1 >= args.length) { console.error('  ✗ --context requires a path'); process.exit(1) }
         opts.context = args[++i]
+        break
+      case '--context-text':
+        if (i + 1 >= args.length) { console.error('  ✗ --context-text requires a value'); process.exit(1) }
+        opts.contextText = args[++i]
         break
       case '--output':
       case '-o':
@@ -87,86 +427,7 @@ function parseArgs(args: string[]): PlanOptions {
   return opts
 }
 
-function printAdapterError(detectionFailed: boolean, adapterName: string): void {
-  if (detectionFailed) {
-    console.error(
-      `  ✗ No agent CLI found on your PATH.\n` +
-        `    Install one of the following adapters:\n` +
-        `    • copilot    — https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n` +
-        `    • claude     — npm install -g @anthropic-ai/claude-code\n` +
-        `    • cursor     — https://cursor.com (Cursor > Install CLI)\n` +
-        `    • opencode   — https://opencode.ai\n` +
-        `\n` +
-        `    Or specify an adapter explicitly: opencastle plan --adapter <name>`
-    )
-  } else {
-    const hints: Record<string, string> = {
-      'claude':
-        '    Install: npm install -g @anthropic-ai/claude-code\n' +
-        '    Docs:    https://docs.anthropic.com/en/docs/claude-code',
-      copilot:
-        '    Requires the Copilot CLI installed and authenticated:\n' +
-        '    https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli\n' +
-        '    Docs:    https://docs.github.com/en/copilot',
-      cursor:
-        '    The Cursor agent CLI ships with the Cursor editor.\n' +
-        '    Install Cursor from https://cursor.com and ensure the\n' +
-        '    "agent" command is on your PATH (Cursor > Install CLI).',
-      opencode:
-        '    Install OpenCode from https://opencode.ai\n' +
-        '    Ensure the "opencode" command is on your PATH.',
-    }
-    const cliName = adapterName === 'cursor' ? 'agent' : adapterName
-    const hint = hints[adapterName] ?? ''
-    console.error(
-      `  ✗ Adapter "${adapterName}" is not available.\n` +
-        `    Make sure the "${cliName}" CLI is installed and on your PATH.\n` +
-        hint
-    )
-  }
-}
-
-/**
- * Strip YAML frontmatter (everything between first and second --- lines).
- */
-function stripFrontmatter(text: string): string {
-  const lines = text.split('\n')
-  if (lines[0]?.trim() !== '---') return text
-  const closingIdx = lines.findIndex((line, i) => i > 0 && line.trim() === '---')
-  if (closingIdx === -1) return text
-  return lines.slice(closingIdx + 1).join('\n').trimStart()
-}
-
-/**
- * Extract YAML content from a fenced code block (```yaml or ```yml).
- */
-function extractYamlBlock(text: string): string | null {
-  const match = text.match(/```ya?ml\s*\n([\s\S]*?)```/)
-  if (!match) return null
-  return match[1].trim()
-}
-
-/**
- * Derive an output filename from YAML content.
- * Checks for a comment on the first line, then falls back to the `name` field.
- */
-function deriveOutputFilename(yaml: string): string {
-  // First line comment: # .opencastle/convoys/some-name.convoy.yml
-  const firstLine = yaml.split('\n')[0] ?? ''
-  const commentMatch = firstLine.match(/^#\s*(.+\.convoy\.ya?ml)\s*$/)
-  if (commentMatch) {
-    return basename(commentMatch[1])
-  }
-
-  // Fall back to `name:` field
-  const nameMatch = yaml.match(/^name:\s*['"]?([^'"\n]+)['"]?\s*$/m)
-  if (nameMatch) {
-    const kebab = nameMatch[1].trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-    if (kebab) return `${kebab}.convoy.yml`
-  }
-
-  return 'convoy-plan.convoy.yml'
-}
+// ── CLI entrypoint ──────────────────────────────────────────────────────────
 
 export default async function plan({ args, pkgRoot }: CliContext): Promise<void> {
   const opts = parseArgs(args)
@@ -176,141 +437,84 @@ export default async function plan({ args, pkgRoot }: CliContext): Promise<void>
     return
   }
 
-  // ── Validate required --file arg ──────────────────────────────
-  if (!opts.file) {
-    console.error(`  ✗ --file is required. Specify a text file with the task description.`)
+  if (!opts.file && !opts.text) {
+    console.error(`  ✗ Either --file or --text is required.`)
     console.log(HELP)
     process.exit(1)
   }
 
-  const filePath = resolve(process.cwd(), opts.file)
-  if (!existsSync(filePath)) {
+  if (opts.file && opts.text) {
+    console.error(`  ✗ --file and --text are mutually exclusive.`)
+    process.exit(1)
+  }
+
+  const filePath = opts.file ? resolve(process.cwd(), opts.file) : undefined
+
+  if (filePath && !existsSync(filePath)) {
     console.error(`  ✗ File not found: ${opts.file}`)
     process.exit(1)
   }
 
-  // ── Read task description ──────────────────────────────────────
-  const taskDescription = await readFile(filePath, 'utf8')
+  const outputPath = opts.output ? resolve(process.cwd(), opts.output) : undefined
+  const source = opts.file
+    ? opts.file
+    : `"${(opts.text ?? '').slice(0, 60)}${(opts.text ?? '').length > 60 ? '…' : ''}"`
 
-  // ── Read optional context file ─────────────────────────────────
-  let contextContent = ''
-  if (opts.context) {
-    const contextPath = resolve(process.cwd(), opts.context)
-    if (!existsSync(contextPath)) {
-      console.error(`  ✗ Context file not found: ${opts.context}`)
-      process.exit(1)
-    }
-    contextContent = await readFile(contextPath, 'utf8')
-  }
+  console.log(c.dim(`  Template: ${opts.template}`))
+  console.log(c.dim(`  Input:    ${source}\n`))
 
-  // ── Load and assemble the prompt template ─────────────────────
-  const promptTemplatePath = join(pkgRoot, 'src', 'orchestrator', 'prompts', 'generate-convoy.prompt.md')
-  if (!existsSync(promptTemplatePath)) {
-    console.error(`  ✗ Prompt template not found: ${promptTemplatePath}`)
-    process.exit(1)
-  }
-
-  const rawTemplate = await readFile(promptTemplatePath, 'utf8')
-  const template = stripFrontmatter(rawTemplate)
-  const assembledPrompt = template
-    .replace('{{goal}}', taskDescription.trim())
-    .replace('{{context}}', contextContent.trim())
-
-  // ── Dry-run: print prompt and exit ────────────────────────────
-  if (opts.dryRun) {
-    console.log(c.bold(c.cyan('  Assembled prompt (dry-run):\n')))
-    console.log(assembledPrompt)
-    return
-  }
-
-  // ── Resolve adapter ───────────────────────────────────────────
-  let adapterName: string
-  if (opts.adapter) {
-    adapterName = opts.adapter
-  } else {
-    const detected = await detectAdapter()
-    if (!detected) {
-      printAdapterError(true, '')
-      process.exit(1)
-    }
-    adapterName = detected
-  }
-
-  let adapter
+  let result: PromptStepResult
   try {
-    adapter = await getAdapter(adapterName)
-  } catch {
-    printAdapterError(false, adapterName)
-    process.exit(1)
-  }
-
-  const available = await adapter.isAvailable()
-  if (!available) {
-    printAdapterError(false, adapterName)
-    process.exit(1)
-  }
-
-  console.log(c.dim(`  Using adapter: ${adapterName}`))
-  console.log(c.dim(`  Generating convoy spec from: ${opts.file}\n`))
-
-  // ── Execute the prompt through the adapter ────────────────────
-  const task: Task = {
-    id: 'generate-convoy',
-    prompt: assembledPrompt,
-    agent: 'team-lead',
-    timeout: '10m',
-    depends_on: [],
-    files: [],
-    description: 'Generate convoy spec from task description',
-    max_retries: 1,
-  }
-
-  const result = await adapter.execute(task, { verbose: opts.verbose })
-
-  // ── Extract YAML from the response ────────────────────────────
-  const yamlContent = extractYamlBlock(result.output)
-  if (!yamlContent) {
-    const preview = result.output.slice(0, 500)
-    console.error(`  ✗ No YAML code block found in the agent response.\n`)
-    console.error(c.dim(`  Raw output (truncated):\n${preview}`))
-    process.exit(1)
-  }
-
-  // ── Validate YAML ─────────────────────────────────────────────
-  let validationWarning = false
-  try {
-    parseTaskSpecText(yamlContent)
+    result = await runPromptStep({
+      template: opts.template,
+      filePath,
+      goalText: opts.text ?? undefined,
+      contextPath: opts.context ?? undefined,
+      contextText: opts.contextText ?? undefined,
+      outputPath,
+      adapterName: opts.adapter ?? undefined,
+      verbose: opts.verbose,
+      dryRun: opts.dryRun,
+      pkgRoot,
+    })
   } catch (err) {
-    validationWarning = true
-    const msg = err instanceof Error ? err.message : String(err)
-    console.warn(c.yellow(`  ⚠ YAML validation warning: ${msg}`))
-    console.warn(c.dim(`    The file will still be written — you may need to edit it before running.\n`))
+    console.error(`  ✗ ${err instanceof Error ? err.message : String(err)}`)
+    process.exit(1)
   }
 
-  // ── Determine output path ─────────────────────────────────────
-  let outputPath: string
-  if (opts.output) {
-    outputPath = resolve(process.cwd(), opts.output)
-  } else {
-    const convoyDir = resolve(process.cwd(), '.opencastle', 'convoys')
-    await mkdir(convoyDir, { recursive: true })
-    const filename = deriveOutputFilename(yamlContent)
-    outputPath = join(convoyDir, filename)
-  }
+  if (opts.dryRun) return
 
-  await mkdir(resolve(outputPath, '..'), { recursive: true })
-  await writeFile(outputPath, yamlContent + '\n', 'utf8')
-
-  const relPath = outputPath.startsWith(process.cwd())
-    ? outputPath.slice(process.cwd().length + 1)
-    : outputPath
-
-  console.log(c.green(`  ✓ Convoy spec written to ${relPath}`))
-  if (validationWarning) {
-    console.log(c.yellow(`    (contains validation warnings — review before running)`))
-  }
-  console.log(`
+  switch (result.outputType) {
+    case 'validation': {
+      if (result.isValid) {
+        console.log(c.green(`  ✓ VALID`))
+      } else {
+        console.log(c.red(`  ✗ INVALID\n`))
+        console.log(result.errors ?? result.rawOutput)
+        process.exit(1)
+      }
+      break
+    }
+    case 'prd': {
+      const relPath = result.outputPath!.startsWith(process.cwd())
+        ? result.outputPath!.slice(process.cwd().length + 1)
+        : result.outputPath!
+      console.log(c.green(`  ✓ PRD written to ${relPath}`))
+      console.log(`\n  ${c.dim('Next step:')} opencastle plan --file ${relPath} --template validate-prd`)
+      break
+    }
+    default: {
+      const relPath = result.outputPath!.startsWith(process.cwd())
+        ? result.outputPath!.slice(process.cwd().length + 1)
+        : result.outputPath!
+      console.log(c.green(`  ✓ Convoy spec written to ${relPath}`))
+      if (result.isValid === false) {
+        console.log(c.yellow(`    (contains validation warnings — review before running)`))
+      }
+      console.log(`
   ${c.dim('Preview:')} npx opencastle run -f ${relPath} --dry-run
   ${c.dim('Execute:')} npx opencastle run -f ${relPath}
 `)
+    }
+  }
 }
