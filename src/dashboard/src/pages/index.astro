@@ -25,12 +25,6 @@ try {
         <h1 class="dash-header__title">Observability Dashboard</h1>
       </div>
       <div class="dash-header__actions">
-        <div class="convoy-selector">
-          <label class="convoy-selector__label" for="convoy-select">Convoy</label>
-          <select class="convoy-selector__select" id="convoy-select" aria-label="Select a convoy to view its details">
-            <option value="">Select convoy…</option>
-          </select>
-        </div>
         <button class="dash-btn dash-btn--ghost" id="export-btn" type="button" title="Export data as JSON" aria-label="Export dashboard data as JSON">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Export
@@ -43,18 +37,24 @@ try {
     <!-- Sidebar Navigation -->
     <nav class="dash-sidebar" id="dash-sidebar">
       <ul class="dash-sidebar__list">
-        <li><a class="dash-sidebar__link dash-sidebar__link--active" href="#overall-section" data-section="overall-section" aria-label="Overview section">Overview</a></li>
-        <li><a class="dash-sidebar__link" href="#tasks-section" data-section="tasks-section" aria-label="Tasks section">Tasks</a></li>
-        <li><a class="dash-sidebar__link" href="#quality-section" data-section="quality-section" aria-label="Quality section">Quality</a></li>
-        <li><a class="dash-sidebar__link" href="#reliability-section" data-section="reliability-section" aria-label="Reliability section">Reliability</a></li>
-        <li><a class="dash-sidebar__link" href="#drift-section" data-section="drift-section" aria-label="Drift section">Drift</a></li>
-        <li><a class="dash-sidebar__link" href="#outputs-section" data-section="outputs-section" aria-label="Outputs section">Outputs</a></li>
-        <li><a class="dash-sidebar__link" href="#event-timeline-section" data-section="event-timeline-section" aria-label="Event Log section">Event Log</a></li>
-        <li><a class="dash-sidebar__link" href="#convoy-section" data-section="convoy-section" aria-label="Convoy section">Convoy</a></li>
+        <li><a class="dash-sidebar__link dash-sidebar__link--active" href="#overall-section" data-section="overall-section" data-view="home" aria-label="Overview section">Overview</a></li>
+        <li><a class="dash-sidebar__link" href="#convoy-list-section" data-section="convoy-list-section" data-view="home" aria-label="Convoys section">Convoys</a></li>
+        <li><a class="dash-sidebar__link" href="#tasks-section" data-section="tasks-section" data-view="detail" aria-label="Tasks section">Tasks</a></li>
+        <li><a class="dash-sidebar__link" href="#quality-section" data-section="quality-section" data-view="detail" aria-label="Quality section">Quality</a></li>
+        <li><a class="dash-sidebar__link" href="#reliability-section" data-section="reliability-section" data-view="detail" aria-label="Reliability section">Reliability</a></li>
+        <li><a class="dash-sidebar__link" href="#drift-section" data-section="drift-section" data-view="detail" aria-label="Drift section">Drift</a></li>
+        <li><a class="dash-sidebar__link" href="#outputs-section" data-section="outputs-section" data-view="detail" aria-label="Outputs section">Outputs</a></li>
+        <li><a class="dash-sidebar__link" href="#event-timeline-section" data-section="event-timeline-section" data-view="detail" aria-label="Event Log section">Event Log</a></li>
       </ul>
     </nav>
 
   <main class="dash-main">
+    <nav class="breadcrumbs" id="breadcrumbs" data-view-hidden>
+      <a class="breadcrumbs__link" href="#" id="breadcrumbs-home">Observability</a>
+      <span class="breadcrumbs__separator">/</span>
+      <span class="breadcrumbs__current" id="breadcrumbs-convoy"></span>
+    </nav>
+    <div class="view-home" id="view-home">
     <!-- Overall Stats Section -->
     <section class="overall-stats" id="overall-section" data-nav-section>
       <div class="overall-stats__header">
@@ -89,21 +89,57 @@ try {
       </div>
     </section>
 
-    <!-- Selected Convoy Header -->
-    <section class="convoy-detail-header" id="convoy-detail-header">
-      <div class="convoy-detail-header__top">
-        <h2 class="convoy-detail-header__name" id="selected-convoy-name">No convoy selected</h2>
-        <span class="status-badge" id="selected-convoy-status" role="status"></span>
-        <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: A convoy is a set of AI tasks working together on one goal." data-tooltip="A convoy is a set of AI tasks working together on one goal."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+    <!-- Convoy List Section -->
+    <section class="convoy-list-section" id="convoy-list-section">
+      <div class="convoy-list-section__header">
+        <h2>Convoys</h2>
+        <p class="convoy-list-section__desc">All convoy runs across your project</p>
       </div>
-      <p class="convoy-status-explanation" id="convoy-status-explanation" role="status" aria-live="polite"></p>
-      <div class="convoy-detail-header__meta" id="selected-convoy-meta">
-        <!-- Populated by JS: branch, timestamps, duration, tokens, cost -->
+      <div class="convoy-list-filters" id="convoy-list-filters">
+        <div class="convoy-list-filters__group">
+          <label for="cl-filter-search">Search</label>
+          <input class="convoy-list-filters__input" type="text" id="cl-filter-search" placeholder="Convoy name…" />
+        </div>
+        <div class="convoy-list-filters__group">
+          <label for="cl-filter-status">Status</label>
+          <select class="convoy-list-filters__select" id="cl-filter-status">
+            <option value="">All</option>
+            <option value="done">Done</option>
+            <option value="running">Running</option>
+            <option value="failed">Failed</option>
+            <option value="gate-failed">Gate Failed</option>
+            <option value="pending">Pending</option>
+          </select>
+        </div>
+        <div class="convoy-list-filters__group">
+          <label for="cl-filter-from">From</label>
+          <input class="convoy-list-filters__date" type="date" id="cl-filter-from" />
+        </div>
+        <div class="convoy-list-filters__group">
+          <label for="cl-filter-to">To</label>
+          <input class="convoy-list-filters__date" type="date" id="cl-filter-to" />
+        </div>
+        <button class="convoy-list-filters__reset" type="button" id="cl-filter-reset">Reset</button>
       </div>
+      <div id="convoy-list-table-wrap"></div>
+      <div class="convoy-list-empty" id="convoy-list-empty" style="display:none">
+        <div class="convoy-list-empty__icon">
+          <svg width="40" height="40" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="6" width="28" height="28" rx="4"/><line x1="14" y1="20" x2="26" y2="20" opacity="0.5"/></svg>
+        </div>
+        <p class="convoy-list-empty__text">No convoys match your filters</p>
+      </div>
+    </section>
+    </div><!-- .view-home -->
+
+    <div class="view-convoy-detail" id="view-convoy-detail" data-view-hidden>
+    <section class="convoy-detail-hero" id="convoy-detail-hero">
+      <div class="convoy-detail-hero__title" id="detail-hero-title"></div>
+      <span class="convoy-detail-hero__status" id="detail-hero-status"></span>
+      <div class="convoy-detail-hero__meta" id="detail-hero-meta"></div>
     </section>
 
     <!-- Tasks Section -->
-    <section class="chart-card" id="tasks-section" data-nav-section style="display:none">
+    <section class="chart-card" id="tasks-section" data-nav-section>
       <div class="chart-card__header">
         <h2 class="chart-card__title">Tasks</h2>
         <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Individual units of work in this convoy." data-tooltip="Individual units of work in this convoy."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
@@ -117,7 +153,7 @@ try {
     </section>
 
     <!-- Quality Section -->
-    <section class="chart-card" id="quality-section" data-nav-section style="display:none">
+    <section class="chart-card" id="quality-section" data-nav-section>
       <div class="chart-card__header">
         <h2 class="chart-card__title">Quality / Review</h2>
         <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Code review results and dispute resolution." data-tooltip="Code review results and dispute resolution."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
@@ -130,7 +166,7 @@ try {
     </section>
 
     <!-- Reliability Section -->
-    <section class="chart-card" id="reliability-section" data-nav-section style="display:none">
+    <section class="chart-card" id="reliability-section" data-nav-section>
       <div class="chart-card__header">
         <h2 class="chart-card__title">Reliability</h2>
         <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Errors, retry attempts, and safety mechanisms." data-tooltip="Errors, retry attempts, and safety mechanisms."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
@@ -147,7 +183,7 @@ try {
     </section>
 
     <!-- Drift Section -->
-    <section class="chart-card" id="drift-section" data-nav-section style="display:none">
+    <section class="chart-card" id="drift-section" data-nav-section>
       <div class="chart-card__header">
         <h2 class="chart-card__title">Drift</h2>
         <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: How far the actual work deviated from the original plan." data-tooltip="How far the actual work deviated from the original plan."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
@@ -160,7 +196,7 @@ try {
     </section>
 
     <!-- Outputs Section -->
-    <section class="chart-card" id="outputs-section" data-nav-section style="display:none">
+    <section class="chart-card" id="outputs-section" data-nav-section>
       <div class="chart-card__header">
         <h2 class="chart-card__title">Outputs &amp; Artifacts</h2>
         <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Files, data, and summaries produced by this convoy." data-tooltip="Files, data, and summaries produced by this convoy."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
@@ -173,7 +209,7 @@ try {
     </section>
 
     <!-- Event Timeline Section -->
-    <section class="chart-card" id="event-timeline-section" data-nav-section style="display:none">
+    <section class="chart-card" id="event-timeline-section" data-nav-section>
       <div class="chart-card__header">
         <h2 class="chart-card__title">Event Timeline</h2>
         <span class="tooltip-trigger" tabindex="0" role="button" aria-label="Info: Chronological log of everything that happened during this run." data-tooltip="Chronological log of everything that happened during this run."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
@@ -187,221 +223,9 @@ try {
         </div>
       </div>
     </section>
+    </div><!-- .view-convoy-detail -->
 
-    <!-- Filter Bar -->
-    <div class="filter-bar" id="filter-bar">
-      <div class="filter-group">
-        <label class="filter-label" for="filter-date-from">From</label>
-        <input class="filter-input" type="date" id="filter-date-from" />
-      </div>
-      <div class="filter-group">
-        <label class="filter-label" for="filter-date-to">To</label>
-        <input class="filter-input" type="date" id="filter-date-to" />
-      </div>
-      <div class="filter-group">
-        <label class="filter-label" for="filter-agent">Agent</label>
-        <select class="filter-select" id="filter-agent">
-          <option value="">All agents</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label" for="filter-outcome">Outcome</label>
-        <select class="filter-select" id="filter-outcome">
-          <option value="">All outcomes</option>
-          <option value="success">Success</option>
-          <option value="partial">Partial</option>
-          <option value="failed">Failed</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label" for="filter-convoy">Convoy</label>
-        <select class="filter-select" id="filter-convoy">
-          <option value="">All convoys</option>
-        </select>
-      </div>
-      <div class="filter-group">
-        <label class="filter-label" for="filter-pipeline">Pipeline</label>
-        <select class="filter-select" id="filter-pipeline">
-          <option value="">All</option>
-        </select>
-      </div>
-      <button class="dash-btn dash-btn--ghost filter-reset" id="filter-reset" type="button">Reset</button>
-    </div>
 
-    <!-- Convoy Status Section -->
-    <section class="chart-card convoy-status" id="convoy-section" data-nav-section style="display:none">
-      <div class="chart-card__header">
-        <h2 class="chart-card__title">Convoy Status</h2>
-        <p class="chart-card__desc" id="convoy-desc">Select a convoy to view details</p>
-      </div>
-      <div class="chart-card__body" id="convoy-body">
-      </div>
-    </section>
-
-    <!-- Convoy Pipeline (Chaining) Section -->
-    <section class="chart-card" id="convoy-pipeline-section" data-nav-section style="display:none">
-      <div class="chart-card__header">
-        <h2 class="chart-card__title">Convoy Pipeline</h2>
-        <p class="chart-card__desc" id="convoy-pipeline-desc">Pipeline convoy chain progress</p>
-      </div>
-      <div class="chart-card__body" id="convoy-pipeline-body">
-      </div>
-    </section>
-
-    <!-- KPI Row -->
-    <section class="kpi-row" id="kpi-row" data-nav-section>
-      <div class="kpi-card" id="kpi-sessions">
-        <span class="kpi-card__label">Total Sessions</span>
-        <span class="kpi-card__value">&mdash;</span>
-        <span class="kpi-card__sub"></span>
-      </div>
-      <div class="kpi-card" id="kpi-success">
-        <span class="kpi-card__label">Success Rate</span>
-        <span class="kpi-card__value">&mdash;</span>
-        <span class="kpi-card__sub"></span>
-      </div>
-      <div class="kpi-card" id="kpi-delegations">
-        <span class="kpi-card__label">Total Delegations</span>
-        <span class="kpi-card__value">&mdash;</span>
-        <span class="kpi-card__sub"></span>
-      </div>
-      <div class="kpi-card" id="kpi-duration">
-        <span class="kpi-card__label">Avg Duration</span>
-        <span class="kpi-card__value">&mdash;</span>
-        <span class="kpi-card__sub"></span>
-      </div>
-      <div class="kpi-card" id="kpi-retries">
-        <span class="kpi-card__label">Total Retries</span>
-        <span class="kpi-card__value">&mdash;</span>
-        <span class="kpi-card__sub"></span>
-      </div>
-      <div class="kpi-card" id="kpi-lessons">
-        <span class="kpi-card__label">Lessons Added</span>
-        <span class="kpi-card__value">&mdash;</span>
-        <span class="kpi-card__sub"></span>
-      </div>
-    </section>
-
-    <!-- Pipeline View (Steroids-inspired) -->
-    <section class="chart-card" id="pipeline-section" data-nav-section>
-      <div class="chart-card__header">
-        <h2 class="chart-card__title">Task Pipeline</h2>
-        <p class="chart-card__desc">Delegation flow across execution phases</p>
-      </div>
-      <div class="chart-card__body" id="pipeline-view">
-        <div class="loading-skeleton"></div>
-      </div>
-    </section>
-
-    <!-- Charts Row 1 -->
-    <div class="charts-row" id="agent-section" data-nav-section>
-      <section class="chart-card">
-        <div class="chart-card__header">
-          <h2 class="chart-card__title">Sessions by Agent</h2>
-          <p class="chart-card__desc">Stacked by outcome</p>
-        </div>
-        <div class="chart-card__body" id="agent-chart">
-          <div class="loading-skeleton"></div>
-        </div>
-      </section>
-      <section class="chart-card" id="tier-section" data-nav-section>
-        <div class="chart-card__header">
-          <h2 class="chart-card__title">Tier Distribution</h2>
-          <p class="chart-card__desc">Delegation model tiers</p>
-        </div>
-        <div class="chart-card__body" id="tier-chart">
-          <div class="loading-skeleton"></div>
-        </div>
-      </section>
-    </div>
-
-    <!-- Charts Row: Delegation Insights -->
-    <div class="charts-row" id="delegation-section" data-nav-section>
-      <section class="chart-card">
-        <div class="chart-card__header">
-          <h2 class="chart-card__title">Delegation Mechanism</h2>
-          <p class="chart-card__desc">Sub-agent vs background split</p>
-        </div>
-        <div class="chart-card__body" id="mechanism-chart">
-          <div class="loading-skeleton"></div>
-        </div>
-      </section>
-      <section class="chart-card">
-        <div class="chart-card__header">
-          <h2 class="chart-card__title">Delegation Outcomes</h2>
-          <p class="chart-card__desc">Success rate by delegation</p>
-        </div>
-        <div class="chart-card__body" id="delegation-outcome-chart">
-          <div class="loading-skeleton"></div>
-        </div>
-      </section>
-    </div>
-
-    <!-- Charts Row 2 -->
-    <div class="charts-row" id="timeline-section" data-nav-section>
-      <section class="chart-card">
-        <div class="chart-card__header">
-          <h2 class="chart-card__title">Timeline</h2>
-          <p class="chart-card__desc">Sessions and delegations over time</p>
-        </div>
-        <div class="chart-card__body" id="timeline-chart">
-          <div class="loading-skeleton"></div>
-        </div>
-      </section>
-      <section class="chart-card" id="model-section" data-nav-section>
-        <div class="chart-card__header">
-          <h2 class="chart-card__title">Model Usage</h2>
-          <p class="chart-card__desc">Sessions by model</p>
-        </div>
-        <div class="chart-card__body" id="model-chart">
-          <div class="loading-skeleton"></div>
-        </div>
-      </section>
-    </div>
-
-    <!-- Execution Log (Duvo-inspired) -->
-    <section class="chart-card" id="execution-section" data-nav-section>
-      <div class="chart-card__header">
-        <h2 class="chart-card__title">Execution Log</h2>
-        <p class="chart-card__desc">Recent agent activity, step by step</p>
-      </div>
-      <div class="chart-card__body" id="execution-log">
-        <div class="loading-skeleton"></div>
-      </div>
-    </section>
-
-    <!-- Panel Results -->
-    <section class="chart-card" id="panel-section" data-nav-section>
-      <div class="chart-card__header">
-        <h2 class="chart-card__title">Panel Reviews</h2>
-        <p class="chart-card__desc">Quality gate verdicts and fix items</p>
-      </div>
-      <div class="chart-card__body" id="panel-chart">
-        <div class="loading-skeleton"></div>
-      </div>
-    </section>
-
-    <!-- Fast Reviews -->
-    <section class="chart-card" id="reviews-section" data-nav-section>
-      <div class="chart-card__header">
-        <h2 class="chart-card__title">Fast Reviews</h2>
-        <p class="chart-card__desc">Single-reviewer quality gate results</p>
-      </div>
-      <div class="chart-card__body chart-card__body--table" id="reviews-table">
-        <div class="loading-skeleton"></div>
-      </div>
-    </section>
-
-    <!-- Sessions Table -->
-    <section class="chart-card" id="sessions-section" data-nav-section>
-      <div class="chart-card__header">
-        <h2 class="chart-card__title">Recent Sessions</h2>
-        <p class="chart-card__desc">Last 15 sessions by timestamp</p>
-      </div>
-      <div class="chart-card__body chart-card__body--table" id="sessions-table">
-        <div class="loading-skeleton"></div>
-      </div>
-    </section>
   </main>
   </div>
 </Layout>
@@ -577,1257 +401,95 @@ try {
     if (existing) existing.remove();
   }
 
-  // ── KPI Rendering ────────────────────────────────────────
-
-  function renderKpis(sessions, delegations, reviews) {
-    const total = sessions.length;
-    const isEmpty = total === 0;
-    const successCount = sessions.filter((s) => s.outcome === 'success').length;
-    const rate = total > 0 ? Math.round((successCount / total) * 100) : 0;
-    const durSessions = sessions.filter((s) => s.duration_min != null);
-    const avgDur =
-      durSessions.length > 0
-        ? Math.round(
-            durSessions.reduce((sum, s) => sum + (s.duration_min || 0), 0) /
-              durSessions.length
-          )
-        : 0;
-    const uniqueAgents = new Set(delegations.map((d) => d.agent)).size;
-
-    // Toggle ghost class on KPI row
-    const kpiRow = document.querySelector('.kpi-row');
-    if (kpiRow) kpiRow.classList.toggle('kpi-row--empty', isEmpty);
-
-    const kpiSessions = document.getElementById('kpi-sessions');
-    const kpiSuccess = document.getElementById('kpi-success');
-    const kpiDelegations = document.getElementById('kpi-delegations');
-    const kpiDuration = document.getElementById('kpi-duration');
-
-    if (kpiSessions) {
-      kpiSessions.querySelector('.kpi-card__value').textContent = isEmpty ? '0' : total;
-      kpiSessions.querySelector('.kpi-card__sub').innerHTML = isEmpty
-        ? '<span class="kpi-card__hint">No sessions yet</span>'
-        : '<span class="kpi-trend kpi-trend--up">\u2191</span> ' + successCount + ' successful';
-    }
-    if (kpiSuccess) {
-      if (isEmpty) {
-        kpiSuccess.querySelector('.kpi-card__value').textContent = '\u2014';
-        kpiSuccess.querySelector('.kpi-card__sub').innerHTML =
-          '<span class="kpi-card__hint">No sessions yet</span>';
-      } else {
-        const trendClass =
-          rate >= 80 ? 'up' : rate >= 60 ? 'neutral' : 'down';
-        kpiSuccess.querySelector('.kpi-card__value').textContent = rate + '%';
-        kpiSuccess.querySelector('.kpi-card__sub').innerHTML =
-          '<span class="kpi-trend kpi-trend--' +
-          trendClass +
-          '">' +
-          (trendClass === 'up' ? '\u2191' : trendClass === 'down' ? '\u2193' : '\u2192') +
-          '</span> across all sessions';
-      }
-    }
-    if (kpiDelegations) {
-      kpiDelegations.querySelector('.kpi-card__value').textContent =
-        delegations.length === 0 ? '0' : delegations.length;
-      kpiDelegations.querySelector('.kpi-card__sub').innerHTML = isEmpty
-        ? '<span class="kpi-card__hint">No delegations yet</span>'
-        : uniqueAgents + ' unique agents';
-    }
-    if (kpiDuration) {
-      kpiDuration.querySelector('.kpi-card__value').textContent = isEmpty ? '\u2014' : avgDur + 'm';
-      kpiDuration.querySelector('.kpi-card__sub').innerHTML = isEmpty
-        ? '<span class="kpi-card__hint">No duration yet</span>'
-        : '<span class="kpi-trend kpi-trend--neutral">\u2192</span> per session';
-    }
-
-    // Retries KPI
-    const totalRetries = sessions.reduce((sum, s) => sum + (s.retries || 0), 0);
-    const kpiRetries = document.getElementById('kpi-retries');
-    if (kpiRetries) {
-      kpiRetries.querySelector('.kpi-card__value').textContent = isEmpty ? '0' : totalRetries;
-      const retriedSessions = sessions.filter((s) => (s.retries || 0) > 0).length;
-      kpiRetries.querySelector('.kpi-card__sub').innerHTML = isEmpty
-        ? '<span class="kpi-card__hint">No retries yet</span>'
-        : retriedSessions + ' sessions with retries';
-    }
-
-    // Lessons KPI
-    const totalLessons = sessions.reduce(
-      (sum, s) => sum + (s.lessons_added ? s.lessons_added.length : 0),
-      0
-    );
-    const kpiLessons = document.getElementById('kpi-lessons');
-    if (kpiLessons) {
-      kpiLessons.querySelector('.kpi-card__value').textContent = isEmpty ? '0' : totalLessons;
-      const discoveryCount = sessions.reduce(
-        (sum, s) => sum + (s.discoveries ? s.discoveries.length : 0),
-        0
-      );
-      kpiLessons.querySelector('.kpi-card__sub').innerHTML = isEmpty
-        ? '<span class="kpi-card__hint">No lessons yet</span>'
-        : discoveryCount + ' issues discovered';
-    }
+  // ── View Management ─────────────────────────────────────
+  function showHomeView() {
+    const home = document.getElementById('view-home');
+    const detail = document.getElementById('view-convoy-detail');
+    const breadcrumbs = document.getElementById('breadcrumbs');
+    if (home) delete home.dataset.viewHidden;
+    if (detail) detail.dataset.viewHidden = '';
+    if (breadcrumbs) breadcrumbs.dataset.viewHidden = '';
+    document.querySelectorAll('.dash-sidebar__link[data-view="detail"]').forEach(el => el.closest('li').style.display = 'none');
+    document.querySelectorAll('.dash-sidebar__link[data-view="home"]').forEach(el => el.closest('li').style.display = '');
+    const url = new URL(window.location);
+    url.searchParams.delete('convoy');
+    history.pushState({}, '', url);
   }
 
-  // ── Pipeline View ─────────────────────────────────────────
-
-  function renderPipeline(delegations) {
-    const el = document.getElementById('pipeline-view');
-    if (!el) return;
-
-    if (delegations.length === 0) {
-      el.innerHTML = emptyStateHtml('pipeline', 'No pipeline activity yet', 'Delegation phases appear here as tasks flow through Foundation, Integration, Validation, and QA stages.');
-      return;
-    }
-
-    const phases = { 1: 0, 2: 0, 3: 0, 4: 0 };
-    delegations.forEach((d) => {
-      const p = d.phase || 1;
-      if (phases[p] !== undefined) phases[p]++;
-    });
-
-    const stageConfig = [
-      {
-        label: 'Foundation',
-        phase: 1,
-        iconClass: 'pending',
-        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>',
-      },
-      {
-        label: 'Integration',
-        phase: 2,
-        iconClass: 'active',
-        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>',
-      },
-      {
-        label: 'Validation',
-        phase: 3,
-        iconClass: 'review',
-        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
-      },
-      {
-        label: 'QA Gate',
-        phase: 4,
-        iconClass: 'done',
-        icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
-      },
-    ];
-
-    el.innerHTML =
-      '<div class="pipeline">' +
-      stageConfig
-        .map(
-          (stage, i) =>
-            (i > 0 ? '<div class="pipeline-arrow">\u2192</div>' : '') +
-            '<div class="pipeline-stage">' +
-            '<div class="pipeline-stage__icon pipeline-stage__icon--' +
-            stage.iconClass +
-            '">' +
-            stage.icon +
-            '</div>' +
-            '<span class="pipeline-stage__count">' +
-            (phases[stage.phase] || 0) +
-            '</span>' +
-            '<span class="pipeline-stage__label">' +
-            stage.label +
-            '</span>' +
-            '</div>'
-        )
-        .join('') +
-      '</div>';
+  function showConvoyDetailView(convoyId, convoyName) {
+    const home = document.getElementById('view-home');
+    const detail = document.getElementById('view-convoy-detail');
+    const breadcrumbs = document.getElementById('breadcrumbs');
+    if (home) home.dataset.viewHidden = '';
+    if (detail) delete detail.dataset.viewHidden;
+    if (breadcrumbs) delete breadcrumbs.dataset.viewHidden;
+    document.querySelectorAll('.dash-sidebar__link[data-view="home"]').forEach(el => el.closest('li').style.display = 'none');
+    document.querySelectorAll('.dash-sidebar__link[data-view="detail"]').forEach(el => el.closest('li').style.display = '');
+    const crumbText = document.getElementById('breadcrumbs-convoy');
+    if (crumbText) crumbText.textContent = convoyName || convoyId;
+    const url = new URL(window.location);
+    url.searchParams.set('convoy', convoyId);
+    history.pushState({}, '', url);
+    loadConvoyDetail(convoyId);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // ── Agent Chart ───────────────────────────────────────────
+  // ── Convoy List ─────────────────────────────────────────
+  function renderConvoyList() {
+    const data = window.__DASHBOARD_DATA__;
+    const list = data?.convoyList ?? [];
+    const wrap = document.getElementById('convoy-list-table-wrap');
+    const emptyEl = document.getElementById('convoy-list-empty');
+    if (!wrap) return;
 
-  function renderAgentChart(sessions) {
-    const el = document.getElementById('agent-chart');
-    if (!el) return;
+    const search = (document.getElementById('cl-filter-search')?.value || '').toLowerCase();
+    const status = document.getElementById('cl-filter-status')?.value || '';
+    const fromDate = document.getElementById('cl-filter-from')?.value || '';
+    const toDate = document.getElementById('cl-filter-to')?.value || '';
 
-    if (sessions.length === 0) {
-      el.innerHTML = emptyStateHtml('agents', 'No agent sessions yet', 'A breakdown of sessions per agent will appear here — stacked by outcome (success, partial, failed).');
+    let filtered = list;
+    if (search) filtered = filtered.filter(c => (c.name || c.id || '').toLowerCase().includes(search));
+    if (status) filtered = filtered.filter(c => c.status === status);
+    if (fromDate) filtered = filtered.filter(c => c.created_at && c.created_at >= fromDate);
+    if (toDate) filtered = filtered.filter(c => c.created_at && c.created_at.slice(0, 10) <= toDate);
+
+    if (filtered.length === 0) {
+      wrap.innerHTML = '';
+      if (emptyEl) emptyEl.style.display = '';
       return;
     }
+    if (emptyEl) emptyEl.style.display = 'none';
 
-    const agentMap = {};
-    sessions.forEach((s) => {
-      if (!agentMap[s.agent])
-        agentMap[s.agent] = { success: 0, partial: 0, failed: 0, total: 0 };
-      agentMap[s.agent][s.outcome] = (agentMap[s.agent][s.outcome] || 0) + 1;
-      agentMap[s.agent].total++;
-    });
-
-    const agents = Object.entries(agentMap).sort(
-      (a, b) => b[1].total - a[1].total
-    );
-    const maxTotal = Math.max(...agents.map(([, d]) => d.total));
-
-    el.innerHTML = agents
-      .map(
-        ([name, data]) =>
-          '<div class="bar-row">' +
-          '<span class="bar-label">' +
-          escapeHtml(name) +
-          '</span>' +
-          '<div class="bar-track">' +
-          (data.success > 0
-            ? '<div class="bar-segment bar--success" style="width: ' +
-              ((data.success / maxTotal) * 100).toFixed(1) + '%"></div>'
-            : '') +
-          (data.partial > 0
-            ? '<div class="bar-segment bar--partial" style="width: ' +
-              ((data.partial / maxTotal) * 100).toFixed(1) + '%"></div>'
-            : '') +
-          (data.failed > 0
-            ? '<div class="bar-segment bar--failed" style="width: ' +
-              ((data.failed / maxTotal) * 100).toFixed(1) + '%"></div>'
-            : '') +
-          '</div>' +
-          '<span class="bar-value">' +
-          data.total +
-          '</span>' +
-          '</div>'
-      )
-      .join('');
-  }
-
-  // ── Tier Donut Chart ──────────────────────────────────────
-
-  function renderTierChart(delegations) {
-    const el = document.getElementById('tier-chart');
-    if (!el) return;
-
-    if (delegations.length === 0) {
-      el.innerHTML = emptyStateHtml('tiers', 'No tier data yet', 'Model tier distribution (Premium, Standard, Utility, Economy) will be visualized as a donut chart.');
-      return;
-    }
-
-    const tierCounts = {};
-    delegations.forEach((d) => {
-      tierCounts[d.tier] = (tierCounts[d.tier] || 0) + 1;
-    });
-
-    const order = ['premium', 'standard', 'utility', 'economy'];
-    const tiers = order
-      .filter((t) => tierCounts[t])
-      .map((t) => ({ name: t, count: tierCounts[t] }));
-
-    const total = delegations.length;
-    const r = 70;
-    const circumference = 2 * Math.PI * r;
-    let cumOffset = 0;
-
-    const circles = tiers.map((t) => {
-      const pct = t.count / total;
-      const dashLen = pct * circumference;
-      // Skip round linecap for single-segment donuts to avoid overlap artifact
-      const linecap = tiers.length === 1 ? 'butt' : 'round';
-      const segment =
-        '<circle cx="90" cy="90" r="' +
-        r +
-        '" fill="none" ' +
-        'stroke="' +
-        (TIER_COLORS[t.name] || '#64748b') +
-        '" stroke-width="18" ' +
-        'stroke-dasharray="' +
-        dashLen.toFixed(2) +
-        ' ' +
-        (circumference - dashLen).toFixed(2) +
-        '" ' +
-        'stroke-dashoffset="' +
-        (-cumOffset).toFixed(2) +
-        '" ' +
-        'transform="rotate(-90 90 90)" ' +
-        'stroke-linecap="' + linecap + '"/>';
-      cumOffset += dashLen;
-      return segment;
-    });
-
-    const legend = tiers
-      .map(
-        (t) =>
-          '<div class="legend-item">' +
-          '<span class="legend-dot" style="background: ' +
-          (TIER_COLORS[t.name] || '#64748b') +
-          '"></span>' +
-          '<span class="legend-name">' +
-          t.name +
-          '</span>' +
-          '<span class="legend-count">' +
-          t.count +
-          ' (' +
-          Math.round((t.count / total) * 100) +
-          '%)</span>' +
-          '</div>'
-      )
-      .join('');
-
-    el.innerHTML =
-      '<div class="donut-container">' +
-      '<div class="donut-wrap">' +
-      '<svg viewBox="0 0 180 180" class="donut-svg">' +
-      circles.join('') +
-      '</svg>' +
-      '<div class="donut-center">' +
-      '<span class="donut-total">' +
-      total +
-      '</span>' +
-      '<span class="donut-total-label">total</span>' +
-      '</div>' +
-      '</div>' +
-      '<div class="donut-legend">' +
-      legend +
-      '</div>' +
-      '</div>';
-  }
-
-  // ── Mechanism Donut Chart ─────────────────────────────────
-
-  function renderMechanismChart(delegations) {
-    const el = document.getElementById('mechanism-chart');
-    if (!el) return;
-
-    if (delegations.length === 0) {
-      el.innerHTML = emptyStateHtml('mechanism', 'No delegation data yet', 'The split between sub-agent (inline) and background (worktree) delegations will be shown here.');
-      return;
-    }
-
-    const mechCounts = {};
-    delegations.forEach((d) => {
-      const mech = d.mechanism || 'unknown';
-      mechCounts[mech] = (mechCounts[mech] || 0) + 1;
-    });
-
-    var MECH_COLORS = {
-      'sub-agent': '#3b82f6',
-      'background': '#a78bfa',
-      'unknown': '#64748b',
+    const statusBadgeClass = (s) => {
+      const map = { done: '--done', running: '--running', failed: '--failed', 'gate-failed': '--gate-failed', pending: '--pending' };
+      return 'status-badge ' + (map[s] || '');
     };
 
-    var MECH_LABELS = {
-      'sub-agent': 'Sub-agent (inline)',
-      'background': 'Background (worktree)',
-      'unknown': 'Unknown',
-    };
+    let html = '<table class="convoy-list-table"><thead><tr>' +
+      '<th>Name</th><th>Status</th><th>Tasks</th><th>Created</th><th>Duration</th>' +
+      '</tr></thead><tbody>';
 
-    var mechOrder = ['sub-agent', 'background', 'unknown'];
-    var mechs = mechOrder
-      .filter(function (m) { return mechCounts[m]; })
-      .map(function (m) { return { name: m, count: mechCounts[m] }; });
-
-    var total = delegations.length;
-    var r = 70;
-    var circumference = 2 * Math.PI * r;
-    var cumOffset = 0;
-
-    var circles = mechs.map(function (m) {
-      var pct = m.count / total;
-      var dashLen = pct * circumference;
-      // Skip round linecap for single-segment donuts to avoid overlap artifact
-      var linecap = mechs.length === 1 ? 'butt' : 'round';
-      var segment =
-        '<circle cx="90" cy="90" r="' + r + '" fill="none" ' +
-        'stroke="' + (MECH_COLORS[m.name] || '#64748b') + '" stroke-width="18" ' +
-        'stroke-dasharray="' + dashLen.toFixed(2) + ' ' + (circumference - dashLen).toFixed(2) + '" ' +
-        'stroke-dashoffset="' + (-cumOffset).toFixed(2) + '" ' +
-        'transform="rotate(-90 90 90)" stroke-linecap="' + linecap + '"/>';
-      cumOffset += dashLen;
-      return segment;
-    });
-
-    var legend = mechs
-      .map(function (m) {
-        return '<div class="legend-item">' +
-          '<span class="legend-dot" style="background: ' + (MECH_COLORS[m.name] || '#64748b') + '"></span>' +
-          '<span class="legend-name">' + (MECH_LABELS[m.name] || m.name) + '</span>' +
-          '<span class="legend-count">' + m.count + ' (' + Math.round((m.count / total) * 100) + '%)</span>' +
-          '</div>';
-      })
-      .join('');
-
-    el.innerHTML =
-      '<div class="donut-container">' +
-      '<div class="donut-wrap">' +
-      '<svg viewBox="0 0 180 180" class="donut-svg">' +
-      circles.join('') +
-      '</svg>' +
-      '<div class="donut-center">' +
-      '<span class="donut-total">' + total + '</span>' +
-      '<span class="donut-total-label">total</span>' +
-      '</div>' +
-      '</div>' +
-      '<div class="donut-legend">' +
-      legend +
-      '</div>' +
-      '</div>';
-  }
-
-  // ── Delegation Outcome Chart ──────────────────────────────
-
-  function renderDelegationOutcomeChart(delegations) {
-    var el = document.getElementById('delegation-outcome-chart');
-    if (!el) return;
-
-    if (delegations.length === 0) {
-      el.innerHTML = emptyStateHtml('outcomes', 'No outcome data yet', 'Delegation results — success, partial, failed, redirected — will be tracked and compared here.');
-      return;
+    for (const c of filtered) {
+      const name = escapeHtml(c.name || c.id);
+      const dateStr = c.created_at ? formatTime(c.created_at) : '\u2014';
+      const duration = c.started_at && c.finished_at ? formatDuration(c.started_at, c.finished_at) : (c.status === 'running' ? 'In progress' : '\u2014');
+      const taskCount = c.task_count ?? c.taskCount ?? '\u2014';
+      html += '<tr data-convoy-id="' + escapeHtml(c.id) + '" class="task-row--clickable">' +
+        '<td><strong>' + name + '</strong></td>' +
+        '<td><span class="' + statusBadgeClass(c.status) + '">' + escapeHtml(c.status || 'unknown') + '</span></td>' +
+        '<td>' + taskCount + '</td>' +
+        '<td>' + dateStr + '</td>' +
+        '<td>' + (duration || '\u2014') + '</td>' +
+        '</tr>';
     }
-
-    var OUTCOME_COLORS = {
-      success: '#22c55e',
-      partial: '#f59e0b',
-      failed: '#ef4444',
-      redirected: '#64748b',
-    };
-
-    var outcomeCounts = {};
-    delegations.forEach(function (d) {
-      var outcome = d.outcome || 'unknown';
-      outcomeCounts[outcome] = (outcomeCounts[outcome] || 0) + 1;
-    });
-
-    var outcomes = Object.entries(outcomeCounts).sort(function (a, b) { return b[1] - a[1]; });
-    var maxCount = Math.max.apply(null, outcomes.map(function (o) { return o[1]; }));
-
-    el.innerHTML = outcomes
-      .map(function (entry) {
-        var name = entry[0];
-        var count = entry[1];
-        return '<div class="bar-row">' +
-          '<span class="bar-label">' + escapeHtml(name) + '</span>' +
-          '<div class="bar-track">' +
-          '<div class="bar-segment" style="width: ' + ((count / maxCount) * 100).toFixed(1) + '%; background: ' + (OUTCOME_COLORS[name] || '#64748b') + '"></div>' +
-          '</div>' +
-          '<span class="bar-value">' + count + '</span>' +
-          '</div>';
-      })
-      .join('');
-  }
-
-  // ── Timeline Chart ────────────────────────────────────────
-
-  function renderTimelineChart(sessions, delegations) {
-    const el = document.getElementById('timeline-chart');
-    if (!el) return;
-
-    const dateMap = {};
-    sessions.forEach((s) => {
-      const key = s.timestamp.slice(0, 10);
-      if (!dateMap[key]) dateMap[key] = { sessions: 0, delegations: 0 };
-      dateMap[key].sessions++;
-    });
-    delegations.forEach((d) => {
-      const key = d.timestamp.slice(0, 10);
-      if (!dateMap[key]) dateMap[key] = { sessions: 0, delegations: 0 };
-      dateMap[key].delegations++;
-    });
-
-    const dates = Object.entries(dateMap).sort(([a], [b]) =>
-      a.localeCompare(b)
-    );
-
-    if (dates.length === 0) {
-      el.innerHTML = emptyStateHtml('timeline', 'No timeline data yet', 'A daily activity chart will build here as sessions and delegations accumulate over time.');
-      return;
-    }
-
-    const maxVal = Math.max(
-      ...dates.map(([, d]) => Math.max(d.sessions, d.delegations))
-    );
-    const w = 500;
-    const h = 180;
-    const pad = { top: 10, right: 10, bottom: 28, left: 10 };
-    const plotW = w - pad.left - pad.right;
-    const plotH = h - pad.top - pad.bottom;
-    // Prevent sparse layout when there are very few dates
-    const groupWidth = dates.length <= 3
-      ? Math.min(100, plotW / dates.length)
-      : plotW / dates.length;
-    const barWidth = Math.min(dates.length <= 3 ? 24 : 16, groupWidth * 0.35);
-    // Center the bars when there are few dates
-    const timelineStartX = dates.length <= 3
-      ? pad.left + (plotW - dates.length * groupWidth) / 2
-      : pad.left;
-
-    let rects = '';
-    let labels = '';
-
-    dates.forEach(([date, data], i) => {
-      const x = timelineStartX + i * groupWidth + groupWidth / 2;
-      const sH = maxVal > 0 ? (data.sessions / maxVal) * plotH : 0;
-      const dH = maxVal > 0 ? (data.delegations / maxVal) * plotH : 0;
-
-      rects +=
-        '<rect x="' +
-        (x - barWidth - 1).toFixed(1) +
-        '" y="' +
-        (pad.top + plotH - sH).toFixed(1) +
-        '" width="' +
-        barWidth.toFixed(1) +
-        '" height="' +
-        sH.toFixed(1) +
-        '" fill="#3b82f6" rx="3" opacity="0.85"/>';
-      rects +=
-        '<rect x="' +
-        (x + 1).toFixed(1) +
-        '" y="' +
-        (pad.top + plotH - dH).toFixed(1) +
-        '" width="' +
-        barWidth.toFixed(1) +
-        '" height="' +
-        dH.toFixed(1) +
-        '" fill="#a78bfa" rx="3" opacity="0.65"/>';
-      labels +=
-        '<text x="' +
-        x.toFixed(1) +
-        '" y="' +
-        (h - 6) +
-        '" text-anchor="middle" fill="#5a5a6e" font-size="10">' +
-        formatShortDate(date) +
-        '</text>';
-    });
-
-    el.innerHTML =
-      '<svg viewBox="0 0 ' +
-      w +
-      ' ' +
-      h +
-      '" class="timeline-svg" preserveAspectRatio="xMidYMid meet">' +
-      rects +
-      labels +
-      '</svg>' +
-      '<div class="timeline-legend">' +
-      '<div class="timeline-legend__item">' +
-      '<span class="timeline-legend__dot" style="background: #3b82f6"></span>' +
-      'Sessions</div>' +
-      '<div class="timeline-legend__item">' +
-      '<span class="timeline-legend__dot" style="background: #a78bfa"></span>' +
-      'Delegations</div>' +
-      '</div>';
-  }
-
-  // ── Model Chart ───────────────────────────────────────────
-
-  function renderModelChart(sessions) {
-    const el = document.getElementById('model-chart');
-    if (!el) return;
-
-    if (sessions.length === 0) {
-      el.innerHTML = emptyStateHtml('models', 'No model data yet', 'Model utilization across sessions — Claude Opus, GPT-5, Gemini, etc. — will be compared here.');
-      return;
-    }
-
-    const modelCounts = {};
-    sessions.forEach((s) => {
-      modelCounts[s.model] = (modelCounts[s.model] || 0) + 1;
-    });
-
-    const models = Object.entries(modelCounts).sort((a, b) => b[1] - a[1]);
-    const maxCount = Math.max(...models.map(([, c]) => c));
-
-    el.innerHTML = models
-      .map(
-        ([name, count]) =>
-          '<div class="bar-row">' +
-          '<span class="bar-label">' +
-          escapeHtml(name) +
-          '</span>' +
-          '<div class="bar-track">' +
-          '<div class="bar-segment" style="width: ' +
-          ((count / maxCount) * 100).toFixed(1) +
-          '%; background: ' +
-          (MODEL_COLORS[name] || '#64748b') +
-          '"></div>' +
-          '</div>' +
-          '<span class="bar-value">' +
-          count +
-          '</span>' +
-          '</div>'
-      )
-      .join('');
-  }
-
-  // ── Execution Log ─────────────────────────────────────────
-
-  function renderExecutionLog(sessions) {
-    const el = document.getElementById('execution-log');
-    if (!el) return;
-
-    const sorted = sessions
-      .slice()
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-      .slice(0, 10);
-
-    if (sorted.length === 0) {
-      el.innerHTML = emptyStateHtml('execLog', 'No execution history yet', 'A step-by-step trace of agent activity — with outcomes, durations, and metadata — will appear here.');
-      return;
-    }
-
-    el.innerHTML =
-      '<div class="exec-log">' +
-      sorted
-        .map(
-          (s, i) =>
-            '<div class="exec-step">' +
-            '<div class="exec-step__indicator">' +
-            '<div class="exec-step__dot exec-step__dot--' +
-            s.outcome +
-            '">' +
-            (OUTCOME_ICONS[s.outcome] || '') +
-            '</div>' +
-            (i < sorted.length - 1
-              ? '<div class="exec-step__line"></div>'
-              : '') +
-            '</div>' +
-            '<div class="exec-step__content">' +
-            '<div class="exec-step__header">' +
-            '<span class="exec-step__agent">' +
-            escapeHtml(s.agent) +
-            '</span>' +
-            '<span class="exec-step__badge exec-step__badge--' +
-            s.outcome +
-            '">' +
-            s.outcome +
-            '</span>' +
-            '</div>' +
-            '<div class="exec-step__task">' +
-            escapeHtml(s.task) +
-            '</div>' +
-            '<div class="exec-step__meta">' +
-            '<span class="exec-step__meta-item">\uD83D\uDD52 ' +
-            formatTime(s.timestamp) +
-            '</span>' +
-            (s.duration_min != null
-              ? '<span class="exec-step__meta-item">\u23F1 ' +
-                s.duration_min +
-                'm</span>'
-              : '') +
-            (s.files_changed != null
-              ? '<span class="exec-step__meta-item">\uD83D\uDCC1 ' +
-                s.files_changed +
-                ' files</span>'
-              : '') +
-            (s.model
-              ? '<span class="exec-step__meta-item">\uD83E\uDD16 ' +
-                escapeHtml(s.model) +
-                '</span>'
-              : '') +
-            (s.retries > 0
-              ? '<span class="exec-step__meta-item">\uD83D\uDD04 ' +
-                s.retries +
-                ' retries</span>'
-              : '') +
-            (s.lessons_added && s.lessons_added.length > 0
-              ? '<span class="exec-step__meta-item">\uD83D\uDCA1 ' +
-                s.lessons_added.length +
-                ' lessons</span>'
-              : '') +
-            (s.discoveries && s.discoveries.length > 0
-              ? '<span class="exec-step__meta-item">\uD83D\uDD0D ' +
-                s.discoveries.length +
-                ' discoveries</span>'
-              : '') +
-            '</div>' +
-            '</div>' +
-            '</div>'
-        )
-        .join('') +
-      '</div>';
-  }
-
-  // ── Panel Chart ───────────────────────────────────────────
-
-  function renderPanelChart(panels) {
-    const el = document.getElementById('panel-chart');
-    if (!el) return;
-
-    if (panels.length === 0) {
-      el.innerHTML = emptyStateHtml('panels', 'No panel reviews yet', 'Quality gate verdicts from majority-vote panels — with pass/block counts and must-fix items — will be shown here.');
-      return;
-    }
-
-    el.innerHTML =
-      '<div class="panel-grid">' +
-      panels
-        .map(
-          (p) =>
-            '<div class="panel-item">' +
-            '<div class="panel-item__header">' +
-            '<span class="panel-item__key">' +
-            escapeHtml(p.panel_key) +
-            '</span>' +
-            '<span class="panel-item__verdict panel-item__verdict--' +
-            p.verdict +
-            '">' +
-            p.verdict +
-            '</span>' +
-            '</div>' +
-            '<div class="panel-item__votes">' +
-            Array.from({ length: p.pass_count })
-              .map(
-                () =>
-                  '<div class="panel-item__vote panel-item__vote--pass">\u2713</div>'
-              )
-              .join('') +
-            Array.from({ length: p.block_count })
-              .map(
-                () =>
-                  '<div class="panel-item__vote panel-item__vote--block">\u2717</div>'
-              )
-              .join('') +
-            '</div>' +
-            '<div class="panel-item__fixes">' +
-            (p.must_fix > 0
-              ? '<strong>' + p.must_fix + ' must-fix</strong>'
-              : '') +
-            (p.must_fix > 0 && p.should_fix > 0 ? ' \u00B7 ' : '') +
-            (p.should_fix > 0 ? p.should_fix + ' should-fix' : '') +
-            (p.must_fix === 0 && p.should_fix === 0 ? 'Clean' : '') +
-            '</div>' +
-            '<div class="panel-item__meta">' +
-            '<span class="panel-item__meta-item">\uD83E\uDD16 ' + escapeHtml(p.reviewer_model || 'unknown') + '</span>' +
-            (p.attempt > 1 ? '<span class="panel-item__meta-item">\uD83D\uDD04 attempt ' + p.attempt + '</span>' : '') +
-            (p.artifacts_count ? '<span class="panel-item__meta-item">\uD83D\uDCC4 ' + p.artifacts_count + ' artifacts</span>' : '') +
-            '</div>' +
-            '</div>'
-        )
-        .join('') +
-      '</div>';
-  }
-
-  // ── Sessions Table ────────────────────────────────────────
-
-  function renderSessionsTable(sessions) {
-    const el = document.getElementById('sessions-table');
-    if (!el) return;
-
-    const sorted = sessions
-      .slice()
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-      .slice(0, 15);
-
-    if (sorted.length === 0) {
-      el.innerHTML = emptyStateHtml('sessions', 'No session records yet', 'A detailed table of recent sessions — with timestamps, agents, tasks, outcomes, and linked issues — will populate here.');
-      return;
-    }
-
-    el.innerHTML =
-      '<table class="sessions-table">' +
-      '<thead><tr>' +
-      '<th>Timestamp</th>' +
-      '<th>Agent</th>' +
-      '<th>Task</th>' +
-      '<th>Outcome</th>' +
-      '<th>Duration</th>' +
-      '<th>Files</th>' +
-      '<th>Retries</th>' +
-      '<th>Issue</th>' +
-      '</tr></thead>' +
-      '<tbody>' +
-      sorted
-        .map(
-          (s) =>
-            '<tr>' +
-            '<td>' +
-            formatTime(s.timestamp) +
-            '</td>' +
-            '<td class="td-agent">' +
-            escapeHtml(s.agent) +
-            '</td>' +
-            '<td class="td-task">' +
-            escapeHtml(s.task) +
-            '</td>' +
-            '<td><span class="outcome-badge outcome-badge--' +
-            s.outcome +
-            '">' +
-            s.outcome +
-            '</span></td>' +
-            '<td class="td-num">' +
-            (s.duration_min != null ? s.duration_min + 'm' : '\u2014') +
-            '</td>' +
-            '<td class="td-num">' +
-            (s.files_changed != null ? s.files_changed : '\u2014') +
-            '</td>' +
-            '<td class="td-num">' +
-            (s.retries != null ? s.retries : '\u2014') +
-            '</td>' +
-            '<td class="td-issue">' +
-            (s.tracker_issue ? escapeHtml(s.tracker_issue) : '\u2014') +
-            '</td>' +
-            '</tr>'
-        )
-        .join('') +
-      '</tbody></table>';
-  }
-
-  // ── Main ──────────────────────────────────────────────────
-
-  // Store raw data globally for filtering/export
-  let rawSessions = [];
-  let rawDelegations = [];
-  let rawPanels = [];
-  let rawReviews = [];
-  let rawConvoys = [];
-  let rawPipelines = [];
-
-  function applyFilters() {
-    const dateFrom = document.getElementById('filter-date-from').value;
-    const dateTo = document.getElementById('filter-date-to').value;
-    const agentFilter = document.getElementById('filter-agent').value;
-    const outcomeFilter = document.getElementById('filter-outcome').value;
-    const convoyFilter = document.getElementById('filter-convoy').value;
-    const pipelineFilter = document.getElementById('filter-pipeline')?.value || '';
-
-    function matchDate(ts) {
-      const date = ts.slice(0, 10);
-      if (dateFrom && date < dateFrom) return false;
-      if (dateTo && date > dateTo) return false;
-      return true;
-    }
-
-    let sessions = rawSessions.filter((s) => {
-      if (!matchDate(s.timestamp)) return false;
-      if (agentFilter && s.agent !== agentFilter) return false;
-      if (outcomeFilter && s.outcome !== outcomeFilter) return false;
-      return true;
-    });
-
-    let delegations = rawDelegations.filter((d) => {
-      if (!matchDate(d.timestamp)) return false;
-      if (agentFilter && d.agent !== agentFilter) return false;
-      if (outcomeFilter && d.outcome !== outcomeFilter) return false;
-      return true;
-    });
-
-    let panels = rawPanels.filter((p) => matchDate(p.timestamp));
-    let reviews = rawReviews.filter((r) => {
-      if (!matchDate(r.timestamp)) return false;
-      if (agentFilter && r.agent !== agentFilter) return false;
-      return true;
-    });
-
-    // Pipeline filter: restrict events to convoy_ids within the selected pipeline
-    if (pipelineFilter) {
-      const activePipeline = rawPipelines.find((p) => p.id === pipelineFilter);
-      const pipelineConvoyIds = new Set((activePipeline && activePipeline.convoy_ids) || []);
-      if (pipelineConvoyIds.size > 0) {
-        sessions = sessions.filter((s) => !s.convoy_id || pipelineConvoyIds.has(s.convoy_id));
-        delegations = delegations.filter((d) => !d.convoy_id || pipelineConvoyIds.has(d.convoy_id));
-        panels = panels.filter((p2) => !p2.convoy_id || pipelineConvoyIds.has(p2.convoy_id));
-        reviews = reviews.filter((r) => !r.convoy_id || pipelineConvoyIds.has(r.convoy_id));
-      }
-    }
-
-    if (convoyFilter) {
-      sessions = sessions.filter((s) => s.convoy_id === convoyFilter);
-      delegations = delegations.filter((d) => d.convoy_id === convoyFilter);
-      panels = panels.filter((p) => p.convoy_id === convoyFilter);
-      reviews = reviews.filter((r) => r.convoy_id === convoyFilter);
-    }
-
-    const convoySection = document.getElementById('convoy-section');
-    if (convoySection) {
-      convoySection.style.display = convoyFilter ? '' : 'none';
-      if (convoyFilter) {
-        const convoy = rawConvoys.find((c) => c.id === convoyFilter);
-        renderConvoyStatus(convoy);
-      }
-    }
-
-    // Show/hide convoy pipeline section based on pipeline filter
-    const pipelineSectionEl = document.getElementById('convoy-pipeline-section');
-    if (pipelineSectionEl) {
-      if (pipelineFilter) {
-        const activePipeline = rawPipelines.find((p) => p.id === pipelineFilter);
-        renderConvoyPipeline(activePipeline, rawConvoys);
-      } else {
-        pipelineSectionEl.style.display = 'none';
-      }
-    }
-
-    renderAll(sessions, delegations, panels, reviews);
-  }
-
-  function populateAgentFilter(sessions, delegations, reviews) {
-    const agents = new Set();
-    sessions.forEach((s) => agents.add(s.agent));
-    delegations.forEach((d) => agents.add(d.agent));
-    reviews.forEach((r) => agents.add(r.agent));
-    const select = document.getElementById('filter-agent');
-    if (!select) return;
-    // Keep the "All agents" option, remove old dynamic options
-    while (select.options.length > 1) select.remove(1);
-    Array.from(agents).sort().forEach((a) => {
-      const opt = document.createElement('option');
-      opt.value = a;
-      opt.textContent = a;
-      select.appendChild(opt);
-    });
-  }
-
-  function renderAll(sessions, delegations, panels, reviews) {
-    const allEmpty = sessions.length === 0 && delegations.length === 0 && panels.length === 0 && reviews.length === 0;
-    if (allEmpty) {
-      renderWelcomeBanner();
-    } else {
-      removeWelcomeBanner();
-    }
-
-    renderKpis(sessions, delegations, reviews);
-    renderPipeline(delegations);
-    renderAgentChart(sessions);
-    renderTierChart(delegations);
-    renderMechanismChart(delegations);
-    renderDelegationOutcomeChart(delegations);
-    renderTimelineChart(sessions, delegations);
-    renderModelChart(sessions);
-    renderExecutionLog(sessions);
-    renderPanelChart(panels);
-    renderReviewsTable(reviews);
-    renderSessionsTable(sessions);
-  }
-
-  // ── Reviews Table ─────────────────────────────────────────
-
-  function renderReviewsTable(reviews) {
-    const el = document.getElementById('reviews-table');
-    if (!el) return;
-
-    const sorted = reviews
-      .slice()
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-      .slice(0, 20);
-
-    if (sorted.length === 0) {
-      el.innerHTML = emptyStateHtml('panels', 'No fast reviews yet', 'Single-reviewer quality gate results — with verdicts, issue counts, and escalation status — will be listed here.');
-      return;
-    }
-
-    el.innerHTML =
-      '<table class="sessions-table">' +
-      '<thead><tr>' +
-      '<th>Timestamp</th>' +
-      '<th>Agent</th>' +
-      '<th>Verdict</th>' +
-      '<th>Critical</th>' +
-      '<th>Major</th>' +
-      '<th>Minor</th>' +
-      '<th>Confidence</th>' +
-      '<th>Attempt</th>' +
-      '<th>Escalated</th>' +
-      '<th>Issue</th>' +
-      '</tr></thead>' +
-      '<tbody>' +
-      sorted
-        .map(
-          (r) =>
-            '<tr>' +
-            '<td>' + formatTime(r.timestamp) + '</td>' +
-            '<td class="td-agent">' + escapeHtml(r.agent || '') + '</td>' +
-            '<td><span class="outcome-badge outcome-badge--' + (r.verdict === 'pass' ? 'success' : 'failed') + '">' + r.verdict + '</span></td>' +
-            '<td class="td-num">' + (r.issues_critical ?? 0) + '</td>' +
-            '<td class="td-num">' + (r.issues_major ?? 0) + '</td>' +
-            '<td class="td-num">' + (r.issues_minor ?? 0) + '</td>' +
-            '<td class="td-num">' + (r.confidence || '\u2014') + '</td>' +
-            '<td class="td-num">' + (r.attempt ?? 1) + '</td>' +
-            '<td class="td-num">' + (r.escalated ? '\u26A0' : '\u2014') + '</td>' +
-            '<td class="td-issue">' + (r.tracker_issue ? escapeHtml(r.tracker_issue) : '\u2014') + '</td>' +
-            '</tr>'
-        )
-        .join('') +
-      '</tbody></table>';
-  }
-
-  // ── Export ─────────────────────────────────────────────────
-
-  function exportData() {
-    const events = [
-      ...rawSessions,
-      ...rawDelegations,
-      ...rawPanels,
-      ...rawReviews,
-    ].sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-    const blob = new Blob([events.map((e) => JSON.stringify(e)).join('\n') + '\n'], { type: 'application/x-ndjson' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'opencastle-events-' + new Date().toISOString().slice(0, 10) + '.ndjson';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function populateConvoyFilter(convoys) {
-    const select = document.getElementById('filter-convoy');
-    if (!select) return;
-    while (select.options.length > 1) select.remove(1);
-    const sorted = convoys.slice().sort((a, b) => b.created_at.localeCompare(a.created_at));
-    sorted.forEach((c) => {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = c.name + ' (' + c.status + ')';
-      select.appendChild(opt);
-    });
-  }
-
-  function renderConvoyStatus(convoy) {
-    const descEl = document.getElementById('convoy-desc');
-    const bodyEl = document.getElementById('convoy-body');
-    if (!descEl || !bodyEl) return;
-
-    if (!convoy) {
-      bodyEl.innerHTML = emptyStateHtml('pipeline', 'Convoy not found', 'No matching convoy data available.');
-      return;
-    }
-
-    descEl.textContent = convoy.name + ' — ' + (convoy.branch || 'no branch');
-
-    const s = convoy.summary || {};
-    const total = s.total || (convoy.tasks ? convoy.tasks.length : 0);
-    const done = s.done || 0;
-    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-
-    const statusClass = convoy.status === 'done' ? 'success'
-      : (convoy.status === 'failed' || convoy.status === 'gate-failed') ? 'failed'
-      : convoy.status === 'running' ? 'partial' : '';
-
-    let html = '';
-    html += '<div class="convoy-overview">';
-    html += '<div class="convoy-stat"><span class="convoy-stat__label">Status</span><span class="outcome-badge outcome-badge--' + statusClass + '">' + escapeHtml(convoy.status) + '</span></div>';
-    html += '<div class="convoy-stat"><span class="convoy-stat__label">Branch</span><span class="convoy-stat__value">' + escapeHtml(convoy.branch || '\u2014') + '</span></div>';
-    html += '<div class="convoy-stat"><span class="convoy-stat__label">Tasks</span><span class="convoy-stat__value">' + done + '/' + total + '</span></div>';
-    html += '<div class="convoy-stat"><span class="convoy-stat__label">Events</span><span class="convoy-stat__value">' + (convoy.events_count || 0) + '</span></div>';
-    html += '<div class="convoy-stat"><span class="convoy-stat__label">Started</span><span class="convoy-stat__value">' + (convoy.started_at ? formatTime(convoy.started_at) : '\u2014') + '</span></div>';
-    if (convoy.total_tokens != null) {
-      html += '<div class="convoy-stat"><span class="convoy-stat__label">Tokens</span><span class="convoy-stat__value">' + formatTokens(convoy.total_tokens) + '</span></div>';
-    }
-    if (convoy.finished_at) {
-      html += '<div class="convoy-stat"><span class="convoy-stat__label">Finished</span><span class="convoy-stat__value">' + formatTime(convoy.finished_at) + '</span></div>';
-    }
-    const convoyDur = formatDuration(convoy.started_at, convoy.finished_at);
-    if (convoyDur) {
-      html += '<div class="convoy-stat"><span class="convoy-stat__label">Duration</span><span class="convoy-stat__value">' + convoyDur + '</span></div>';
-    }
-    if (convoy.total_cost_usd != null && convoy.total_cost_usd > 0) {
-      html += '<div class="convoy-stat"><span class="convoy-stat__label">Cost</span><span class="convoy-stat__value">$' + convoy.total_cost_usd.toFixed(2) + '</span></div>';
-    }
-    const failedCount = (s.failed || 0) + (s.timedOut || 0);
-    if (failedCount > 0) {
-      html += '<div class="convoy-stat"><span class="convoy-stat__label">Failed</span><span class="convoy-stat__value convoy-stat__value--error">' + failedCount + '</span></div>';
-    }
-    html += '</div>';
-
-    html += '<div class="convoy-progress">';
-    html += '<div class="convoy-progress__bar"><div class="convoy-progress__fill" style="width:' + pct + '%"></div></div>';
-    html += '<span class="convoy-progress__label">' + pct + '% complete</span>';
-    html += '</div>';
-
-    if (convoy.tasks && convoy.tasks.length > 0) {
-      html += '<table class="sessions-table convoy-tasks">';
-      html += '<thead><tr><th>Task</th><th>Phase</th><th>Agent</th><th>Adapter</th><th>Status</th><th>Retries</th><th>Tokens</th><th>Duration</th></tr></thead>';
-      html += '<tbody>';
-      convoy.tasks.forEach(function(t) {
-        const tStatus = t.status === 'done' ? 'success'
-          : (t.status === 'failed' || t.status === 'timed-out') ? 'failed'
-          : t.status === 'running' ? 'partial' : '';
-        html += '<tr>';
-        html += '<td>' + escapeHtml(t.id) + '</td>';
-        html += '<td class="td-num">' + t.phase + '</td>';
-        html += '<td class="td-agent">' + escapeHtml(t.agent) + '</td>';
-        html += '<td>' + escapeHtml(t.adapter || '\u2014') + '</td>';
-        html += '<td><span class="outcome-badge outcome-badge--' + tStatus + '">' + escapeHtml(t.status) + '</span></td>';
-        html += '<td class="td-num">' + (t.retries || 0) + '</td>';
-        html += '<td class="td-num">' + (t.total_tokens != null ? formatTokens(t.total_tokens) : '\u2014') + '</td>';
-        html += '<td class="td-num">' + (formatDuration(t.started_at, t.finished_at) || '\u2014') + '</td>';
-        html += '</tr>';
-      });
-      html += '</tbody></table>';
-    }
-
-    bodyEl.innerHTML = html;
-  }
-
-  // ── Pipeline Filter Population ───────────────────────────
-
-  function populatePipelineFilter(pipelines) {
-    const select = document.getElementById('filter-pipeline');
-    if (!select) return;
-    while (select.options.length > 1) select.remove(1);
-    const sorted = pipelines.slice().sort((a, b) =>
-      (b.created_at || '').localeCompare(a.created_at || '')
-    );
-    sorted.forEach((p) => {
-      const opt = document.createElement('option');
-      opt.value = p.id;
-      opt.textContent = (p.name || p.id) + ' (' + (p.status || 'unknown') + ')';
-      select.appendChild(opt);
-    });
-  }
-
-  // ── Convoy Pipeline (Chaining) Render ────────────────────
-
-  function renderConvoyPipeline(pipeline, convoys) {
-    const sectionEl = document.getElementById('convoy-pipeline-section');
-    const descEl = document.getElementById('convoy-pipeline-desc');
-    const bodyEl = document.getElementById('convoy-pipeline-body');
-    if (!sectionEl || !bodyEl) return;
-
-    if (!pipeline) {
-      sectionEl.style.display = 'none';
-      return;
-    }
-
-    sectionEl.style.display = '';
-    if (descEl) {
-      descEl.textContent =
-        (pipeline.name || pipeline.id) + ' \u2014 ' + (pipeline.branch || 'no branch');
-    }
-
-    const convoyIds = pipeline.convoy_ids || [];
-    const pipelineConvoys = convoyIds
-      .map((id) => convoys.find((c) => c.id === id))
-      .filter(Boolean);
-
-    const total = pipelineConvoys.length;
-    const done = pipelineConvoys.filter((c) => c.status === 'done').length;
-    const failed = pipelineConvoys.filter(
-      (c) => c.status === 'failed' || c.status === 'gate-failed'
-    ).length;
-    const totalTasks = pipelineConvoys.reduce((sum, c) => {
-      const s = c.summary || {};
-      return sum + (s.total || (c.tasks ? c.tasks.length : 0));
-    }, 0);
-    const doneTasks = pipelineConvoys.reduce((sum, c) => {
-      const s = c.summary || {};
-      return sum + (s.done || 0);
-    }, 0);
-    const totalTokens = pipelineConvoys.reduce((sum, c) => sum + (c.total_tokens || 0), 0);
-
-    const pct =
-      totalTasks > 0
-        ? Math.round((doneTasks / totalTasks) * 100)
-        : total > 0
-          ? Math.round((done / total) * 100)
-          : 0;
-
-    const statusClass =
-      pipeline.status === 'done'
-        ? 'success'
-        : pipeline.status === 'failed' || pipeline.status === 'gate-failed'
-          ? 'failed'
-          : pipeline.status === 'running'
-            ? 'partial'
-            : '';
-
-    let html = '<div class="convoy-overview">';
-    html +=
-      '<div class="convoy-stat"><span class="convoy-stat__label">Status</span>' +
-      '<span class="outcome-badge outcome-badge--' + statusClass + '">' +
-      escapeHtml(pipeline.status || 'unknown') + '</span></div>';
-    html +=
-      '<div class="convoy-stat"><span class="convoy-stat__label">Branch</span>' +
-      '<span class="convoy-stat__value">' + escapeHtml(pipeline.branch || '\u2014') + '</span></div>';
-    html +=
-      '<div class="convoy-stat"><span class="convoy-stat__label">Convoys</span>' +
-      '<span class="convoy-stat__value">' + done + '/' + total + '</span></div>';
-    if (totalTasks > 0) {
-      html +=
-        '<div class="convoy-stat"><span class="convoy-stat__label">Tasks</span>' +
-        '<span class="convoy-stat__value">' + doneTasks + '/' + totalTasks + '</span></div>';
-    }
-    if (totalTokens > 0) {
-      html +=
-        '<div class="convoy-stat"><span class="convoy-stat__label">Tokens</span>' +
-        '<span class="convoy-stat__value">' + formatTokens(totalTokens) + '</span></div>';
-    }
-    html +=
-      '<div class="convoy-stat"><span class="convoy-stat__label">Started</span>' +
-      '<span class="convoy-stat__value">' +
-      (pipeline.started_at ? formatTime(pipeline.started_at) : '\u2014') + '</span></div>';
-    if (pipeline.finished_at) {
-      html +=
-        '<div class="convoy-stat"><span class="convoy-stat__label">Finished</span>' +
-        '<span class="convoy-stat__value">' + formatTime(pipeline.finished_at) + '</span></div>';
-    }
-    const pipelineDur = formatDuration(pipeline.started_at, pipeline.finished_at);
-    if (pipelineDur) {
-      html +=
-        '<div class="convoy-stat"><span class="convoy-stat__label">Duration</span>' +
-        '<span class="convoy-stat__value">' + pipelineDur + '</span></div>';
-    }
-    if (pipeline.total_cost_usd != null && pipeline.total_cost_usd > 0) {
-      html +=
-        '<div class="convoy-stat"><span class="convoy-stat__label">Cost</span>' +
-        '<span class="convoy-stat__value">$' + pipeline.total_cost_usd.toFixed(2) + '</span></div>';
-    }
-    html += '</div>';
-
-    // Convoy chain visualization
-    html += '<div class="convoy-chain">';
-    pipelineConvoys.forEach((convoy, i) => {
-      const cs = convoy.summary || {};
-      const cDone = cs.done || 0;
-      const cTotal = cs.total || (convoy.tasks ? convoy.tasks.length : 0);
-      const cTokens = convoy.total_tokens || 0;
-      const isActive =
-        (pipeline.current_convoy_id && pipeline.current_convoy_id === convoy.id) ||
-        convoy.status === 'running';
-      const nodeStatusClass =
-        convoy.status === 'done'
-          ? 'done'
-          : convoy.status === 'failed' || convoy.status === 'gate-failed'
-            ? 'failed'
-            : isActive
-              ? 'active'
-              : 'pending';
-      const badgeClass =
-        convoy.status === 'done'
-          ? 'success'
-          : convoy.status === 'failed' || convoy.status === 'gate-failed'
-            ? 'failed'
-            : convoy.status === 'running'
-              ? 'partial'
-              : '';
-
-      if (i > 0) {
-        html += '<div class="convoy-chain__connector">\u2192</div>';
-      }
-      html +=
-        '<div class="convoy-chain__node convoy-chain__node--' + nodeStatusClass +
-        '" data-convoy-id="' + escapeHtml(convoy.id) + '" title="Click to filter to this convoy">';
-      html += '<div class="convoy-chain__node-name">' + escapeHtml(convoy.name || convoy.id) + '</div>';
-      html +=
-        '<span class="outcome-badge outcome-badge--' + badgeClass + '">' +
-        escapeHtml(convoy.status) + '</span>';
-      if (cTotal > 0) {
-        html += '<div class="convoy-chain__node-meta">' + cDone + '/' + cTotal + ' tasks</div>';
-      }
-      if (cTokens > 0) {
-        html += '<div class="convoy-chain__node-meta">' + formatTokens(cTokens) + ' tokens</div>';
-      }
-      html += '</div>';
-    });
-    html += '</div>';
-
-    // Progress bar
-    html += '<div class="convoy-progress">';
-    html +=
-      '<div class="convoy-progress__bar">' +
-      '<div class="convoy-progress__fill" style="width:' + pct + '%"></div></div>';
-    html +=
-      '<span class="convoy-progress__label">' + pct + '% complete' +
-      (failed > 0 ? ' \u00B7 ' + failed + ' failed' : '') + '</span>';
-    html += '</div>';
-
-    bodyEl.innerHTML = html;
-
-    // Click handlers for convoy drill-down
-    bodyEl.querySelectorAll('.convoy-chain__node').forEach((node) => {
-      node.addEventListener('click', () => {
-        const convoyId = node.dataset.convoyId;
-        const sel = document.getElementById('filter-convoy');
-        if (sel && convoyId) {
-          sel.value = convoyId;
-          applyFilters();
-        }
+    html += '</tbody></table>';
+    wrap.innerHTML = html;
+
+    wrap.querySelectorAll('tr[data-convoy-id]').forEach(row => {
+      row.addEventListener('click', () => {
+        const id = row.dataset.convoyId;
+        const nameCell = row.querySelector('td strong');
+        showConvoyDetailView(id, nameCell ? nameCell.textContent : id);
       });
     });
   }
@@ -1874,30 +536,6 @@ try {
     return hr + 'h ' + remMin + 'm';
   }
 
-  // ── Convoy Selector ──────────────────────────────────────
-
-  function populateConvoySelector() {
-    const data = window.__DASHBOARD_DATA__;
-    const select = document.getElementById('convoy-select');
-    if (!select || !data || !data.convoyList) return;
-
-    select.innerHTML = '<option value="">Select convoy\u2026</option>';
-    const list = data.convoyList;
-    for (const c of list) {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      const dateStr = c.created_at ? c.created_at.slice(0, 10) : '';
-      opt.textContent = (c.name || c.id) + ' \u2014 ' + c.status + ' (' + dateStr + ')';
-      select.appendChild(opt);
-    }
-
-    // Default: select latest (first in list)
-    if (list.length > 0) {
-      select.value = list[0].id;
-      loadConvoyDetail(list[0].id);
-    }
-  }
-
   async function loadConvoyDetail(convoyId) {
     if (!convoyId) {
       renderConvoyDetailHeader(null);
@@ -1934,9 +572,9 @@ try {
   }
 
   function renderConvoyDetailHeader(detail) {
-    const nameEl = document.getElementById('selected-convoy-name');
-    const statusEl = document.getElementById('selected-convoy-status');
-    const metaEl = document.getElementById('selected-convoy-meta');
+    const nameEl = document.getElementById('detail-hero-title');
+    const statusEl = document.getElementById('detail-hero-status');
+    const metaEl = document.getElementById('detail-hero-meta');
 
     if (!detail || !detail.convoy) {
       if (nameEl) nameEl.textContent = 'No convoy selected';
@@ -1963,11 +601,6 @@ try {
       'gate-failed': 'This run stopped because a quality check failed.',
       'hook-failed': 'This run stopped because a lifecycle script failed.',
     };
-    const explanationEl = document.getElementById('convoy-status-explanation');
-    if (explanationEl) {
-      explanationEl.textContent = statusExplanations[c.status] || '';
-      explanationEl.style.display = statusExplanations[c.status] ? '' : 'none';
-    }
     if (metaEl) {
       let html = '';
       if (c.branch) html += '<span class="convoy-meta__item">🌿 ' + escapeHtml(c.branch) + '</span>';
@@ -2509,57 +1142,22 @@ try {
   }
 
   async function main() {
-    const events = await loadNdjson(base + 'data/events.ndjson');
-    const pipelines = await loadNdjson(base + 'data/pipelines.ndjson');
     const convoys = window.__DASHBOARD_DATA__?.convoyList ?? [];
 
-    const sessions = events.filter((e) => e.type === 'session');
-    const delegations = events.filter((e) => e.type === 'delegation');
-    const panels = events.filter((e) => e.type === 'panel');
-    const reviews = events.filter((e) => e.type === 'review');
-
-    rawSessions = sessions;
-    rawDelegations = delegations;
-    rawPanels = panels;
-    rawReviews = reviews;
-    rawConvoys = convoys;
-    rawPipelines = pipelines;
-
-    populateAgentFilter(sessions, delegations, reviews);
-    populateConvoyFilter(convoys);
-    populatePipelineFilter(pipelines);
-
-    // ── Read URL params ───────────────────────────────────
     const urlParams = new URLSearchParams(window.location.search);
     const convoyParam = urlParams.get('convoy');
+
     if (convoyParam === 'active') {
-      const running = rawConvoys.find((c) => c.status === 'running');
-      const latest = rawConvoys.slice().sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+      const running = convoys.find((c) => c.status === 'running');
+      const latest = convoys.slice().sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
       const target = running || latest;
-      if (target) {
-        const sel = document.getElementById('filter-convoy');
-        if (sel) sel.value = target.id;
-      }
+      if (target) showConvoyDetailView(target.id, target.name || target.id);
     } else if (convoyParam) {
-      const sel = document.getElementById('filter-convoy');
-      if (sel) sel.value = convoyParam;
+      showConvoyDetailView(convoyParam, convoyParam);
     }
 
-    renderAll(sessions, delegations, panels, reviews);
-
-    // Apply convoy param after initial render (shows convoy section if needed)
-    if (convoyParam) applyFilters();
-
-    // ── Overall stats + convoy selector ──────────────────
     renderOverallStats();
-    populateConvoySelector();
-
-    const convoySelectEl = document.getElementById('convoy-select');
-    if (convoySelectEl) {
-      convoySelectEl.addEventListener('change', function() {
-        loadConvoyDetail(this.value);
-      });
-    }
+    renderConvoyList();
 
     var loadMoreBtn = document.getElementById('event-timeline-more-btn');
     if (loadMoreBtn) {
@@ -2569,66 +1167,47 @@ try {
       });
     }
 
-    // ── Filter event listeners ────────────────────────────
-    document.getElementById('filter-date-from')?.addEventListener('change', applyFilters);
-    document.getElementById('filter-date-to')?.addEventListener('change', applyFilters);
-    document.getElementById('filter-agent')?.addEventListener('change', applyFilters);
-    document.getElementById('filter-outcome')?.addEventListener('change', applyFilters);
-    document.getElementById('filter-convoy')?.addEventListener('change', applyFilters);
-    document.getElementById('filter-pipeline')?.addEventListener('change', applyFilters);
-    document.getElementById('filter-reset')?.addEventListener('click', () => {
-      document.getElementById('filter-date-from').value = '';
-      document.getElementById('filter-date-to').value = '';
-      document.getElementById('filter-agent').value = '';
-      document.getElementById('filter-outcome').value = '';
-      document.getElementById('filter-convoy').value = '';
-      document.getElementById('filter-pipeline').value = '';
-      applyFilters();
+    document.getElementById('breadcrumbs-home')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      showHomeView();
     });
 
-    // ── Auto-refresh for live convoy monitoring ───────────
-    let refreshInterval = null;
-    function startAutoRefresh() {
-      if (refreshInterval) return;
-      refreshInterval = setInterval(async () => {
-        const freshEvents = await loadNdjson(base + 'data/events.ndjson');
-        const freshConvoys = await loadJson(base + 'data/convoy-list.json');
-        const freshPipelines = await loadNdjson(base + 'data/pipelines.ndjson');
-        rawSessions = freshEvents.filter((e) => e.type === 'session');
-        rawDelegations = freshEvents.filter((e) => e.type === 'delegation');
-        rawPanels = freshEvents.filter((e) => e.type === 'panel');
-        rawReviews = freshEvents.filter((e) => e.type === 'review');
-        rawConvoys = freshConvoys;
-        rawPipelines = freshPipelines;
-        const currentValue = document.getElementById('filter-convoy')?.value;
-        const currentPipelineValue = document.getElementById('filter-pipeline')?.value;
-        populateConvoyFilter(freshConvoys);
-        populatePipelineFilter(freshPipelines);
-        const sel = document.getElementById('filter-convoy');
-        if (sel && currentValue) sel.value = currentValue;
-        const pSel = document.getElementById('filter-pipeline');
-        if (pSel && currentPipelineValue) pSel.value = currentPipelineValue;
-        applyFilters();
-      }, 5000);
-    }
+    document.getElementById('cl-filter-search')?.addEventListener('input', renderConvoyList);
+    document.getElementById('cl-filter-status')?.addEventListener('change', renderConvoyList);
+    document.getElementById('cl-filter-from')?.addEventListener('change', renderConvoyList);
+    document.getElementById('cl-filter-to')?.addEventListener('change', renderConvoyList);
+    document.getElementById('cl-filter-reset')?.addEventListener('click', () => {
+      const s = document.getElementById('cl-filter-search'); if (s) s.value = '';
+      const st = document.getElementById('cl-filter-status'); if (st) st.value = '';
+      const f = document.getElementById('cl-filter-from'); if (f) f.value = '';
+      const t = document.getElementById('cl-filter-to'); if (t) t.value = '';
+      renderConvoyList();
+    });
 
-    const selectedConvoy = rawConvoys.find((c) => c.id === document.getElementById('filter-convoy')?.value);
-    if (convoyParam === 'active' || (selectedConvoy && selectedConvoy.status === 'running')) {
-      startAutoRefresh();
-    }
+    window.addEventListener('popstate', () => {
+      const params = new URLSearchParams(window.location.search);
+      const c = params.get('convoy');
+      if (c) {
+        loadConvoyDetail(c);
+        const home = document.getElementById('view-home');
+        const detail = document.getElementById('view-convoy-detail');
+        const breadcrumbs = document.getElementById('breadcrumbs');
+        if (home) home.dataset.viewHidden = '';
+        if (detail) delete detail.dataset.viewHidden;
+        if (breadcrumbs) delete breadcrumbs.dataset.viewHidden;
+        document.querySelectorAll('.dash-sidebar__link[data-view="home"]').forEach(el => el.closest('li').style.display = 'none');
+        document.querySelectorAll('.dash-sidebar__link[data-view="detail"]').forEach(el => el.closest('li').style.display = '');
+      } else {
+        showHomeView();
+      }
+    });
 
-    // ── Export button ─────────────────────────────────────
-    document.getElementById('export-btn')?.addEventListener('click', exportData);
-
-    // ── Sidebar Navigation ────────────────────────────────
     initSidebarNav();
   }
-
   function initSidebarNav() {
-    const links = document.querySelectorAll('.dash-sidebar__link');
-    const sections = document.querySelectorAll('[data-nav-section]');
+    const links = document.querySelectorAll(".dash-sidebar__link");
+    const sections = document.querySelectorAll("[data-nav-section]");
 
-    // Intersection observer for active state
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -2636,55 +1215,50 @@ try {
             const id = entry.target.id;
             links.forEach((link) => {
               link.classList.toggle(
-                'dash-sidebar__link--active',
+                "dash-sidebar__link--active",
                 link.dataset.section === id
               );
             });
           }
         });
       },
-      { rootMargin: '-20% 0px -70% 0px', threshold: 0 }
+      { rootMargin: "-20% 0px -70% 0px", threshold: 0 }
     );
 
     sections.forEach((s) => observer.observe(s));
 
-    // Convoy-detail sections that start hidden and need a convoy selected first
-    const CONVOY_DETAIL_SECTIONS = ['tasks-section', 'quality-section', 'reliability-section', 'drift-section', 'outputs-section', 'event-timeline-section'];
+    const CONVOY_DETAIL_SECTIONS = ["tasks-section", "quality-section", "reliability-section", "drift-section", "outputs-section", "event-timeline-section"];
 
-    // Smooth scroll on click
     links.forEach((link) => {
-      link.addEventListener('click', async (e) => {
+      link.addEventListener("click", async (e) => {
         e.preventDefault();
         const sectionId = link.dataset.section;
 
         if (CONVOY_DETAIL_SECTIONS.includes(sectionId)) {
-          // Auto-select and load convoy detail if none selected yet
-          const convoySelectEl = document.getElementById('convoy-select');
-          if (convoySelectEl && !convoySelectEl.value && convoySelectEl.options.length > 1) {
-            convoySelectEl.value = convoySelectEl.options[1].value;
-            await loadConvoyDetail(convoySelectEl.value);
-          }
-        } else if (sectionId === 'convoy-section') {
-          const convoyFilterEl = document.getElementById('filter-convoy');
-          if (convoyFilterEl && !convoyFilterEl.value && convoyFilterEl.options.length > 1) {
-            convoyFilterEl.value = convoyFilterEl.options[1].value;
-            applyFilters();
-          }
-        } else if (sectionId === 'convoy-pipeline-section') {
-          const pipelineSelect = document.getElementById('filter-pipeline');
-          if (pipelineSelect && !pipelineSelect.value && pipelineSelect.options.length > 1) {
-            pipelineSelect.value = pipelineSelect.options[1].value;
-            applyFilters();
+          const convoyList = window.__DASHBOARD_DATA__?.convoyList ?? [];
+          if (!window.__SELECTED_CONVOY__ && convoyList.length > 0) {
+            showConvoyDetailView(convoyList[0].id, convoyList[0].name || convoyList[0].id);
           }
         }
 
         const target = document.getElementById(sectionId);
         if (target) {
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
         }
       });
     });
+
+    // Set initial nav visibility based on current view
+    const initialParams = new URLSearchParams(window.location.search);
+    if (initialParams.get('convoy')) {
+      document.querySelectorAll('.dash-sidebar__link[data-view="home"]').forEach(el => el.closest('li').style.display = 'none');
+      document.querySelectorAll('.dash-sidebar__link[data-view="detail"]').forEach(el => el.closest('li').style.display = '');
+    } else {
+      document.querySelectorAll('.dash-sidebar__link[data-view="detail"]').forEach(el => el.closest('li').style.display = 'none');
+      document.querySelectorAll('.dash-sidebar__link[data-view="home"]').forEach(el => el.closest('li').style.display = '');
+    }
   }
+
 
   main();
 </script>

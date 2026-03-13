@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { c } from './prompt.js'
+import { c, confirm, closePrompts } from './prompt.js'
 import { runPromptStep } from './plan.js'
 import type { CliContext } from './types.js'
 
@@ -229,7 +229,7 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
   console.log(c.green(`  ✓ Convoy spec written to ${relPath(specPath)}\n`))
 
   if (opts.skipValidation) {
-    printFinalSummary(prdPath, specPath)
+    await printFinalSummary(prdPath, specPath, opts, pkgRoot)
     return
   }
 
@@ -254,7 +254,7 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
 
     if (result.isValid) {
       console.log(c.green(`  ✓ Convoy spec is valid\n`))
-      printFinalSummary(prdPath, specPath)
+      await printFinalSummary(prdPath, specPath, opts, pkgRoot)
       return
     }
 
@@ -305,7 +305,7 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
 
     if (revalidation.isValid) {
       console.log(c.green(`  ✓ Spec fixed and validated\n`))
-      printFinalSummary(prdPath, specPath)
+      await printFinalSummary(prdPath, specPath, opts, pkgRoot)
       return
     }
 
@@ -330,7 +330,12 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
   process.exit(1)
 }
 
-function printFinalSummary(prdPath: string, specPath: string): void {
+async function printFinalSummary(
+  prdPath: string,
+  specPath: string,
+  opts: PipelineOptions,
+  pkgRoot: string,
+): Promise<void> {
   const prd = relPath(prdPath)
   const spec = relPath(specPath)
   console.log(c.bold(c.green('  Pipeline complete!\n')))
@@ -340,4 +345,18 @@ function printFinalSummary(prdPath: string, specPath: string): void {
     `  ${c.dim('Preview:')} npx opencastle run -f ${spec} --dry-run\n` +
       `  ${c.dim('Execute:')} npx opencastle run -f ${spec}\n`
   )
+
+  try {
+    const shouldRun = await confirm('Run the convoy now?', true)
+    if (shouldRun) {
+      closePrompts()
+      const runModule = await import('./run.js')
+      const runArgs = ['-f', specPath]
+      if (opts.adapter) runArgs.push('-a', opts.adapter)
+      if (opts.verbose) runArgs.push('--verbose')
+      await runModule.default({ args: runArgs, pkgRoot })
+    }
+  } finally {
+    closePrompts()
+  }
 }

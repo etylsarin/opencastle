@@ -101,6 +101,7 @@ function makeSpec(
  * run real git branch operations. Callers can override _ensureBranch if needed. */
 function makeEngine(opts: ConvoyEngineOptions): ReturnType<typeof createConvoyEngine> {
   return createConvoyEngine({
+    logsDir: join(tmpDir, 'logs'),  // prevents test data in production logs
     _ensureBranch: vi.fn().mockResolvedValue(undefined),
     ...opts,
   })

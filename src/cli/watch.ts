@@ -134,9 +134,7 @@ export async function watchLoop(options: WatchLoopOptions): Promise<void> {
   const dbPath = resolve(process.cwd(), '.opencastle', 'convoy.db')
   mkdirSync(dirname(dbPath), { recursive: true })
   const evtStore = createConvoyStore(dbPath)
-  const ndjsonPath = resolve(process.cwd(), '.opencastle', 'logs', 'convoy-events.ndjson')
-  mkdirSync(dirname(ndjsonPath), { recursive: true })
-  const watchEvents = createEventEmitter(evtStore, { ndjsonPath })
+  const watchEvents = createEventEmitter(evtStore)
 
   const triggerTypes = watchConfig.triggers.map(t => t.type).join(',')
   watchEvents.emit('watch_started', { trigger_type: triggerTypes, pid: process.pid })

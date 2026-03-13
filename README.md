@@ -71,10 +71,17 @@ MCP servers are auto-configured for your stack in each IDE's native format.
 | `opencastle update` | Update framework files (keeps your customizations) |
 | `opencastle eject` | Remove the dependency, keep all files |
 | `opencastle destroy` | Remove ALL OpenCastle files (reverse of init) |
-| `opencastle plan` | Generate a convoy spec from a task description |
+| `opencastle pipeline` | Go from idea to convoy spec in one command (PRD → validate → convoy → validate → fix) |
+| `opencastle plan` | Run a single prompt template step (generate PRD, convoy spec, or validate) |
+| `opencastle validate` | Validate a convoy YAML spec file without executing it |
 | `opencastle run` | Run the Convoy Engine (deterministic, crash-recoverable orchestrator) |
+| `opencastle dispute` | Manage convoy dispute resolution |
 | `opencastle dashboard` | Open the observability dashboard |
 | `opencastle doctor` | Validate your setup and surface issues |
+| `opencastle agents` | Manage persistent agent identities |
+| `opencastle baselines` | Manage visual regression baselines |
+| `opencastle log` | Append a structured event to the observability log |
+| `opencastle lesson` | Append a structured lesson to LESSONS-LEARNED.md |
 
 Add `--dry-run` to any command to preview what it would change without writing files.
 
@@ -167,11 +174,13 @@ gates:
 - **Observable** — real-time dashboard auto-starts during execution.
 - **Multi-runtime** — mix Copilot, Claude Code, Cursor, and OpenCode in the same convoy.
 
-Generate a convoy spec from a plain text description — no YAML by hand:
+Generate a validated convoy spec from a plain text description — no YAML by hand:
 
 ```bash
-npx opencastle plan --file task.txt
+npx opencastle pipeline --text "Add user reviews to the place detail page"
 ```
+
+The pipeline command runs 5 steps automatically: generate PRD → validate PRD → generate convoy spec → validate spec → auto-fix if needed. For lower-level control, use `opencastle plan` to run individual steps.
 
 📖 [Full Convoy Engine documentation →](https://www.opencastle.dev/docs/cli#run)
 

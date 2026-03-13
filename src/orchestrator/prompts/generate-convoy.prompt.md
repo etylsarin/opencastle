@@ -151,6 +151,13 @@ Enables continuous re-execution triggered by file changes, cron, or git push.
 | `cron` | `schedule` (5-field cron) | Re-run on cron schedule |
 | `git-push` | `branch` | Re-run when new commits are pushed |
 
+### Content Research Rule
+
+When writing task `prompt` fields that involve creating content about real-world people, places, organizations, or topics — **include an explicit instruction in the prompt** telling the agent to search the internet first using any available web search or fetch tools (e.g. `fetch_webpage`, web search MCP). Agents must never fabricate bios, descriptions, histories, statistics, or any factual claims. If web search is unavailable, the prompt should instruct the agent to use placeholder text clearly marked as `[NEEDS RESEARCH]` rather than inventing content.
+
+Example prompt suffix to include when content research is needed:
+> "Before writing any content about [topic], search the internet for accurate information. Do not make up facts, descriptions, or biographical details. Use verified sources only."
+
 ### Task Fields
 
 | Field | Type | Required | Default | Description |

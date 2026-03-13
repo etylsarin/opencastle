@@ -20,7 +20,6 @@ const MIME_TYPES: Record<string, string> = {
 
 const DATA_FILES = [
   'events.ndjson',
-  'convoys.ndjson',
   'pipelines.ndjson',
   // Legacy individual files — kept for backwards compatibility
   'sessions.ndjson',
@@ -35,6 +34,7 @@ interface DashboardArgs {
   openBrowser: boolean
   seed: boolean
   convoyId?: string
+  help: boolean
 }
 
 export interface DashboardServerOptions {
@@ -51,14 +51,30 @@ export interface DashboardServerResult {
   url: string
 }
 
+const DASHBOARD_HELP = `
+  opencastle dashboard [options]
+
+  Start the observability dashboard server.
+
+  Options:
+    --port <number>    Port to listen on (default: 4300, auto-increments if busy)
+    --no-open          Don't auto-open the browser
+    --seed             Show demo data instead of project logs
+    --convoy <id>      Filter dashboard to a specific convoy
+    --help, -h         Show this help
+`
+
 function parseArgs(args: string[]): DashboardArgs {
   let port = 4300
   let openBrowser = true
   let seed = false
   let convoyId: string | undefined
+  let help = false
 
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--port' && args[i + 1]) {
+    if (args[i] === '--help' || args[i] === '-h') {
+      help = true
+    } else if (args[i] === '--port' && args[i + 1]) {
       port = parseInt(args[i + 1], 10)
       i++
     } else if (args[i] === '--no-open') {
@@ -71,7 +87,7 @@ function parseArgs(args: string[]): DashboardArgs {
     }
   }
 
-  return { port, openBrowser, seed, convoyId }
+  return { port, openBrowser, seed, convoyId, help }
 }
 
 function openUrl(url: string): void {
@@ -234,19 +250,28 @@ export default async function dashboard({
   pkgRoot,
   args,
 }: CliContext): Promise<void> {
-  const { port, openBrowser, seed, convoyId } = parseArgs(args)
+  const { port, openBrowser, seed, convoyId, help } = parseArgs(args)
+
+  if (help) {
+    console.log(DASHBOARD_HELP)
+    return
+  }
 
   // Check if any log files exist (for messaging)
   let hasLogs = false
   if (!seed) {
     const projectRoot = process.cwd()
+    const convoyLogsDir2 = resolve(projectRoot, '.opencastle', 'logs')
     const logsDir = resolve(projectRoot, '.github', 'customizations', 'logs')
     const checkFiles = ['events.ndjson', ...DATA_FILES]
-    for (const f of checkFiles) {
-      if (await fileExists(join(logsDir, f))) {
-        hasLogs = true
-        break
+    for (const dir of [convoyLogsDir2, logsDir]) {
+      for (const f of checkFiles) {
+        if (await fileExists(join(dir, f))) {
+          hasLogs = true
+          break
+        }
       }
+      if (hasLogs) break
     }
   }
 

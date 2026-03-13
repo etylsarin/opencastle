@@ -4,10 +4,26 @@ import { readManifest } from './manifest.js'
 import { confirm, closePrompts } from './prompt.js'
 import type { CliContext } from './types.js'
 
+const EJECT_HELP = `
+  opencastle eject [options]
+
+  Remove the OpenCastle dependency while keeping all framework files
+  standalone in your project.
+
+  Options:
+    --dry-run       Preview what would be changed without writing files
+    --help, -h      Show this help
+`
+
 export default async function eject({
   pkgRoot: _pkgRoot,
   args,
 }: CliContext): Promise<void> {
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(EJECT_HELP)
+    return
+  }
+
   const projectRoot = process.cwd()
   const dryRun = args.includes('--dry-run') || args.includes('--dryRun')
 

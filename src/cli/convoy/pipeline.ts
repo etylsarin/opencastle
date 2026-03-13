@@ -12,7 +12,6 @@ import {
   type ConvoyResult,
   type ConvoyEngineOptions,
 } from './engine.js'
-import { exportPipelineToNdjson } from './export.js'
 import type { PipelineStatus } from './types.js'
 import { formatDuration } from '../run/executor.js'
 
@@ -240,15 +239,6 @@ export function createPipelineOrchestrator(
       updateStore.close()
     }
 
-    try {
-      const exportStore = createConvoyStore(dbPath)
-      try {
-        await exportPipelineToNdjson(exportStore, pipelineId, options.logsDir)
-      } finally {
-        exportStore.close()
-      }
-    } catch { /* silent */ }
-
     return {
       pipelineId,
       status: finalStatus,
@@ -406,15 +396,6 @@ export function createPipelineOrchestrator(
     } finally {
       updateStore.close()
     }
-
-    try {
-      const exportStore = createConvoyStore(dbPath)
-      try {
-        await exportPipelineToNdjson(exportStore, pipelineId, options.logsDir)
-      } finally {
-        exportStore.close()
-      }
-    } catch { /* silent */ }
 
     return {
       pipelineId,

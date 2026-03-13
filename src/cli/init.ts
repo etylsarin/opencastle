@@ -13,7 +13,23 @@ import { IDE_LABELS } from './types.js'
 import type { CliContext, IdeChoice, TechTool, TeamTool, StackConfig } from './types.js'
 import { bootstrapCustomizations } from './bootstrap.js'
 
+const INIT_HELP = `
+  opencastle init [options]
+
+  Set up OpenCastle in your project — copies framework files, configures
+  IDE adapters, and creates the .opencastle/ directory.
+
+  Options:
+    --dry-run       Preview what would be changed without writing files
+    --help, -h      Show this help
+`
+
 export default async function init({ pkgRoot, args }: CliContext): Promise<void> {
+  if (args.includes('--help') || args.includes('-h')) {
+    console.log(INIT_HELP)
+    return
+  }
+
   const projectRoot = process.cwd()
   const dryRun = args.includes('--dry-run') || args.includes('--dryRun')
 
