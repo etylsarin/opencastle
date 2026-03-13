@@ -3,7 +3,7 @@ import { existsSync } from 'node:fs'
 import { resolve, dirname } from 'node:path'
 import { stringify } from 'yaml'
 import { c, confirm, closePrompts } from './prompt.js'
-import { runPromptStep } from './plan.js'
+import { runPromptStep, readProjectMcpServers } from './plan.js'
 import type { CliContext } from './types.js'
 
 export interface ConvoyGroup {
@@ -185,10 +185,12 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
   }
 
   const totalSteps = opts.skipValidation ? 3 : 6
+  const mcpServers = await readProjectMcpServers(process.cwd())
   const sharedOpts = {
     adapterName: opts.adapter ?? undefined,
     verbose: opts.verbose,
     pkgRoot,
+    ...(mcpServers.length ? { mcpServers } : {}),
   }
 
   console.log(c.bold('\n  opencastle pipeline\n'))
