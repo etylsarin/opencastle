@@ -109,6 +109,19 @@ When calling `runSubagent`, always specify which custom agent to use by name: *"
 
 **After each sub-agent returns**, log the delegation record before doing anything else (before review, before verification). This is a **⛔ hard gate** — do NOT proceed to review or any other action until the delegation is logged. Use the **observability-logging** skill's delegation record command (`--mechanism sub-agent`).
 
+### Empty Output Handling
+
+If a sub-agent returns empty, minimal, or off-topic output:
+
+1. **Never fall back to writing content yourself** — Rule #1 still applies
+2. **Retry with an explicit prompt** — Restate the objective with:
+   - Exact deliverables expected (e.g., "Return the full revised text, not a summary")
+   - The Output Contract from the agent's definition (paste it into the prompt)
+   - An example of what good output looks like
+3. **Escalate the model** — If the Economy-tier agent fails twice, re-delegate to a Standard-tier agent (e.g., use Developer or UI/UX Expert for content tasks that require codebase context)
+4. **Log the failure** — Even if retry succeeds, log the empty-output attempt as a delegation with `outcome: failed` and `failure_reason: empty_output`
+5. **Max 3 attempts** — After 3 empty returns → DLQ the task to `.opencastle/AGENT-FAILURES.md`
+
 > **`model` and `tier` must come from the agent registry** — not the Team Lead's own model. Look up the agent in [agent-registry.md](../.opencastle/agents/agent-registry.md) and use their assigned model and tier. For example, delegating to Developer → `"model":"claude-sonnet-4-6","tier":"quality"`, not the Team Lead's `claude-opus-4-6`.
 
 ### Background Agents — Delegate Session

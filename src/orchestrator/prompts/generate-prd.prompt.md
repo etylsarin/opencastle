@@ -124,3 +124,35 @@ Measurable, binary checks that confirm the feature is shippable:
 - **[Open question]**: [What needs to be decided before implementation can start]
 
 If there are no risks or open questions, write "None identified."
+
+## Complexity Assessment
+
+Produce a fenced JSON block with the following fields. This is consumed programmatically by the pipeline to decide whether to generate a single convoy spec or a convoy chain.
+
+```json
+{
+  "total_tasks": 12,
+  "total_phases": 4,
+  "domains": ["database", "api", "frontend", "testing"],
+  "estimated_duration_minutes": 120,
+  "complexity": "low",
+  "recommended_strategy": "single",
+  "chain_rationale": "",
+  "convoy_groups": [
+    {
+      "name": "full-implementation",
+      "description": "All phases in a single convoy",
+      "phases": [1, 2, 3, 4],
+      "depends_on": []
+    }
+  ]
+}
+```
+
+**Strategy decision rules:**
+- Use `"single"` when: total tasks ≤ 8, or total phases ≤ 3, or all tasks are tightly coupled with heavy cross-phase file sharing.
+- Use `"chain"` when: total tasks > 8 AND total phases > 3 AND domains have natural boundaries (e.g., database changes are independent from frontend components from test suites) — AND splitting would improve failure isolation, observability, or retry granularity.
+- When `"single"`: provide exactly one convoy group covering all phases.
+- When `"chain"`: provide 2–4 convoy groups with explicit `depends_on` order. Each group should cover a coherent domain boundary.
+- `complexity` values: `"low"` (1–4 tasks), `"medium"` (5–8 tasks), `"high"` (9+ tasks).
+- `chain_rationale` is only filled when `recommended_strategy` is `"chain"` — explain WHY splitting benefits this specific feature.
