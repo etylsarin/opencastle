@@ -2,10 +2,11 @@ import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolve, join, basename } from 'node:path'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { getAdapter, detectAdapter } from './run/adapters/index.js'
+import { getAdapter, detectAdapter, cleanupAdapters } from './run/adapters/index.js'
 import { parseTaskSpecText } from './run/schema.js'
 import { c } from './prompt.js'
 import type { CliContext, Task } from './types.js'
+import type { MCPServerConfig } from './convoy/types.js'
 
 const HELP = `
   opencastle plan [options]
@@ -18,11 +19,13 @@ const HELP = `
     --text, -t <text>        Inline text to use as {{goal}} (alternative to --file)
     --template <name>        Prompt template name (default: generate-convoy)
                              Built-in templates:
-                               generate-prd      — Write a PRD from a feature prompt
-                               validate-prd      — Check a PRD for completeness
-                               generate-convoy   — Generate a convoy spec from a PRD (default)
-                               validate-convoy   — Check a convoy spec for correctness
-                               fix-convoy        — Fix validation errors in a convoy spec
+                               generate-prd        — Write a PRD from a feature prompt
+                               validate-prd        — Check a PRD for completeness
+                               fix-prd             — Fix validation errors in a PRD
+                               assess-complexity   — Assess PRD complexity (returns JSON)
+                               generate-convoy     — Generate a convoy spec from a PRD (default)
+                               validate-convoy     — Check a convoy spec for correctness
+                               fix-convoy          — Fix validation errors in a convoy spec
     --context <path>         Optional path to an additional context file (fills {{context}})
     --context-text <text>    Inline text to fill {{context}} (alternative to --context)
     --output, -o <path>      Output path override (skipped for validation output)
@@ -66,6 +69,8 @@ export interface PromptStepOptions {
   dryRun?: boolean
   /** Absolute path to the opencastle package root (for locating prompt templates) */
   pkgRoot: string
+  /** MCP servers to make available to the AI adapter during execution. */
+  mcpServers?: MCPServerConfig[]
 }
 
 export interface PromptStepResult {
@@ -74,7 +79,7 @@ export interface PromptStepResult {
   /** Raw text returned by the AI adapter (or assembled prompt on dry-run) */
   rawOutput: string
   /** How the output was interpreted */
-  outputType: 'convoy-spec' | 'prd' | 'validation'
+  outputType: 'convoy-spec' | 'prd' | 'validation' | 'json'
   /** Set when outputType === 'validation' */
   isValid?: boolean
   /** Set when outputType === 'validation' and isValid === false */
@@ -147,9 +152,19 @@ function parseFrontmatter(text: string): Record<string, string> {
 
 /** Extract YAML content from a fenced ```yaml ... ``` block. */
 function extractYamlBlock(text: string): string | null {
-  const match = text.match(/```ya?ml\s*\n([\s\S]*?)```/)
-  if (!match) return null
-  return match[1].trim()
+  // 1. Prefer explicit yaml/yml fence
+  const yamlFence = text.match(/```ya?ml\s*\n([\s\S]*?)```/)
+  if (yamlFence) return yamlFence[1].trim()
+
+  // 2. Fallback: any code fence whose content looks like a convoy spec
+  //    Must contain at least `name:` AND `tasks:` to avoid false positives
+  const genericFences = [...text.matchAll(/```\s*\n([\s\S]*?)```/g)]
+  for (const m of genericFences) {
+    const content = m[1].trim()
+    if (/^name:/m.test(content) && /^tasks:/m.test(content)) return content
+  }
+
+  return null
 }
 
 /**
@@ -221,6 +236,34 @@ function parseValidationResult(output: string): { isValid: boolean; errors: stri
   return { isValid: false, errors: errorsMatch ? errorsMatch[1].trim() : trimmed }
 }
 
+const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+
+const TEMPLATE_MESSAGES: Record<string, string> = {
+  'generate-prd': 'Generating PRD…',
+  'generate-convoy': 'Generating convoy spec…',
+  'validate-prd': 'Validating PRD…',
+  'validate-convoy': 'Validating convoy spec…',
+  'fix-prd': 'Fixing PRD…',
+  'fix-convoy': 'Fixing convoy spec…',
+}
+
+/** Show an in-place spinner with elapsed time during a long-running adapter call. Returns a stop function. */
+function startProgress(templateName: string): () => void {
+  const message = TEMPLATE_MESSAGES[templateName] ?? `Running ${templateName}…`
+  const startTime = Date.now()
+  let frame = 0
+  const interval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000)
+    const spinner = SPINNER_FRAMES[frame % SPINNER_FRAMES.length]!
+    process.stdout.write(c.dim(`\r  ${spinner} ${message} (${elapsed}s)`))
+    frame++
+  }, 250)
+  return () => {
+    clearInterval(interval)
+    process.stdout.write('\r' + ' '.repeat(60) + '\r')
+  }
+}
+
 // ── Exported programmatic API ───────────────────────────────────────────────
 
 /**
@@ -243,7 +286,7 @@ export async function runPromptStep(opts: PromptStepOptions): Promise<PromptStep
 
   const rawTemplate = await readFile(templatePath, 'utf8')
   const frontmatter = parseFrontmatter(rawTemplate)
-  const outputType = (frontmatter['output'] ?? 'convoy-spec') as 'convoy-spec' | 'prd' | 'validation'
+  const outputType = (frontmatter['output'] ?? 'convoy-spec') as 'convoy-spec' | 'prd' | 'validation' | 'json'
   const template = stripFrontmatter(rawTemplate)
 
   let goalContent = opts.goalText ?? ''
@@ -303,12 +346,33 @@ export async function runPromptStep(opts: PromptStepOptions): Promise<PromptStep
     max_retries: 1,
   }
 
-  const execResult = await adapter.execute(task, { verbose: opts.verbose ?? false })
+  const stop = opts.verbose ? null : startProgress(templateName)
+  let execResult
+  try {
+    execResult = await adapter.execute(task, {
+      verbose: opts.verbose ?? false,
+      ...(opts.mcpServers?.length ? { mcpServers: opts.mcpServers } : {}),
+    })
+  } finally {
+    stop?.()
+  }
   const rawOutput = execResult.output
 
   if (outputType === 'validation') {
     const { isValid, errors } = parseValidationResult(rawOutput)
     return { outputPath: null, rawOutput, outputType, isValid, errors }
+  }
+
+  if (outputType === 'json') {
+    // Extract JSON from fenced block or raw output
+    const jsonMatch = rawOutput.match(/```(?:json)?\s*\n([\s\S]*?)```/)
+    const jsonContent = jsonMatch ? jsonMatch[1].trim() : rawOutput.trim()
+    const outputPath = opts.outputPath ?? null
+    if (outputPath) {
+      await mkdir(resolve(outputPath, '..'), { recursive: true })
+      await writeFile(outputPath, jsonContent + '\n', 'utf8')
+    }
+    return { outputPath, rawOutput: jsonContent, outputType }
   }
 
   if (outputType === 'prd') {
@@ -353,6 +417,48 @@ export async function runPromptStep(opts: PromptStepOptions): Promise<PromptStep
   await writeFile(outputPath, yamlContent + '\n', 'utf8')
 
   return { outputPath, rawOutput, outputType, isValid: schemaValid }
+}
+
+/**
+ * Read MCP server configurations from the project's MCP config file.
+ * Checks in priority order: .vscode/mcp.json, .cursor/mcp.json, .claude/mcp.json, mcp.json
+ */
+export async function readProjectMcpServers(projectRoot: string): Promise<MCPServerConfig[]> {
+  const candidates = [
+    join(projectRoot, '.vscode', 'mcp.json'),
+    join(projectRoot, '.cursor', 'mcp.json'),
+    join(projectRoot, '.claude', 'mcp.json'),
+    join(projectRoot, 'mcp.json'),
+  ]
+
+  for (const filePath of candidates) {
+    if (!existsSync(filePath)) continue
+    try {
+      const raw = await readFile(filePath, 'utf8')
+      const parsed = JSON.parse(raw) as Record<string, unknown>
+
+      // VS Code format: { servers: { name: { type, command, args } } }
+      // Cursor/Claude format: { mcpServers: { name: { command, args } } }
+      const serversMap =
+        (parsed['servers'] as Record<string, unknown> | undefined) ??
+        (parsed['mcpServers'] as Record<string, unknown> | undefined)
+
+      if (!serversMap || typeof serversMap !== 'object') continue
+
+      return Object.entries(serversMap).map(([name, cfg]) => {
+        const c = cfg as Record<string, unknown>
+        const server: MCPServerConfig = { name, type: (c['type'] as string) ?? 'stdio' }
+        if (typeof c['command'] === 'string') server.command = c['command']
+        if (Array.isArray(c['args'])) server.args = c['args'] as string[]
+        if (typeof c['url'] === 'string') server.url = c['url']
+        return server
+      })
+    } catch {
+      return []
+    }
+  }
+
+  return []
 }
 
 // ── CLI argument parsing ────────────────────────────────────────────────────
@@ -503,6 +609,16 @@ export default async function plan({ args, pkgRoot }: CliContext): Promise<void>
       console.log(`\n  ${c.dim('Next step:')} opencastle plan --file ${relPath} --template validate-prd`)
       break
     }
+    case 'json': {
+      if (result.outputPath) {
+        const relP = result.outputPath.startsWith(process.cwd())
+          ? result.outputPath.slice(process.cwd().length + 1)
+          : result.outputPath
+        console.log(c.green(`  ✓ JSON written to ${relP}`))
+      }
+      console.log(result.rawOutput)
+      break
+    }
     default: {
       const relPath = result.outputPath!.startsWith(process.cwd())
         ? result.outputPath!.slice(process.cwd().length + 1)
@@ -517,4 +633,6 @@ export default async function plan({ args, pkgRoot }: CliContext): Promise<void>
 `)
     }
   }
+
+  await cleanupAdapters()
 }

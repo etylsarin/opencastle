@@ -22,13 +22,20 @@ You are the Team Lead. Convert the feature request below into a structured Produ
 
 ## Research Before Writing
 
-If the feature request involves a specific person, place, organization, topic, or any real-world subject you are not confident you have accurate knowledge about — **you MUST search the internet first** using any available web search or fetch tools (e.g. `fetch_webpage`, web search MCP, or similar). Use the search results to gather accurate facts, names, dates, descriptions, and other details.
+If the feature request involves a specific person, place, organization, topic, or any real-world subject:
 
-**Never fabricate or hallucinate content** about real-world subjects. If you cannot verify a claim through web search, state what is unknown rather than inventing plausible-sounding text. This applies to all content: bios, descriptions, histories, statistics, quotes, and any factual claims.
+1. **Search the internet first** if web search or fetch tools are available (e.g. `fetch_webpage`, web search MCP, or similar). Use the search results to gather accurate facts, names, dates, descriptions, and other details.
+2. **If web search tools are unavailable or return no useful results**, you may use your training knowledge — but clearly mark any such content with:
+   > ℹ️ Content based on training data — verify before launch.
+3. **Never fabricate or hallucinate content.** If you genuinely have no knowledge about a real-world subject and cannot search, state what is unknown and use placeholder text. This applies to all content: bios, descriptions, histories, statistics, quotes, and any factual claims.
+
+## Output Rules
+
+**CRITICAL:** Return the PRD as your text response. Do NOT create any files. Do NOT use file-writing tools. Simply output the full PRD document as text. Do not wrap it in a code fence — start directly with the `#` heading. Do not summarize — output the complete document.
 
 ## Required PRD Structure
 
-Produce the PRD in Markdown using **exactly** the sections below. Do not skip or merge sections. Do not wrap the output in a code fence — output raw Markdown starting directly with the `#` heading.
+Produce the PRD in Markdown using **exactly** the sections below. Do not skip or merge sections.
 
 ---
 
@@ -53,6 +60,12 @@ Explicit exclusions — what this work does **not** cover. If nothing is exclude
 
 For each primary scenario, write a user story + binary acceptance criteria. Criteria must be testable (pass/fail — no subjective language).
 
+**Quality rules for acceptance criteria (the validator WILL reject violations):**
+- Every criterion must be evaluable as deterministic pass/fail — no subjective language ("looks good", "feels responsive", "is clean", "visually distinct")
+- Do NOT use modal verbs that imply optionality: "should", "might", "could", "may"
+- Do NOT use vague qualifiers: "or equivalent", "or similar", "as needed"
+- State exact expected values (e.g., exact heading text, exact attribute names)
+
 **US-1: [Short title]**
 As a [user type], I want [action] so that [benefit].
 
@@ -73,7 +86,7 @@ Specific technical constraints the implementation must respect:
 
 ## Implementation Scope
 
-List **every file and directory** that will be created, modified, or deleted. Use specific paths — not broad paths like `src/`. Group by concern.
+List **every file and directory** that will be created, modified, or deleted. Use specific paths — not broad paths like `src/`. Group by concern. Use compact file lists — group related files with commas instead of separate rows when they share a concern. Do NOT use glob patterns (`*`, `**`). Every concern must list at least one specific file.
 
 | Concern | Files / Directories |
 |---------|---------------------|
@@ -91,6 +104,14 @@ List **every file and directory** that will be created, modified, or deleted. Us
 ## Task Breakdown
 
 Decompose into the minimum number of phases. Tasks in the same phase run in parallel and **must not share any files**.
+
+Keep task descriptions **brief** — 1 sentence each. List only file paths, not explanations. Prefer compact formatting.
+
+**Quality rules (the validator WILL reject violations):**
+- Each workstream must list exact files it will modify
+- No two parallel workstreams (same phase) may claim the same file
+- Phases must have explicit dependency declarations (`depends on: Phase N`)
+- No circular dependencies
 
 ```
 Phase 1 — Foundation (parallel, no dependencies):
@@ -124,35 +145,3 @@ Measurable, binary checks that confirm the feature is shippable:
 - **[Open question]**: [What needs to be decided before implementation can start]
 
 If there are no risks or open questions, write "None identified."
-
-## Complexity Assessment
-
-Produce a fenced JSON block with the following fields. This is consumed programmatically by the pipeline to decide whether to generate a single convoy spec or a convoy chain.
-
-```json
-{
-  "total_tasks": 12,
-  "total_phases": 4,
-  "domains": ["database", "api", "frontend", "testing"],
-  "estimated_duration_minutes": 120,
-  "complexity": "low",
-  "recommended_strategy": "single",
-  "chain_rationale": "",
-  "convoy_groups": [
-    {
-      "name": "full-implementation",
-      "description": "All phases in a single convoy",
-      "phases": [1, 2, 3, 4],
-      "depends_on": []
-    }
-  ]
-}
-```
-
-**Strategy decision rules:**
-- Use `"single"` when: total tasks ≤ 8, or total phases ≤ 3, or all tasks are tightly coupled with heavy cross-phase file sharing.
-- Use `"chain"` when: total tasks > 8 AND total phases > 3 AND domains have natural boundaries (e.g., database changes are independent from frontend components from test suites) — AND splitting would improve failure isolation, observability, or retry granularity.
-- When `"single"`: provide exactly one convoy group covering all phases.
-- When `"chain"`: provide 2–4 convoy groups with explicit `depends_on` order. Each group should cover a coherent domain boundary.
-- `complexity` values: `"low"` (1–4 tasks), `"medium"` (5–8 tasks), `"high"` (9+ tasks).
-- `chain_rationale` is only filled when `recommended_strategy` is `"chain"` — explain WHY splitting benefits this specific feature.

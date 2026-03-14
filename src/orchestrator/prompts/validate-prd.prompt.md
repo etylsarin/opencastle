@@ -56,7 +56,7 @@ Evaluate **every item** below. If ALL items pass, respond `VALID`. If ANY item f
 
 ### Language Quality
 
-- [ ] No undefined acronyms or jargon used without explanation
+- [ ] No **domain-specific** acronyms or jargon used without explanation (standard software acronyms like API, CSS, HTML, CI/CD, CMS, SDK, CLI, URL, JSON, REST, SQL, SSR, SSG, CDN, DNS, TLS, JWT, OAuth, CRUD, DOM, UI, UX, HTTP, HTTPS, LTS, WCAG, RTL, MCP, PRD, E2E are considered universally understood and do not need expansion)
 - [ ] No conflicting requirements (e.g., "must be fast AND run full suite on every change")
 - [ ] Section content is not placeholder/template text (e.g., "2–3 sentences about…", "Description here")
 

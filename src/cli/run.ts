@@ -756,6 +756,31 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     if (spec.branch) console.log(`  Branch: ${spec.branch}`)
     if (spec.gates?.length) console.log(`  Gates: ${spec.gates.length} validation commands`)
 
+    // ── Pre-flight: handle uncommitted changes before branch switch ──
+    let pipelineDidStash = false
+    if (spec.branch) {
+      const { execFile: execFileCb } = await import('node:child_process')
+      const { promisify } = await import('node:util')
+      const execFile = promisify(execFileCb)
+      const { stdout: statusOut } = await execFile('git', ['status', '--porcelain'], {
+        cwd: process.cwd(),
+      })
+      if (statusOut.trim()) {
+        console.log(`\n  ${c.yellow('⚠')} Uncommitted changes detected.`)
+        const shouldStash = await confirm('Stash changes and continue?', true)
+        if (!shouldStash) {
+          console.log('  Aborted. Commit or stash your changes manually, then retry.')
+          closePrompts()
+          process.exit(1)
+        }
+        await execFile('git', ['stash', 'push', '-m', 'opencastle: auto-stash before pipeline'], {
+          cwd: process.cwd(),
+        })
+        pipelineDidStash = true
+        console.log(`  ${c.green('✓')} Changes stashed.`)
+      }
+    }
+
     const { startDashboardServer } = await import('./dashboard.js')
     let pipelineDashboardResult: { server: import('node:http').Server; port: number; url: string } | null = null
     try {
@@ -789,12 +814,31 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       throw err
     }
     printPipelineResult(pipelineResult)
+    if (pipelineDidStash) {
+      const { execFile: execFileCb } = await import('node:child_process')
+      const { promisify } = await import('node:util')
+      const execFile = promisify(execFileCb)
+      try {
+        await execFile('git', ['stash', 'pop'], { cwd: process.cwd() })
+        console.log(`  ${c.green('✓')} Stashed changes restored.`)
+      } catch {
+        console.log(`  ${c.yellow('⚠')} Could not restore stash automatically. Run \`git stash pop\` manually.`)
+      }
+    }
     if (pipelineDashboardResult) {
       console.log(`\n  ${c.dim('Results saved to .opencastle/convoy.db')}`)
-      console.log(`  ${c.dim('View again:')} opencastle dashboard`)
-      pipelineDashboardResult.server.close()
+      console.log(`  ${c.dim('Dashboard:')} ${pipelineDashboardResult.url}`)
+      console.log(`\n  Press Ctrl+C to stop`)
+      const exitCode = pipelineResult.status !== 'done' ? 1 : 0
+      process.on('SIGINT', () => {
+        console.log('\n  Dashboard stopped.\n')
+        pipelineDashboardResult!.server.close()
+        process.exit(exitCode)
+      })
+    } else {
+      process.exit(pipelineResult.status !== 'done' ? 1 : 0)
     }
-    process.exit(pipelineResult.status !== 'done' ? 1 : 0)
+    return
   }
 
   // ── Convoy engine path (version: 1 specs) ────────────────────
@@ -882,11 +926,6 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       throw err
     }
     printConvoyResult(result)
-    if (dashboardResult) {
-      console.log(`\n  ${c.dim('Results saved to .opencastle/convoy.db')}`)
-      console.log(`  ${c.dim('View again:')} opencastle dashboard`)
-      dashboardResult.server.close()
-    }
     if (didStash) {
       const { execFile: execFileCb } = await import('node:child_process')
       const { promisify } = await import('node:util')
@@ -898,7 +937,19 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
         console.log(`  ${c.yellow('⚠')} Could not restore stash automatically. Run \`git stash pop\` manually.`)
       }
     }
-    process.exit(result.status !== 'done' ? 1 : 0)
+    if (dashboardResult) {
+      console.log(`\n  ${c.dim('Results saved to .opencastle/convoy.db')}`)
+      console.log(`  ${c.dim('Dashboard:')} ${dashboardResult.url}`)
+      console.log(`\n  Press Ctrl+C to stop`)
+      const exitCode = result.status !== 'done' ? 1 : 0
+      process.on('SIGINT', () => {
+        console.log('\n  Dashboard stopped.\n')
+        dashboardResult!.server.close()
+        process.exit(exitCode)
+      })
+    } else {
+      process.exit(result.status !== 'done' ? 1 : 0)
+    }
   }
 
   // ── Legacy executor path ──────────────────────────────────────

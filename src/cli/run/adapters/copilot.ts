@@ -108,7 +108,7 @@ async function executeViaSdk(task: Task, options: ExecuteOptions = {}): Promise<
     } : undefined
     return {
       success: true,
-      output: output.slice(0, 10_000),
+      output: output.slice(0, 100_000),
       exitCode: 0,
       usage: usageResult,
     }
@@ -245,4 +245,14 @@ export async function execute(task: Task, options: ExecuteOptions = {}): Promise
 export function kill(task: Task): void {
   if (mode === 'sdk') killSdk(task)
   else killCli(task)
+}
+
+export async function cleanup(): Promise<void> {
+  if (clientPromise) {
+    try {
+      const client = await clientPromise
+      await client.stop()
+    } catch { /* ignore */ }
+    clientPromise = null
+  }
 }
