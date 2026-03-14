@@ -300,6 +300,8 @@ export interface AgentAdapter {
   kill?(_task: Task): void;
   /** Whether the adapter supports reusing sessions across multi-step task steps. Defaults to false. */
   supportsSessionContinuity?(): boolean;
+  /** Clean up any long-lived resources (SDK clients, open connections) so the process can exit. */
+  cleanup?(): Promise<void>;
 }
 
 /** Options for agent execution. */

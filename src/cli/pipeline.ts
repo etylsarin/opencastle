@@ -4,6 +4,7 @@ import { resolve, dirname } from 'node:path'
 import { stringify } from 'yaml'
 import { c, confirm, closePrompts } from './prompt.js'
 import { runPromptStep, readProjectMcpServers } from './plan.js'
+import { cleanupAdapters } from './run/adapters/index.js'
 import type { CliContext } from './types.js'
 
 export interface ConvoyGroup {
@@ -14,6 +15,7 @@ export interface ConvoyGroup {
 }
 
 export interface ComplexityAssessment {
+  original_prompt: string
   total_tasks: number
   total_phases: number
   domains: string[]
@@ -24,18 +26,12 @@ export interface ComplexityAssessment {
   convoy_groups: ConvoyGroup[]
 }
 
-export function parseComplexityAssessment(prdContent: string): ComplexityAssessment | null {
-  const sectionMatch = prdContent.match(/## Complexity Assessment\s+([\s\S]*?)(?=\n## |\n# |$)/)
-  if (!sectionMatch) return null
-
-  const sectionContent = sectionMatch[1]
-  const jsonMatch = sectionContent.match(/```json\s*([\s\S]*?)```/)
-  if (!jsonMatch) return null
-
+export function parseComplexityAssessment(jsonText: string): ComplexityAssessment | null {
   try {
-    const parsed = JSON.parse(jsonMatch[1].trim()) as ComplexityAssessment
+    const parsed = JSON.parse(jsonText.trim()) as ComplexityAssessment
     // Validate required fields
     if (
+      typeof parsed.original_prompt !== 'string' ||
       typeof parsed.total_tasks !== 'number' ||
       typeof parsed.total_phases !== 'number' ||
       !Array.isArray(parsed.domains) ||
@@ -59,9 +55,10 @@ const HELP = `
     Step 1 — Generate PRD        (generate-prd)
     Step 2 — Validate PRD        (validate-prd)
     Step 3 — Fix PRD             (fix-prd, up to 2 retries if invalid)
-    Step 4 — Generate convoy spec (generate-convoy, using PRD as BDO)
-    Step 5 — Validate convoy spec (validate-convoy)
-    Step 6 — Fix convoy spec      (fix-convoy, up to 2 retries if invalid)
+    Step 4 — Assess complexity    (assess-complexity, determines single vs chain)
+    Step 5 — Generate convoy spec (generate-convoy, using PRD as input)
+    Step 6 — Validate convoy spec (validate-convoy)
+    Step 7 — Fix convoy spec      (fix-convoy, up to 2 retries if invalid)
 
   Options:
     --text, -t <text>        Feature prompt text (required, unless --prd is set)
@@ -71,7 +68,7 @@ const HELP = `
     --adapter, -a <name>     Override agent runtime adapter
     --verbose                Show full agent output for each step
     --dry-run                Generate and print the PRD prompt only, then stop
-    --skip-validation        Skip steps 2 and 4 (PRD and convoy validation)
+    --skip-validation        Skip PRD and convoy validation (steps 2, 3, 6, 7)
     --help, -h               Show this help
 `
 
@@ -149,6 +146,8 @@ function parseArgs(args: string[]): PipelineOptions {
   return opts
 }
 
+const MAX_FIX_RETRIES = 2
+
 function relPath(abs: string): string {
   return abs.startsWith(process.cwd()) ? abs.slice(process.cwd().length + 1) : abs
 }
@@ -184,7 +183,7 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
     }
   }
 
-  const totalSteps = opts.skipValidation ? 3 : 6
+  const totalSteps = opts.skipValidation ? 4 : 7
   const mcpServers = await readProjectMcpServers(process.cwd())
   const sharedOpts = {
     adapterName: opts.adapter ?? undefined,
@@ -320,8 +319,26 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
   }
 
   // ── Complexity-aware strategy decision ────────────────────────────────────
-  const prdContentForComplexity = await readFile(prdPath, 'utf8')
-  const complexity = parseComplexityAssessment(prdContentForComplexity)
+  const complexityStep = opts.skipValidation ? 2 : 4
+  console.log(stepLabel(complexityStep, totalSteps, 'Assessing complexity…'))
+
+  let complexity: ComplexityAssessment | null = null
+  try {
+    const complexityResult = await runPromptStep({
+      ...sharedOpts,
+      template: 'assess-complexity',
+      filePath: prdPath,
+      contextText: opts.text ?? undefined,
+    })
+    complexity = parseComplexityAssessment(complexityResult.rawOutput)
+  } catch (err) {
+    console.warn(c.yellow(`  ⚠ Complexity assessment failed: ${err instanceof Error ? err.message : String(err)}`))
+    console.warn(c.dim(`    Falling back to single convoy strategy.\n`))
+  }
+
+  if (!complexity) {
+    console.log(c.dim(`  Could not determine complexity — using single convoy strategy.\n`))
+  }
 
   if (complexity) {
     if (complexity.recommended_strategy === 'chain' && complexity.convoy_groups.length > 1) {
@@ -360,16 +377,21 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
           )
         )
 
-        const chainContext = JSON.stringify({
-          mode: 'chain_subset',
-          group_name: group.name,
-          group_description: group.description,
-          group_phases: group.phases,
-          depends_on_groups: group.depends_on,
-          total_groups: complexity.convoy_groups.length,
-          group_index: i + 1,
-        })
+        const chainGoal = [
+          complexity.original_prompt,
+          '',
+          '## Convoy Group Scope',
+          '',
+          `This is group **${i + 1} of ${complexity.convoy_groups.length}** in a convoy chain.`,
+          `Generate a convoy spec covering ONLY the phases listed below.`,
+          '',
+          `- **Group name:** ${group.name}`,
+          `- **Description:** ${group.description}`,
+          `- **Phases to include:** ${group.phases.join(', ')}`,
+          group.depends_on.length ? `- **Depends on groups:** ${group.depends_on.join(', ')}` : '',
+        ].filter(Boolean).join('\n')
 
+        const prdContent = await readFile(prdPath, 'utf8')
         const groupSpecPath = resolve(convoyDir, `${group.name}.convoy.yml`)
 
         let groupResult
@@ -377,8 +399,8 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
           groupResult = await runPromptStep({
             ...sharedOpts,
             template: 'generate-convoy',
-            filePath: prdPath,
-            contextText: chainContext,
+            goalText: chainGoal,
+            contextText: prdContent,
             outputPath: groupSpecPath,
           })
         } catch (err) {
@@ -397,13 +419,13 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
           const valStep = groupStep + 1
           console.log(stepLabel(valStep, totalGroupSteps, `Validating spec: ${group.name}…`))
 
-          const groupSpecContent = await readFile(resolvedGroupSpecPath, 'utf8')
+          let currentSpecContent = await readFile(resolvedGroupSpecPath, 'utf8')
           let groupValidation
           try {
             groupValidation = await runPromptStep({
               ...sharedOpts,
               template: 'validate-convoy',
-              goalText: groupSpecContent,
+              goalText: currentSpecContent,
             })
           } catch (err) {
             console.error(
@@ -412,40 +434,92 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
             process.exit(1)
           }
 
-          if (!groupValidation.isValid) {
-            console.log(c.yellow(`  ⚠ Spec has issues — attempting one auto-fix…\n`))
-            console.log(c.dim(groupValidation.errors ?? groupValidation.rawOutput))
-            console.log()
+          if (groupValidation.isValid) {
+            console.log(c.green(`  ✓ Spec valid\n`))
+          } else {
+            let groupErrors = groupValidation.errors ?? groupValidation.rawOutput
+            let groupFixed = false
 
-            try {
-              await runPromptStep({
-                ...sharedOpts,
-                template: 'fix-convoy',
-                goalText: groupSpecContent,
-                contextText: groupValidation.errors ?? groupValidation.rawOutput,
-                outputPath: resolvedGroupSpecPath,
-              })
-            } catch (err) {
-              console.error(
-                `\n  ✗ Fix failed for group ${group.name}: ${err instanceof Error ? err.message : String(err)}`
+            for (let attempt = 1; attempt <= MAX_FIX_RETRIES; attempt++) {
+              console.log(
+                c.yellow(`  ⚠ Spec has issues — fix attempt ${attempt}/${MAX_FIX_RETRIES} for ${group.name}…\n`)
+              )
+              console.log(c.dim(groupErrors))
+              console.log()
+
+              try {
+                await runPromptStep({
+                  ...sharedOpts,
+                  template: 'fix-convoy',
+                  goalText: currentSpecContent,
+                  contextText: groupErrors,
+                  outputPath: resolvedGroupSpecPath,
+                })
+              } catch (err) {
+                console.error(
+                  `\n  ✗ Fix failed for group ${group.name} (attempt ${attempt}): ${err instanceof Error ? err.message : String(err)}`
+                )
+                process.exit(1)
+              }
+
+              console.log(c.dim(`  Re-validating ${group.name} after fix…`))
+
+              currentSpecContent = await readFile(resolvedGroupSpecPath, 'utf8')
+
+              let revalidation
+              try {
+                revalidation = await runPromptStep({
+                  ...sharedOpts,
+                  template: 'validate-convoy',
+                  goalText: currentSpecContent,
+                })
+              } catch (err) {
+                console.error(
+                  `\n  ✗ Re-validation failed for group ${group.name}: ${err instanceof Error ? err.message : String(err)}`
+                )
+                process.exit(1)
+              }
+
+              if (revalidation.isValid) {
+                console.log(c.green(`  ✓ ${group.name} fixed and validated\n`))
+                groupFixed = true
+                break
+              }
+
+              groupErrors = revalidation.errors ?? revalidation.rawOutput
+
+              if (attempt < MAX_FIX_RETRIES) {
+                console.log(
+                  c.yellow(`  ⚠ Still has issues after fix attempt ${attempt} — retrying…\n`)
+                )
+              }
+            }
+
+            if (!groupFixed) {
+              console.log(
+                c.red(`\n  ✗ Could not auto-fix convoy spec for group ${group.name} after ${MAX_FIX_RETRIES} attempts.\n`)
+              )
+              console.log(`  Remaining issues:\n`)
+              console.log(groupErrors)
+              console.log(
+                c.dim(`\n  The spec has been saved to ${relPath(resolvedGroupSpecPath)} with best available fixes.\n`) +
+                  c.dim(`  Review the issues above and edit manually, then re-validate with:\n`) +
+                  `    opencastle plan --file ${relPath(resolvedGroupSpecPath)} --template validate-convoy\n`
               )
               process.exit(1)
             }
-
-            console.log(c.dim(`  Applied fix for ${group.name}\n`))
-          } else {
-            console.log(c.green(`  ✓ Spec valid\n`))
           }
         }
       }
 
       // Build master pipeline spec (version 2)
-      const featureNameMatch = prdContentForComplexity.match(/^# (.+?)\s*(?:—|-)?\s*PRD/m)
+      const chainPrdContent = await readFile(prdPath, 'utf8')
+      const featureNameMatch = chainPrdContent.match(/^# (.+?)\s*(?:—|-)?\s*PRD/m)
       const featureName = featureNameMatch
         ? featureNameMatch[1].trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
         : 'feature'
 
-      const branchMatch = prdContentForComplexity.match(/`feat\/([^`]+)`/)
+      const branchMatch = chainPrdContent.match(/`feat\/([^`]+)`/)
       const branch = branchMatch ? `feat/${branchMatch[1]}` : `feat/${featureName}`
 
       const masterSpec = {
@@ -482,6 +556,7 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
         }
       } finally {
         closePrompts()
+        await cleanupAdapters()
       }
       return
     } else {
@@ -491,16 +566,20 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
     }
   }
 
-  // ── Step 4: Generate convoy spec ──────────────────────────────────────────
-  const genStep = opts.skipValidation ? 2 : 4
+  // ── Generate convoy spec ──────────────────────────────────────────────────
+  const genStep = opts.skipValidation ? 3 : 5
   console.log(stepLabel(genStep, totalSteps, 'Generating convoy spec…'))
+
+  const singlePrdContent = await readFile(prdPath, 'utf8')
+  const singleGoal = complexity?.original_prompt ?? opts.text ?? ''
 
   let specPath: string
   try {
     const result = await runPromptStep({
       ...sharedOpts,
       template: 'generate-convoy',
-      filePath: prdPath,
+      goalText: singleGoal,
+      contextText: singlePrdContent,
       outputPath: opts.outputSpec ? resolve(process.cwd(), opts.outputSpec) : undefined,
     })
     specPath = result.outputPath!
@@ -516,8 +595,9 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
     return
   }
 
-  // ── Step 5: Validate convoy spec ──────────────────────────────────────────
-  console.log(stepLabel(5, totalSteps, 'Validating convoy spec…'))
+  // ── Validate convoy spec ──────────────────────────────────────────────
+  const valStep = opts.skipValidation ? 4 : 6
+  console.log(stepLabel(valStep, totalSteps, 'Validating convoy spec…'))
 
   const specContent = await readFile(specPath, 'utf8')
   let validationErrors: string
@@ -531,7 +611,7 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
         goalText: specContent,
       })
     } catch (err) {
-      console.error(`\n  ✗ Step 5 failed: ${err instanceof Error ? err.message : String(err)}`)
+      console.error(`\n  ✗ Step ${valStep} failed: ${err instanceof Error ? err.message : String(err)}`)
       process.exit(1)
     }
 
@@ -547,13 +627,13 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
     console.log()
   }
 
-  // ── Step 6: Fix convoy spec (up to 2 retries) ─────────────────────────────
-  const MAX_FIX_RETRIES = 2
+  // ── Fix convoy spec (up to 2 retries) ─────────────────────────────────
+  const fixStep = opts.skipValidation ? 4 : 7
   let fixedSpecContent = specContent
 
   for (let attempt = 1; attempt <= MAX_FIX_RETRIES; attempt++) {
     const label = `Fix attempt ${attempt}/${MAX_FIX_RETRIES}…`
-    console.log(stepLabel(6, totalSteps, label))
+    console.log(stepLabel(fixStep, totalSteps, label))
 
     let fixResult
     try {
@@ -641,5 +721,6 @@ async function printFinalSummary(
     }
   } finally {
     closePrompts()
+    await cleanupAdapters()
   }
 }

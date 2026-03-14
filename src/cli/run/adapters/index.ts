@@ -46,6 +46,19 @@ export async function detectAdapter(): Promise<string | null> {
 }
 
 /**
+ * Clean up all loaded adapters (stop SDK clients, close connections).
+ * Call this before process exit to avoid hanging.
+ */
+export async function cleanupAdapters(): Promise<void> {
+  for (const loader of Object.values(ADAPTERS)) {
+    try {
+      const mod = await loader()
+      await mod.cleanup?.()
+    } catch { /* ignore */ }
+  }
+}
+
+/**
  * List all registered adapters with their availability status.
  */
 export async function listAdapters(): Promise<Array<{ name: string; available: boolean }>> {

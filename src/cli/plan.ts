@@ -2,7 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolve, join, basename } from 'node:path'
 import { mkdir, writeFile } from 'node:fs/promises'
-import { getAdapter, detectAdapter } from './run/adapters/index.js'
+import { getAdapter, detectAdapter, cleanupAdapters } from './run/adapters/index.js'
 import { parseTaskSpecText } from './run/schema.js'
 import { c } from './prompt.js'
 import type { CliContext, Task } from './types.js'
@@ -19,11 +19,13 @@ const HELP = `
     --text, -t <text>        Inline text to use as {{goal}} (alternative to --file)
     --template <name>        Prompt template name (default: generate-convoy)
                              Built-in templates:
-                               generate-prd      — Write a PRD from a feature prompt
-                               validate-prd      — Check a PRD for completeness
-                               generate-convoy   — Generate a convoy spec from a PRD (default)
-                               validate-convoy   — Check a convoy spec for correctness
-                               fix-convoy        — Fix validation errors in a convoy spec
+                               generate-prd        — Write a PRD from a feature prompt
+                               validate-prd        — Check a PRD for completeness
+                               fix-prd             — Fix validation errors in a PRD
+                               assess-complexity   — Assess PRD complexity (returns JSON)
+                               generate-convoy     — Generate a convoy spec from a PRD (default)
+                               validate-convoy     — Check a convoy spec for correctness
+                               fix-convoy          — Fix validation errors in a convoy spec
     --context <path>         Optional path to an additional context file (fills {{context}})
     --context-text <text>    Inline text to fill {{context}} (alternative to --context)
     --output, -o <path>      Output path override (skipped for validation output)
@@ -77,7 +79,7 @@ export interface PromptStepResult {
   /** Raw text returned by the AI adapter (or assembled prompt on dry-run) */
   rawOutput: string
   /** How the output was interpreted */
-  outputType: 'convoy-spec' | 'prd' | 'validation'
+  outputType: 'convoy-spec' | 'prd' | 'validation' | 'json'
   /** Set when outputType === 'validation' */
   isValid?: boolean
   /** Set when outputType === 'validation' and isValid === false */
@@ -150,9 +152,19 @@ function parseFrontmatter(text: string): Record<string, string> {
 
 /** Extract YAML content from a fenced ```yaml ... ``` block. */
 function extractYamlBlock(text: string): string | null {
-  const match = text.match(/```ya?ml\s*\n([\s\S]*?)```/)
-  if (!match) return null
-  return match[1].trim()
+  // 1. Prefer explicit yaml/yml fence
+  const yamlFence = text.match(/```ya?ml\s*\n([\s\S]*?)```/)
+  if (yamlFence) return yamlFence[1].trim()
+
+  // 2. Fallback: any code fence whose content looks like a convoy spec
+  //    Must contain at least `name:` AND `tasks:` to avoid false positives
+  const genericFences = [...text.matchAll(/```\s*\n([\s\S]*?)```/g)]
+  for (const m of genericFences) {
+    const content = m[1].trim()
+    if (/^name:/m.test(content) && /^tasks:/m.test(content)) return content
+  }
+
+  return null
 }
 
 /**
@@ -274,7 +286,7 @@ export async function runPromptStep(opts: PromptStepOptions): Promise<PromptStep
 
   const rawTemplate = await readFile(templatePath, 'utf8')
   const frontmatter = parseFrontmatter(rawTemplate)
-  const outputType = (frontmatter['output'] ?? 'convoy-spec') as 'convoy-spec' | 'prd' | 'validation'
+  const outputType = (frontmatter['output'] ?? 'convoy-spec') as 'convoy-spec' | 'prd' | 'validation' | 'json'
   const template = stripFrontmatter(rawTemplate)
 
   let goalContent = opts.goalText ?? ''
@@ -349,6 +361,18 @@ export async function runPromptStep(opts: PromptStepOptions): Promise<PromptStep
   if (outputType === 'validation') {
     const { isValid, errors } = parseValidationResult(rawOutput)
     return { outputPath: null, rawOutput, outputType, isValid, errors }
+  }
+
+  if (outputType === 'json') {
+    // Extract JSON from fenced block or raw output
+    const jsonMatch = rawOutput.match(/```(?:json)?\s*\n([\s\S]*?)```/)
+    const jsonContent = jsonMatch ? jsonMatch[1].trim() : rawOutput.trim()
+    const outputPath = opts.outputPath ?? null
+    if (outputPath) {
+      await mkdir(resolve(outputPath, '..'), { recursive: true })
+      await writeFile(outputPath, jsonContent + '\n', 'utf8')
+    }
+    return { outputPath, rawOutput: jsonContent, outputType }
   }
 
   if (outputType === 'prd') {
@@ -585,6 +609,16 @@ export default async function plan({ args, pkgRoot }: CliContext): Promise<void>
       console.log(`\n  ${c.dim('Next step:')} opencastle plan --file ${relPath} --template validate-prd`)
       break
     }
+    case 'json': {
+      if (result.outputPath) {
+        const relP = result.outputPath.startsWith(process.cwd())
+          ? result.outputPath.slice(process.cwd().length + 1)
+          : result.outputPath
+        console.log(c.green(`  ✓ JSON written to ${relP}`))
+      }
+      console.log(result.rawOutput)
+      break
+    }
     default: {
       const relPath = result.outputPath!.startsWith(process.cwd())
         ? result.outputPath!.slice(process.cwd().length + 1)
@@ -599,4 +633,6 @@ export default async function plan({ args, pkgRoot }: CliContext): Promise<void>
 `)
     }
   }
+
+  await cleanupAdapters()
 }
