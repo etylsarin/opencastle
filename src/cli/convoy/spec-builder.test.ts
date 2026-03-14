@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { parse as yamlParse } from 'yaml'
 import { parseYaml, validateSpec } from '../run/schema.js'
 import {
@@ -271,12 +271,14 @@ describe('applyPatches', () => {
     expect(patched.branch).toBe('feat/patched-branch')
   })
 
-  it('skips silently when task id does not exist', () => {
+  it('leaves task unchanged when task id does not exist', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     const plan = minimalPlan()
     const patched = applyPatches(plan, [
       { task_id: 'nonexistent', field: 'prompt', value: 'x' },
     ])
     expect(patched.tasks[0].prompt).toBe('Do something useful')
+    warnSpy.mockRestore()
   })
 
   it('returns a new object (original plan unchanged)', () => {
@@ -305,6 +307,54 @@ describe('applyPatches', () => {
     expect(patched.tasks[0].prompt).toBe('Patched first')
     expect(patched.tasks[1].agent).toBe('ui-expert')
     expect(patched.on_failure).toBe('continue')
+  })
+
+  it('warns when patch targets unknown task_id', () => {
+    const plan: TaskPlan = {
+      name: 'test',
+      tasks: [{ id: 'task-1', prompt: 'do something' }],
+    }
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = applyPatches(plan, [
+      { task_id: 'nonexistent', field: 'prompt', value: 'new prompt' },
+    ])
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('nonexistent')
+    )
+    // Original task unchanged
+    expect(result.tasks[0].prompt).toBe('do something')
+    warnSpy.mockRestore()
+  })
+
+  it('applies valid patches and warns for invalid ones', () => {
+    const plan: TaskPlan = {
+      name: 'test',
+      tasks: [
+        { id: 'task-1', prompt: 'original' },
+        { id: 'task-2', prompt: 'original2' },
+      ],
+    }
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = applyPatches(plan, [
+      { task_id: 'task-1', field: 'prompt', value: 'updated' },
+      { task_id: 'ghost', field: 'prompt', value: 'nope' },
+    ])
+    expect(result.tasks[0].prompt).toBe('updated')
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('ghost'))
+    warnSpy.mockRestore()
+  })
+
+  it('does not warn when all patches target valid tasks', () => {
+    const plan: TaskPlan = {
+      name: 'test',
+      tasks: [{ id: 'task-1', prompt: 'original' }],
+    }
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    applyPatches(plan, [
+      { task_id: 'task-1', field: 'prompt', value: 'updated' },
+    ])
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
   })
 })
 
@@ -391,6 +441,62 @@ describe('parseTaskPlan', () => {
     const json = JSON.stringify({ name: 'Test', tasks: [{ id: 't1', prompt: 'p' }] })
     const withTrailing = json + '\n```\nSome extra text'
     expect(parseTaskPlan(withTrailing)).toBeNull()
+  })
+
+  it('returns null for duplicate task IDs', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const plan = JSON.stringify({
+      name: 'test',
+      tasks: [
+        { id: 'setup', prompt: 'Do setup' },
+        { id: 'setup', prompt: 'Do setup again' },
+      ],
+    })
+    expect(parseTaskPlan(plan)).toBeNull()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('setup'))
+    warnSpy.mockRestore()
+  })
+
+  it('returns null for invalid depends_on reference', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const plan = JSON.stringify({
+      name: 'test',
+      tasks: [
+        { id: 'a', prompt: 'Do A' },
+        { id: 'b', prompt: 'Do B', depends_on: ['nonexistent'] },
+      ],
+    })
+    expect(parseTaskPlan(plan)).toBeNull()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('nonexistent'))
+    warnSpy.mockRestore()
+  })
+
+  it('returns null for dependency cycle', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const plan = JSON.stringify({
+      name: 'test',
+      tasks: [
+        { id: 'a', prompt: 'Do A', depends_on: ['b'] },
+        { id: 'b', prompt: 'Do B', depends_on: ['a'] },
+      ],
+    })
+    expect(parseTaskPlan(plan)).toBeNull()
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('cycle'))
+    warnSpy.mockRestore()
+  })
+
+  it('accepts valid plan with correct dependencies', () => {
+    const plan = JSON.stringify({
+      name: 'test',
+      tasks: [
+        { id: 'a', prompt: 'Do A' },
+        { id: 'b', prompt: 'Do B', depends_on: ['a'] },
+        { id: 'c', prompt: 'Do C', depends_on: ['a', 'b'] },
+      ],
+    })
+    const result = parseTaskPlan(plan)
+    expect(result).not.toBeNull()
+    expect(result!.tasks).toHaveLength(3)
   })
 })
 

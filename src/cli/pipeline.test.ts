@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseComplexityAssessment, deriveComplexityPath } from './pipeline.js'
+import { parseComplexityAssessment, deriveComplexityPath, validateComplexityGroups, topologicalSortGroups } from './pipeline.js'
 
 const SINGLE_JSON = JSON.stringify({
   original_prompt: 'Build a REST API with user auth',
@@ -149,5 +149,134 @@ describe('deriveComplexityPath', () => {
     expect(deriveComplexityPath('.opencastle/prds/personal-portfolio-website.prd.md')).toBe(
       '.opencastle/prds/personal-portfolio-website.complexity.json'
     )
+  })
+})
+
+describe('validateComplexityGroups', () => {
+  it('accepts valid groups', () => {
+    const assessment = {
+      original_prompt: 'test',
+      total_tasks: 6,
+      total_phases: 3,
+      domains: ['frontend', 'api'],
+      complexity: 'medium' as const,
+      recommended_strategy: 'chain' as const,
+      convoy_groups: [
+        { name: 'backend', description: 'API', phases: [1, 2], depends_on: [] },
+        { name: 'frontend', description: 'UI', phases: [3], depends_on: ['backend'] },
+      ],
+    }
+    expect(validateComplexityGroups(assessment)).toEqual({ valid: true, reason: '' })
+  })
+
+  it('rejects groups exceeding max count for small projects', () => {
+    const assessment = {
+      original_prompt: 'test',
+      total_tasks: 10,
+      total_phases: 4,
+      domains: ['a'],
+      complexity: 'medium' as const,
+      recommended_strategy: 'chain' as const,
+      convoy_groups: [
+        { name: 'a', description: 'A', phases: [1], depends_on: [] },
+        { name: 'b', description: 'B', phases: [2], depends_on: [] },
+        { name: 'c-group', description: 'C', phases: [3], depends_on: [] },
+        { name: 'd-group', description: 'D', phases: [4], depends_on: [] },
+      ],
+    }
+    const result = validateComplexityGroups(assessment)
+    expect(result.valid).toBe(false)
+    expect(result.reason).toContain('maximum')
+  })
+
+  it('rejects overlapping phases', () => {
+    const assessment = {
+      original_prompt: 'test',
+      total_tasks: 8,
+      total_phases: 3,
+      domains: ['a'],
+      complexity: 'medium' as const,
+      recommended_strategy: 'chain' as const,
+      convoy_groups: [
+        { name: 'group-a', description: 'A', phases: [1, 2], depends_on: [] },
+        { name: 'group-b', description: 'B', phases: [2, 3], depends_on: [] },
+      ],
+    }
+    const result = validateComplexityGroups(assessment)
+    expect(result.valid).toBe(false)
+    expect(result.reason).toContain('overlap')
+  })
+
+  it('rejects invalid depends_on references', () => {
+    const assessment = {
+      original_prompt: 'test',
+      total_tasks: 8,
+      total_phases: 2,
+      domains: ['a'],
+      complexity: 'medium' as const,
+      recommended_strategy: 'chain' as const,
+      convoy_groups: [
+        { name: 'group-a', description: 'A', phases: [1], depends_on: ['nonexistent'] },
+      ],
+    }
+    const result = validateComplexityGroups(assessment)
+    expect(result.valid).toBe(false)
+    expect(result.reason).toContain('nonexistent')
+  })
+
+  it('rejects dependency cycles', () => {
+    const assessment = {
+      original_prompt: 'test',
+      total_tasks: 8,
+      total_phases: 2,
+      domains: ['a'],
+      complexity: 'medium' as const,
+      recommended_strategy: 'chain' as const,
+      convoy_groups: [
+        { name: 'group-a', description: 'A', phases: [1], depends_on: ['group-b'] },
+        { name: 'group-b', description: 'B', phases: [2], depends_on: ['group-a'] },
+      ],
+    }
+    const result = validateComplexityGroups(assessment)
+    expect(result.valid).toBe(false)
+    expect(result.reason).toContain('cycle')
+  })
+
+  it('rejects non-kebab-case group names', () => {
+    const assessment = {
+      original_prompt: 'test',
+      total_tasks: 8,
+      total_phases: 2,
+      domains: ['a'],
+      complexity: 'medium' as const,
+      recommended_strategy: 'chain' as const,
+      convoy_groups: [
+        { name: 'My Group', description: 'Bad name', phases: [1], depends_on: [] },
+      ],
+    }
+    const result = validateComplexityGroups(assessment)
+    expect(result.valid).toBe(false)
+    expect(result.reason).toContain('kebab')
+  })
+})
+
+describe('topologicalSortGroups', () => {
+  it('sorts groups in dependency order', () => {
+    const groups = [
+      { name: 'c', description: 'C', phases: [3], depends_on: ['b'] },
+      { name: 'a', description: 'A', phases: [1], depends_on: [] },
+      { name: 'b', description: 'B', phases: [2], depends_on: ['a'] },
+    ]
+    const sorted = topologicalSortGroups(groups)
+    expect(sorted.map(g => g.name)).toEqual(['a', 'b', 'c'])
+  })
+
+  it('preserves order for independent groups', () => {
+    const groups = [
+      { name: 'x', description: 'X', phases: [1], depends_on: [] },
+      { name: 'y', description: 'Y', phases: [2], depends_on: [] },
+    ]
+    const sorted = topologicalSortGroups(groups)
+    expect(sorted.map(g => g.name)).toEqual(['x', 'y'])
   })
 })

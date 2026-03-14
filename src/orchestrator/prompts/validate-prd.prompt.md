@@ -68,20 +68,23 @@ Evaluate **every item** below. If ALL items pass, respond `VALID`. If ANY item f
 
 ## Output Format
 
-If the PRD passes every check above, respond with **exactly**:
+Your entire response must be a single fenced JSON block — no text before or after:
 
-```
-VALID
-```
-
-If the PRD fails one or more checks, respond with:
-
-```
-INVALID
-
-Issues:
-- [Section name]: [Specific problem] — Fix: [What the author must change]
-- [Section name]: [Another problem] — Fix: [What the author must change]
+```json
+{
+  "valid": true
+}
 ```
 
-List only real failures. Do not list items that passed.
+Or if any check fails:
+
+```json
+{
+  "valid": false,
+  "issues": [
+    "[Section name]: [Specific problem] — Fix: [What to change]"
+  ]
+}
+```
+
+List only real failures in `issues`. Do not list items that passed.
