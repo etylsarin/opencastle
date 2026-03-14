@@ -58,6 +58,125 @@ export function deriveComplexityPath(prdPath: string): string {
   return prdPath + '.complexity.json'
 }
 
+export function validateComplexityGroups(assessment: ComplexityAssessment): { valid: boolean; reason: string } {
+  const groups = assessment.convoy_groups
+
+  // Each group must reference at least 1 phase
+  for (const group of groups) {
+    if (group.phases.length === 0) {
+      return { valid: false, reason: `Group "${group.name}" has an empty phases array` }
+    }
+  }
+
+  // Maximum group count: ≤3 for total_tasks ≤ 15, ≤4 for total_tasks > 15
+  const maxGroups = assessment.total_tasks > 15 ? 4 : 3
+  if (groups.length > maxGroups) {
+    return { valid: false, reason: `Too many groups: ${groups.length} exceeds maximum of ${maxGroups} for total_tasks=${assessment.total_tasks}` }
+  }
+
+  // No overlapping phases
+  const seenPhases = new Map<number, string>()
+  for (const group of groups) {
+    for (const phase of group.phases) {
+      if (seenPhases.has(phase)) {
+        return { valid: false, reason: `Phase ${phase} overlap: referenced by both "${seenPhases.get(phase)}" and "${group.name}"` }
+      }
+      seenPhases.set(phase, group.name)
+    }
+  }
+
+  // Valid depends_on references
+  const groupNames = new Set(groups.map(g => g.name))
+  for (const group of groups) {
+    for (const dep of group.depends_on) {
+      if (!groupNames.has(dep)) {
+        return { valid: false, reason: `Group "${group.name}" depends_on "${dep}" which does not exist` }
+      }
+    }
+  }
+
+  // No dependency cycles (Kahn's algorithm)
+  const inDegree = new Map<string, number>()
+  const adjList = new Map<string, string[]>()
+  for (const group of groups) {
+    inDegree.set(group.name, 0)
+    adjList.set(group.name, [])
+  }
+  for (const group of groups) {
+    for (const dep of group.depends_on) {
+      adjList.get(dep)!.push(group.name)
+      inDegree.set(group.name, (inDegree.get(group.name) ?? 0) + 1)
+    }
+  }
+  const queue: string[] = []
+  for (const [name, degree] of inDegree) {
+    if (degree === 0) queue.push(name)
+  }
+  let visited = 0
+  while (queue.length > 0) {
+    const node = queue.shift()!
+    visited++
+    for (const neighbor of adjList.get(node) ?? []) {
+      const newDegree = (inDegree.get(neighbor) ?? 0) - 1
+      inDegree.set(neighbor, newDegree)
+      if (newDegree === 0) queue.push(neighbor)
+    }
+  }
+  if (visited !== groups.length) {
+    return { valid: false, reason: 'Dependency cycle detected in convoy_groups' }
+  }
+
+  // Group names must be kebab-case safe
+  const kebabCaseRegex = /^[a-z0-9]+(-[a-z0-9]+)*$/
+  for (const group of groups) {
+    if (!kebabCaseRegex.test(group.name)) {
+      return { valid: false, reason: `Group name "${group.name}" is not valid kebab-case` }
+    }
+  }
+
+  return { valid: true, reason: '' }
+}
+
+export function topologicalSortGroups(groups: ConvoyGroup[]): ConvoyGroup[] {
+  const groupMap = new Map<string, ConvoyGroup>()
+  const inDegree = new Map<string, number>()
+  const adjList = new Map<string, string[]>()
+
+  for (const group of groups) {
+    groupMap.set(group.name, group)
+    inDegree.set(group.name, 0)
+    adjList.set(group.name, [])
+  }
+  for (const group of groups) {
+    for (const dep of group.depends_on) {
+      adjList.get(dep)!.push(group.name)
+      inDegree.set(group.name, (inDegree.get(group.name) ?? 0) + 1)
+    }
+  }
+
+  const queue: string[] = []
+  for (const [name, degree] of inDegree) {
+    if (degree === 0) queue.push(name)
+  }
+
+  const sorted: ConvoyGroup[] = []
+  while (queue.length > 0) {
+    const node = queue.shift()!
+    sorted.push(groupMap.get(node)!)
+    for (const neighbor of adjList.get(node) ?? []) {
+      const newDegree = (inDegree.get(neighbor) ?? 0) - 1
+      inDegree.set(neighbor, newDegree)
+      if (newDegree === 0) queue.push(neighbor)
+    }
+  }
+
+  if (sorted.length !== groups.length) {
+    throw new Error('Cycle detected in convoy_groups dependency graph')
+  }
+
+  return sorted
+}
+
 const HELP = `
   opencastle start [options]
 
@@ -244,6 +363,12 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
     console.log(c.green(`  ✓ PRD written to ${relPath(prdPath)}\n`))
   }
 
+  // Handle --dry-run when PRD was provided externally (not generated)
+  if (opts.dryRun && opts.prd) {
+    console.log(c.dim('\n  [dry-run] Nothing to preview — PRD already provided via --prd. Remove --dry-run to continue.'))
+    return
+  }
+
   // ── Step 2: Validate PRD ──────────────────────────────────────────────────
   if (!opts.skipValidation) {
     console.log(stepLabel(2, totalSteps, 'Validating PRD…'))
@@ -400,105 +525,115 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
 
   if (complexity) {
     if (complexity.recommended_strategy === 'chain' && complexity.convoy_groups.length > 1) {
-      console.log(
-        c.cyan(`  ℹ`) +
-          ` Complexity: ${complexity.complexity} | Strategy: chain | ${complexity.convoy_groups.length} convoy groups\n`
-      )
-      console.log(`  Chain plan:`)
-      for (let i = 0; i < complexity.convoy_groups.length; i++) {
-        const g = complexity.convoy_groups[i]
-        const depStr =
-          g.depends_on.length > 0 ? ` → depends on: ${g.depends_on.join(', ')}` : ''
+      // Validate complexity groups before chain generation
+      const groupValidation = validateComplexityGroups(complexity)
+      if (!groupValidation.valid) {
+        console.log(c.yellow(`  ⚠ Complexity groups failed validation: ${groupValidation.reason}`))
+        console.log(c.yellow(`  Falling back to single convoy strategy.\n`))
+        // Fall through to single-spec generation below
+      } else {
+        // Sort groups in dependency order
+        complexity.convoy_groups = topologicalSortGroups(complexity.convoy_groups)
         console.log(
-          `    ${i + 1}. ${g.name.padEnd(20)} (phases: ${g.phases.join(', ')})${depStr}`
+          c.cyan(`  ℹ`) +
+            ` Complexity: ${complexity.complexity} | Strategy: chain | ${complexity.convoy_groups.length} convoy groups\n`
         )
-      }
-      console.log()
-
-      const convoyDir = resolve(process.cwd(), '.opencastle', 'convoys')
-      await mkdir(convoyDir, { recursive: true })
-
-      const groupSpecPaths: string[] = []
-
-      for (let i = 0; i < complexity.convoy_groups.length; i++) {
-        const group = complexity.convoy_groups[i]
-
-        const chainGoal = [
-          complexity.original_prompt,
-          '',
-          '## Convoy Group Scope',
-          '',
-          `This is group **${i + 1} of ${complexity.convoy_groups.length}** in a convoy chain.`,
-          `Generate a convoy spec covering ONLY the phases listed below.`,
-          '',
-          `- **Group name:** ${group.name}`,
-          `- **Description:** ${group.description}`,
-          `- **Phases to include:** ${group.phases.join(', ')}`,
-          group.depends_on.length ? `- **Depends on groups:** ${group.depends_on.join(', ')}` : '',
-        ].filter(Boolean).join('\n')
-
-        const prdContent = await readFile(prdPath, 'utf8')
-        const groupSpecPath = resolve(convoyDir, `${group.name}.convoy.yml`)
-
-        const { specPath: resolvedGroupSpecPath } = await generateAndValidateSpec({
-          sharedOpts,
-          goalText: chainGoal,
-          contextText: prdContent,
-          specPath: groupSpecPath,
-          skipValidation: opts.skipValidation,
-          groupName: group.name,
-          enrichment: complexity ? deriveSpecEnrichment(complexity) : undefined,
-        })
-        groupSpecPaths.push(resolvedGroupSpecPath)
-      }
-
-      // Build master pipeline spec (version 2)
-      const chainPrdContent = await readFile(prdPath, 'utf8')
-      const featureNameMatch = chainPrdContent.match(/^# (.+?)\s*(?:—|-)?\s*PRD/m)
-      const featureName = featureNameMatch
-        ? featureNameMatch[1].trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
-        : 'feature'
-
-      const branchMatch = chainPrdContent.match(/`feat\/([^`]+)`/)
-      const branch = branchMatch ? `feat/${branchMatch[1]}` : `feat/${featureName}`
-
-      const masterSpec = {
-        name: featureNameMatch ? featureNameMatch[1].trim() : 'Feature Pipeline',
-        version: 2,
-        branch,
-        on_failure: 'stop',
-        depends_on_convoy: groupSpecPaths.map(p => relPath(p)),
-      }
-
-      const masterSpecPath = resolve(convoyDir, `${featureName}-pipeline.convoy.yml`)
-      await writeFile(masterSpecPath, stringify(masterSpec), 'utf8')
-
-      console.log(c.green(`  ✓ Generated convoy chain:\n`))
-      for (const p of groupSpecPaths) {
-        console.log(`    ${relPath(p)}`)
-      }
-      console.log(`    ${relPath(masterSpecPath)} ${c.dim('(master)')}`)
-      console.log()
-      console.log(
-        `  ${c.dim('Preview:')} npx opencastle run -f ${relPath(masterSpecPath)} --dry-run\n` +
-          `  ${c.dim('Execute:')} npx opencastle run -f ${relPath(masterSpecPath)}\n`
-      )
-
-      try {
-        const shouldRun = await confirm('Run the convoy chain now?', true)
-        if (shouldRun) {
-          closePrompts()
-          const runModule = await import('./run.js')
-          const runArgs = ['-f', masterSpecPath]
-          if (opts.adapter) runArgs.push('-a', opts.adapter)
-          if (opts.verbose) runArgs.push('--verbose')
-          await runModule.default({ args: runArgs, pkgRoot })
+        console.log(`  Chain plan:`)
+        for (let i = 0; i < complexity.convoy_groups.length; i++) {
+          const g = complexity.convoy_groups[i]
+          const depStr =
+            g.depends_on.length > 0 ? ` → depends on: ${g.depends_on.join(', ')}` : ''
+          console.log(
+            `    ${i + 1}. ${g.name.padEnd(20)} (phases: ${g.phases.join(', ')})${depStr}`
+          )
         }
-      } finally {
-        closePrompts()
-        await cleanupAdapters()
+        console.log()
+
+        const convoyDir = resolve(process.cwd(), '.opencastle', 'convoys')
+        await mkdir(convoyDir, { recursive: true })
+
+        const groupSpecPaths: string[] = []
+
+        for (let i = 0; i < complexity.convoy_groups.length; i++) {
+          const group = complexity.convoy_groups[i]
+
+          const chainGoal = [
+            complexity.original_prompt,
+            '',
+            '## Convoy Group Scope',
+            '',
+            `This is group **${i + 1} of ${complexity.convoy_groups.length}** in a convoy chain.`,
+            `Generate a convoy spec covering ONLY the phases listed below.`,
+            '',
+            `- **Group name:** ${group.name}`,
+            `- **Description:** ${group.description}`,
+            `- **Phases to include:** ${group.phases.join(', ')}`,
+            group.depends_on.length ? `- **Depends on groups:** ${group.depends_on.join(', ')}` : '',
+          ].filter(Boolean).join('\n')
+
+          const prdContent = await readFile(prdPath, 'utf8')
+          const groupSpecPath = resolve(convoyDir, `${group.name}.convoy.yml`)
+
+          const { specPath: resolvedGroupSpecPath } = await generateAndValidateSpec({
+            sharedOpts,
+            goalText: chainGoal,
+            contextText: prdContent,
+            specPath: groupSpecPath,
+            skipValidation: opts.skipValidation,
+            groupName: group.name,
+            enrichment: complexity ? deriveSpecEnrichment(complexity) : undefined,
+          })
+          groupSpecPaths.push(resolvedGroupSpecPath)
+        }
+
+        // Build master pipeline spec (version 2)
+        const chainPrdContent = await readFile(prdPath, 'utf8')
+        const featureNameMatch = chainPrdContent.match(/^# (.+?)\s*(?:—|-)?\s*PRD/m)
+        const featureName = featureNameMatch
+          ? featureNameMatch[1].trim().toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          : 'feature'
+
+        const branchMatch = chainPrdContent.match(/`feat\/([^`]+)`/)
+        const branch = branchMatch ? `feat/${branchMatch[1]}` : `feat/${featureName}`
+
+        const masterSpec = {
+          name: featureNameMatch ? featureNameMatch[1].trim() : 'Feature Pipeline',
+          version: 2,
+          branch,
+          on_failure: 'stop',
+          depends_on_convoy: groupSpecPaths.map(p => relPath(p)),
+        }
+
+        const masterSpecPath = resolve(convoyDir, `${featureName}-pipeline.convoy.yml`)
+        await writeFile(masterSpecPath, stringify(masterSpec), 'utf8')
+
+        console.log(c.green(`  ✓ Generated convoy chain:\n`))
+        for (const p of groupSpecPaths) {
+          console.log(`    ${relPath(p)}`)
+        }
+        console.log(`    ${relPath(masterSpecPath)} ${c.dim('(master)')}`)
+        console.log()
+        console.log(
+          `  ${c.dim('Preview:')} npx opencastle run -f ${relPath(masterSpecPath)} --dry-run\n` +
+            `  ${c.dim('Execute:')} npx opencastle run -f ${relPath(masterSpecPath)}\n`
+        )
+
+        try {
+          const shouldRun = await confirm('Run the convoy chain now?', true)
+          if (shouldRun) {
+            closePrompts()
+            const runModule = await import('./run.js')
+            const runArgs = ['-f', masterSpecPath]
+            if (opts.adapter) runArgs.push('-a', opts.adapter)
+            if (opts.verbose) runArgs.push('--verbose')
+            await runModule.default({ args: runArgs, pkgRoot })
+          }
+        } finally {
+          closePrompts()
+          await cleanupAdapters()
+        }
+        return
       }
-      return
     } else {
       console.log(
         c.cyan(`  ℹ`) + ` Complexity: ${complexity.complexity} | Strategy: single\n`

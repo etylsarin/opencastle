@@ -169,6 +169,7 @@ export function buildConvoyYaml(plan: TaskPlan, enrichment?: SpecEnrichment): st
  */
 export function applyPatches(plan: TaskPlan, patches: TaskPatch[]): TaskPlan {
   const clone = structuredClone(plan)
+  let skipped = 0
   for (const patch of patches) {
     if (patch.task_id === '_plan') {
       ;(clone as unknown as Record<string, unknown>)[patch.field] = patch.value
@@ -176,9 +177,14 @@ export function applyPatches(plan: TaskPlan, patches: TaskPatch[]): TaskPlan {
       const task = clone.tasks.find((t) => t.id === patch.task_id)
       if (task) {
         ;(task as unknown as Record<string, unknown>)[patch.field] = patch.value
+      } else {
+        console.warn(`  ⚠ applyPatches: patch targets unknown task "${patch.task_id}" — skipping`)
+        skipped++
       }
-      // task not found: skip silently
     }
+  }
+  if (skipped > 0) {
+    console.warn(`  ⚠ applyPatches: ${skipped} of ${patches.length} patches skipped (unknown task IDs)`)
   }
   return clone
 }
@@ -194,7 +200,66 @@ export function parseTaskPlan(jsonText: string): TaskPlan | null {
     for (const task of parsed.tasks as unknown[]) {
       const t = task as Record<string, unknown>
       if (typeof t.id !== 'string' || typeof t.prompt !== 'string') return null
+      if ((t.prompt as string).length === 0) return null
     }
+
+    // Validate unique task IDs
+    const tasks = parsed.tasks as Array<Record<string, unknown>>
+    const ids = new Set<string>()
+    const duplicates: string[] = []
+    for (const task of tasks) {
+      const id = task.id as string
+      if (ids.has(id)) duplicates.push(id)
+      ids.add(id)
+    }
+    if (duplicates.length > 0) {
+      console.warn(`  ⚠ parseTaskPlan: duplicate task IDs: ${duplicates.join(', ')}`)
+      return null
+    }
+
+    // Validate depends_on references
+    for (const task of tasks) {
+      if (Array.isArray(task.depends_on)) {
+        for (const dep of task.depends_on as string[]) {
+          if (!ids.has(dep)) {
+            console.warn(`  ⚠ parseTaskPlan: task "${task.id as string}" depends on unknown task "${dep}"`)
+            return null
+          }
+        }
+      }
+    }
+
+    // Cycle detection (Kahn's algorithm)
+    const inDegree = new Map<string, number>()
+    const adj = new Map<string, string[]>()
+    for (const id of ids) {
+      inDegree.set(id, 0)
+      adj.set(id, [])
+    }
+    for (const task of tasks) {
+      if (Array.isArray(task.depends_on)) {
+        for (const dep of task.depends_on as string[]) {
+          adj.get(dep)!.push(task.id as string)
+          inDegree.set(task.id as string, (inDegree.get(task.id as string) ?? 0) + 1)
+        }
+      }
+    }
+    const queue = [...ids].filter(id => inDegree.get(id) === 0)
+    let visited = 0
+    while (queue.length > 0) {
+      const node = queue.shift()!
+      visited++
+      for (const next of adj.get(node) ?? []) {
+        const deg = (inDegree.get(next) ?? 1) - 1
+        inDegree.set(next, deg)
+        if (deg === 0) queue.push(next)
+      }
+    }
+    if (visited < ids.size) {
+      console.warn(`  ⚠ parseTaskPlan: dependency cycle detected`)
+      return null
+    }
+
     return parsed as unknown as TaskPlan
   } catch {
     return null

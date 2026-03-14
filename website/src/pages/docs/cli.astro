@@ -137,34 +137,43 @@ const commands = [
     category: 'runtime',
     name: 'start',
     summary: 'Go from idea to convoy spec in one command',
-    description: 'The easiest way to create a convoy spec. Describe your goal in plain text and the start command generates a PRD, validates it, converts it to a convoy spec, validates the spec, and auto-fixes any issues — all in one command.',
+    description: 'The easiest way to create a convoy spec. Describe your goal in plain text and the start command generates a PRD, validates it (with auto-fix), assesses complexity, generates a task plan, validates the convoy spec, and auto-fixes any issues — all in one command.',
     usage: 'npx opencastle start [options]',
     options: [
       { flag: '--text, -t <text>', desc: 'Your feature or task description in plain text (required, unless --prd is set)' },
       { flag: '--prd <path>', desc: 'Skip PRD generation — use an existing PRD file as input' },
       { flag: '--output-prd <path>', desc: 'Override output path for the generated PRD' },
       { flag: '--output-spec <path>', desc: 'Override output path for the generated convoy spec' },
+      { flag: '--complexity <path>', desc: 'Skip complexity assessment — use an existing complexity assessment file' },
       { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude-code, copilot, cursor, opencode)' },
       { flag: '--verbose', desc: 'Show full agent output for each step' },
       { flag: '--dry-run', desc: 'Generate and print the PRD prompt only, then stop' },
-      { flag: '--skip-validation', desc: 'Skip validation steps (steps 2 and 4)' },
+      { flag: '--skip-validation', desc: 'Skip validation steps (steps 2, 3, 6, 7)' },
       { flag: '--help, -h', desc: 'Show help' },
     ],
     details: [
       { heading: 'Start command steps', content: `<ol>
         <li><strong>Generate PRD</strong> — converts your text into a structured Product Requirements Document</li>
         <li><strong>Validate PRD</strong> — checks the PRD for completeness and correctness</li>
-        <li><strong>Generate convoy spec</strong> — converts the PRD into a <code>.convoy.yml</code> with tasks, dependencies, file partitions, and gates</li>
-        <li><strong>Validate convoy spec</strong> — checks the spec against the convoy schema</li>
-        <li><strong>Auto-fix</strong> — if validation fails, attempts to fix the spec automatically (up to 2 retries)</li>
+        <li><strong>Fix PRD</strong> — if validation fails, attempts to auto-fix the PRD (up to 2 retries)</li>
+        <li><strong>Assess complexity</strong> — analyzes the PRD to determine whether to use a single convoy or a chain of convoys for complex multi-domain projects</li>
+        <li><strong>Generate task plan</strong> — converts the PRD into a structured task plan (JSON), then builds a <code>.convoy.yml</code> spec with tasks, dependencies, file partitions, and gates</li>
+        <li><strong>Validate convoy spec</strong> — runs both schema validation and semantic validation against the spec</li>
+        <li><strong>Fix convoy spec</strong> — if validation fails, applies patch-based fixes automatically (up to 2 retries)</li>
       </ol>` },
       { heading: 'After the start command completes', content: `<p>The start command outputs two files:</p>
       <ul>
-        <li>A PRD (<code>.prd.md</code>) in <code>.opencastle/convoys/</code></li>
+        <li>A PRD (<code>.prd.md</code>) in <code>.opencastle/prds/</code></li>
         <li>A convoy spec (<code>.convoy.yml</code>) in <code>.opencastle/convoys/</code></li>
       </ul>
       <p>Review the generated spec, then execute it:</p>
       <pre><code>npx opencastle run -f .opencastle/convoys/your-spec.convoy.yml</code></pre>` },
+      { heading: 'Complexity assessment and chain strategy', content: `<p>After validating the PRD, the start command assesses the project's complexity to decide the optimal execution strategy:</p>
+<ul>
+  <li><strong>Single convoy</strong> (default) — all tasks run in one <code>.convoy.yml</code> spec. Used for low and medium complexity projects.</li>
+  <li><strong>Chain strategy</strong> — for high-complexity, multi-domain projects, the start command splits the work into multiple convoy groups (e.g., database setup → API integration → frontend/testing). Each group gets its own <code>.convoy.yml</code> file, plus a master pipeline spec that chains them with <code>depends_on_convoy</code> dependencies.</li>
+</ul>
+<p>Chain convoy files and the master pipeline spec are written to <code>.opencastle/convoys/</code>. Use <code>--complexity &lt;path&gt;</code> to skip the assessment and provide your own complexity file.</p>` },
     ],
     examples: [
       { cmd: 'npx opencastle start -t "Add user authentication with login and signup pages"', desc: 'Generate a convoy spec from a text description' },

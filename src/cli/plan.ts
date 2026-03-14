@@ -225,10 +225,27 @@ function extractMarkdownBody(output: string): string {
 
 /**
  * Parse a validation AI response for VALID / INVALID verdict.
- * INVALID takes precedence because VALID is a substring of INVALID.
+ * Prefers structured JSON output; falls back to VALID/INVALID keyword matching.
  */
 function parseValidationResult(output: string): { isValid: boolean; errors: string } {
   const trimmed = output.trim()
+
+  // Try structured JSON first (preferred format)
+  const jsonFenceMatch = trimmed.match(/```json\s*\n([\s\S]*?)```/)
+  if (jsonFenceMatch) {
+    try {
+      const parsed = JSON.parse(jsonFenceMatch[1].trim()) as { valid?: boolean; issues?: string[] }
+      if (typeof parsed.valid === 'boolean') {
+        if (parsed.valid) return { isValid: true, errors: '' }
+        const errors = Array.isArray(parsed.issues) ? parsed.issues.join('\n') : ''
+        return { isValid: false, errors }
+      }
+    } catch {
+      // JSON parse failed — fall through to regex fallback
+    }
+  }
+
+  // Fallback: regex-based parsing for backward compatibility
   const hasInvalid = /\bINVALID\b/.test(trimmed)
   const hasValid = /\bVALID\b/.test(trimmed)
   if (hasValid && !hasInvalid) return { isValid: true, errors: '' }
@@ -364,9 +381,17 @@ export async function runPromptStep(opts: PromptStepOptions): Promise<PromptStep
   }
 
   if (outputType === 'json') {
-    // Extract JSON from a ```json fenced block only
-    const jsonFenceMatch = rawOutput.match(/```json\s*\n([\s\S]*)```/)
-    const jsonContent = jsonFenceMatch ? jsonFenceMatch[1].trim() : rawOutput.trim()
+    // Extract JSON from a ```json fenced block — fail fast if missing
+    const jsonFenceMatch = rawOutput.match(/```json\s*\n([\s\S]*?)```/)
+    if (!jsonFenceMatch) {
+      const preview = rawOutput.slice(0, 300)
+      throw new Error(
+        `Expected a fenced \`\`\`json block in the AI response but found none.\n\n` +
+        `Raw output (truncated):\n${preview}\n\n` +
+        `Tip: re-run with --verbose to see the full output.`
+      )
+    }
+    const jsonContent = jsonFenceMatch[1].trim()
 
     const outputPath = opts.outputPath ?? null
     if (outputPath) {

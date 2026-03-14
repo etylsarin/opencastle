@@ -65,20 +65,23 @@ The overall plan must make engineering sense.
 
 ## Output Format
 
-If all checks pass:
+Your entire response must be a single fenced JSON block — no text before or after:
 
-```
-VALID
-```
-
-If any check fails:
-
-```
-INVALID
-
-Errors:
-- [Check category] / [task id if applicable]: [Specific problem] — Fix: [How to correct it]
-- [Check category] / [task id if applicable]: [Another problem] — Fix: [How to correct it]
+```json
+{
+  "valid": true
+}
 ```
 
-List only real failures. Do not list passing checks. Be specific — name the task id, the field, and the exact value that violates the rule.
+Or if any check fails:
+
+```json
+{
+  "valid": false,
+  "issues": [
+    "[Section name]: [Specific problem] — Fix: [What to change]"
+  ]
+}
+```
+
+List only real failures in `issues`. Do not list items that passed.

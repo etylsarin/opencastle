@@ -645,12 +645,14 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       template = parseFormula(formulaPath)
     } catch (err: unknown) {
       console.error(`  ✗ ${(err as Error).message}`)
+      console.log(`\n  ${c.dim('Resume:')} npx opencastle run --formula ${opts.formula}`)
       process.exit(1)
     }
 
     const validation = validateTemplate(template)
     if (!validation.valid) {
       console.error(`  ✗ Invalid formula template:\n  • ${validation.errors.join('\n  • ')}`)
+      console.log(`\n  ${c.dim('Resume:')} npx opencastle run --formula ${opts.formula}`)
       process.exit(1)
     }
 
@@ -672,6 +674,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       spec = substituteVariables(template, opts.setVars)
     } catch (err: unknown) {
       console.error(`  ✗ ${(err as Error).message}`)
+      console.log(`\n  ${c.dim('Resume:')} npx opencastle run --formula ${opts.formula}`)
       process.exit(1)
     }
     specText = yamlStringify(spec)
@@ -687,6 +690,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       } else {
         console.error(`  ✗ Cannot read task spec file: ${e.message}`)
       }
+      console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file}`)
       process.exit(1)
     }
 
@@ -694,6 +698,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       spec = parseTaskSpecText(specText)
     } catch (err: unknown) {
       console.error(`  ✗ ${(err as Error).message}`)
+      console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file}`)
       process.exit(1)
     }
   }
@@ -745,6 +750,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
   const available = await adapter.isAvailable()
   if (!available) {
     printAdapterError(detectionFailed, spec.adapter)
+    console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file}`)
     process.exit(1)
   }
 
@@ -762,22 +768,45 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       const { execFile: execFileCb } = await import('node:child_process')
       const { promisify } = await import('node:util')
       const execFile = promisify(execFileCb)
-      const { stdout: statusOut } = await execFile('git', ['status', '--porcelain'], {
-        cwd: process.cwd(),
-      })
-      if (statusOut.trim()) {
+      let statusOut: string
+      try {
+        const result = await execFile('git', ['status', '--porcelain'], {
+          cwd: process.cwd(),
+        })
+        statusOut = result.stdout
+      } catch {
+        console.error(`  ✗ Git repository not found. A git repo is required when using the \`branch\` option.`)
+        console.error(`    Run \`git init\` to initialize a repository.`)
+        console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file}`)
+        process.exit(1)
+      }
+      // Untracked files (??) don't block branch checkout — ignore them
+      const trackedChanges = statusOut
+        .split('\n')
+        .filter(line => line.trim() && !line.startsWith('??'))
+        .join('\n')
+      if (trackedChanges) {
         console.log(`\n  ${c.yellow('⚠')} Uncommitted changes detected.`)
         const shouldStash = await confirm('Stash changes and continue?', true)
         if (!shouldStash) {
           console.log('  Aborted. Commit or stash your changes manually, then retry.')
+          console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file}`)
           closePrompts()
           process.exit(1)
         }
-        await execFile('git', ['stash', 'push', '-m', 'opencastle: auto-stash before pipeline'], {
-          cwd: process.cwd(),
-        })
-        pipelineDidStash = true
-        console.log(`  ${c.green('✓')} Changes stashed.`)
+        try {
+          await execFile('git', ['stash', 'push', '-m', 'opencastle: auto-stash before pipeline'], {
+            cwd: process.cwd(),
+          })
+          pipelineDidStash = true
+          console.log(`  ${c.green('✓')} Changes stashed.`)
+        } catch {
+          console.log(`  ${c.yellow('⚠')} Could not stash changes automatically.`)
+          console.log(`  Commit or stash your changes manually, then resume:\n`)
+          console.log(`  ${c.dim('Resume:')} npx opencastle run -f ${opts.file}`)
+          closePrompts()
+          process.exit(1)
+        }
       }
     }
 
@@ -809,6 +838,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     } catch (err) {
       if (err instanceof EngineAlreadyRunningError) {
         console.error(`  ✗ ${err.message}`)
+        console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file} --resume`)
         process.exit(1)
       }
       throw err
@@ -829,6 +859,9 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       console.log(`\n  ${c.dim('Results saved to .opencastle/convoy.db')}`)
       console.log(`  ${c.dim('Dashboard:')} ${pipelineDashboardResult.url}`)
       console.log(`\n  Press Ctrl+C to stop`)
+      if (pipelineResult.status !== 'done') {
+        console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file} --resume`)
+      }
       const exitCode = pipelineResult.status !== 'done' ? 1 : 0
       process.on('SIGINT', () => {
         console.log('\n  Dashboard stopped.\n')
@@ -836,6 +869,9 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
         process.exit(exitCode)
       })
     } else {
+      if (pipelineResult.status !== 'done') {
+        console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file} --resume`)
+      }
       process.exit(pipelineResult.status !== 'done' ? 1 : 0)
     }
     return
@@ -857,22 +893,45 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       const { execFile: execFileCb } = await import('node:child_process')
       const { promisify } = await import('node:util')
       const execFile = promisify(execFileCb)
-      const { stdout: statusOut } = await execFile('git', ['status', '--porcelain'], {
-        cwd: process.cwd(),
-      })
-      if (statusOut.trim()) {
+      let statusOut: string
+      try {
+        const result = await execFile('git', ['status', '--porcelain'], {
+          cwd: process.cwd(),
+        })
+        statusOut = result.stdout
+      } catch {
+        console.error(`  ✗ Git repository not found. A git repo is required when using the \`branch\` option.`)
+        console.error(`    Run \`git init\` to initialize a repository.`)
+        console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file}`)
+        process.exit(1)
+      }
+      // Untracked files (??) don't block branch checkout — ignore them
+      const trackedChanges = statusOut
+        .split('\n')
+        .filter(line => line.trim() && !line.startsWith('??'))
+        .join('\n')
+      if (trackedChanges) {
         console.log(`\n  ${c.yellow('⚠')} Uncommitted changes detected.`)
         const shouldStash = await confirm('Stash changes and continue?', true)
         if (!shouldStash) {
           console.log('  Aborted. Commit or stash your changes manually, then retry.')
+          console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file}`)
           closePrompts()
           process.exit(1)
         }
-        await execFile('git', ['stash', 'push', '-m', 'opencastle: auto-stash before convoy'], {
-          cwd: process.cwd(),
-        })
-        didStash = true
-        console.log(`  ${c.green('✓')} Changes stashed.`)
+        try {
+          await execFile('git', ['stash', 'push', '-m', 'opencastle: auto-stash before convoy'], {
+            cwd: process.cwd(),
+          })
+          didStash = true
+          console.log(`  ${c.green('✓')} Changes stashed.`)
+        } catch {
+          console.log(`  ${c.yellow('⚠')} Could not stash changes automatically.`)
+          console.log(`  Commit or stash your changes manually, then resume:\n`)
+          console.log(`  ${c.dim('Resume:')} npx opencastle run -f ${opts.file}`)
+          closePrompts()
+          process.exit(1)
+        }
       }
     }
 
@@ -921,6 +980,7 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     } catch (err) {
       if (err instanceof EngineAlreadyRunningError) {
         console.error(`  ✗ ${err.message}`)
+        console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file} --resume`)
         process.exit(1)
       }
       throw err
@@ -941,6 +1001,9 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       console.log(`\n  ${c.dim('Results saved to .opencastle/convoy.db')}`)
       console.log(`  ${c.dim('Dashboard:')} ${dashboardResult.url}`)
       console.log(`\n  Press Ctrl+C to stop`)
+      if (result.status !== 'done') {
+        console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file} --resume`)
+      }
       const exitCode = result.status !== 'done' ? 1 : 0
       process.on('SIGINT', () => {
         console.log('\n  Dashboard stopped.\n')
@@ -948,6 +1011,9 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
         process.exit(exitCode)
       })
     } else {
+      if (result.status !== 'done') {
+        console.log(`\n  ${c.dim('Resume:')} npx opencastle run -f ${opts.file} --resume`)
+      }
       process.exit(result.status !== 'done' ? 1 : 0)
     }
   }
