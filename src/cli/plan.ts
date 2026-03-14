@@ -364,9 +364,10 @@ export async function runPromptStep(opts: PromptStepOptions): Promise<PromptStep
   }
 
   if (outputType === 'json') {
-    // Extract JSON from fenced block or raw output
-    const jsonMatch = rawOutput.match(/```(?:json)?\s*\n([\s\S]*?)```/)
-    const jsonContent = jsonMatch ? jsonMatch[1].trim() : rawOutput.trim()
+    // Extract JSON from a ```json fenced block only
+    const jsonFenceMatch = rawOutput.match(/```json\s*\n([\s\S]*)```/)
+    const jsonContent = jsonFenceMatch ? jsonFenceMatch[1].trim() : rawOutput.trim()
+
     const outputPath = opts.outputPath ?? null
     if (outputPath) {
       await mkdir(resolve(outputPath, '..'), { recursive: true })

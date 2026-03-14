@@ -646,9 +646,30 @@ async function generateAndValidateSpec(params: {
 
   let taskPlan = parseTaskPlan(taskPlanResult.rawOutput)
   if (!taskPlan) {
-    console.error('  ✗ Failed to parse task plan JSON from LLM output')
-    console.error(c.dim(taskPlanResult.rawOutput.slice(0, 500)))
-    process.exit(1)
+    console.log(c.yellow(`  ⚠ Failed to parse task plan JSON — retrying generation…\n`))
+    if (params.sharedOpts.verbose) {
+      console.log(c.dim(taskPlanResult.rawOutput.slice(0, 500)))
+    }
+
+    let retryResult
+    try {
+      retryResult = await runPromptStep({
+        ...params.sharedOpts,
+        template: 'generate-convoy',
+        goalText: params.goalText,
+        contextText: params.contextText,
+      })
+    } catch (err) {
+      console.error(`\n  ✗ Retry failed: ${err instanceof Error ? err.message : String(err)}`)
+      process.exit(1)
+    }
+
+    taskPlan = parseTaskPlan(retryResult.rawOutput)
+    if (!taskPlan) {
+      console.error('  ✗ Failed to parse task plan JSON after retry')
+      console.error(c.dim(retryResult.rawOutput.slice(0, 500)))
+      process.exit(1)
+    }
   }
 
   console.log(c.green(`  ✓ Task plan generated (${taskPlan.tasks.length} tasks)`))

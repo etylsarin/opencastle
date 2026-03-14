@@ -98,7 +98,7 @@ export async function execute(task: Task, options: ExecuteOptions = {}): Promise
       } catch { /* not JSON or no usage — graceful degradation */ }
       resolve({
         success: code === 0,
-        output: output.slice(0, 10000), // Cap output size
+        output: output.slice(0, 500_000),
         exitCode: code ?? -1,
         usage,
       })
