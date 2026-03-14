@@ -1,18 +1,18 @@
 ---
-description: 'Fix schema validation errors in a convoy YAML spec. Goal is the broken spec YAML; context is the error list from the validation step.'
+description: 'Fix validation errors in a convoy task plan by outputting targeted JSON patches.'
 agent: 'Team Lead (OpenCastle)'
-output: convoy-spec
+output: json
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
-# Fix Convoy Spec
+# Fix Task Plan
 
-You are the Team Lead. The convoy spec below failed validation. Fix **every reported error** and output a complete, corrected spec.
+You are the Team Lead. The task plan below has validation errors. Fix every error by outputting targeted JSON patches.
 
-## Failing Spec
+## Task Plan
 
-```yaml
+```json
 {{goal}}
 ```
 
@@ -22,58 +22,49 @@ You are the Team Lead. The convoy spec below failed validation. Fix **every repo
 
 ---
 
-## Fix Instructions
+## Instructions
 
-1. Read every error before touching the YAML.
-2. Fix **all** reported errors — do not partially fix.
-3. Do not change the intent, agent assignments, or task scope of any task. Only fix what is broken.
-4. Preserve all `id`, `prompt`, `agent`, `review`, and `files` values that are not part of the reported errors.
+1. Read every error before writing patches.
+2. Fix ALL reported errors — do not partially fix.
+3. Preserve intent, agent assignments, and task scope. Only fix what is broken.
+4. Each patch replaces ONE field on ONE task.
 
-### Common Fix Patterns
+## Patch Format
 
-**Glob patterns in `files`**
-- `src/**/*.ts` → `src/` (use the directory, not a glob)
-- `app/api/**` → `app/api/`
-- `components/*.tsx` → `components/`
+Output a single `json` fenced code block with an array of patches:
 
-**Missing required fields**
-- Add `name:` at the top level if missing
-- Add `version: 2` at the top level if missing
-- Add `id:` to any task that lacks one (use kebab-case derived from the task purpose)
-- Add `prompt:` to any task that lacks one — write a 2-sentence self-contained description
+```json
+[
+  {
+    "task_id": "the-task-id",
+    "field": "prompt",
+    "value": "Complete corrected prompt text..."
+  },
+  {
+    "task_id": "another-task",
+    "field": "depends_on",
+    "value": ["project-scaffold", "shared-ui-components"]
+  },
+  {
+    "task_id": "_plan",
+    "field": "concurrency",
+    "value": 2
+  }
+]
+```
 
-**Dependency cycles**
-- If A depends on B and B depends on A: remove the weaker edge (the one that can be inferred from ordering)
-- If the cycle is A → B → C → A: introduce a new intermediate task or reorder so earlier tasks do not depend on later ones
+### Patch fields
+- `task_id`: Task ID to modify, or `"_plan"` for top-level plan fields (`name`, `branch`, `concurrency`, `on_failure`, `gates`, `gate_retries`)
+- `field`: Field name to replace (`prompt`, `files`, `depends_on`, `agent`, `timeout`, `description`, `max_retries`, `review`, `gates`)
+- `value`: Complete new value (replaces old value entirely)
 
-**Partition conflicts (two parallel tasks sharing files)**
-- Option 1: Add a `depends_on` edge to serialize the conflicting tasks
-- Option 2: Split one task's `files` list to use a more specific path that does not overlap
-
-**Invalid `agent` value**
-Replace with the closest valid agent from:
-`api-designer`, `architect`, `content-engineer`, `copywriter`, `data-expert`,
-`database-engineer`, `developer`, `devops-expert`, `documentation-writer`,
-`performance-expert`, `release-manager`, `researcher`, `security-expert`,
-`seo-specialist`, `team-lead`, `testing-expert`, `ui-ux-expert`
-
-**Invalid `timeout` format**
-- `"30 minutes"` → `30m`
-- `"1 hour"` → `1h`
-- `"120"` → `120s`
-
----
+### Common fixes
+- **Truncated prompt** → patch `field: "prompt"` with the complete, self-contained prompt text
+- **Missing dependency** → patch `field: "depends_on"` with the corrected array
+- **Partition conflict** → patch `field: "files"` to use specific paths, or patch `field: "depends_on"` to add sequencing
+- **Wrong agent** → patch `field: "agent"` with correct value from roster
+- **Vague prompt** → patch with detailed, file-specific prompt including acceptance criteria
 
 ## Output
 
-Return the **complete corrected YAML** inside a fenced code block (not just the changed lines):
-
-```yaml
-# .opencastle/convoys/<same-filename-as-original>
-name: ...
-version: 2
-tasks:
-  ...
-```
-
-Do not add explanatory prose before or after the YAML block.
+Your entire response must be a single `json` fenced code block with the patches array. No text before or after.

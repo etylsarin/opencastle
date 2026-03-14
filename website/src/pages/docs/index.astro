@@ -244,7 +244,7 @@ const pages = [
                       <div class="quickstart__substeps">
                         <div class="quickstart__substep">
                           <span class="quickstart__substep-num">1</span>
-                          <p class="quickstart__desc"><strong>Generate:</strong> Describe your goal and run the pipeline: <code class="quickstart__code">npx opencastle pipeline -t "Add user reviews to the place detail page"</code>. It generates a PRD, validates it, produces a <code class="quickstart__code">.convoy.yml</code> spec, and validates that too &mdash; all in one command.</p>
+                          <p class="quickstart__desc"><strong>Generate:</strong> Describe your goal and run the start command: <code class="quickstart__code">npx opencastle start -t "Add user reviews to the place detail page"</code>. It generates a PRD, validates it, produces a <code class="quickstart__code">.convoy.yml</code> spec, and validates that too &mdash; all in one command.</p>
                         </div>
                         <div class="quickstart__substep">
                           <span class="quickstart__substep-num">2</span>
@@ -766,10 +766,10 @@ const pages = [
         const tablist = document.querySelector('.quickstart__ide-switcher .quickstart__tabs');
         if (!tablist) return;
 
-        const allPanels = document.querySelectorAll('.quickstart__panel[data-ide]');
-        const allTabs = tablist.querySelectorAll('.quickstart__tab[data-ide]');
+        const allPanels = document.querySelectorAll<HTMLElement>('.quickstart__panel[data-ide]');
+        const allTabs = tablist.querySelectorAll<HTMLElement>('.quickstart__tab[data-ide]');
 
-        function switchIde(ide) {
+        function switchIde(ide: string) {
           allTabs.forEach(t => {
             const isMatch = t.dataset.ide === ide;
             t.classList.toggle('quickstart__tab--active', isMatch);
@@ -783,7 +783,8 @@ const pages = [
         }
 
         tablist.addEventListener('click', (e) => {
-          const tab = e.target.closest('.quickstart__tab');
+          const target = e.target as HTMLElement | null;
+          const tab = target?.closest<HTMLElement>('.quickstart__tab');
           if (!tab || !tab.dataset.ide) return;
           switchIde(tab.dataset.ide);
         });

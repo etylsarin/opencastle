@@ -120,7 +120,7 @@ export function closePrompts(): void {
   // Node.js TTY stdin can remain active even after readline.close() — unref it
   // so the process exits cleanly.
   stdin.pause();
-  stdin.unref();
+  if (typeof stdin.unref === 'function') stdin.unref();
 }
 
 /**

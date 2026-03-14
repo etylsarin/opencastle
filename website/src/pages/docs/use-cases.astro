@@ -93,7 +93,7 @@ const recipe = {
             <p class="recipe-section__body">
               This cookbook walks you through building a complete personal portfolio website using
               OpenCastle's AI agent team — from project setup to deployment-ready code. You'll run a
-              single pipeline command that decomposes your goal, spins up a convoy of specialist agents,
+              single start command that decomposes your goal, spins up a convoy of specialist agents,
               and delivers production-quality code on a feature branch ready for review.
             </p>
           </section>
@@ -165,19 +165,19 @@ $ npx opencastle init</code></pre>
             <div class="recipe-step__number">2</div>
             <h3 class="recipe-section__heading">Step 2: Describe your project</h3>
             <p class="recipe-section__body">
-              Run <code>opencastle pipeline</code> with a plain-English description of what you want
+              Run <code>opencastle start</code> with a plain-English description of what you want
               to build. OpenCastle generates a product requirements document, validates it, decomposes
               it into an executable convoy spec, and validates that too — all automatically.
             </p>
             <div class="recipe-code">
               <div class="recipe-code__header">Terminal</div>
-              <pre><code>$ opencastle pipeline --text "Build a personal portfolio website with a home \
+              <pre><code>$ opencastle start --text "Build a personal portfolio website with a home \
   page featuring a hero section and recent projects, an about page with bio \
   and skills, a projects page with filterable cards, and a contact page with \
   a form. Use modern design, dark mode support, responsive layout, and SEO \
   optimization."</code></pre>
             </div>
-            <p class="recipe-section__body">The pipeline runs five stages:</p>
+            <p class="recipe-section__body">The start command runs five stages:</p>
             <div class="recipe-output">
               <pre><code>  ✓ Step 1/5  Generating PRD...
   ✓ Step 2/5  Validating PRD...
@@ -374,7 +374,7 @@ $ gh pr create --title "feat: personal portfolio (convoy cvy_3kx9)"</code></pre>
             <h3 class="recipe-section__heading">Tips &amp; Troubleshooting</h3>
             <div class="recipe-troubleshooting">
               <div class="recipe-troubleshooting__item">
-                <p class="recipe-troubleshooting__problem">Pipeline fails at validation</p>
+                <p class="recipe-troubleshooting__problem">Start command fails at validation</p>
                 <p class="recipe-troubleshooting__solution">
                   The PRD or convoy spec didn't pass the validation gate. Add <code>--skip-validation</code>
                   to bypass it while iterating, or rewrite the description to be more specific about
@@ -415,7 +415,7 @@ $ gh pr create --title "feat: personal portfolio (convoy cvy_3kx9)"</code></pre>
             <p class="recipe-section__body">Now that you've shipped a portfolio, try these next steps:</p>
             <ul class="recipe-section__list">
               <li>
-                <strong>More complex projects</strong> — Use the same pipeline command to scaffold
+                <strong>More complex projects</strong> — Use the same start command to scaffold
                 an e-commerce store, SaaS dashboard, or API backend. The agent team scales to
                 any size project.
               </li>

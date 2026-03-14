@@ -268,7 +268,7 @@ function startProgress(templateName: string): () => void {
 
 /**
  * Execute a single prompt template step via an AI adapter.
- * Used by the pipeline command to chain steps programmatically.
+ * Used by the start command to chain steps programmatically.
  */
 export async function runPromptStep(opts: PromptStepOptions): Promise<PromptStepResult> {
   const templateName = opts.template ?? 'generate-convoy'

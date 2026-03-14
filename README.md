@@ -71,7 +71,7 @@ MCP servers are auto-configured for your stack in each IDE's native format.
 | `opencastle update` | Update framework files (keeps your customizations) |
 | `opencastle eject` | Remove the dependency, keep all files |
 | `opencastle destroy` | Remove ALL OpenCastle files (reverse of init) |
-| `opencastle pipeline` | Go from idea to convoy spec in one command (PRD → validate → convoy → validate → fix) |
+| `opencastle start` | Go from idea to convoy spec in one command (PRD → validate → convoy → validate → fix) |
 | `opencastle plan` | Run a single prompt template step (generate PRD, convoy spec, or validate) |
 | `opencastle validate` | Validate a convoy YAML spec file without executing it |
 | `opencastle run` | Run the Convoy Engine (deterministic, crash-recoverable orchestrator) |
@@ -177,10 +177,10 @@ gates:
 Generate a validated convoy spec from a plain text description — no YAML by hand:
 
 ```bash
-npx opencastle pipeline --text "Add user reviews to the place detail page"
+npx opencastle start --text "Add user reviews to the place detail page"
 ```
 
-The pipeline command runs 5 steps automatically: generate PRD → validate PRD → generate convoy spec → validate spec → auto-fix if needed. For lower-level control, use `opencastle plan` to run individual steps.
+The start command runs 7 steps automatically: generate PRD → validate PRD → auto-fix PRD if needed → assess complexity → generate convoy spec → validate spec → auto-fix spec if needed. For lower-level control, use `opencastle plan` to run individual steps.
 
 📖 [Full Convoy Engine documentation →](https://www.opencastle.dev/docs/cli#run)
 
