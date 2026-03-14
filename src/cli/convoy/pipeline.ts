@@ -174,11 +174,9 @@ export function createPipelineOrchestrator(
         try {
           convoyResult = await runConvoySpecFile(specPath, pipelineId, branch)
         } catch (err) {
-          if (verbose) {
-            process.stderr.write(
-              `Pipeline error loading convoy spec "${specPath}": ${(err as Error).message}\n`,
-            )
-          }
+          process.stderr.write(
+            `  ✗ Convoy spec "${specPath}" failed to load: ${(err as Error).message}\n`,
+          )
           // Treat spec load failure as a convoy failure
           convoyResult = {
             convoyId: `failed-${specPath}`,
@@ -347,11 +345,9 @@ export function createPipelineOrchestrator(
           try {
             convoyResult = await runConvoySpecFile(specPath, pipelineId, branch)
           } catch (err) {
-            if (verbose) {
-              process.stderr.write(
-                `Pipeline error loading convoy spec "${specPath}": ${(err as Error).message}\n`,
-              )
-            }
+            process.stderr.write(
+              `  ✗ Convoy spec "${specPath}" failed to load: ${(err as Error).message}\n`,
+            )
             convoyResult = {
               convoyId: `failed-${specPath}`,
               status: 'failed',
