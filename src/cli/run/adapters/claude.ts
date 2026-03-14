@@ -138,7 +138,7 @@ async function executeViaSdk(task: Task, options: ExecuteOptions = {}): Promise<
       : undefined
     return {
       success: true,
-      output: output.slice(0, 10_000),
+      output: output.slice(0, 500_000),
       exitCode: 0,
       usage: usageResult,
     }
@@ -233,7 +233,7 @@ export async function executeViaCli(task: Task, options: ExecuteOptions = {}): P
       } catch { /* not JSON or no usage — graceful degradation */ }
       resolve({
         success: code === 0,
-        output: output.slice(0, 10000),
+        output: output.slice(0, 500_000),
         exitCode: code ?? -1,
         usage,
       })

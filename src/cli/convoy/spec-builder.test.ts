@@ -380,6 +380,18 @@ describe('parseTaskPlan', () => {
     const json = JSON.stringify({ name: 'Test', tasks: [{ id: 1, prompt: 'p' }] })
     expect(parseTaskPlan(json)).toBeNull()
   })
+
+  it('returns null when JSON is surrounded by text', () => {
+    const json = JSON.stringify({ name: 'Test', tasks: [{ id: 't1', prompt: 'p' }] })
+    const wrapped = `Here is the plan:\n${json}\nHope this helps!`
+    expect(parseTaskPlan(wrapped)).toBeNull()
+  })
+
+  it('returns null when trailing garbage present', () => {
+    const json = JSON.stringify({ name: 'Test', tasks: [{ id: 't1', prompt: 'p' }] })
+    const withTrailing = json + '\n```\nSome extra text'
+    expect(parseTaskPlan(withTrailing)).toBeNull()
+  })
 })
 
 // ── parsePatches ──────────────────────────────────────────────────────────────
