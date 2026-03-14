@@ -136,6 +136,11 @@ Each task `prompt` must be a **complete, standalone instruction**. Include:
 - [ ] No `files` entry contains `*`, `?`, or `**` — use plain file paths or directory paths only
 - [ ] Prompts are self-contained — an agent with zero context can execute them
 - [ ] Timeouts are reasonable for the scope of each task
+- [ ] **Dependency completeness**: For every task prompt, scan for imports, references, or usage of files/types/components produced by other tasks. Each such cross-reference MUST have a `depends_on` edge to the producing task.
+- [ ] **Agent domain matching**: Verify each task's `agent` matches the domain — `developer` for code, `testing-expert` for tests, `documentation-writer` for docs, `copywriter` for marketing copy, `ui-ux-expert` for UI components, `database-engineer` for migrations, `security-expert` for auth/security, `data-expert` for ETL/scraping. A `content-engineer` should NOT be assigned to pure TypeScript code tasks.
+- [ ] **File list completeness**: Every file mentioned in a task's prompt that the agent will create or modify MUST appear in that task's `files` list. Don't omit utility files, sub-components, or config files if the prompt instructs the agent to create them.
+- [ ] **Prompt instruction accuracy**: Don't include instructions that contradict the dependency graph. If a task depends on another task (via `depends_on`), the depended task's outputs will exist when this task runs — don't add `@ts-expect-error` comments, stub files, or "if not found" fallbacks for files produced by dependencies.
+- [ ] **Content research rule compliance**: If a prompt concerns real people, places, or organisations, it includes a research instruction telling the agent to search the internet first.
 
 ### 7. Output
 

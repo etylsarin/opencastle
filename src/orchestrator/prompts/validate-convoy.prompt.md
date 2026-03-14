@@ -12,6 +12,8 @@ output: validation
 
 You are a senior technical reviewer. Validate the task plan below for semantic correctness. Be strict — a plan that passes this gate will be executed autonomously by AI agents.
 
+> **⚠ EXHAUSTIVENESS MANDATE**: You MUST report ALL errors in a single pass. Do NOT stop at the first few issues. Systematically evaluate every task against every check below. A second validation pass should find zero new issues — if it would, your first pass was incomplete. Cross-reference every task's prompt against every other task's files list and dependency edges before concluding.
+
 ## Task Plan to Validate
 
 {{goal}}
@@ -19,6 +21,8 @@ You are a senior technical reviewer. Validate the task plan below for semantic c
 ---
 
 ## Semantic Checks
+
+> If the spec below contains the marker `<!-- validation-pass: N -->`, this is validation pass N. On pass 1, be maximally thorough — report every issue you can find. On pass 2+, verify that previous fixes were applied correctly and check for regressions, but do NOT invent new categories of issues not covered by the checks below.
 
 Evaluate **every check** below. If ALL pass, respond `VALID`. If ANY fail, respond `INVALID` with specific, actionable errors.
 
@@ -54,6 +58,8 @@ The overall plan must make engineering sense.
 - [ ] No obvious missing tasks (gaps that would leave the goal unachievable)
 - [ ] File ownership matches task descriptions (a task that owns a file should actually modify it)
 - [ ] Agent assignment matches domain — `developer` for code, `documentation-writer` for docs, `copywriter` for marketing copy, etc.
+- [ ] File list completeness — every file the prompt instructs the agent to create/modify appears in the task's `files` list
+- [ ] Prompt-dependency coherence — prompts do not include workarounds (stub files, `@ts-expect-error`, conditional imports) for outputs of tasks listed in `depends_on`, since those outputs are guaranteed to exist
 
 ---
 

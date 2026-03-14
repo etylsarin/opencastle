@@ -254,7 +254,7 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
       result = await runPromptStep({
         ...sharedOpts,
         template: 'validate-prd',
-        goalText: prdContent,
+        goalText: `<!-- validation-pass: 1 -->\n${prdContent}`,
       })
     } catch (err) {
       console.error(`\n  ✗ Step 2 failed: ${err instanceof Error ? err.message : String(err)}`)
@@ -298,7 +298,7 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
           revalidation = await runPromptStep({
             ...sharedOpts,
             template: 'validate-prd',
-            goalText: fixedPrdContent,
+            goalText: `<!-- validation-pass: ${attempt + 1} -->\n${fixedPrdContent}`,
           })
         } catch (err) {
           console.error(`\n  ✗ Re-validation failed: ${err instanceof Error ? err.message : String(err)}`)
@@ -321,15 +321,14 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
       }
 
       if (!prdFixed) {
-        console.log(c.red(`\n  ✗ Could not auto-fix the PRD after ${MAX_PRD_FIX_RETRIES} attempts.\n`))
-        console.log(`  Remaining issues:\n`)
-        console.log(prdValidationErrors)
+        console.log(c.yellow(`\n  ⚠ Could not fully auto-fix the PRD after ${MAX_PRD_FIX_RETRIES} attempts — continuing with best-effort PRD.\n`))
+        console.log(c.dim(`  Remaining issues:\n`))
+        console.log(c.dim(prdValidationErrors))
         console.log(
-          c.dim(`\n  The PRD has been saved to ${relPath(prdPath)} with the best available fixes.\n`) +
-            c.dim(`  Review the remaining issues above and edit the file manually, then re-run with:\n`) +
+          c.dim(`\n  PRD saved to ${relPath(prdPath)} with best available fixes.`) +
+            c.dim(`\n  You can re-validate later with:\n`) +
             `    opencastle start --prd ${relPath(prdPath)}${opts.adapter ? ` --adapter ${opts.adapter}` : ''}\n`
         )
-        process.exit(1)
       }
     } else {
       console.log(c.green(`  ✓ PRD is valid\n`))
@@ -585,7 +584,7 @@ async function fixViaPatch(
       revalidation = await runPromptStep({
         ...sharedOpts,
         template: 'validate-convoy',
-        goalText: yaml,
+        goalText: `<!-- validation-pass: ${attempt + 1} -->\n${yaml}`,
       })
     } catch (err) {
       console.error(`\n  ✗ Re-validation failed: ${err instanceof Error ? err.message : String(err)}`)
@@ -604,17 +603,17 @@ async function fixViaPatch(
     }
   }
 
-  // Exhausted — write best effort and exit
+  // Exhausted retries — save best effort and continue with warning
   await writeFile(specPath, buildConvoyYaml(currentPlan, enrichment), 'utf8')
-  console.log(c.red(`\n  ✗ Could not auto-fix after ${MAX_FIX_RETRIES} attempts.\n`))
-  console.log(`  Remaining issues:\n`)
-  console.log(currentErrors)
+  console.log(c.yellow(`\n  ⚠ Could not fully auto-fix after ${MAX_FIX_RETRIES} attempts — continuing with best-effort spec.\n`))
+  console.log(c.dim(`  Remaining issues:\n`))
+  console.log(c.dim(currentErrors))
   console.log(
-    c.dim(`\n  Spec saved to ${relPath(specPath)} with best available fixes.\n`) +
-    c.dim(`  Edit manually, then re-validate with:\n`) +
+    c.dim(`\n  Spec saved to ${relPath(specPath)} with best available fixes.`) +
+    c.dim(`\n  You can re-validate later with:\n`) +
     `    opencastle plan --file ${relPath(specPath)} --template validate-convoy\n`
   )
-  process.exit(1)
+  return currentPlan
 }
 
 async function generateAndValidateSpec(params: {
@@ -720,7 +719,7 @@ async function generateAndValidateSpec(params: {
       semanticResult = await runPromptStep({
         ...params.sharedOpts,
         template: 'validate-convoy',
-        goalText: await readFile(resolvedSpecPath, 'utf8'),
+        goalText: `<!-- validation-pass: 1 -->\n${await readFile(resolvedSpecPath, 'utf8')}`,
       })
     } catch (err) {
       console.error(`\n  ✗ Semantic validation failed: ${err instanceof Error ? err.message : String(err)}`)
