@@ -12,6 +12,8 @@ You are a senior technical reviewer. Your job is to validate the PRD below again
 
 Be strict. Do not pass a PRD with vague language or missing sections just because it "looks mostly right."
 
+> **⚠ EXHAUSTIVENESS MANDATE**: You MUST report ALL issues in a single pass. Do NOT stop at the first few problems. Systematically evaluate every section against every check below. A second validation pass should find zero new issues — if it would, your first pass was incomplete.
+
 ## PRD to Validate
 
 {{goal}}
@@ -19,6 +21,8 @@ Be strict. Do not pass a PRD with vague language or missing sections just becaus
 ---
 
 ## Validation Checklist
+
+> If the PRD below contains the marker `<!-- validation-pass: N -->`, this is validation pass N. On pass 1, be maximally thorough — report every issue you can find. On pass 2+, verify that previous fixes were applied correctly and check for regressions, but do NOT invent new categories of issues not covered by the checks below.
 
 Evaluate **every item** below. If ALL items pass, respond `VALID`. If ANY item fails, respond `INVALID` with a specific, actionable issue list.
 
