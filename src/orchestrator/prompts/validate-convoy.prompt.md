@@ -1,70 +1,59 @@
 ---
-description: 'Validate a convoy YAML spec for schema correctness and logical soundness. Outputs VALID or INVALID with specific errors.'
+description: 'Validate a convoy task plan for semantic correctness. Outputs VALID or INVALID with specific errors.'
 agent: 'Reviewer'
 output: validation
 ---
 
 <!-- ⚠️ This file is managed by OpenCastle. Edits will be overwritten on update. Customize in the .opencastle/ directory instead. -->
 
-# Validate Convoy Spec
+# Validate Task Plan
 
-You are a senior technical reviewer. Validate the convoy spec below against the schema rules and logical constraints. Be strict — a spec that passes this gate will be executed autonomously by AI agents.
+> **Note:** Schema validation (field types, YAML syntax, dependency cycles, glob patterns) has already passed. Focus ONLY on the semantic checks below.
 
-## Convoy Spec to Validate
+You are a senior technical reviewer. Validate the task plan below for semantic correctness. Be strict — a plan that passes this gate will be executed autonomously by AI agents.
+
+## Task Plan to Validate
 
 {{goal}}
 
 ---
 
-## Validation Rules
+## Semantic Checks
 
-Evaluate **every rule** below. If ALL pass, respond `VALID`. If ANY fail, respond `INVALID` with specific, actionable errors.
+Evaluate **every check** below. If ALL pass, respond `VALID`. If ANY fail, respond `INVALID` with specific, actionable errors.
 
-### Schema Requirements
+### 1. Partition Conflicts
 
-- [ ] `name` field is present (non-empty string)
-- [ ] `version` field is present (integer: `1` or `2`)
-- [ ] `tasks` list is present and contains at least one task
-- [ ] Every task has a unique `id` (lowercase, kebab-case, no spaces or special chars)
-- [ ] Every task has a non-empty `prompt` field
-- [ ] `on_failure` is `continue` or `stop` (if present; default `stop` is fine if absent)
-- [ ] `concurrency` is a positive integer or the string `"auto"` (if present)
-- [ ] `review` values are one of: `auto`, `fast`, `panel`, `none` (if present on task)
-- [ ] `agent` values are from the approved roster (if present on task):
-  `api-designer`, `architect`, `content-engineer`, `copywriter`, `data-expert`,
-  `database-engineer`, `developer`, `devops-expert`, `documentation-writer`,
-  `performance-expert`, `release-manager`, `researcher`, `security-expert`,
-  `seo-specialist`, `team-lead`, `testing-expert`, `ui-ux-expert`
-- [ ] `timeout` values match `<integer><s|m|h>` format (e.g., `30m`, `1h`, `90s`) (if present)
+Two tasks that can run in parallel (no direct or transitive `depends_on` edge between them) must not share any `files` entry.
 
-### Files Constraint
+- [ ] For every pair of potentially-parallel tasks, confirm they share no file or directory path in their `files` lists
+- [ ] Transitive dependencies count: if A → B → C, then A and C are NOT parallel
 
-- [ ] No `files` entry contains glob patterns (`*`, `?`, `**`)
-- [ ] All `files` entries are plain file paths or directory paths (trailing `/` is allowed for directories)
-- [ ] No `files` entry is an absolute path (all paths must be relative to the repo root)
+### 2. Prompt Quality
 
-### Dependency Graph
+Each task `prompt` must be:
 
-- [ ] Every `depends_on` id references a real task `id` in the spec
-- [ ] No dependency cycles exist (A → B → A is a cycle; A → B → C → A is also a cycle)
+- [ ] **Self-contained** — an agent with zero context can execute it without external clarification
+- [ ] **File-specific** — names the exact files to create or modify (not vague references like "the frontend" or "the codebase")
+- [ ] **Substantive** — at least 2 meaningful sentences; no stubs (`...`), no placeholders
+- [ ] **Verifiable** — contains acceptance criteria or explicit verification steps
+- [ ] **Research-instructed** — if the prompt concerns real people, places, or organisations, it includes a research instruction
 
-### Partition Conflicts
+### 3. Dependency Completeness
 
-Two tasks that can run in parallel (no `depends_on` edge between them) must not share any `files` entry.
+If a task's prompt imports, references, or builds on files, types, components, or packages produced by another task, a `depends_on` edge to that producing task must exist.
 
-- [ ] Check every pair of tasks that lack a `depends_on` relationship — they must not share any file or directory path in their `files` lists
+- [ ] Scan every prompt for cross-task file imports, type usage, or component references
+- [ ] Each such reference must be covered by a `depends_on` edge to the task that creates it
 
-### Prompt Quality
+### 4. Logical Soundness
 
-- [ ] Each task `prompt` is self-contained: an agent with no surrounding context must be able to execute it
-- [ ] Each task `prompt` names the specific files to act on (not vague phrases like "the frontend" or "the codebase")
-- [ ] No task `prompt` is shorter than 2 sentences (one-liners are usually too vague)
+The overall plan must make engineering sense.
 
-### Inputs / Outputs Consistency (if used)
-
-- [ ] Every `inputs[].from` references an existing task `id`
-- [ ] Every task referenced in an `inputs[].from` declares a matching `outputs[].name`
-- [ ] No consuming task runs before its producing task (must have `depends_on` edge or be in a later phase)
+- [ ] No redundant tasks doing the same work
+- [ ] No obvious missing tasks (gaps that would leave the goal unachievable)
+- [ ] File ownership matches task descriptions (a task that owns a file should actually modify it)
+- [ ] Agent assignment matches domain — `developer` for code, `documentation-writer` for docs, `copywriter` for marketing copy, etc.
 
 ---
 
@@ -82,8 +71,8 @@ If any check fails:
 INVALID
 
 Errors:
-- [Rule category] / [task id if applicable]: [Specific problem] — Fix: [How to correct it]
-- [Rule category] / [task id if applicable]: [Another problem] — Fix: [How to correct it]
+- [Check category] / [task id if applicable]: [Specific problem] — Fix: [How to correct it]
+- [Check category] / [task id if applicable]: [Another problem] — Fix: [How to correct it]
 ```
 
 List only real failures. Do not list passing checks. Be specific — name the task id, the field, and the exact value that violates the rule.

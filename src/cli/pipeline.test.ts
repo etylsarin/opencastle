@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseComplexityAssessment } from './pipeline.js'
+import { parseComplexityAssessment, deriveComplexityPath } from './pipeline.js'
 
 const SINGLE_JSON = JSON.stringify({
   original_prompt: 'Build a REST API with user auth',
@@ -129,5 +129,25 @@ describe('parseComplexityAssessment', () => {
     const result = parseComplexityAssessment(`  \n ${SINGLE_JSON} \n  `)
     expect(result).not.toBeNull()
     expect(result?.total_tasks).toBe(4)
+  })
+})
+
+describe('deriveComplexityPath', () => {
+  it('replaces .prd.md with .complexity.json', () => {
+    expect(deriveComplexityPath('/path/to/feature.prd.md')).toBe('/path/to/feature.complexity.json')
+  })
+
+  it('appends .complexity.json when path does not end with .prd.md', () => {
+    expect(deriveComplexityPath('/path/to/feature.md')).toBe('/path/to/feature.md.complexity.json')
+  })
+
+  it('handles paths with no extension', () => {
+    expect(deriveComplexityPath('/path/to/feature')).toBe('/path/to/feature.complexity.json')
+  })
+
+  it('handles the opencastle PRD convention', () => {
+    expect(deriveComplexityPath('.opencastle/prds/personal-portfolio-website.prd.md')).toBe(
+      '.opencastle/prds/personal-portfolio-website.complexity.json'
+    )
   })
 })

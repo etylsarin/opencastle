@@ -4,8 +4,12 @@ import { resolve, dirname } from 'node:path'
 import { stringify } from 'yaml'
 import { c, confirm, closePrompts } from './prompt.js'
 import { runPromptStep, readProjectMcpServers } from './plan.js'
+import type { PromptStepOptions } from './plan.js'
 import { cleanupAdapters } from './run/adapters/index.js'
 import type { CliContext } from './types.js'
+import { parseYaml, validateSpec } from './run/schema.js'
+import { buildConvoyYaml, parseTaskPlan, parsePatches, applyPatches, deriveSpecEnrichment } from './convoy/spec-builder.js'
+import type { TaskPlan, SpecEnrichment } from './convoy/spec-builder.js'
 
 export interface ConvoyGroup {
   name: string
@@ -47,8 +51,15 @@ export function parseComplexityAssessment(jsonText: string): ComplexityAssessmen
   }
 }
 
+export function deriveComplexityPath(prdPath: string): string {
+  if (prdPath.endsWith('.prd.md')) {
+    return prdPath.slice(0, -'.prd.md'.length) + '.complexity.json'
+  }
+  return prdPath + '.complexity.json'
+}
+
 const HELP = `
-  opencastle pipeline [options]
+  opencastle start [options]
 
   Run the full convoy generation pipeline from a feature prompt:
 
@@ -56,9 +67,9 @@ const HELP = `
     Step 2 — Validate PRD        (validate-prd)
     Step 3 — Fix PRD             (fix-prd, up to 2 retries if invalid)
     Step 4 — Assess complexity    (assess-complexity, determines single vs chain)
-    Step 5 — Generate convoy spec (generate-convoy, using PRD as input)
-    Step 6 — Validate convoy spec (validate-convoy)
-    Step 7 — Fix convoy spec      (fix-convoy, up to 2 retries if invalid)
+    Step 5 — Generate task plan   (generate-convoy outputs JSON, code builds YAML)
+    Step 6 — Validate convoy spec (programmatic + semantic validation)
+    Step 7 — Fix convoy spec      (patch-based fixing, up to 2 retries)
 
   Options:
     --text, -t <text>        Feature prompt text (required, unless --prd is set)
@@ -68,6 +79,7 @@ const HELP = `
     --adapter, -a <name>     Override agent runtime adapter
     --verbose                Show full agent output for each step
     --dry-run                Generate and print the PRD prompt only, then stop
+    --complexity <path>      Skip complexity assessment — use an existing complexity file
     --skip-validation        Skip PRD and convoy validation (steps 2, 3, 6, 7)
     --help, -h               Show this help
 `
@@ -75,6 +87,7 @@ const HELP = `
 interface PipelineOptions {
   text: string | null
   prd: string | null
+  complexity: string | null
   outputPrd: string | null
   outputSpec: string | null
   adapter: string | null
@@ -88,6 +101,7 @@ function parseArgs(args: string[]): PipelineOptions {
   const opts: PipelineOptions = {
     text: null,
     prd: null,
+    complexity: null,
     outputPrd: null,
     outputSpec: null,
     adapter: null,
@@ -112,6 +126,10 @@ function parseArgs(args: string[]): PipelineOptions {
       case '--prd':
         if (i + 1 >= args.length) { console.error('  ✗ --prd requires a path'); process.exit(1) }
         opts.prd = args[++i]
+        break
+      case '--complexity':
+        if (i + 1 >= args.length) { console.error('  ✗ --complexity requires a path'); process.exit(1) }
+        opts.complexity = args[++i]
         break
       case '--output-prd':
         if (i + 1 >= args.length) { console.error('  ✗ --output-prd requires a path'); process.exit(1) }
@@ -192,7 +210,7 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
     ...(mcpServers.length ? { mcpServers } : {}),
   }
 
-  console.log(c.bold('\n  opencastle pipeline\n'))
+  console.log(c.bold('\n  opencastle start\n'))
 
   // ── Step 1: Generate PRD ──────────────────────────────────────────────────
   let prdPath: string
@@ -309,7 +327,7 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
         console.log(
           c.dim(`\n  The PRD has been saved to ${relPath(prdPath)} with the best available fixes.\n`) +
             c.dim(`  Review the remaining issues above and edit the file manually, then re-run with:\n`) +
-            `    opencastle pipeline --prd ${relPath(prdPath)}${opts.adapter ? ` --adapter ${opts.adapter}` : ''}\n`
+            `    opencastle start --prd ${relPath(prdPath)}${opts.adapter ? ` --adapter ${opts.adapter}` : ''}\n`
         )
         process.exit(1)
       }
@@ -320,20 +338,61 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
 
   // ── Complexity-aware strategy decision ────────────────────────────────────
   const complexityStep = opts.skipValidation ? 2 : 4
-  console.log(stepLabel(complexityStep, totalSteps, 'Assessing complexity…'))
 
   let complexity: ComplexityAssessment | null = null
-  try {
-    const complexityResult = await runPromptStep({
-      ...sharedOpts,
-      template: 'assess-complexity',
-      filePath: prdPath,
-      contextText: opts.text ?? undefined,
-    })
-    complexity = parseComplexityAssessment(complexityResult.rawOutput)
-  } catch (err) {
-    console.warn(c.yellow(`  ⚠ Complexity assessment failed: ${err instanceof Error ? err.message : String(err)}`))
-    console.warn(c.dim(`    Falling back to single convoy strategy.\n`))
+  const complexityFilePath = opts.complexity
+    ? resolve(process.cwd(), opts.complexity)
+    : deriveComplexityPath(prdPath)
+
+  if (opts.complexity) {
+    if (!existsSync(complexityFilePath)) {
+      console.error(`  ✗ Complexity file not found: ${opts.complexity}`)
+      process.exit(1)
+    }
+    try {
+      const raw = await readFile(complexityFilePath, 'utf8')
+      complexity = parseComplexityAssessment(raw)
+      if (complexity) {
+        console.log(c.dim(`  [−] Using existing complexity assessment: ${relPath(complexityFilePath)}`))
+      } else {
+        console.error(`  ✗ Invalid complexity file: ${opts.complexity}`)
+        process.exit(1)
+      }
+    } catch (err) {
+      console.error(`  ✗ Failed to read complexity file: ${err instanceof Error ? err.message : String(err)}`)
+      process.exit(1)
+    }
+  } else if (existsSync(complexityFilePath)) {
+    try {
+      const raw = await readFile(complexityFilePath, 'utf8')
+      const cached = parseComplexityAssessment(raw)
+      if (cached) {
+        complexity = cached
+        console.log(c.dim(`  [−] Using existing complexity assessment: ${relPath(complexityFilePath)}`))
+      }
+    } catch {
+      // ignore — fall through to LLM assessment
+    }
+  }
+
+  if (!complexity) {
+    console.log(stepLabel(complexityStep, totalSteps, 'Assessing complexity…'))
+    try {
+      const complexityResult = await runPromptStep({
+        ...sharedOpts,
+        template: 'assess-complexity',
+        filePath: prdPath,
+        contextText: opts.text ?? undefined,
+      })
+      complexity = parseComplexityAssessment(complexityResult.rawOutput)
+      if (complexity) {
+        await writeFile(complexityFilePath, JSON.stringify(complexity, null, 2), 'utf8')
+        console.log(c.green(`  ✓ Complexity assessment saved to ${relPath(complexityFilePath)}\n`))
+      }
+    } catch (err) {
+      console.warn(c.yellow(`  ⚠ Complexity assessment failed: ${err instanceof Error ? err.message : String(err)}`))
+      console.warn(c.dim(`    Falling back to single convoy strategy.\n`))
+    }
   }
 
   if (!complexity) {
@@ -360,22 +419,10 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
       const convoyDir = resolve(process.cwd(), '.opencastle', 'convoys')
       await mkdir(convoyDir, { recursive: true })
 
-      const genBaseStep = opts.skipValidation ? 2 : 4
       const groupSpecPaths: string[] = []
-      const totalGroupSteps =
-        (opts.skipValidation ? 2 : 3) + complexity.convoy_groups.length * (opts.skipValidation ? 1 : 2)
 
       for (let i = 0; i < complexity.convoy_groups.length; i++) {
         const group = complexity.convoy_groups[i]
-        const groupStep = genBaseStep + i * (opts.skipValidation ? 1 : 2)
-
-        console.log(
-          stepLabel(
-            groupStep,
-            totalGroupSteps,
-            `Generating convoy spec for group: ${group.name}…`
-          )
-        )
 
         const chainGoal = [
           complexity.original_prompt,
@@ -394,122 +441,16 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
         const prdContent = await readFile(prdPath, 'utf8')
         const groupSpecPath = resolve(convoyDir, `${group.name}.convoy.yml`)
 
-        let groupResult
-        try {
-          groupResult = await runPromptStep({
-            ...sharedOpts,
-            template: 'generate-convoy',
-            goalText: chainGoal,
-            contextText: prdContent,
-            outputPath: groupSpecPath,
-          })
-        } catch (err) {
-          console.error(
-            `\n  ✗ Step ${groupStep} failed: ${err instanceof Error ? err.message : String(err)}`
-          )
-          process.exit(1)
-        }
-
-        const resolvedGroupSpecPath = groupResult.outputPath ?? groupSpecPath
+        const { specPath: resolvedGroupSpecPath } = await generateAndValidateSpec({
+          sharedOpts,
+          goalText: chainGoal,
+          contextText: prdContent,
+          specPath: groupSpecPath,
+          skipValidation: opts.skipValidation,
+          groupName: group.name,
+          enrichment: complexity ? deriveSpecEnrichment(complexity) : undefined,
+        })
         groupSpecPaths.push(resolvedGroupSpecPath)
-
-        console.log(c.green(`  ✓ Group spec written to ${relPath(resolvedGroupSpecPath)}\n`))
-
-        if (!opts.skipValidation) {
-          const valStep = groupStep + 1
-          console.log(stepLabel(valStep, totalGroupSteps, `Validating spec: ${group.name}…`))
-
-          let currentSpecContent = await readFile(resolvedGroupSpecPath, 'utf8')
-          let groupValidation
-          try {
-            groupValidation = await runPromptStep({
-              ...sharedOpts,
-              template: 'validate-convoy',
-              goalText: currentSpecContent,
-            })
-          } catch (err) {
-            console.error(
-              `\n  ✗ Validation failed for group ${group.name}: ${err instanceof Error ? err.message : String(err)}`
-            )
-            process.exit(1)
-          }
-
-          if (groupValidation.isValid) {
-            console.log(c.green(`  ✓ Spec valid\n`))
-          } else {
-            let groupErrors = groupValidation.errors ?? groupValidation.rawOutput
-            let groupFixed = false
-
-            for (let attempt = 1; attempt <= MAX_FIX_RETRIES; attempt++) {
-              console.log(
-                c.yellow(`  ⚠ Spec has issues — fix attempt ${attempt}/${MAX_FIX_RETRIES} for ${group.name}…\n`)
-              )
-              console.log(c.dim(groupErrors))
-              console.log()
-
-              try {
-                await runPromptStep({
-                  ...sharedOpts,
-                  template: 'fix-convoy',
-                  goalText: currentSpecContent,
-                  contextText: groupErrors,
-                  outputPath: resolvedGroupSpecPath,
-                })
-              } catch (err) {
-                console.error(
-                  `\n  ✗ Fix failed for group ${group.name} (attempt ${attempt}): ${err instanceof Error ? err.message : String(err)}`
-                )
-                process.exit(1)
-              }
-
-              console.log(c.dim(`  Re-validating ${group.name} after fix…`))
-
-              currentSpecContent = await readFile(resolvedGroupSpecPath, 'utf8')
-
-              let revalidation
-              try {
-                revalidation = await runPromptStep({
-                  ...sharedOpts,
-                  template: 'validate-convoy',
-                  goalText: currentSpecContent,
-                })
-              } catch (err) {
-                console.error(
-                  `\n  ✗ Re-validation failed for group ${group.name}: ${err instanceof Error ? err.message : String(err)}`
-                )
-                process.exit(1)
-              }
-
-              if (revalidation.isValid) {
-                console.log(c.green(`  ✓ ${group.name} fixed and validated\n`))
-                groupFixed = true
-                break
-              }
-
-              groupErrors = revalidation.errors ?? revalidation.rawOutput
-
-              if (attempt < MAX_FIX_RETRIES) {
-                console.log(
-                  c.yellow(`  ⚠ Still has issues after fix attempt ${attempt} — retrying…\n`)
-                )
-              }
-            }
-
-            if (!groupFixed) {
-              console.log(
-                c.red(`\n  ✗ Could not auto-fix convoy spec for group ${group.name} after ${MAX_FIX_RETRIES} attempts.\n`)
-              )
-              console.log(`  Remaining issues:\n`)
-              console.log(groupErrors)
-              console.log(
-                c.dim(`\n  The spec has been saved to ${relPath(resolvedGroupSpecPath)} with best available fixes.\n`) +
-                  c.dim(`  Review the issues above and edit manually, then re-validate with:\n`) +
-                  `    opencastle plan --file ${relPath(resolvedGroupSpecPath)} --template validate-convoy\n`
-              )
-              process.exit(1)
-            }
-          }
-        }
       }
 
       // Build master pipeline spec (version 2)
@@ -567,99 +508,84 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
   }
 
   // ── Generate convoy spec ──────────────────────────────────────────────────
-  const genStep = opts.skipValidation ? 3 : 5
-  console.log(stepLabel(genStep, totalSteps, 'Generating convoy spec…'))
-
   const singlePrdContent = await readFile(prdPath, 'utf8')
   const singleGoal = complexity?.original_prompt ?? opts.text ?? ''
 
-  let specPath: string
-  try {
-    const result = await runPromptStep({
-      ...sharedOpts,
-      template: 'generate-convoy',
-      goalText: singleGoal,
-      contextText: singlePrdContent,
-      outputPath: opts.outputSpec ? resolve(process.cwd(), opts.outputSpec) : undefined,
-    })
-    specPath = result.outputPath!
-  } catch (err) {
-    console.error(`\n  ✗ Step ${genStep} failed: ${err instanceof Error ? err.message : String(err)}`)
-    process.exit(1)
-  }
+  const specResult = await generateAndValidateSpec({
+    sharedOpts,
+    goalText: singleGoal,
+    contextText: singlePrdContent,
+    specPath: opts.outputSpec ? resolve(process.cwd(), opts.outputSpec) : undefined,
+    skipValidation: opts.skipValidation,
+    enrichment: complexity ? deriveSpecEnrichment(complexity) : undefined,
+  })
 
-  console.log(c.green(`  ✓ Convoy spec written to ${relPath(specPath)}\n`))
+  await printFinalSummary(prdPath, specResult.specPath, opts, pkgRoot)
+}
 
-  if (opts.skipValidation) {
-    await printFinalSummary(prdPath, specPath, opts, pkgRoot)
-    return
-  }
-
-  // ── Validate convoy spec ──────────────────────────────────────────────
-  const valStep = opts.skipValidation ? 4 : 6
-  console.log(stepLabel(valStep, totalSteps, 'Validating convoy spec…'))
-
-  const specContent = await readFile(specPath, 'utf8')
-  let validationErrors: string
-
-  {
-    let result
-    try {
-      result = await runPromptStep({
-        ...sharedOpts,
-        template: 'validate-convoy',
-        goalText: specContent,
-      })
-    } catch (err) {
-      console.error(`\n  ✗ Step ${valStep} failed: ${err instanceof Error ? err.message : String(err)}`)
-      process.exit(1)
-    }
-
-    if (result.isValid) {
-      console.log(c.green(`  ✓ Convoy spec is valid\n`))
-      await printFinalSummary(prdPath, specPath, opts, pkgRoot)
-      return
-    }
-
-    validationErrors = result.errors ?? result.rawOutput
-    console.log(c.yellow(`  ⚠ Spec has validation issues — attempting auto-fix…\n`))
-    console.log(c.dim(validationErrors))
-    console.log()
-  }
-
-  // ── Fix convoy spec (up to 2 retries) ─────────────────────────────────
-  const fixStep = opts.skipValidation ? 4 : 7
-  let fixedSpecContent = specContent
+async function fixViaPatch(
+  taskPlan: TaskPlan,
+  errors: string,
+  sharedOpts: Omit<PromptStepOptions, 'template' | 'goalText' | 'contextText'>,
+  specPath: string,
+  enrichment?: SpecEnrichment,
+): Promise<TaskPlan> {
+  let currentPlan = taskPlan
+  let currentErrors = errors
 
   for (let attempt = 1; attempt <= MAX_FIX_RETRIES; attempt++) {
-    const label = `Fix attempt ${attempt}/${MAX_FIX_RETRIES}…`
-    console.log(stepLabel(fixStep, totalSteps, label))
+    console.log(c.dim(`  Fix attempt ${attempt}/${MAX_FIX_RETRIES}…`))
 
     let fixResult
     try {
       fixResult = await runPromptStep({
         ...sharedOpts,
         template: 'fix-convoy',
-        goalText: fixedSpecContent,
-        contextText: validationErrors,
-        outputPath: specPath, // overwrite in place
+        goalText: JSON.stringify(currentPlan, null, 2),
+        contextText: currentErrors,
       })
     } catch (err) {
-      console.error(`\n  ✗ Step 6 (attempt ${attempt}) failed: ${err instanceof Error ? err.message : String(err)}`)
+      console.error(`\n  ✗ Fix attempt ${attempt} failed: ${err instanceof Error ? err.message : String(err)}`)
       process.exit(1)
     }
 
-    console.log(c.dim(`  Re-validating after fix…`))
+    const patches = parsePatches(fixResult.rawOutput)
+    if (!patches || patches.length === 0) {
+      console.warn(c.yellow(`  ⚠ No valid patches returned`))
+      if (attempt >= MAX_FIX_RETRIES) break
+      continue
+    }
 
-    // Read the newly written spec
-    fixedSpecContent = await readFile(specPath, 'utf8')
+    console.log(c.dim(`  Applied ${patches.length} patches`))
+    currentPlan = applyPatches(currentPlan, patches)
+
+    // Rebuild YAML and re-validate
+    const yaml = buildConvoyYaml(currentPlan, enrichment)
+    try {
+      const parsed = parseYaml(yaml)
+      const { valid, errors: schemaErrors } = validateSpec(parsed)
+      if (!valid) {
+        currentErrors = schemaErrors.map(e => `- Schema: ${e}`).join('\n')
+        if (attempt < MAX_FIX_RETRIES) {
+          console.log(c.yellow(`  ⚠ Still has schema issues — retrying…\n`))
+          console.log(c.dim(currentErrors))
+        }
+        continue
+      }
+    } catch (err) {
+      currentErrors = `YAML error: ${err instanceof Error ? err.message : String(err)}`
+      continue
+    }
+
+    await writeFile(specPath, yaml, 'utf8')
+    console.log(c.dim(`  Re-validating after fix…`))
 
     let revalidation
     try {
       revalidation = await runPromptStep({
         ...sharedOpts,
         template: 'validate-convoy',
-        goalText: fixedSpecContent,
+        goalText: yaml,
       })
     } catch (err) {
       console.error(`\n  ✗ Re-validation failed: ${err instanceof Error ? err.message : String(err)}`)
@@ -667,30 +593,133 @@ export default async function pipeline({ args, pkgRoot }: CliContext): Promise<v
     }
 
     if (revalidation.isValid) {
-      console.log(c.green(`  ✓ Spec fixed and validated\n`))
-      await printFinalSummary(prdPath, specPath, opts, pkgRoot)
-      return
+      console.log(c.green(`  ✓ Fixed and validated\n`))
+      return currentPlan
     }
 
-    validationErrors = revalidation.errors ?? revalidation.rawOutput
-
+    currentErrors = revalidation.errors ?? revalidation.rawOutput
     if (attempt < MAX_FIX_RETRIES) {
-      console.log(c.yellow(`  ⚠ Still has issues after fix attempt ${attempt} — retrying…\n`))
-      console.log(c.dim(validationErrors))
-      console.log()
+      console.log(c.yellow(`  ⚠ Still has issues — retrying…\n`))
+      console.log(c.dim(currentErrors))
     }
   }
 
-  // All retries exhausted
-  console.log(c.red(`\n  ✗ Could not auto-fix the convoy spec after ${MAX_FIX_RETRIES} attempts.\n`))
+  // Exhausted — write best effort and exit
+  await writeFile(specPath, buildConvoyYaml(currentPlan, enrichment), 'utf8')
+  console.log(c.red(`\n  ✗ Could not auto-fix after ${MAX_FIX_RETRIES} attempts.\n`))
   console.log(`  Remaining issues:\n`)
-  console.log(validationErrors)
+  console.log(currentErrors)
   console.log(
-    c.dim(`\n  The spec has been saved to ${relPath(specPath)} with the best available fixes.\n`) +
-      c.dim(`  Review the remaining issues above and edit the file manually, then validate with:\n`) +
-      `    opencastle plan --file ${relPath(specPath)} --template validate-convoy\n`
+    c.dim(`\n  Spec saved to ${relPath(specPath)} with best available fixes.\n`) +
+    c.dim(`  Edit manually, then re-validate with:\n`) +
+    `    opencastle plan --file ${relPath(specPath)} --template validate-convoy\n`
   )
   process.exit(1)
+}
+
+async function generateAndValidateSpec(params: {
+  sharedOpts: Omit<PromptStepOptions, 'template' | 'goalText' | 'contextText'>
+  goalText: string
+  contextText: string
+  specPath?: string
+  skipValidation: boolean
+  groupName?: string
+  enrichment?: SpecEnrichment
+}): Promise<{ specPath: string; taskPlan: TaskPlan }> {
+  const label = params.groupName
+    ? `Generating task plan: ${params.groupName}…`
+    : 'Generating task plan…'
+  console.log(c.cyan(`  ${label}`))
+
+  let taskPlanResult
+  try {
+    taskPlanResult = await runPromptStep({
+      ...params.sharedOpts,
+      template: 'generate-convoy',
+      goalText: params.goalText,
+      contextText: params.contextText,
+    })
+  } catch (err) {
+    console.error(`\n  ✗ Task plan generation failed: ${err instanceof Error ? err.message : String(err)}`)
+    process.exit(1)
+  }
+
+  let taskPlan = parseTaskPlan(taskPlanResult.rawOutput)
+  if (!taskPlan) {
+    console.error('  ✗ Failed to parse task plan JSON from LLM output')
+    console.error(c.dim(taskPlanResult.rawOutput.slice(0, 500)))
+    process.exit(1)
+  }
+
+  console.log(c.green(`  ✓ Task plan generated (${taskPlan.tasks.length} tasks)`))
+
+  // Derive spec path from plan name if not provided
+  let resolvedSpecPath = params.specPath
+  if (!resolvedSpecPath) {
+    const convoyDir = resolve(process.cwd(), '.opencastle', 'convoys')
+    await mkdir(convoyDir, { recursive: true })
+    const kebab = taskPlan.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    resolvedSpecPath = resolve(convoyDir, `${kebab}.convoy.yml`)
+  }
+
+  // Build YAML from JSON task plan
+  let yamlContent = buildConvoyYaml(taskPlan, params.enrichment)
+  await mkdir(resolve(resolvedSpecPath, '..'), { recursive: true })
+  await writeFile(resolvedSpecPath, yamlContent, 'utf8')
+  console.log(c.green(`  ✓ Convoy spec written to ${relPath(resolvedSpecPath)}\n`))
+
+  if (!params.skipValidation) {
+    // Programmatic validation first
+    try {
+      const parsed = parseYaml(yamlContent)
+      const { valid, errors: schemaErrors } = validateSpec(parsed)
+      if (!valid) {
+        console.log(c.yellow(`  ⚠ Schema validation issues — auto-fixing…\n`))
+        const errorText = schemaErrors.map(e => `- Schema: ${e}`).join('\n')
+        console.log(c.dim(errorText))
+        console.log()
+        taskPlan = await fixViaPatch(taskPlan, errorText, params.sharedOpts, resolvedSpecPath, params.enrichment)
+        yamlContent = buildConvoyYaml(taskPlan, params.enrichment)
+        await writeFile(resolvedSpecPath, yamlContent, 'utf8')
+      } else {
+        console.log(c.dim(`  ✓ Schema validation passed`))
+      }
+    } catch (err) {
+      console.warn(c.yellow(`  ⚠ YAML warning: ${err instanceof Error ? err.message : String(err)}`))
+    }
+
+    // Semantic validation (LLM)
+    const valLabel = params.groupName
+      ? `Validating spec: ${params.groupName}…`
+      : 'Validating convoy spec…'
+    console.log(c.cyan(`  ${valLabel}`))
+
+    let semanticResult
+    try {
+      semanticResult = await runPromptStep({
+        ...params.sharedOpts,
+        template: 'validate-convoy',
+        goalText: await readFile(resolvedSpecPath, 'utf8'),
+      })
+    } catch (err) {
+      console.error(`\n  ✗ Semantic validation failed: ${err instanceof Error ? err.message : String(err)}`)
+      process.exit(1)
+    }
+
+    if (semanticResult.isValid) {
+      console.log(c.green(`  ✓ Spec is valid\n`))
+    } else {
+      const semanticErrors = semanticResult.errors ?? semanticResult.rawOutput
+      console.log(c.yellow(`  ⚠ Semantic issues — auto-fixing…\n`))
+      console.log(c.dim(semanticErrors))
+      console.log()
+      taskPlan = await fixViaPatch(taskPlan, semanticErrors, params.sharedOpts, resolvedSpecPath, params.enrichment)
+      yamlContent = buildConvoyYaml(taskPlan, params.enrichment)
+      await writeFile(resolvedSpecPath, yamlContent, 'utf8')
+    }
+  }
+
+  return { specPath: resolvedSpecPath, taskPlan }
 }
 
 async function printFinalSummary(

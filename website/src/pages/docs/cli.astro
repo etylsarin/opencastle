@@ -133,12 +133,12 @@ const commands = [
     ],
   },
   {
-    id: 'pipeline',
+    id: 'start',
     category: 'runtime',
-    name: 'pipeline',
+    name: 'start',
     summary: 'Go from idea to convoy spec in one command',
-    description: 'The easiest way to create a convoy spec. Describe your goal in plain text and the pipeline generates a PRD, validates it, converts it to a convoy spec, validates the spec, and auto-fixes any issues — all in one command.',
-    usage: 'npx opencastle pipeline [options]',
+    description: 'The easiest way to create a convoy spec. Describe your goal in plain text and the start command generates a PRD, validates it, converts it to a convoy spec, validates the spec, and auto-fixes any issues — all in one command.',
+    usage: 'npx opencastle start [options]',
     options: [
       { flag: '--text, -t <text>', desc: 'Your feature or task description in plain text (required, unless --prd is set)' },
       { flag: '--prd <path>', desc: 'Skip PRD generation — use an existing PRD file as input' },
@@ -151,14 +151,14 @@ const commands = [
       { flag: '--help, -h', desc: 'Show help' },
     ],
     details: [
-      { heading: 'Pipeline steps', content: `<ol>
+      { heading: 'Start command steps', content: `<ol>
         <li><strong>Generate PRD</strong> — converts your text into a structured Product Requirements Document</li>
         <li><strong>Validate PRD</strong> — checks the PRD for completeness and correctness</li>
         <li><strong>Generate convoy spec</strong> — converts the PRD into a <code>.convoy.yml</code> with tasks, dependencies, file partitions, and gates</li>
         <li><strong>Validate convoy spec</strong> — checks the spec against the convoy schema</li>
         <li><strong>Auto-fix</strong> — if validation fails, attempts to fix the spec automatically (up to 2 retries)</li>
       </ol>` },
-      { heading: 'After the pipeline completes', content: `<p>The pipeline outputs two files:</p>
+      { heading: 'After the start command completes', content: `<p>The start command outputs two files:</p>
       <ul>
         <li>A PRD (<code>.prd.md</code>) in <code>.opencastle/convoys/</code></li>
         <li>A convoy spec (<code>.convoy.yml</code>) in <code>.opencastle/convoys/</code></li>
@@ -167,11 +167,11 @@ const commands = [
       <pre><code>npx opencastle run -f .opencastle/convoys/your-spec.convoy.yml</code></pre>` },
     ],
     examples: [
-      { cmd: 'npx opencastle pipeline -t "Add user authentication with login and signup pages"', desc: 'Generate a convoy spec from a text description' },
-      { cmd: 'npx opencastle pipeline -t "Fix the broken search feature" --adapter claude-code', desc: 'Use a specific adapter' },
-      { cmd: 'npx opencastle pipeline --prd existing-prd.md', desc: 'Skip PRD generation, use an existing PRD' },
-      { cmd: 'npx opencastle pipeline -t "Refactor the API layer" --skip-validation', desc: 'Skip validation steps for faster generation' },
-      { cmd: 'npx opencastle pipeline -t "Build a contact form" --dry-run', desc: 'Preview the assembled prompt without executing' },
+      { cmd: 'npx opencastle start -t "Add user authentication with login and signup pages"', desc: 'Generate a convoy spec from a text description' },
+      { cmd: 'npx opencastle start -t "Fix the broken search feature" --adapter claude-code', desc: 'Use a specific adapter' },
+      { cmd: 'npx opencastle start --prd existing-prd.md', desc: 'Skip PRD generation, use an existing PRD' },
+      { cmd: 'npx opencastle start -t "Refactor the API layer" --skip-validation', desc: 'Skip validation steps for faster generation' },
+      { cmd: 'npx opencastle start -t "Build a contact form" --dry-run', desc: 'Preview the assembled prompt without executing' },
     ],
   },
   {
@@ -249,7 +249,7 @@ const commands = [
     category: 'runtime',
     name: 'plan',
     summary: 'Run a single prompt template step',
-    description: 'Lower-level command that runs a single prompt template step via an AI adapter. Use <code>pipeline</code> instead for the full automated workflow. The <code>plan</code> command is useful when you want to run individual steps (generate a PRD, generate a convoy spec, validate, or fix) with full control over inputs and outputs.',
+    description: 'Lower-level command that runs a single prompt template step via an AI adapter. Use <code>start</code> instead for the full automated workflow. The <code>plan</code> command is useful when you want to run individual steps (generate a PRD, generate a convoy spec, validate, or fix) with full control over inputs and outputs.',
     usage: 'npx opencastle plan [options]',
     options: [
       { flag: '--file, -f <path>', desc: 'Path to a text file (fills the {{goal}} placeholder in the template)' },
@@ -440,7 +440,7 @@ Project Commands:
   doctor      Validate your OpenCastle setup
 
 Convoy Commands:
-  pipeline    Go from idea to convoy spec in one command (recommended)
+  start        Go from idea to convoy spec in one command (recommended)
   plan        Run a single prompt template step
   validate    Validate a convoy YAML spec file
   run         Run convoy specs — deterministic, crash-recoverable agent orchestration

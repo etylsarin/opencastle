@@ -25,7 +25,9 @@ const HELP = `
     doctor      Validate your OpenCastle setup
 
   Convoy Commands:
-    pipeline    Run the full PRD → validate → convoy → validate → fix pipeline
+    start       Run the full generate PRD → validate PRD → auto-fix PRD
+                → assess complexity → generate convoy spec → validate spec
+                → auto-fix spec
     plan        Generate a convoy spec (or PRD) from a task description
     validate    Validate a convoy YAML spec file
     run         Process a task queue from a spec file autonomously
@@ -64,7 +66,7 @@ const commands = {
   destroy: () => import('../dist/cli/destroy.js'),
   run: () => import('../dist/cli/run.js'),
   plan: () => import('../dist/cli/plan.js'),
-  pipeline: () => import('../dist/cli/pipeline.js'),
+  start: () => import('../dist/cli/pipeline.js'),
   dashboard: () => import('../dist/cli/dashboard.js'),
   doctor: () => import('../dist/cli/doctor.js'),
   log: () => import('../dist/cli/log.js'),
