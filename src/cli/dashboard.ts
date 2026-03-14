@@ -1,6 +1,8 @@
 import { createServer } from 'node:http'
 import type { IncomingMessage, ServerResponse, Server } from 'node:http'
 import { readFile, access } from 'node:fs/promises'
+import { mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { resolve, join, extname } from 'node:path'
 import { execFile } from 'node:child_process'
 import type { CliContext } from './types.js'
@@ -154,6 +156,17 @@ export async function startDashboardServer(
   const convoyLogsDir = resolve(projectRoot, '.opencastle', 'logs')
   const logsDir = resolve(projectRoot, '.github', 'customizations', 'logs')
 
+  const runtimeDataDir = seed ? null : mkdtempSync(join(tmpdir(), 'opencastle-dashboard-'))
+  if (runtimeDataDir) {
+    try {
+      const { runEtl } = await import('../dashboard/scripts/etl.js')
+      const dbPath = resolve(projectRoot, '.opencastle', 'convoy.db')
+      await runEtl({ dbPath, outputDir: runtimeDataDir })
+    } catch {
+      // ETL failure should not block dashboard — it will serve empty data
+    }
+  }
+
   // Check if dist exists
   if (!(await fileExists(distDir))) {
     throw new Error(
@@ -204,6 +217,31 @@ export async function startDashboardServer(
             } else {
               res.end('')
             }
+          }
+          return
+        }
+
+        // Handle JSON data requests — serve from runtime ETL output or dist
+        const jsonDataMatch = pathname.match(/^\/data\/(.+\.json)$/)
+        if (jsonDataMatch) {
+          const jsonFilename = jsonDataMatch[1]
+          const dataSource = runtimeDataDir ?? resolve(distDir, 'data')
+          const jsonPath = resolve(dataSource, jsonFilename)
+
+          // Security: prevent path traversal
+          if (!jsonPath.startsWith(dataSource)) {
+            res.writeHead(403)
+            res.end('Forbidden')
+            return
+          }
+
+          if (await fileExists(jsonPath)) {
+            const content = await readFile(jsonPath)
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end(content)
+          } else {
+            res.writeHead(404)
+            res.end('Not Found')
           }
           return
         }

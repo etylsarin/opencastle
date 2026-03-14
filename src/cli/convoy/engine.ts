@@ -192,7 +192,7 @@ export class CircuitBreakerManager {
  * Creates the branch from HEAD if it does not yet exist.
  * Fails fast if there are uncommitted changes.
  */
-export async function ensureBranch(branchName: string, basePath: string): Promise<void> {
+export async function ensureBranch(branchName: string, basePath: string, skipDirtyCheck = false): Promise<void> {
   // Validate refspec — reject shell metacharacters
   if (!/^[a-zA-Z0-9\-/_\.]+$/.test(branchName)) {
     throw new Error(
@@ -200,19 +200,21 @@ export async function ensureBranch(branchName: string, basePath: string): Promis
     )
   }
 
-  // Refuse to switch branches with uncommitted changes
-  // Untracked files (??) don't block branch checkout — ignore them
-  const { stdout: statusOut } = await execFile('git', ['status', '--porcelain'], {
-    cwd: basePath,
-  })
-  const trackedChanges = statusOut
-    .split('\n')
-    .filter(line => line.trim() && !line.startsWith('??'))
-    .join('\n')
-  if (trackedChanges) {
-    throw new Error(
-      `Uncommitted changes detected in "${basePath}". Commit or stash before switching branches.`,
-    )
+  if (!skipDirtyCheck) {
+    // Refuse to switch branches with uncommitted changes
+    // Untracked files (??) don't block branch checkout — ignore them
+    const { stdout: statusOut } = await execFile('git', ['status', '--porcelain'], {
+      cwd: basePath,
+    })
+    const trackedChanges = statusOut
+      .split('\n')
+      .filter(line => line.trim() && !line.startsWith('??'))
+      .join('\n')
+    if (trackedChanges) {
+      throw new Error(
+        `Uncommitted changes detected in "${basePath}". Commit or stash before switching branches.`,
+      )
+    }
   }
 
   // Check if branch already exists

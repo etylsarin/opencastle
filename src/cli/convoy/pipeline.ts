@@ -8,6 +8,7 @@ import { parseTaskSpecText } from '../run/schema.js'
 import { createConvoyStore } from './store.js'
 import {
   createConvoyEngine,
+  ensureBranch,
   type ConvoyEngine,
   type ConvoyResult,
   type ConvoyEngineOptions,
@@ -114,13 +115,14 @@ export function createPipelineOrchestrator(
     specPath: string,
     pipelineId: string,
     branch: string,
+    skipDirtyCheck = false,
   ): Promise<ConvoyResult> {
     const absPath = resolveSpecPath(specPath)
     const convoyYaml = await readFile(absPath, 'utf8')
     const convoySpec = parseTaskSpecText(convoyYaml)
     const overriddenSpec: TaskSpec = { ...convoySpec, branch }
 
-    const engine = engineFactory({
+    const engineOpts: ConvoyEngineOptions = {
       spec: overriddenSpec,
       specYaml: convoyYaml,
       adapter,
@@ -129,8 +131,12 @@ export function createPipelineOrchestrator(
       logsDir: options.logsDir,
       verbose,
       pipelineId,
-    })
+    }
+    if (skipDirtyCheck) {
+      engineOpts._ensureBranch = (b, base) => ensureBranch(b, base, true)
+    }
 
+    const engine = engineFactory(engineOpts)
     return engine.run()
   }
 
@@ -164,7 +170,7 @@ export function createPipelineOrchestrator(
     let pipelineHalted = false
 
     try {
-      for (const specPath of convoySpecs) {
+      for (const [index, specPath] of convoySpecs.entries()) {
         if (pipelineHalted) {
           skippedCount++
           continue
@@ -172,7 +178,7 @@ export function createPipelineOrchestrator(
 
         let convoyResult: ConvoyResult
         try {
-          convoyResult = await runConvoySpecFile(specPath, pipelineId, branch)
+          convoyResult = await runConvoySpecFile(specPath, pipelineId, branch, index > 0)
         } catch (err) {
           process.stderr.write(
             `  ✗ Convoy spec "${specPath}" failed to load: ${(err as Error).message}\n`,
@@ -282,7 +288,7 @@ export function createPipelineOrchestrator(
     let existingIdx = 0
 
     try {
-      for (const specPath of convoySpecs) {
+      for (const [convoyIndex, specPath] of convoySpecs.entries()) {
         const existing = existingConvoys[existingIdx]
 
         if (existing && existing.status === 'done') {
@@ -343,7 +349,7 @@ export function createPipelineOrchestrator(
         } else {
           // Run fresh
           try {
-            convoyResult = await runConvoySpecFile(specPath, pipelineId, branch)
+            convoyResult = await runConvoySpecFile(specPath, pipelineId, branch, convoyIndex > 0)
           } catch (err) {
             process.stderr.write(
               `  ✗ Convoy spec "${specPath}" failed to load: ${(err as Error).message}\n`,

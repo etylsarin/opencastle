@@ -1628,6 +1628,24 @@ try {
   }
 
   async function main() {
+    // Fetch fresh data from server (overrides build-time baked-in data)
+    try {
+      const [statsResp, listResp] = await Promise.all([
+        fetch(base + 'data/overall-stats.json'),
+        fetch(base + 'data/convoy-list.json'),
+      ]);
+      if (statsResp.ok) {
+        const freshStats = await statsResp.json();
+        window.__DASHBOARD_DATA__.overallStats = freshStats;
+      }
+      if (listResp.ok) {
+        const freshList = await listResp.json();
+        window.__DASHBOARD_DATA__.convoyList = freshList;
+      }
+    } catch {
+      // Fall back to build-time data
+    }
+
     const convoys = window.__DASHBOARD_DATA__?.convoyList ?? [];
 
     const urlParams = new URLSearchParams(window.location.search);
