@@ -221,7 +221,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
         <div class="hero__illustration">
           <img src={illustration.src} alt="OpenCastle illustration" width="360" />
         </div>
-        <span class="hero__badge">Open Source · MIT License</span>
+        <span class="hero__badge">Open Source · Free for Non-Commercial Use</span>
         <h1 class="hero__title">
           AI agents that build
           <br />
@@ -371,14 +371,25 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
 <span class="code-comment"># Select Tech Tools:       Sanity / Supabase / Prisma / Vercel / Netlify / NX / Turborepo / ...</span>
 <span class="code-comment"># Select Team Tools:       Linear / Jira / Slack / Teams</span>
 
-<span class="code-comment"># Other commands</span>
+<span class="code-comment"># Project commands</span>
 <span class="code-folder">$ npx opencastle update     </span><span class="code-comment"># Update framework, preserve customizations</span>
 <span class="code-folder">$ npx opencastle eject      </span><span class="code-comment"># Remove dependency, keep files</span>
 <span class="code-folder">$ npx opencastle destroy    </span><span class="code-comment"># Remove ALL OpenCastle files</span>
+<span class="code-folder">$ npx opencastle doctor     </span><span class="code-comment"># Check system health and configuration</span>
+
+<span class="code-comment"># Convoy commands</span>
+<span class="code-folder">$ npx opencastle start      </span><span class="code-comment"># Go from idea to convoy spec (PRD → validate → convoy)</span>
+<span class="code-folder">$ npx opencastle plan       </span><span class="code-comment"># Run a single prompt template step</span>
+<span class="code-folder">$ npx opencastle validate   </span><span class="code-comment"># Validate a convoy YAML spec file</span>
 <span class="code-folder">$ npx opencastle run        </span><span class="code-comment"># Run the Convoy Engine</span>
-<span class="code-folder">$ npx opencastle plan       </span><span class="code-comment"># Generate convoy spec from a task description</span>
+<span class="code-folder">$ npx opencastle dispute    </span><span class="code-comment"># Manage convoy dispute resolution</span>
+
+<span class="code-comment"># Observability</span>
 <span class="code-folder">$ npx opencastle dashboard  </span><span class="code-comment"># View observability dashboard</span>
-<span class="code-folder">$ npx opencastle doctor     </span><span class="code-comment"># Check system health and configuration</span></pre>
+<span class="code-folder">$ npx opencastle agents     </span><span class="code-comment"># Manage persistent agent identities</span>
+<span class="code-folder">$ npx opencastle baselines  </span><span class="code-comment"># Manage visual regression baselines</span>
+<span class="code-folder">$ npx opencastle log        </span><span class="code-comment"># Append a structured event to the log</span>
+<span class="code-folder">$ npx opencastle lesson     </span><span class="code-comment"># Append a lesson to LESSONS-LEARNED.md</span></pre>
           </div>
         </div>
       </div>
@@ -409,7 +420,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
               <pre><span class="code-key">name:</span> <span class="code-string">"Overnight feature batch"</span>
 <span class="code-key">version:</span> 1
 <span class="code-key">concurrency:</span> 2
-<span class="code-key">adapter:</span> claude-code
+<span class="code-key">adapter:</span> claude
 <span class="code-key">branch:</span> feat/reviews
 
 <span class="code-key">defaults:</span>
@@ -422,18 +433,21 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
     <span class="code-key">prompt:</span> <span class="code-string">|
       Create a new migration for a reviews table.</span>
     <span class="code-key">timeout:</span> 10m
+    <span class="code-key">files:</span> <span class="code-string">["db/migrations/"]</span>
 
   - <span class="code-key">id:</span> build-component
     <span class="code-key">agent:</span> ui-ux-expert
     <span class="code-key">prompt:</span> <span class="code-string">|
       Build a ReviewCard component.</span>
     <span class="code-key">timeout:</span> 15m
+    <span class="code-key">files:</span> <span class="code-string">["src/components/reviews/"]</span>
 
   - <span class="code-key">id:</span> wire-page
     <span class="code-key">agent:</span> developer
     <span class="code-key">depends_on:</span> [migrate-db, build-component]
     <span class="code-key">prompt:</span> <span class="code-string">|
       Add reviews to the place detail page.</span>
+    <span class="code-key">files:</span> <span class="code-string">["src/pages/places/"]</span>
 
 <span class="code-key">gates:</span>
   - <span class="code-string">npm run lint</span>
@@ -839,7 +853,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
           A complete orchestration framework, out of the box.
         </h2>
         <p class="section__subtitle">
-          69K+ words of curated knowledge, and everything
+          86K+ words of curated knowledge, and everything
           you need to run a coordinated AI development team — from agent
           definitions to quality gates.
         </p>
@@ -849,7 +863,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
             <div class="stat__label">Specialist Agents</div>
           </div>
           <div class="stat">
-            <div class="stat__value">50</div>
+            <div class="stat__value">49</div>
             <div class="stat__label">On-Demand Skills</div>
           </div>
           <div class="stat">
@@ -986,7 +1000,7 @@ const githubIconSvg = `<svg width="16" height="16" viewBox="0 0 16 16" fill="cur
     <footer class="footer">
       <div class="footer__inner">
         <span class="footer__copyright">
-          MIT License · Filip Mares · 2026
+          BSL 1.1 License · Filip Mares · 2026
         </span>
         <ul class="footer__links">
           <li>

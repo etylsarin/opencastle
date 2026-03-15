@@ -145,10 +145,10 @@ const commands = [
       { flag: '--output-prd <path>', desc: 'Override output path for the generated PRD' },
       { flag: '--output-spec <path>', desc: 'Override output path for the generated convoy spec' },
       { flag: '--complexity <path>', desc: 'Skip complexity assessment — use an existing complexity assessment file' },
-      { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude-code, copilot, cursor, opencode)' },
+      { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude, copilot, cursor, opencode)' },
       { flag: '--verbose', desc: 'Show full agent output for each step' },
       { flag: '--dry-run', desc: 'Generate and print the PRD prompt only, then stop' },
-      { flag: '--skip-validation', desc: 'Skip validation steps (steps 2, 3, 6, 7)' },
+      { flag: '--skip-validation', desc: 'Skip PRD and convoy validation (steps 2, 3, 6, 7)' },
       { flag: '--help, -h', desc: 'Show help' },
     ],
     details: [
@@ -177,7 +177,7 @@ const commands = [
     ],
     examples: [
       { cmd: 'npx opencastle start -t "Add user authentication with login and signup pages"', desc: 'Generate a convoy spec from a text description' },
-      { cmd: 'npx opencastle start -t "Fix the broken search feature" --adapter claude-code', desc: 'Use a specific adapter' },
+      { cmd: 'npx opencastle start -t "Fix the broken search feature" --adapter claude', desc: 'Use a specific adapter' },
       { cmd: 'npx opencastle start --prd existing-prd.md', desc: 'Skip PRD generation, use an existing PRD' },
       { cmd: 'npx opencastle start -t "Refactor the API layer" --skip-validation', desc: 'Skip validation steps for faster generation' },
       { cmd: 'npx opencastle start -t "Build a contact form" --dry-run', desc: 'Preview the assembled prompt without executing' },
@@ -196,7 +196,7 @@ const commands = [
       { flag: '--set key=value', desc: 'Set a formula variable (repeatable)' },
       { flag: '--dry-run', desc: 'Show execution plan without running tasks' },
       { flag: '--concurrency, -c <n>', desc: 'Override max parallel tasks' },
-      { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude-code, copilot, cursor, opencode)' },
+      { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude, copilot, cursor, opencode)' },
       { flag: '--resume', desc: 'Resume the last interrupted convoy from SQLite state' },
       { flag: '--retry-failed [task-id]', desc: 'Retry failed/gate-failed/timed-out tasks (optionally a specific task)' },
       { flag: '--status', desc: 'Print convoy state summary from SQLite (branch, task breakdown)' },
@@ -217,7 +217,7 @@ const commands = [
       <ul>
         <li><code>version: 1</code> — enables the Convoy Engine with full feature set</li>
         <li><code>name</code> — convoy name for reports and state tracking</li>
-        <li><code>adapter</code> — which AI CLI to use (<code>claude-code</code>, <code>copilot</code>, <code>cursor</code>, <code>opencode</code>, or <code>auto</code>)</li>
+        <li><code>adapter</code> — which AI CLI to use (<code>claude</code>, <code>copilot</code>, <code>cursor</code>, <code>opencode</code>, or <code>auto</code>)</li>
         <li><code>concurrency</code> — max parallel workers (default: 3)</li>
         <li><code>branch</code> — base branch for worktree isolation</li>
         <li><code>defaults</code> — default <code>timeout</code>, <code>model</code>, and <code>max_retries</code> for all tasks</li>
@@ -237,7 +237,7 @@ const commands = [
       <table class="plugin-table">
         <thead><tr><th>Adapter</th><th>CLI Required</th><th>Install</th></tr></thead>
         <tbody>
-          <tr><td><code>claude-code</code></td><td><code>claude</code></td><td><code>npm i -g @anthropic-ai/claude-code</code></td></tr>
+          <tr><td><code>claude</code></td><td><code>claude</code></td><td><code>npm i -g @anthropic-ai/claude-code</code></td></tr>
           <tr><td><code>copilot</code></td><td><code>copilot</code></td><td>Ships with GitHub Copilot CLI</td></tr>
           <tr><td><code>cursor</code></td><td><code>cursor</code></td><td>Ships with Cursor editor (Install CLI from menu)</td></tr>
           <tr><td><code>opencode</code></td><td><code>opencode</code></td><td>See <a href="https://opencode.ai">opencode.ai</a></td></tr>
@@ -250,7 +250,7 @@ const commands = [
       { cmd: 'npx opencastle run --dry-run', desc: 'Preview execution plan' },
       { cmd: 'npx opencastle run --resume', desc: 'Resume last interrupted convoy' },
       { cmd: 'npx opencastle run --status', desc: 'Check convoy state' },
-      { cmd: 'npx opencastle run -c 5 -a claude-code', desc: 'Run with 5 parallel tasks using Claude Code' },
+      { cmd: 'npx opencastle run -c 5 -a claude', desc: 'Run with 5 parallel tasks using Claude Code' },
     ],
   },
   {
@@ -263,11 +263,11 @@ const commands = [
     options: [
       { flag: '--file, -f <path>', desc: 'Path to a text file (fills the {{goal}} placeholder in the template)' },
       { flag: '--text, -t <text>', desc: 'Inline text to use as {{goal}} (alternative to --file)' },
-      { flag: '--template <name>', desc: 'Prompt template to use (default: generate-convoy). Built-in: generate-prd, validate-prd, generate-convoy, validate-convoy, fix-convoy' },
+      { flag: '--template <name>', desc: 'Prompt template to use (default: generate-convoy). Built-in: generate-prd, validate-prd, fix-prd, assess-complexity, generate-convoy, validate-convoy, fix-convoy' },
       { flag: '--context <path>', desc: 'Path to an additional context file (fills {{context}})' },
       { flag: '--context-text <text>', desc: 'Inline text to fill {{context}} (alternative to --context)' },
       { flag: '--output, -o <path>', desc: 'Output path for the generated file' },
-      { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude-code, copilot, cursor, opencode)' },
+      { flag: '--adapter, -a <name>', desc: 'Override agent runtime adapter (claude, copilot, cursor, opencode)' },
       { flag: '--verbose', desc: 'Show full agent output' },
       { flag: '--dry-run', desc: 'Print the assembled prompt without executing' },
       { flag: '--help, -h', desc: 'Show help' },
@@ -278,6 +278,8 @@ const commands = [
         <tbody>
           <tr><td><code>generate-prd</code></td><td>Write a PRD from a feature prompt</td><td><code>.prd.md</code></td></tr>
           <tr><td><code>validate-prd</code></td><td>Check a PRD for completeness</td><td>VALID / INVALID verdict</td></tr>
+          <tr><td><code>fix-prd</code></td><td>Fix validation errors in a PRD</td><td><code>.prd.md</code></td></tr>
+          <tr><td><code>assess-complexity</code></td><td>Assess PRD complexity for single vs chain strategy</td><td>JSON</td></tr>
           <tr><td><code>generate-convoy</code></td><td>Generate a convoy spec from a PRD (default)</td><td><code>.convoy.yml</code></td></tr>
           <tr><td><code>validate-convoy</code></td><td>Check a convoy spec for correctness</td><td>VALID / INVALID verdict</td></tr>
           <tr><td><code>fix-convoy</code></td><td>Fix validation errors in a convoy spec</td><td><code>.convoy.yml</code></td></tr>
@@ -654,7 +656,7 @@ Global options:
     <footer class="footer">
       <div class="footer__inner">
         <span class="footer__copyright">
-          MIT License · Filip Mares · 2026
+          BSL 1.1 License · Filip Mares · 2026
         </span>
         <ul class="footer__links">
           <li><a href="/docs/">Docs</a></li>

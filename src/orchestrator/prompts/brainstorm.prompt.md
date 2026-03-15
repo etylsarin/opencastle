@@ -73,6 +73,18 @@ Draw a clear boundary:
 - **Out of scope:** What it explicitly will NOT do (and why)
 - **Deferred:** What could be done later as a follow-up
 
+#### Design Direction (for multi-page projects)
+
+If the request involves building 2+ pages or UI sections, define the design direction during brainstorming — not during implementation:
+
+- **Aesthetic direction:** 2-3 words (e.g., "warm editorial", "clean minimal", "brutalist edge")
+- **Typography pairing:** display font + body font (avoid generic defaults like Inter/Roboto)
+- **Color intent:** dominant purpose, accent purpose, mood
+- **Content tone:** formal/casual, active/passive, target audience voice
+- **Key terminology:** terms that could be said multiple ways — pick one (e.g., "projects" not "portfolio")
+
+Include this in the Brainstorm Report so the planning phase can inject it into convoy foundation tasks.
+
 ### 6. Output
 
 Summarize the brainstorm as a **Brainstorm Report** — this becomes the input for the planning/decomposition phase:
@@ -98,6 +110,12 @@ Summarize the brainstorm as a **Brainstorm Report** — this becomes the input f
 
 ### Open Questions
 - [Any unresolved questions for the user]
+
+### Design Direction (if multi-page)
+- **Aesthetic:** [direction]
+- **Typography:** [display font] + [body font]
+- **Tone:** [description]
+- **Key terms:** [glossary]
 ```
 
 ## When to Skip Brainstorming

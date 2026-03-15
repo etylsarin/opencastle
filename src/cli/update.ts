@@ -19,8 +19,8 @@ const UPDATE_HELP = `
 
   Options:
     --dry-run         Preview what would be changed without writing files
-    --force           Overwrite customized files (default: skip)
-    --reconfigure     Re-run IDE selection and reconfigure adapters
+    --force           Force update even if versions match
+    --reconfigure     Re-run IDE and stack selection
     --help, -h        Show this help
 `
 

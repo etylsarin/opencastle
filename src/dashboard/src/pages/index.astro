@@ -401,6 +401,156 @@ try {
     return div.innerHTML;
   }
 
+  // ── Active Convoy Polling ──────────────────────────────────
+  let _activePollingTimer = null;
+  let _activePollingConvoyId = null;
+
+  function startActiveConvoyPolling() {
+    if (_activePollingTimer) return; // already polling
+    _activePollingTimer = setInterval(pollActiveConvoy, 3000);
+    // Also poll immediately
+    pollActiveConvoy();
+  }
+
+  function stopActiveConvoyPolling() {
+    if (_activePollingTimer) {
+      clearInterval(_activePollingTimer);
+      _activePollingTimer = null;
+    }
+  }
+
+  async function pollActiveConvoy() {
+    try {
+      const resp = await fetch(base + 'data/active-convoy.json');
+      if (!resp.ok) return;
+      const data = await resp.json();
+
+      if (!data.convoy) return; // no convoy yet — keep polling
+
+      const convoy = data.convoy;
+      const isRunningOrPending = convoy.status === 'running' || convoy.status === 'pending';
+
+      // If we haven't navigated to any convoy yet, navigate now
+      if (!_activePollingConvoyId) {
+        _activePollingConvoyId = convoy.id;
+        // Refresh ETL data so convoy detail JSON exists
+        await fetch(base + 'data/refresh');
+        // Re-fetch the convoy list and stats
+        await refreshDashboardData();
+        showConvoyDetailView(convoy.id, convoy.name || convoy.id);
+        removeWaitingBanner();
+      }
+
+      // If we're on a convoy and a new one started (pipeline chain), follow it
+      if (_activePollingConvoyId !== convoy.id && isRunningOrPending) {
+        _activePollingConvoyId = convoy.id;
+        await fetch(base + 'data/refresh');
+        await refreshDashboardData();
+        showConvoyDetailView(convoy.id, convoy.name || convoy.id);
+      }
+
+      // If we're viewing the active convoy, refresh its detail data
+      if (_activePollingConvoyId === convoy.id) {
+        await fetch(base + 'data/refresh');
+        await refreshDashboardData();
+        // Reload convoy detail to show latest task progress
+        await loadConvoyDetail(convoy.id);
+
+        // Update pipeline chain breadcrumb if applicable
+        if (data.pipeline && data.pipeline.length > 1) {
+          renderPipelineChain(data.pipeline, convoy.id);
+        }
+      }
+
+      // Stop polling when the convoy (and any pipeline) is finished
+      if (!isRunningOrPending) {
+        // In pipeline mode, check if all convoys in the chain are done
+        if (data.pipeline) {
+          const anyActive = data.pipeline.some(c => c.status === 'running' || c.status === 'pending');
+          if (!anyActive) {
+            stopActiveConvoyPolling();
+          }
+        } else {
+          stopActiveConvoyPolling();
+        }
+      }
+    } catch {
+      // Polling errors are non-fatal — just retry next interval
+    }
+  }
+
+  async function refreshDashboardData() {
+    try {
+      const [statsResp, listResp] = await Promise.all([
+        fetch(base + 'data/overall-stats.json'),
+        fetch(base + 'data/convoy-list.json'),
+      ]);
+      if (statsResp.ok) {
+        window.__DASHBOARD_DATA__.overallStats = await statsResp.json();
+      }
+      if (listResp.ok) {
+        window.__DASHBOARD_DATA__.convoyList = await listResp.json();
+      }
+      renderOverallStats();
+      renderConvoyList();
+    } catch {
+      // Non-fatal
+    }
+  }
+
+  function renderPipelineChain(pipelineConvoys, activeConvoyId) {
+    let chainEl = document.getElementById('pipeline-chain-nav');
+    if (!chainEl) {
+      chainEl = document.createElement('div');
+      chainEl.id = 'pipeline-chain-nav';
+      chainEl.className = 'pipeline-chain-nav';
+      const breadcrumbs = document.getElementById('breadcrumbs');
+      if (breadcrumbs) breadcrumbs.after(chainEl);
+    }
+
+    const statusDot = (status) => {
+      const colors = { done: '#4ade80', running: '#60a5fa', pending: '#94a3b8', failed: '#f87171', 'gate-failed': '#fb923c' };
+      return '<span class="pipeline-chain__dot" style="background:' + (colors[status] || '#94a3b8') + '"></span>';
+    };
+
+    let html = '<div class="pipeline-chain__label">Pipeline:</div>';
+    for (const c of pipelineConvoys) {
+      const isActive = c.id === activeConvoyId;
+      html += '<button class="pipeline-chain__item' + (isActive ? ' pipeline-chain__item--active' : '') + '" data-convoy-id="' + escapeHtml(c.id) + '">' +
+        statusDot(c.status) + escapeHtml(c.name || c.id) + '</button>';
+    }
+    chainEl.innerHTML = html;
+
+    chainEl.querySelectorAll('button[data-convoy-id]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.convoyId;
+        const name = btn.textContent.trim();
+        _activePollingConvoyId = id;
+        showConvoyDetailView(id, name);
+      });
+    });
+  }
+
+  function showWaitingBanner() {
+    if (document.getElementById('waiting-banner')) return;
+    const banner = document.createElement('section');
+    banner.id = 'waiting-banner';
+    banner.className = 'waiting-banner';
+    banner.innerHTML =
+      '<div class="waiting-banner__content">' +
+        '<div class="waiting-banner__spinner"></div>' +
+        '<h2 class="waiting-banner__title">Waiting for convoy to start…</h2>' +
+        '<p class="waiting-banner__subtitle">The dashboard will automatically show convoy progress once it begins.</p>' +
+      '</div>';
+    const main = document.querySelector('.dash-main');
+    if (main) main.prepend(banner);
+  }
+
+  function removeWaitingBanner() {
+    const el = document.getElementById('waiting-banner');
+    if (el) el.remove();
+  }
+
   function formatTokens(n) {
     if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
     if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
@@ -1655,7 +1805,18 @@ try {
       const running = convoys.find((c) => c.status === 'running');
       const latest = convoys.slice().sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
       const target = running || latest;
-      if (target) showConvoyDetailView(target.id, target.name || target.id);
+      if (target) {
+        _activePollingConvoyId = target.id;
+        showConvoyDetailView(target.id, target.name || target.id);
+        // If still running, start polling for live updates
+        if (target.status === 'running' || target.status === 'pending') {
+          startActiveConvoyPolling();
+        }
+      } else {
+        // No convoy exists yet — show waiting state and poll
+        showWaitingBanner();
+        startActiveConvoyPolling();
+      }
     } else if (convoyParam) {
       showConvoyDetailView(convoyParam, convoyParam);
     }

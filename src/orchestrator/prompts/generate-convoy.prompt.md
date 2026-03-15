@@ -93,6 +93,39 @@ For each workstream, break it down into the smallest meaningful unit. Follow the
 5. **Appropriate agent** — pick the agent whose speciality matches the task (e.g. `testing-expert` for tests, `database-engineer` for migrations).
 6. **Realistic timeouts** — `30m` for most tasks; `1h` for large refactors; `10m` for small docs or config.
 
+### 2.5 Foundation Phase for Multi-Page Projects
+
+When the goal involves building **2 or more pages, views, or UI sections**, apply the Foundation-First Pattern to prevent consistency drift across parallel agents:
+
+1. **Create a foundation task** (`id: foundation-setup`) as the FIRST task. This task:
+   - Creates a **design tokens file** (CSS custom properties for colors, typography, spacing, motion, shadows, breakpoints)
+   - Creates a **shared layout component** (page container with header, footer, navigation)
+   - Creates a **UI component library** (Button, Card, Heading, Text, Section, Container, Grid)
+   - Establishes the **style guide** (aesthetic direction, content tone, terminology, navigation labels)
+   - Agent: `ui-ux-expert` or `developer`
+
+2. **All page tasks must `depends_on: [foundation-setup]`** — they cannot run until the foundation is in place.
+
+3. **Every page task prompt must include Foundation References** — these 5 mandatory lines constrain the agent to `use` existing artifacts instead of `creating` new ones:
+   ```
+   ### Foundation References (MANDATORY)
+   - Design tokens: `[path to tokens file]` — use ONLY these variables. No new color/font/spacing values.
+   - Layout: `[path to Layout component]` — wrap all content in this layout.
+   - UI components: `[path to ui/ directory]` — import shared components. Do not recreate Button/Card/etc.
+   - Aesthetic: [2-3 word direction from foundation]
+   - Tone: [content tone from foundation]
+   ```
+
+4. **The foundation prompt itself** should specify:
+   - The aesthetic direction (2-3 words + elaboration)
+   - The typography pairing (display + body font)
+   - The color palette intent (dominant, accent, muted)
+   - The navigation labels (exact text for every nav link)
+   - The content tone (formal/casual, active/passive)
+   - Terminology choices (e.g., "projects" not "portfolio")
+
+> **Why:** Without this pattern, parallel agents independently choose fonts, colors, component APIs, and content tone. The result looks like it was built by different teams — because it was. Foundation-first makes consistency structural, not aspirational.
+
 ### 3. Define the Dependency Graph (DAG)
 
 - Tasks with no dependencies run first (in parallel up to `concurrency`).
@@ -127,6 +160,12 @@ Each task `prompt` must be a **complete, standalone instruction**. Include:
 >
 > **Strong prompt:** "Write unit tests for `libs/auth/src/server.ts` covering token refresh, expiry edge cases, and invalid signatures. Place tests in `libs/auth/src/__tests__/server.test.ts`. Follow the existing test conventions. Achieve ≥ 95% coverage for `server.ts`. Run the project's test command with coverage and fix any failures."
 
+> **Multi-page prompt pattern:** For page tasks in a multi-page project, always include the Foundation References block (from Step 2.5). The foundation task creates the design system; page tasks consume it.
+>
+> **Strong page prompt:** "Build the About page at `app/about/page.tsx`. **Foundation References:** Design tokens: `src/styles/tokens.css` — use ONLY these variables. Layout: `src/components/Layout.tsx` — wrap content in this layout. UI components: `src/components/ui/` — use Heading, Text, Section. Aesthetic: warm editorial. Tone: conversational and authentic. Include a bio section, skills grid (use Card from UI lib), and a timeline of experience. Responsive at 320px, 768px, 1280px."
+>
+> **Weak page prompt:** "Build the About page with a bio and skills section." — No foundation references, agent will create its own styles.
+
 ### 6. Validate Before Outputting
 
 - [ ] Every task has a unique `id`
@@ -141,6 +180,9 @@ Each task `prompt` must be a **complete, standalone instruction**. Include:
 - [ ] **File list completeness**: Every file mentioned in a task's prompt that the agent will create or modify MUST appear in that task's `files` list. Don't omit utility files, sub-components, or config files if the prompt instructs the agent to create them.
 - [ ] **Prompt instruction accuracy**: Don't include instructions that contradict the dependency graph. If a task depends on another task (via `depends_on`), the depended task's outputs will exist when this task runs — don't add `@ts-expect-error` comments, stub files, or "if not found" fallbacks for files produced by dependencies.
 - [ ] **Content research rule compliance**: If a prompt concerns real people, places, or organisations, it includes a research instruction telling the agent to search the internet first.
+- [ ] **Foundation phase present**: If the plan involves 2+ pages or UI sections, a `foundation-setup` task exists with no dependencies, and all page tasks depend on it
+- [ ] **Foundation references in page prompts**: Every page-building task prompt includes the 5 mandatory Foundation References (design tokens path, layout path, UI component path, aesthetic direction, content tone)
+- [ ] **No token duplication**: Page task prompts do NOT instruct agents to create new design tokens, layout components, or shared UI primitives — only to import and use existing ones from the foundation
 
 ### 7. Output
 

@@ -532,7 +532,9 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
     const { createConvoyStore } = await import('./convoy/store.js')
     const store = createConvoyStore(dbPath)
     const latestPipeline = store.getLatestPipeline()
-    if (latestPipeline && (latestPipeline.status === 'pending' || latestPipeline.status === 'running')) {
+
+    // ── Pipeline resume (pending / running / failed) ────────────
+    if (latestPipeline && latestPipeline.status !== 'done') {
       store.close()
       const resumePipelineSpec = parseTaskSpecText(latestPipeline.spec_yaml)
       if (opts.concurrency !== null) resumePipelineSpec.concurrency = opts.concurrency
@@ -572,6 +574,17 @@ export default async function run({ args, pkgRoot }: CliContext): Promise<void> 
       process.exit(resumePipelineResult.status !== 'done' ? 1 : 0)
     }
 
+    // ── Pipeline done — don't fall through to convoy check ──────
+    if (latestPipeline && latestPipeline.status === 'done') {
+      store.close()
+      console.error(
+        `  ✗ Last pipeline "${latestPipeline.name}" already finished with status: done`
+      )
+      console.error(`    Only interrupted (running/pending/failed) pipelines can be resumed.`)
+      process.exit(1)
+    }
+
+    // ── Standalone convoy resume ────────────────────────────────
     const convoy = store.getLatestConvoy()
     store.close()
     if (!convoy) {

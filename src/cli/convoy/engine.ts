@@ -1439,11 +1439,11 @@ async function runConvoy(
           try {
             // SECURITY: Gate/hook commands come from the .convoy.yml spec file, which is operator-controlled.
             // They are NOT user-supplied and are part of the trusted build configuration.
-            await execFile('sh', ['-c', command], { cwd: worktreePath ?? basePath })
+            await execFile('sh', ['-c', command], { cwd: worktreePath ?? basePath, maxBuffer: 10 * 1024 * 1024 })
           } catch (err) {
             const execErr = err as Error & { code?: unknown; stderr?: string; stdout?: string }
             const code = typeof execErr.code === 'number' ? execErr.code : 1
-            const output = execErr.stderr || execErr.stdout || execErr.message || ''
+            const output = [execErr.stderr, execErr.stdout].filter(Boolean).join('\n').trim() || execErr.message || ''
             gateFailure = { command, exitCode: code, output }
             break
           }
@@ -2430,13 +2430,13 @@ async function runConvoy(
       try {
         // SECURITY: Gate/hook commands come from the .convoy.yml spec file, which is operator-controlled.
         // They are NOT user-supplied and are part of the trusted build configuration.
-        await execFile('sh', ['-c', command], { cwd: basePath })
+        await execFile('sh', ['-c', command], { cwd: basePath, maxBuffer: 10 * 1024 * 1024 })
         gateResults.push({ command, exitCode: 0, passed: true })
         process.stdout.write(`  ${c.green('✓')} ${c.dim(command)}\n`)
       } catch (err) {
         const execErr = err as Error & { code?: unknown; stderr?: string; stdout?: string }
         const code = typeof execErr.code === 'number' ? execErr.code : 1
-        const output = execErr.stderr || execErr.stdout || execErr.message || ''
+        const output = [execErr.stderr, execErr.stdout].filter(Boolean).join('\n').trim() || execErr.message || ''
         gateResults.push({ command, exitCode: code, passed: false, output })
         process.stdout.write(`  ${c.red('✗')} ${c.dim(command)}\n`)
       }
@@ -2454,7 +2454,16 @@ async function runConvoy(
       .map(g => `Command: ${g.command}\nExit code: ${g.exitCode}\nOutput:\n${g.output ?? '(no output)'}`)
       .join('\n\n---\n\n')
 
-    const fixPrompt = `The following validation gates failed after all convoy tasks completed. Fix the issues so these commands pass.\n\n${failureSummary}`
+    // Gather files touched by convoy tasks to give the fix agent context
+    const allTasks = store.getTasksByConvoy(convoyId)
+    const touchedFiles = allTasks
+      .filter(t => t.files)
+      .flatMap(t => { try { return JSON.parse(t.files as string) as string[] } catch { return [] } })
+    const filesContext = touchedFiles.length > 0
+      ? `\n\nFiles modified by the convoy tasks:\n${touchedFiles.map(f => `- ${f}`).join('\n')}\n`
+      : ''
+
+    const fixPrompt = `The following validation gates failed after all convoy tasks completed. Fix the issues so these commands pass.${filesContext}\n\n${failureSummary}`
     const fixTaskId = `gate-fix-${gateAttempt}`
 
     process.stdout.write(`\n  ${c.yellow('⟳')} ${c.bold(`[${fixTaskId}]`)} fixing gate failures (attempt ${gateAttempt}/${maxGateRetries})\n`)
