@@ -185,6 +185,61 @@ export async function startDashboardServer(
           pathname = '/index.html'
         }
 
+        // Handle refresh requests — re-run ETL on demand
+        if (pathname === '/data/refresh' && runtimeDataDir) {
+          try {
+            const { runEtl } = await import('../dashboard/scripts/etl.js')
+            const dbPath = resolve(projectRoot, '.opencastle', 'convoy.db')
+            const result = await runEtl({ dbPath, outputDir: runtimeDataDir })
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ ok: true, convoyCount: result.convoyCount }))
+          } catch (err) {
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ ok: true, convoyCount: 0 }))
+          }
+          return
+        }
+
+        // Handle active convoy resolution — queries DB directly (no ETL needed)
+        if (pathname === '/data/active-convoy.json' && !seed) {
+          try {
+            const { createConvoyStore } = await import('./convoy/store.js')
+            const dbPath = resolve(projectRoot, '.opencastle', 'convoy.db')
+            const { existsSync } = await import('node:fs')
+            if (!existsSync(dbPath)) {
+              res.writeHead(200, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ convoy: null, pipeline: null }))
+              return
+            }
+            const store = createConvoyStore(dbPath)
+            try {
+              // Find the running convoy, or fall back to the latest
+              const allConvoys = store.getConvoyList(10, 0)
+              const running = allConvoys.find(c => c.status === 'running')
+              const pending = allConvoys.find(c => c.status === 'pending')
+              const target = running ?? pending ?? (allConvoys.length > 0 ? allConvoys[0] : null)
+
+              let pipelineConvoys: Array<{ id: string; name: string; status: string }> | null = null
+              if (target?.pipeline_id) {
+                const pipeConvoys = store.getConvoysByPipeline(target.pipeline_id)
+                pipelineConvoys = pipeConvoys.map(c => ({ id: c.id, name: c.name, status: c.status }))
+              }
+
+              res.writeHead(200, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({
+                convoy: target ? { id: target.id, name: target.name, status: target.status, pipeline_id: target.pipeline_id ?? null } : null,
+                pipeline: pipelineConvoys,
+              }))
+            } finally {
+              store.close()
+            }
+          } catch {
+            res.writeHead(200, { 'Content-Type': 'application/json' })
+            res.end(JSON.stringify({ convoy: null, pipeline: null }))
+          }
+          return
+        }
+
         // Handle data file requests — proxy to project logs or dist
         const dataMatch = pathname.match(/^\/data\/(.+\.ndjson)$/)
         if (dataMatch && DATA_FILES.includes(dataMatch[1])) {

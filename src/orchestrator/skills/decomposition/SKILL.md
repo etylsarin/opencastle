@@ -121,3 +121,38 @@ Phase 4 (background):    Validation — Security audit + Tests + Docs (parallel)
 Phase 5 (sub-agent):     QA gate — verify all phases, run builds, self-review
 Phase 6 (sub-agent):     Panel review — load panel-majority-vote skill for high-stakes validation
 ```
+
+## Foundation-First Decomposition
+
+When decomposing a multi-page or multi-component project, always apply the Foundation-First Pattern to maintain cross-agent consistency:
+
+### When to apply
+
+- Goal involves 2+ pages, views, or UI sections
+- Multiple agents (same or different phase) will produce visual output
+- The project doesn't have an existing design system
+
+### Phase structure
+
+```
+Phase 1: foundation-setup
+├── Creates: design tokens, layout, UI component library
+├── Defines: style guide brief (aesthetic, tone, terminology)
+└── All visual tasks → depends_on: [foundation-setup]
+
+Phase 2+: page tasks (parallel)
+├── Each prompt includes 5 Foundation References
+└── Agents consume tokens — never create new values
+```
+
+### Partition rules for foundation
+
+- Foundation task owns: `src/styles/`, `src/components/Layout.*`, `src/components/ui/`
+- Page tasks own: their specific page file + page-specific components only
+- No page task may list a foundation-owned path in its `files[]`
+
+### Common mistake
+
+Decomposing pages as independent Phase 1 tasks (no foundation). This produces partition-clean, dependency-valid specs that fail aesthetically — each agent invents its own design. Always add the foundation task as the root of the DAG for visual work.
+
+> Load the **project-consistency** skill for the full Foundation Phase pattern, prompt templates, and anti-patterns.

@@ -134,7 +134,6 @@ Runs multiple health checks — manifest, configs, skills, observability logs, I
 📖 [Doctor CLI documentation →](https://www.opencastle.dev/docs/cli#doctor)
 
 <br>
-
 ## Convoy Engine
 
 A deterministic, crash-recoverable orchestrator inspired by Steve Yegge's [Gas Town](https://github.com/steveyegge/gastown). Define tasks in YAML, run overnight, resume after crashes.
@@ -147,22 +146,25 @@ npx opencastle run convoy.yml
 # convoy.yml
 name: "Overnight feature batch"
 version: 1
-adapter: claude-code
+adapter: claude
 branch: feat/reviews
 
 tasks:
   - id: migrate-db
     agent: database-engineer
     prompt: "Create a reviews table migration."
+    files: ["db/migrations/"]
 
   - id: build-component
     agent: ui-ux-expert
     prompt: "Build a ReviewCard component."
+    files: ["src/components/reviews/"]
 
   - id: wire-page
     agent: developer
     prompt: "Add reviews to the place detail page."
     depends_on: [migrate-db, build-component]
+    files: ["src/pages/places/"]
 
 gates:
   - npm run lint
@@ -217,4 +219,4 @@ For corporate sponsorship inquiries, open a [GitHub Discussion](https://github.c
 
 ## License
 
-[MIT](LICENSE) — Filip Mares, 2026
+[BSL 1.1](LICENSE) — Free for non-commercial use. Commercial use requires a paid license. Each version converts to Apache 2.0 two years after its release.

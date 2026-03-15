@@ -33,6 +33,14 @@ After code changes, always run lint, test, and build for affected projects.
 - Co-locate component files (component, styles, tests) in the same directory
 - Place shared components in the UI library, queries in the data layer
 
+### Multi-Page Convoy Consistency
+
+When working on a page task within a multi-agent convoy:
+- **Import** design tokens, layout component, and UI components from the foundation — do not recreate them
+- **Follow** the aesthetic direction and content tone specified in your task prompt's Foundation References
+- If a needed design token is missing, flag it in your output — never add inline values as workarounds
+- Load the **project-consistency** skill for the full consistency contract
+
 ## Done When
 
 - All acceptance criteria from the tracker issue are met

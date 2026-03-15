@@ -32,6 +32,13 @@ Resolve all skills (slots and direct) via [skill-matrix.json](.opencastle/agents
 - Use `clsx` for conditional class composition
 - Export all components from the UI library's index
 
+### Multi-Page Convoy Consistency
+
+When working on a page task within a multi-agent convoy:
+- **If you are the foundation task:** create comprehensive design tokens, shared layout, and UI component library. Your choices become the project contract — be explicit and decisive.
+- **If you are a page task:** consume the foundation. Import tokens, layout, and UI components — do not recreate them. No new design values.
+- Load the **project-consistency** skill for full guidance on foundation artifacts and page task rules.
+
 ## Done When
 
 - Components render correctly at all project-defined responsive breakpoints
